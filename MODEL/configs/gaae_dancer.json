@@ -1,0 +1,17 @@
+{
+  "seed": 100,
+  "batch_size": 64,
+  "learning_rate": 0.001,
+  "adj_loss_weight": 0.1,
+  "epochs": 1000,
+  "early_stopping_patience": 100,
+  "latent_dim": 64,
+  "num_heads": 2,
+  "cond_dim": 2,
+  "dropout": 0.5,
+  "adjacency_k": 16,
+  "num_workers": 8,
+  "file_variant": "z",
+  "dense_use_abs": false,
+  "model_save_path": null
+}

@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.env
+.venv/
+**/wandb/
+**/checkpoints/
+*.log
+**/*.pkl
+**/*.npz
+.ipynb_checkpoints/
+.vscode/
+
+DATA/_DELCODE/
+DATA/DELCODE/fmri/*
