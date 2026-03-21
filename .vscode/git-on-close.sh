@@ -5,6 +5,7 @@ cd "$(dirname "$0")/.."
 
 LOG_FILE=".vscode/git-on-close.log"
 cleanup_ran=0
+SSH_KEY_PATH="${GIT_ON_CLOSE_SSH_KEY:-/mnt/e/fyassine/.ssh/id_rsa}"
 
 log() {
   printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$LOG_FILE"
@@ -50,6 +51,13 @@ cleanup() {
   fi
 
   # Push dev branch to origin.
+  if [ -f "$SSH_KEY_PATH" ]; then
+    export GIT_SSH_COMMAND="ssh -i $SSH_KEY_PATH -o IdentitiesOnly=yes"
+    log "using ssh key: $SSH_KEY_PATH"
+  else
+    log "warning: ssh key not found at $SSH_KEY_PATH"
+  fi
+
   if git push origin dev; then
     log "push origin dev succeeded"
   else

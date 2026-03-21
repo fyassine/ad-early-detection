@@ -6,6 +6,11 @@
       "type": "shell",
       "command": "${workspaceFolder}/.vscode/git-on-close.sh",
       "isBackground": true,
+      "options": {
+        "env": {
+          "GIT_ON_CLOSE_SSH_KEY": "/mnt/e/fyassine/.ssh/id_rsa"
+        }
+      },
       "problemMatcher": [],
       "runOptions": {
         "runOn": "folderOpen"
