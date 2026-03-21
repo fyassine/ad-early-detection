@@ -9,6 +9,9 @@ __pycache__/
 **/*.npz
 .ipynb_checkpoints/
 .vscode/
+!.vscode/
+!.vscode/tasks.json
+!.vscode/git-on-close.sh
 
 DATA/_DELCODE/
 DATA/DELCODE/fmri/*
