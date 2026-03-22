@@ -49,19 +49,26 @@ def train_model_with_val_notebook_train_loss(model, train_loader, val_loader, op
                 x, edge_index, edge_attr, cond_vec, batch_mask
             )
 
+            dense_adj_reconstructed = to_dense_adj(
+                edge_index, batch=batch_mask, edge_attr=adj_reconstructed
+            ).to(device)
+
             batch_size_local = dense_adj.size(0)
-            combined_dense_adj = torch.zeros_like(adj_reconstructed)
+            total_nodes = x.size(0)
+            combined_dense_adj = torch.zeros((total_nodes, total_nodes), device=device)
+            combined_dense_adj_reconstructed = torch.zeros((total_nodes, total_nodes), device=device)
             start_idx = 0
             for i in range(batch_size_local):
                 num_nodes_in_graph = (batch_mask == i).sum().item()
                 end_idx = start_idx + num_nodes_in_graph
                 combined_dense_adj[start_idx:end_idx, start_idx:end_idx] = dense_adj[i, :num_nodes_in_graph, :num_nodes_in_graph]
+                combined_dense_adj_reconstructed[start_idx:end_idx, start_idx:end_idx] = dense_adj_reconstructed[i, :num_nodes_in_graph, :num_nodes_in_graph]
                 start_idx = end_idx
 
             mask = create_mask(batch_mask)
 
             loss, _, _ = total_loss_fn(
-                x, x_reconstructed, combined_dense_adj, adj_reconstructed, mask, adj_loss_weight
+                x, x_reconstructed, combined_dense_adj, combined_dense_adj_reconstructed, mask, adj_loss_weight
             )
 
             optimizer.zero_grad()
@@ -90,19 +97,26 @@ def train_model_with_val_notebook_train_loss(model, train_loader, val_loader, op
                     x, edge_index, edge_attr, cond_vec, batch_mask
                 )
 
+                dense_adj_reconstructed = to_dense_adj(
+                    edge_index, batch=batch_mask, edge_attr=adj_reconstructed
+                ).to(device)
+
                 batch_size_local = dense_adj.size(0)
-                combined_dense_adj = torch.zeros_like(adj_reconstructed)
+                total_nodes = x.size(0)
+                combined_dense_adj = torch.zeros((total_nodes, total_nodes), device=device)
+                combined_dense_adj_reconstructed = torch.zeros((total_nodes, total_nodes), device=device)
                 start_idx = 0
                 for i in range(batch_size_local):
                     num_nodes_in_graph = (batch_mask == i).sum().item()
                     end_idx = start_idx + num_nodes_in_graph
                     combined_dense_adj[start_idx:end_idx, start_idx:end_idx] = dense_adj[i, :num_nodes_in_graph, :num_nodes_in_graph]
+                    combined_dense_adj_reconstructed[start_idx:end_idx, start_idx:end_idx] = dense_adj_reconstructed[i, :num_nodes_in_graph, :num_nodes_in_graph]
                     start_idx = end_idx
 
                 mask = create_mask(batch_mask)
 
                 loss, _, _ = total_loss_fn(
-                    x, x_reconstructed, combined_dense_adj, adj_reconstructed, mask, adj_loss_weight
+                    x, x_reconstructed, combined_dense_adj, combined_dense_adj_reconstructed, mask, adj_loss_weight
                 )
 
                 total_val_loss += loss.item()

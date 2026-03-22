@@ -35,6 +35,14 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
         super().__init__(root, transform, pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)
 
+    @property
+    def raw_dir(self):
+        # Support both standard PyG layout (<root>/raw) and flat layout (<root>).
+        default_raw_dir = super().raw_dir
+        if os.path.isdir(default_raw_dir):
+            return default_raw_dir
+        return self.root
+
     def _get_patient_info(self, patient_id):
         default_sex = torch.tensor(0, dtype=torch.long)  # 0 for female
         default_age = torch.tensor(0.5, dtype=torch.float)  # normalized 50 years
