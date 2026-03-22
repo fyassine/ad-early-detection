@@ -120,3 +120,37 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
         variant_tag = str(self.file_variant).lower().replace("-", "_")
         split_tag = os.path.splitext(os.path.basename(self.filter_csv_path))[0]
         return [f"data_filtered_{variant_tag}_{split_tag}.pt"]
+
+
+class GraphDMNDatasetInMemoryFiltered(GraphDatasetInMemoryFiltered):
+    """Dataset for DMN-only correlation matrices (46 nodes).
+
+    Identical to GraphDatasetInMemoryFiltered except that it looks for
+    files with '_dmn_correlation_matrix' suffixes instead of
+    '_whole_brain_correlation_matrix' suffixes.
+    """
+
+    @property
+    def raw_file_names(self):
+        variant_map = {
+            "raw": "_dmn_correlation_matrix.npz",
+            "z_transformed": "_dmn_correlation_matrix_z_transformed.npz",
+        }
+        variant_key = str(self.file_variant).lower()
+        if variant_key not in variant_map:
+            raise ValueError(
+                "file_variant must be one of: raw, z_transformed"
+            )
+
+        all_npz_files = sorted([f for f in os.listdir(self.raw_dir) if f.endswith('.npz')])
+        suffix = variant_map[variant_key]
+        all_files = [f for f in all_npz_files if f.endswith(suffix)]
+
+        if not os.path.exists(self.filter_csv_path):
+            raise FileNotFoundError(f"Filter CSV not found at {self.filter_csv_path}")
+        filter_df = pd.read_csv(self.filter_csv_path, sep=self.separator)
+        if 'Repseudonym' not in filter_df.columns:
+            raise ValueError(f"Filter CSV must contain 'Repseudonym' column. Found: {filter_df.columns}")
+        allowed_ids = set(filter_df['Repseudonym'].astype(str))
+
+        return [f for f in all_files if f.split('_')[0].replace('sub-', '') in allowed_ids]
