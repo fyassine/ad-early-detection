@@ -13,5 +13,4 @@ __pycache__/
 !.vscode/tasks.json
 !.vscode/git-on-close.sh
 
-DATA/_DELCODE/
-DATA/DELCODE/fmri/*
+**.nii.gz
