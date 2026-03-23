@@ -1,0 +1,17 @@
+Repseudonym,diagnosis,converter_status,sex,age,n_scans
+11a6e3c08,healthy,0,m,86,1
+147dcf43b,mci,0,f,81,1
+1ef92e9c3,healthy,0,m,90,1
+475b9bfe2,converter,1,f,81,2
+4ba64d860,healthy,0,f,72,1
+575de8e29,ad,0,f,79,1
+57df8d6f2,healthy,0,m,80,1
+60a8dd7f5,ad,0,f,81,1
+75d14b5ca,converter,1,f,83,2
+7898c9f2d,converter,1,f,84,3
+81489f2bb,mci,0,f,85,1
+822a3a811,converter,1,m,72,3
+ae818e1d7,converter,1,f,69,6
+d0887896f,converter,1,m,83,3
+e7967bcd4,converter,1,m,82,5
+fd225d1ef,converter,1,f,77,2
