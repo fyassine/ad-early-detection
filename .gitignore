@@ -14,3 +14,4 @@ __pycache__/
 !.vscode/git-on-close.sh
 
 **.nii.gz
+**.pth

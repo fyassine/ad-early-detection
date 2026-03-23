@@ -1,6 +1,6 @@
 # Project Outline
 
-- DATA: stratified version of the dataset.
+- DATA: stratified versions of the dataset.
 - MODEL/model: model definitions.
 - MODEL/notebooks: trained models.
 - MODEL/src: scripts and notebooks for other tasks.
