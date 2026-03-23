@@ -1,4 +1,4 @@
-An alzheimer's demention prediction project.
+An alzheimer's dementia prediction project.
 
 # Outline
 
