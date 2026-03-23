@@ -23,7 +23,11 @@ def train_classifier(model, train_loader, val_loader, optimizer, device,
     
     if use_scheduler:
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode='max', factor=0.5, patience=5, verbose=True, min_lr=1e-6
+            optimizer,
+            mode='max',
+            factor=0.5,
+            patience=5,
+            min_lr=1e-6,
         )
     
     best_val_auc = 0.0

@@ -37,7 +37,17 @@ class ClassificationDataset(InMemoryDataset):
         
         if patient_info_path:
             self.patient_info = pd.read_csv(patient_info_path, sep=self.separator)
-            self.patient_info.set_index("Repseudonym", inplace=True)
+            id_col = None
+            for candidate in ["Repseudonym", "Pseudonym", "ID"]:
+                if candidate in self.patient_info.columns:
+                    id_col = candidate
+                    break
+            if id_col is None:
+                raise ValueError(
+                    "Patient info CSV must contain one of: Repseudonym, Pseudonym, ID. "
+                    f"Found: {list(self.patient_info.columns)}"
+                )
+            self.patient_info.set_index(id_col, inplace=True)
         
         if converter_list_path and os.path.exists(converter_list_path):
             converter_df = pd.read_csv(converter_list_path)
