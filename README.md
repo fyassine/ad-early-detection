@@ -1,4 +1,6 @@
-# Project Outline
+A alzheimer's demention prediction project.
+
+# Outline
 
 - DATA: stratified versions of the dataset.
 - MODEL/model: model definitions.
