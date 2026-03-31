@@ -1,0 +1,92 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\title{DMN Selection and Parcellation Method\\Schaefer-2018 (200 Parcels, 7 Yeo Networks)}
+\author{Project Notes}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Objective}
+This note describes the method used to select and parcellate the Default Mode Network (DMN) for DELCODE fMRI correlation modeling. The focus is on the atlas hyperparameters and the resulting DMN dimensionality.
+
+\section*{Atlas Configuration}
+The pipeline uses the Schaefer et al. 2018 functional atlas through \texttt{nilearn.datasets.fetch\_atlas\_schaefer\_2018} with:
+\begin{itemize}
+\item \texttt{n\_rois = 200}
+\item \texttt{yeo\_networks = 7}
+\item \texttt{resolution\_mm = 2}
+\end{itemize}
+
+This configuration defines a whole-brain functional parcellation of 200 cortical parcels aligned to the 7-network Yeo taxonomy.
+
+\section*{Why This Configuration}
+\begin{itemize}
+\item \textbf{Number of parcels (200):} a mid-resolution setting that preserves regional specificity while avoiding the higher variance and heavier computational cost of very high-resolution parcellations.
+\item \textbf{Yeo networks (7):} a coarse but widely used network organization; it provides stable large-scale systems and a consistent DMN definition.
+\item \textbf{Voxel resolution (2 mm):} standard functional imaging grid that balances anatomical detail and compute/memory efficiency.
+\end{itemize}
+
+\section*{DMN ROI Extraction Rule}
+After loading atlas labels, the background label is removed before indexing features. DMN parcels are then selected using a name-based rule:
+\begin{equation}
+\mathcal{D} = \{j \mid \texttt{"Default"} \in \texttt{label}_j\}.
+\end{equation}
+
+In this project configuration:
+\begin{itemize}
+\item Raw labels returned by the atlas: 201 (including background)
+\item Effective ROI labels after background removal: 200
+\item DMN parcels selected by the rule above: 46
+\end{itemize}
+
+Hence, each scan yields a DMN time-series matrix of shape
+\begin{equation}
+\mathbf{X}_{\text{DMN}} \in \mathbb{R}^{T \times 46},
+\end{equation}
+where $T$ is the number of fMRI time points.
+
+\section*{Connectivity Construction}
+For each scan, the pipeline computes Pearson connectivity among the 46 DMN parcels:
+\begin{equation}
+\mathbf{R} = \mathrm{corr}(\mathbf{X}_{\text{DMN}}), \quad \mathbf{R} \in \mathbb{R}^{46 \times 46}.
+\end{equation}
+
+A Fisher $z$ transform is also stored:
+\begin{equation}
+\mathbf{Z}_{ij} = \operatorname{arctanh}(\operatorname{clip}(\mathbf{R}_{ij}, -0.999999, 0.999999)),
+\end{equation}
+with diagonal reset to zero and non-finite values replaced by zero.
+
+\section*{Key Metrics Summary}
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+Metric & Value \\
+\midrule
+Atlas family & Schaefer-2018 \\
+Total cortical parcels & 200 \\
+Yeo network granularity & 7 networks \\
+Spatial resolution & 2 mm \\
+Background handling & removed before feature indexing \\
+DMN selection criterion & label contains \texttt{"Default"} \\
+DMN parcel count & 46 \\
+Connectivity matrix size & $46 \times 46$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{Practical Interpretation}
+This setup operationalizes DMN analysis as a network-restricted representation with 46 nodes. Compared with whole-brain modeling, it reduces dimensionality while preserving intra-DMN topology, making downstream graph learning less noisy and more focused on DMN-specific alterations.
+
+\section*{Implementation Location}
+The exact configuration and extraction logic are implemented in:
+\begin{itemize}
+\item \texttt{DATA/DELCODE/\_\_v4\_\_/dmn\_only\_schaefer/\_artifacts/process\_dmn\_correlations.py}
+\end{itemize}
+
+\end{document}

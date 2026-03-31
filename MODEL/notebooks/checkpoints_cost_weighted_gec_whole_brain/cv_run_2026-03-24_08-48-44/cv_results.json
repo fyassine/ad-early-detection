@@ -1,0 +1,115 @@
+{
+  "run_name": "cv_run_2026-03-24_08-48-44",
+  "wandb_run_name": "cv_run",
+  "timestamp": "2026-03-24_08-48-44",
+  "n_folds": 5,
+  "cv_results": {
+    "fold": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "val_auc": [
+      0.7002314814814815,
+      0.7783564814814814,
+      0.7724070450097847,
+      0.7174168297455968,
+      0.671031746031746
+    ],
+    "val_sensitivity": [
+      0.9166666666666666,
+      0.5555555555555556,
+      0.6857142857142857,
+      0.5714285714285714,
+      0.6
+    ],
+    "val_specificity": [
+      0.4861111111111111,
+      0.8611111111111112,
+      0.7671232876712328,
+      0.7671232876712328,
+      0.7222222222222222
+    ],
+    "val_f1": [
+      0.6226415094339622,
+      0.6060606060606061,
+      0.631578947368421,
+      0.5555555555555556,
+      0.5526315789473685
+    ],
+    "best_threshold": [
+      1.7778182836991618e-06,
+      0.9957864880561829,
+      0.014354027807712555,
+      0.008177592419087887,
+      0.4030766785144806
+    ],
+    "best_epoch": [
+      25,
+      25,
+      25,
+      25,
+      25
+    ],
+    "pos_weight": [
+      2.0567376613616943,
+      2.0567376613616943,
+      2.0352113246917725,
+      2.0352113246917725,
+      2.0422534942626953
+    ],
+    "class_cost_weights": [
+      [
+        0.6542923450469971,
+        1.345707654953003
+      ],
+      [
+        0.6542923450469971,
+        1.345707654953003
+      ],
+      [
+        0.6589326858520508,
+        1.3410673141479492
+      ],
+      [
+        0.6589326858520508,
+        1.3410673141479492
+      ],
+      [
+        0.6574074029922485,
+        1.3425925970077515
+      ]
+    ]
+  },
+  "cv_summary": {
+    "auc_mean": 0.727888716750018,
+    "auc_std": 0.04156001690910549,
+    "sensitivity_mean": 0.665873015873016,
+    "specificity_mean": 0.7207382039573821,
+    "f1_mean": 0.5936936394731827
+  },
+  "best_fold": 2,
+  "best_threshold": 0.9957864880561829,
+  "config": {
+    "in_features": 200,
+    "hidden_dim": 200,
+    "latent_dim": 64,
+    "cond_dim": 2,
+    "num_heads": 2,
+    "dropout": 0.3,
+    "classifier_hidden": 32,
+    "batch_size": 16,
+    "learning_rate": 0.001,
+    "epochs": 25,
+    "knn_k": 8,
+    "file_variant": "z_transformed",
+    "freeze_encoder": false,
+    "gaae_checkpoint": "/mnt/e/fyassine/ad-early-detection/MODEL/notebooks/checkpoints_gaae_whole_brain/worldly-plasma-2_2026-03-24_01-00-18/model_worldly-plasma-2_2026-03-24_01-00-18.pth",
+    "wb_root": "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__v3__/matrices",
+    "use_scheduler": true,
+    "use_class_cost_weights": true,
+    "normalize_class_cost_weights": true
+  }
+}
