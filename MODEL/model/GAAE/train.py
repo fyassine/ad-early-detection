@@ -1,4 +1,5 @@
 import logging
+import copy
 import torch
 import wandb
 from tqdm.notebook import tqdm
@@ -24,8 +25,8 @@ def train_model_with_val_notebook_train_loss(model, train_loader, val_loader, op
     })
 
     model.train()
-    best_loss = float("inf")
-    best_model = model.state_dict()
+    best_val_loss = float("inf")
+    best_model = copy.deepcopy(model.state_dict())
     epochs_no_improve = 0
     history = {'train_loss': [], 'val_loss': []}
 
@@ -132,11 +133,11 @@ def train_model_with_val_notebook_train_loss(model, train_loader, val_loader, op
         history['train_loss'].append(avg_train_loss)
         history['val_loss'].append(avg_val_loss)
 
-        if avg_train_loss < best_loss:
-            best_loss = avg_train_loss
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
             epochs_no_improve = 0
-            best_model = model.state_dict()
-            logging.info(f"New best model saved with training loss: {best_loss:.6f}")
+            best_model = copy.deepcopy(model.state_dict())
+            logging.info(f"New best model saved with validation loss: {best_val_loss:.6f}")
         else:
             epochs_no_improve += 1
 

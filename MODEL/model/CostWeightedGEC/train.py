@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+import copy
 import wandb
 from tqdm.notebook import tqdm
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, confusion_matrix, classification_report
@@ -57,7 +58,7 @@ def train_classifier(model, train_loader, val_loader, optimizer, device,
         )
     
     best_val_auc = 0.0
-    best_model_state = model.state_dict()
+    best_model_state = copy.deepcopy(model.state_dict())
     epochs_no_improve = 0
     history = {
         'train_loss': [], 'val_loss': [],
@@ -171,7 +172,7 @@ def train_classifier(model, train_loader, val_loader, optimizer, device,
 
         if val_auc > best_val_auc:
             best_val_auc = val_auc
-            best_model_state = model.state_dict()
+            best_model_state = copy.deepcopy(model.state_dict())
             epochs_no_improve = 0
             if model_save_path is not None:
                 torch.save({

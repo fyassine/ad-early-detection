@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="fMRI Data Dashboard — Visualize neuroimaging metadata, patient demographics, and scan coverage.">
+    <title>fMRI Data Dashboard</title>
+    <link rel="stylesheet" href="/static/index.css">
+    <script src="/static/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app">
+    <!-- Loading -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">Discovering data…</div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-inner">
+            <div class="header-brand">
+                <div class="logo">🧠</div>
+                <h1>fMRI Data Dashboard</h1>
+            </div>
+            <div class="header-status">
+                <span class="status-dot"></span>
+                <span id="statusText">Initializing…</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <main class="main">
+        <!-- Config -->
+        <section class="config-panel">
+            <div class="config-wizard">
+                <!-- Step 1 -->
+                <div class="wizard-step">
+                    <div class="step-badge">1</div>
+                    <div class="step-content">
+                        <label for="csvSelect">Select Cohort (Metadata CSV)</label>
+                        <select id="csvSelect" class="config-input"><option value="">— Select a CSV —</option></select>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="wizard-step">
+                    <div class="step-badge">2</div>
+                    <div class="step-content">
+                        <label for="folderSearch">Select Data Modalities (Scan Folders)</label>
+                        <div class="multi-select" id="folderMultiSelect">
+                            <input type="text" id="folderSearch" class="config-input" placeholder="Search and add folders…" autocomplete="off">
+                            <div class="dropdown-list" id="folderDropdown"></div>
+                        </div>
+                        <div class="token-container" id="selectedFoldersContainer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-bottom">
+                <button class="btn-analyze" id="btnAnalyze" disabled>Analyze Data</button>
+                <div class="format-badge" id="formatBadge"></div>
+            </div>
+
+            <!-- Saved Workspaces -->
+            <div class="saved-workspaces" id="recentSearches" style="display:none">
+                <h3>Saved Workspaces</h3>
+                <div class="recent-list" id="recentList"></div>
+            </div>
+        </section>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState">
+            <div class="empty-icon">📊</div>
+            <h3>Select data to begin</h3>
+            <p>Choose a metadata CSV and scan folders, then click Analyze.</p>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="dashboard-results" id="dashboardResults">
+            
+            <!-- Global Cohort Dropdown -->
+            <div class="dashboard-controls" id="dashboardControls" style="display:none; justify-content: flex-end; margin-bottom: 1.5rem;">
+                <div style="display:inline-flex; align-items:center; gap: 0.5rem; background: var(--bg-card); padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--border); box-shadow: var(--shadow);">
+                    <span style="font-size: 0.7rem; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Cohort Filter:</span>
+                    <select id="globalCohortSelect" style="background: transparent; border: none; color: var(--accent); outline: none; font-weight: 600; font-size: 0.85rem; cursor: pointer; -webkit-appearance: none; padding-right: 15px;">
+                        <option value="">— All Patients —</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <section class="summary-cards" id="summaryCards"></section>
+
+            <!-- § Demographics -->
+            <section class="dash-section" id="sectionDemo">
+                <div class="section-header">
+                    <span class="section-icon">👤</span><h2>Demographics</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="charts-row cols-2" id="demoCharts"></div>
+            </section>
+
+            <!-- § Diagnosis -->
+            <section class="dash-section" id="sectionDiag">
+                <div class="section-header">
+                    <span class="section-icon">🏥</span><h2>Diagnosis</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="charts-row cols-1" id="diagCharts"></div>
+            </section>
+
+            <!-- § Scans -->
+            <section class="dash-section" id="sectionScans">
+                <div class="section-header">
+                    <span class="section-icon">🧲</span><h2>Scans &amp; Visits</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="charts-row cols-2" id="scanCharts"></div>
+            </section>
+
+            <!-- § Clinical & Biomarkers -->
+            <section class="dash-section" id="sectionClinical">
+                <div class="section-header">
+                    <span class="section-icon">🧬</span><h2>Clinical & Biomarkers</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="charts-row cols-3" id="clinicalCharts"></div>
+            </section>
+
+            <!-- § Patient Directory -->
+            <section class="dash-section">
+                <div class="section-header">
+                    <span class="section-icon">📋</span><h2>Patient Directory</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="table-section" id="tableSection">
+                    <div class="table-header">
+                        <span style="font-size:.75rem;color:var(--text-2)" id="tableCount"></span>
+                        <input type="text" class="search-input" id="tableSearch" placeholder="Search patients…">
+                    </div>
+                    <div class="data-table-wrap">
+                        <table class="data-table" id="patientTable">
+                            <thead id="tableHead"></thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Patient Modal -->
+    <div class="modal-backdrop" id="modalBackdrop">
+        <div class="patient-modal" id="patientModal">
+            <div class="modal-header">
+                <div>
+                    <h2 id="modalTitle">Patient</h2>
+                    <div class="subhead" id="modalSubhead"></div>
+                </div>
+                <button class="btn-close" id="btnCloseModal">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>

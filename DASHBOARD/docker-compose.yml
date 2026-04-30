@@ -1,0 +1,11 @@
+services:
+  dashboard:
+    build: .
+    container_name: fmri-dashboard
+    ports:
+      - "8050:8050"
+    volumes:
+      - ../DATA:/data:ro
+    environment:
+      - DATA_ROOT=/data
+    restart: unless-stopped
