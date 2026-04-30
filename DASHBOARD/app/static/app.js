@@ -5,21 +5,21 @@
 
 // ── Diagnosis semantic colors (consistent everywhere) ──
 const DIAG_COLORS = {
-    healthy:   '#34d399',
-    scd:       '#38bdf8',
-    mci:       '#a78bfa',
-    converter: '#fbbf24',
-    ad:        '#fb7185',
-    relative:  '#94a3b8',
+    healthy:   '#4f98a3',
+    scd:       '#6daa45',
+    mci:       '#e8af34',
+    converter: '#e08040',
+    ad:        '#d163a7',
+    relative:  '#7a7976',
 };
 function diagColor(label) {
-    return DIAG_COLORS[String(label).toLowerCase()] || '#818cf8';
+    return DIAG_COLORS[String(label).toLowerCase()] || '#4f98a3';
 }
 
 const C = {
-    indigo:'#818cf8', violet:'#a78bfa', sky:'#38bdf8',
-    green:'#34d399', amber:'#fbbf24', rose:'#fb7185',
-    cyan:'#22d3ee', orange:'#fb923c',
+    indigo:'#4f98a3', violet:'#6daa45', sky:'#e8af34',
+    green:'#6daa45', amber:'#e8af34', rose:'#d163a7',
+    cyan:'#4f98a3', orange:'#e08040',
 };
 const BAR_COLORS = [C.indigo,C.violet,C.sky,C.green,C.amber,C.rose,C.cyan,C.orange];
 
@@ -62,8 +62,8 @@ async function init() {
         $('statusText').textContent = 'Error: Chart.js failed to load — reload page';
         hideLoading(); return;
     }
-    Chart.defaults.color = '#64748b';
-    Chart.defaults.borderColor = 'rgba(255,255,255,0.04)';
+    Chart.defaults.color = '#7a7976';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.08)';
     Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
     Chart.defaults.font.size = 11;
 
@@ -339,24 +339,42 @@ function render(scan, global, filtered) {
 // ── Summary Cards ──
 function renderSummary(scan, meta) {
     const cards = [];
-    if (meta) cards.push({icon:'👥', value:meta.unique_subjects||'—', label:'Subjects (CSV)'});
+    if (meta) {
+        const rows = meta.total_rows ? `${meta.total_rows} rows` : null;
+        cards.push({icon:'👥', value:meta.unique_subjects||'—', label:'Subjects (CSV)', sub: rows});
+    }
     if (scan) {
         cards.push({icon:'🧲', value:scan.total_scans, label:'Files on Disk'});
         cards.push({icon:'📁', value:scan.total_subjects, label:'Subjects w/ Scans'});
+        const visitCount = scan.visit_distribution
+            ? Object.values(scan.visit_distribution).reduce((a,b)=>a+b,0)
+            : null;
+        if (visitCount !== null) cards.push({icon:'🗓️', value:visitCount, label:'Visits on Disk'});
         if (scan.longitudinal_subjects>0) cards.push({icon:'🔄', value:scan.longitudinal_subjects, label:'Longitudinal'});
-        if (scan.format_info?.description) cards.push({icon:'📦', value:scan.format_info.description.split('·')[0].trim(), label:'Format'});
+        if (scan.format_info?.description) {
+            const formatLabel = scan.format_info.description.split('·')[0].trim();
+            const formatSub = scan.format_info.parcellation || scan.format_info.type || null;
+            cards.push({icon:'📦', value:formatLabel, label:'Format', sub: formatSub, kind:'text'});
+        }
     }
     if (meta?.scan_coverage) {
         const c=meta.scan_coverage, pct=c.metadata_subjects>0?Math.round(c.matched/c.metadata_subjects*100):0;
         cards.push({icon:'🎯', value:`${pct}%`, label:'Scan Coverage'});
     }
     if (meta?.age_stats) cards.push({icon:'📅', value:`${meta.age_stats.mean}±${meta.age_stats.std}`, label:'Age (mean±SD)'});
-    $summaryCards.innerHTML = cards.map(c=>`
+    $summaryCards.innerHTML = cards.map(c=>{
+        const valueClass = c.kind === 'text' ? 'card-value is-text' : 'card-value';
+        const sub = c.sub ? `<div class="card-sub">${c.sub}</div>` : '';
+        return `
         <div class="summary-card">
-            <div class="card-icon">${c.icon}</div>
-            <div class="card-value">${c.value}</div>
-            <div class="card-label">${c.label}</div>
-        </div>`).join('');
+            <div class="card-top">
+                <div class="card-icon">${c.icon}</div>
+                <div class="card-label">${c.label}</div>
+            </div>
+            <div class="${valueClass}">${c.value}</div>
+            ${sub}
+        </div>`;
+    }).join('');
 }
 
 // ── Demographics: Sex + Age ──
@@ -647,7 +665,7 @@ function makeCard(cid, id, title) {
 }
 
 function tooltipStyle() {
-    return {backgroundColor:'rgba(15,23,42,0.95)',titleColor:'#f8fafc',bodyColor:'#94a3b8',borderColor:'rgba(255,255,255,0.08)',borderWidth:1,padding:10,cornerRadius:6,titleFont:{weight:600}};
+    return {backgroundColor:'rgba(22,22,20,0.96)',titleColor:'#d4d3d1',bodyColor:'#7a7976',borderColor:'rgba(255,255,255,0.12)',borderWidth:1,padding:10,cornerRadius:6,titleFont:{weight:600}};
 }
 
 // ── Patient Table ──
@@ -749,9 +767,11 @@ window.openPatient=async function(sid){
 
     let toggleHtml = '';
     if (isConverter) {
-        toggleHtml = `<div style="margin-left:auto;display:flex;align-items:center;gap:.5rem;">
-            <label style="font-size:.75rem;color:var(--text-1);cursor:pointer;display:flex;align-items:center;gap:.3rem;">
-                <input type="checkbox" id="adScanToggle" style="accent-color:var(--rose)"> Include AD scans
+        toggleHtml = `<div style="margin-left:auto;display:flex;align-items:center;">
+            <label class="switch">
+                <input type="checkbox" id="adScanToggle" class="switch-input">
+                <span class="switch-track"><span class="switch-thumb"></span></span>
+                <span class="switch-label">Include AD scans</span>
             </label>
         </div>`;
     }

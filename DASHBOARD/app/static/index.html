@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="fMRI Data Dashboard — Visualize neuroimaging metadata, patient demographics, and scan coverage.">
-    <title>fMRI Data Dashboard</title>
+    <meta name="description" content="NeuroTrack — fMRI data dashboard for cohorts, scans, and clinical metadata.">
+    <title>NeuroTrack Dashboard</title>
     <link rel="stylesheet" href="/static/index.css">
     <script src="/static/chart.umd.min.js"></script>
 </head>
@@ -20,8 +20,19 @@
     <header class="header">
         <div class="header-inner">
             <div class="header-brand">
-                <div class="logo">🧠</div>
-                <h1>fMRI Data Dashboard</h1>
+                <div class="logo" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-label="NeuroTrack Logo">
+                        <circle cx="14" cy="14" r="13" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
+                        <path d="M7 14 Q10 8 14 14 Q18 20 21 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+                        <circle cx="14" cy="14" r="2" fill="currentColor"/>
+                        <circle cx="7" cy="14" r="1.5" fill="currentColor" opacity="0.6"/>
+                        <circle cx="21" cy="14" r="1.5" fill="currentColor" opacity="0.6"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>NeuroTrack</h1>
+                    <span>fMRI Data Dashboard</span>
+                </div>
             </div>
             <div class="header-status">
                 <span class="status-dot"></span>
