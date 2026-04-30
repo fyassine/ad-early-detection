@@ -168,7 +168,6 @@ def compute_metadata_metrics(df: pd.DataFrame, scan_subjects: Optional[list[str]
         diag_counts = baseline["diagnosis"].value_counts().to_dict()
         metrics["diagnosis_distribution"] = {str(k): int(v) for k, v in diag_counts.items()}
 
-        # Scans per diagnosis: join baseline diagnosis with scan counts
         if scan_subject_counts and "subject_id" in baseline.columns:
             diag_scans: dict[str, int] = {}
             for _, row in baseline.iterrows():
@@ -176,8 +175,22 @@ def compute_metadata_metrics(df: pd.DataFrame, scan_subjects: Optional[list[str]
                 diag = str(row.get("diagnosis", "unknown"))
                 n_scans = scan_subject_counts.get(sid, 0)
                 diag_scans[diag] = diag_scans.get(diag, 0) + n_scans
-            # Keep same ordering as patient counts
             metrics["diagnosis_scans"] = {k: int(diag_scans.get(k, 0)) for k in metrics["diagnosis_distribution"]}
+
+        if "visit" in df.columns and "subject_id" in baseline.columns:
+            visit_df = df[["subject_id", "visit"]].copy()
+            visit_df["subject_id"] = visit_df["subject_id"].astype(str)
+            visit_df["visit"] = visit_df["visit"].astype(str).str.strip()
+            visit_df = visit_df[~visit_df["visit"].isin(["", ".", "nan", "NaN"])]
+            unique_visits = visit_df.drop_duplicates()
+
+            subj_diag = baseline.set_index("subject_id")["diagnosis"].astype(str).to_dict()
+            diag_visits: dict[str, int] = {}
+            for _, row in unique_visits.iterrows():
+                diag = subj_diag.get(row["subject_id"], "unknown")
+                diag_visits[diag] = diag_visits.get(diag, 0) + 1
+
+            metrics["diagnosis_visits"] = {k: int(diag_visits.get(k, 0)) for k in metrics["diagnosis_distribution"]}
 
     # Sex
     if "sex" in df.columns:

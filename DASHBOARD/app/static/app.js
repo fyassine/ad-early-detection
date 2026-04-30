@@ -378,13 +378,15 @@ function renderDiag(meta, scan) {
 
     const labels = Object.keys(meta.diagnosis_distribution);
     const patVals = labels.map(k=>meta.diagnosis_distribution[k]);
+    const visitVals = meta.diagnosis_visits ? labels.map(k=>meta.diagnosis_visits[k]||0) : null;
     const scanVals = meta.diagnosis_scans ? labels.map(k=>meta.diagnosis_scans[k]||0) : null;
     const bgColors = labels.map(l=>diagColor(l));
     const bgColorsDim = labels.map(l=>diagColor(l)+'55');
+    const bgColorsMid = labels.map(l=>diagColor(l)+'99');
 
     const card = document.createElement('div');
     card.className = 'chart-card';
-    card.innerHTML = `<h3>Diagnosis — Patients${scanVals?' &amp; Scans':''} <span style="font-size:.65rem;color:var(--text-3);font-weight:400">(click to filter)</span></h3><div class="chart-container"><canvas id="chart-diag"></canvas></div>`;
+    card.innerHTML = `<h3>Diagnosis — Patients${visitVals?' &amp; Visits':''}${scanVals?' &amp; Scans':''} <span style="font-size:.65rem;color:var(--text-3);font-weight:400">(click to filter)</span></h3><div class="chart-container"><canvas id="chart-diag"></canvas></div>`;
     cont.appendChild(card);
 
     const datasets = [{
@@ -394,12 +396,19 @@ function renderDiag(meta, scan) {
         borderWidth: 0, borderRadius: 4, barThickness: 24,
         grouped: false, // Bullet chart effect (overlap)
     }];
+    if (visitVals) datasets.push({
+        label: 'Visits',
+        data: visitVals,
+        backgroundColor: bgColorsMid,
+        borderWidth: 0, borderRadius: 4, barThickness: 14,
+        grouped: false,
+    });
     if (scanVals) datasets.push({
         label: 'Scans',
         data: scanVals,
         backgroundColor: bgColors,
         borderWidth: 0, borderRadius: 4, barThickness: 8,
-        grouped: false, // Bullet chart effect (overlap)
+        grouped: false,
     });
 
     const ctx = document.getElementById('chart-diag').getContext('2d');
@@ -411,7 +420,7 @@ function renderDiag(meta, scan) {
             responsive: true, maintainAspectRatio: false,
             layout: { padding: { right: 120 } }, // Make room for custom text
             plugins: {
-                legend: { display: !!scanVals, position: 'top', labels: { usePointStyle:true, boxWidth:10, padding:14 } },
+                legend: { display: !!scanVals || !!visitVals, position: 'top', labels: { usePointStyle:true, boxWidth:10, padding:14 } },
                 tooltip: tooltipStyle(),
             },
             scales: {
@@ -435,13 +444,19 @@ function renderDiag(meta, scan) {
             afterDatasetsDraw(chart) {
                 const ctx2 = chart.ctx;
                 const total = patVals.reduce((a,b)=>a+b,0);
+                const idxVisits = visitVals ? 1 : null;
+                const idxScans = scanVals ? (visitVals ? 2 : 1) : null;
                 chart.data.datasets[0].data.forEach((v,i) => {
                     const m = chart.getDatasetMeta(0).data[i];
                     if (!m) return;
                     const pct = total>0?Math.round(v/total*100):0;
-                    
-                    const mScan = scanVals ? chart.getDatasetMeta(1).data[i] : null;
-                    const max_x = mScan && mScan.x > m.x ? mScan.x : m.x;
+                    const mVisit = idxVisits !== null ? chart.getDatasetMeta(idxVisits).data[i] : null;
+                    const mScan = idxScans !== null ? chart.getDatasetMeta(idxScans).data[i] : null;
+                    const max_x = Math.max(
+                        m.x,
+                        mVisit ? mVisit.x : 0,
+                        mScan ? mScan.x : 0
+                    );
                     
                     ctx2.save();
                     ctx2.textBaseline='middle';
@@ -449,17 +464,27 @@ function renderDiag(meta, scan) {
                     
                     let curX = max_x + 8;
                     
-                    // Draw Patients text
                     ctx2.fillStyle='#94a3b8'; 
                     const tPat = `${v} pat. (${pct}%)`;
                     ctx2.fillText(tPat, curX, m.y);
                     curX += ctx2.measureText(tPat).width;
                     
-                    // Draw Scans text
+                    if (visitVals) {
+                        ctx2.fillStyle='#64748b';
+                        const sep = `  ·  `;
+                        ctx2.fillText(sep, curX, m.y);
+                        curX += ctx2.measureText(sep).width;
+                        ctx2.fillStyle=bgColorsMid[i];
+                        const tVis = `${visitVals[i]} visits`;
+                        ctx2.fillText(tVis, curX, m.y);
+                        curX += ctx2.measureText(tVis).width;
+                    }
+
                     if (scanVals) {
                         ctx2.fillStyle='#64748b';
-                        ctx2.fillText(`  ·  `, curX, m.y);
-                        curX += ctx2.measureText(`  ·  `).width;
+                        const sep = `  ·  `;
+                        ctx2.fillText(sep, curX, m.y);
+                        curX += ctx2.measureText(sep).width;
                         
                         ctx2.fillStyle=bgColors[i];
                         ctx2.fillText(`${scanVals[i]} scans`, curX, m.y);
@@ -520,12 +545,26 @@ function renderDiagHighlight() {
     if (!chart || !globalMeta?.diagnosis_distribution) return;
     const labels = chart.data.labels;
     const baseColors = labels.map(l=>diagColor(l));
-    if (!activeFilter) {
-        chart.data.datasets[0].backgroundColor = baseColors;
-    } else {
-        chart.data.datasets[0].backgroundColor = labels.map((l,i)=>
-            l===activeFilter.value ? baseColors[i] : baseColors[i]+'44');
-    }
+    const patColors = labels.map((l,i)=>{
+        const c = baseColors[i];
+        if (!activeFilter) return c+'55';
+        return l===activeFilter.value ? c+'55' : c+'22';
+    });
+    const visitColors = labels.map((l,i)=>{
+        const c = baseColors[i];
+        if (!activeFilter) return c+'99';
+        return l===activeFilter.value ? c+'99' : c+'22';
+    });
+    const scanColors = labels.map((l,i)=>{
+        const c = baseColors[i];
+        if (!activeFilter) return c;
+        return l===activeFilter.value ? c : c+'44';
+    });
+    chart.data.datasets.forEach(ds => {
+        if (ds.label === 'Patients') ds.backgroundColor = patColors;
+        if (ds.label === 'Visits') ds.backgroundColor = visitColors;
+        if (ds.label === 'Scans') ds.backgroundColor = scanColors;
+    });
     chart.update('none');
 }
 

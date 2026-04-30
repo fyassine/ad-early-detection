@@ -162,7 +162,7 @@ def scan_selected_folders(data_root: str, folder_paths: list[str]) -> dict:
     """
     all_files = []
     subject_scan_counts: dict[str, int] = {}
-    subject_visits: dict[str, list[str]] = {}
+    subject_visits: dict[str, set[str]] = {}
     detected_types = set()
     format_info = None
 
@@ -198,8 +198,7 @@ def scan_selected_folders(data_root: str, folder_paths: list[str]) -> dict:
                 })
 
                 if subj:
-                    subject_scan_counts[subj] = subject_scan_counts.get(subj, 0) + 1
-                    subject_visits.setdefault(subj, []).append(visit)
+                    subject_visits.setdefault(subj, set()).add(visit)
 
                 # Sample format info from first file
                 if format_info is None:
@@ -214,9 +213,10 @@ def scan_selected_folders(data_root: str, folder_paths: list[str]) -> dict:
     else:
         file_type = "none"
 
-    # Subjects with multiple visits (longitudinal)
+    subject_scan_counts = {k: len(v) for k, v in subject_visits.items()}
+
     multi_visit_subjects = {
-        k: sorted(set(v)) for k, v in subject_visits.items() if len(set(v)) > 1
+        k: sorted(v) for k, v in subject_visits.items() if len(v) > 1
     }
 
     return {
@@ -232,10 +232,17 @@ def scan_selected_folders(data_root: str, folder_paths: list[str]) -> dict:
 
 
 def _visit_distribution(files: list[dict]) -> dict[str, int]:
-    """Count files per visit."""
     dist: dict[str, int] = {}
+    seen: set[tuple[str, str]] = set()
     for f in files:
+        subj = f.get("subject")
+        if not subj:
+            continue
         v = f.get("visit", "unknown")
+        key = (str(subj), str(v))
+        if key in seen:
+            continue
+        seen.add(key)
         dist[v] = dist.get(v, 0) + 1
     return dict(sorted(dist.items()))
 
