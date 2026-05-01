@@ -9,20 +9,21 @@ Includes patient longitudinal trajectory endpoint for fMRI biomarkers.
 import json
 import math
 import os
+import asyncio
 from pathlib import Path
 from threading import Thread
 
 import numpy as np
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from .scanner import discover_csvs, discover_scan_folders, scan_selected_folders
 from .metadata_parser import load_metadata, compute_metadata_metrics, get_patient_clinical_trajectory
 from .biomarkers import (
     find_subject_nifti_files,
     find_subject_npz_files,
-    get_subject_trajectory,
+    get_subject_trajectory_stream,
     index_nifti_by_subject,
     index_npz_by_subject,
     load_correlation_matrix,
@@ -142,16 +143,31 @@ async def api_metadata(
 @app.get("/api/patient/{subject_id}/trajectory")
 async def api_patient_trajectory(
     subject_id: str,
+    request: Request,
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
+    prioritize_visit: str | None = Query(default=None, description="Optional visit code to process first"),
 ):
     """
     Get longitudinal fMRI biomarker trajectory for a specific patient.
     Finds all their .npz files across visits, computes Global FC, DMN FC,
     Modularity per session, returns time-ordered metrics.
+    Streams progress line-by-line as NDJSON.
     """
     folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
-    result = get_subject_trajectory(DATA_ROOT, folder_list, subject_id)
-    return JSONResponse(result)
+
+    async def generate():
+        for chunk in get_subject_trajectory_stream(
+            DATA_ROOT,
+            folder_list,
+            subject_id,
+            prioritize_visit=prioritize_visit,
+        ):
+            if await request.is_disconnected():
+                break
+            yield json.dumps(chunk) + "\n"
+            await asyncio.sleep(0)
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
 
 
 @app.get("/api/patient/{subject_id}/clinical")

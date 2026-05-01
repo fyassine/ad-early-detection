@@ -315,11 +315,12 @@ def load_correlation_matrix(npz_path: str) -> np.ndarray:
     return arr
 
 
-def get_subject_trajectory(
+def get_subject_trajectory_stream(
     data_root: str,
     folder_paths: list[str],
     subject_id: str,
-) -> dict:
+    prioritize_visit: str | None = None,
+):
     """
     For a given subject, find all their .npz correlation matrix files
     across the selected scan folders, compute biomarkers per session,
@@ -330,29 +331,33 @@ def get_subject_trajectory(
     is fully deterministic, so caching is safe for the lifetime of the
     process.
 
-    Parameters
-    ----------
-    data_root : str
-        Root data directory.
-    folder_paths : list[str]
-        Relative paths to scan folders.
-    subject_id : str
-        Subject pseudonym (hex string without 'sub-' prefix).
-
-    Returns
-    -------
-    dict with:
-      - subject_id
-      - sessions: list of dicts, each with visit, file, and biomarker values
+    Yields JSON-serializable dictionaries for streaming progress.
     """
     cache_key = (*_index_key(data_root, folder_paths), subject_id)
     with _INDEX_LOCK:
         cached = _TRAJECTORY_CACHE.get(cache_key)
     if cached is not None:
-        return cached
+        yield {"type": "complete", "data": cached}
+        return
 
     sessions = []
-    for rec in find_subject_npz_files(data_root, folder_paths, subject_id):
+    files_to_process = find_subject_npz_files(data_root, folder_paths, subject_id)
+    if prioritize_visit:
+        preferred = prioritize_visit.strip().upper()
+        if preferred:
+            files_to_process = sorted(
+                files_to_process,
+                key=lambda rec: (
+                    str(rec.get("visit", "")).upper() != preferred,
+                    _vkey(rec),
+                ),
+            )
+    total_files = len(files_to_process)
+
+    for idx, rec in enumerate(files_to_process):
+        visit = rec["visit"]
+        yield {"type": "progress", "visit": visit, "current": idx + 1, "total": total_files}
+
         try:
             matrix = load_correlation_matrix(rec["abs_path"])
             is_dmn = matrix.shape[0] <= 50
@@ -361,7 +366,7 @@ def get_subject_trajectory(
             biomarkers = {"error": str(e)}
 
         sessions.append({
-            "visit": rec["visit"],
+            "visit": visit,
             "file": rec["rel_path"],
             "filename": rec["filename"],
             **biomarkers,
@@ -370,8 +375,9 @@ def get_subject_trajectory(
     result = {
         "subject_id": subject_id,
         "total_sessions": len(sessions),
-        "sessions": sessions,
+        "sessions": sorted(sessions, key=_vkey),
     }
     with _INDEX_LOCK:
         _TRAJECTORY_CACHE[cache_key] = result
-    return result
+    
+    yield {"type": "complete", "data": result}

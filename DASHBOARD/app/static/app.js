@@ -782,6 +782,7 @@ let currentPatient = null;
 // Module-level cache for /api/cohort/stats so opening multiple patients
 // doesn't refit UMAP each time. Keyed by csv+folders.
 const _cohortStatsCache = new Map();
+let _activeTrajectoryController = null;
 
 const TAB_DEFS = [
     { id: 'overview',     label: 'Overview' },
@@ -844,7 +845,7 @@ window.openPatient = async function(sid) {
         sid, diagC, isConverter, includeAD: false,
         traj: null, clinical: null, manifold: null,
         cohortStats: null, allVisits: [], mergedVisits: [],
-        selectedVisit: null,
+        selectedVisit: (patient.visits && patient.visits.length) ? patient.visits[patient.visits.length - 1] : null,
         activeTab: 'overview',
         tabRendered: { overview: false, manifold: false, connectivity: false, qcviewer: false, brainview: false },
         niiVue: null,
@@ -926,6 +927,62 @@ async function _fetchCohortStats(csvPath, folders) {
         _cohortStatsCache.set(key, json);
         return json;
     } catch (e) { console.warn('cohort/stats failed', e); return null; }
+}
+
+function _setPatientLoadingText(text) {
+    const panel = document.querySelector('.tab-panel.active');
+    if (!panel) return;
+    panel.innerHTML = `<div class="loading-text" style="padding:2rem;text-align:center">${text}</div>`;
+}
+
+async function _fetchTrajectoryStream(sid, folders, token, preferredVisit, signal) {
+    if (!folders.length) return { sessions: [] };
+    const query = new URLSearchParams({
+        scan_folders: folders.join(','),
+    });
+    if (preferredVisit) query.set('prioritize_visit', preferredVisit);
+    const resp = await fetch(`/api/patient/${sid}/trajectory?${query.toString()}`, { signal });
+    if (!resp.ok) throw new Error(`trajectory request failed (${resp.status})`);
+
+    let trajectory = null;
+    const processLine = (line) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        const msg = JSON.parse(trimmed);
+        if (!currentPatient || currentPatient._loadToken !== token) return;
+        if (msg.type === 'progress') {
+            const visit = msg.visit || 'unknown';
+            _setPatientLoadingText(`Computing biomarkers for ${visit} (${msg.current}/${msg.total})…`);
+            return;
+        }
+        if (msg.type === 'complete') {
+            trajectory = msg.data || { sessions: [] };
+        }
+    };
+
+    if (!resp.body || !resp.body.getReader) {
+        const text = await resp.text();
+        text.split('\n').forEach(processLine);
+        return trajectory || { sessions: [] };
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let split = buffer.indexOf('\n');
+        while (split >= 0) {
+            processLine(buffer.slice(0, split));
+            buffer = buffer.slice(split + 1);
+            split = buffer.indexOf('\n');
+        }
+    }
+    buffer += decoder.decode();
+    if (buffer.trim()) processLine(buffer);
+    return trajectory || { sessions: [] };
 }
 
 // Build the merged sessions table from whatever data we currently have.
@@ -1015,16 +1072,16 @@ async function loadPatientData() {
     const myToken = ++currentPatient._loadToken || (currentPatient._loadToken = 1);
     const csvPath = $csvSelect.value;
     const folders = _resolveQueryFolders(includeAD);
+    const preferredVisit = currentPatient.selectedVisit;
+    if (_activeTrajectoryController) _activeTrajectoryController.abort();
+    const trajectoryController = new AbortController();
+    _activeTrajectoryController = trajectoryController;
 
-    // Show a loading hint in the active tab while the FAST data lands.
-    const activePanel = document.querySelector('.tab-panel.active');
-    if (activePanel) activePanel.innerHTML =
-        '<div class="loading-text" style="padding:2rem;text-align:center">Loading patient data…</div>';
+    _setPatientLoadingText('Loading patient data…');
 
-    // ── Fast path: trajectory + clinical + scans (~1-2s) ─────────────────
     try {
         const trajP = folders.length
-            ? fetch(`/api/patient/${sid}/trajectory?scan_folders=${encodeURIComponent(folders.join(','))}`).then(r => r.json())
+            ? _fetchTrajectoryStream(sid, folders, myToken, preferredVisit, trajectoryController.signal)
             : Promise.resolve({ sessions: [] });
         const clinP = csvPath
             ? fetch(`/api/patient/${sid}/clinical?csv_path=${encodeURIComponent(csvPath)}`).then(r => r.ok ? r.json() : {})
@@ -1034,6 +1091,7 @@ async function loadPatientData() {
             : Promise.resolve({ scans: [] });
 
         const [traj, clinical, scansResp] = await Promise.all([trajP, clinP, scansP]);
+        if (!traj) return;
         if (!currentPatient || currentPatient._loadToken !== myToken) return;  // user moved on
 
         const adVisits = _applyIncludeADFilter(traj, clinical, null, includeAD);
@@ -1054,15 +1112,17 @@ async function loadPatientData() {
         };
         renderActiveTab();
     } catch (e) {
+        if (e?.name === 'AbortError') return;
         console.error('fast patient load failed', e);
         const ap = document.querySelector('.tab-panel.active');
         if (ap) ap.innerHTML = '<p class="no-trajectory">Error loading patient data</p>';
         return;
+    } finally {
+        if (_activeTrajectoryController === trajectoryController) {
+            _activeTrajectoryController = null;
+        }
     }
 
-    // ── Slow path: cohort stats + manifold (depends on UMAP cache; can take
-    // minutes the first time but is ~30 ms once cached). Fire & forget; the
-    // Overview/Manifold tabs re-render once the data arrives.
     if (!csvPath || !folders.length) return;
     try {
         const [cohortStats, manResp] = await Promise.all([
@@ -1881,9 +1941,9 @@ async function loadQCViewerVolume() {
     }
     status.textContent = `Loading ${visit}…`;
     const folders = _resolveQueryFolders(currentPatient.includeAD);
-    const url = `/api/patient/${currentPatient.sid}/scan?scan_folders=${encodeURIComponent(folders.join(','))}&visit=${encodeURIComponent(visit)}`;
+    const url = `/api/patient/${currentPatient.sid}/scan?scan_folders=${encodeURIComponent(folders.join(','))}&visit=${encodeURIComponent(visit)}&ext=.nii.gz`;
     try {
-        await currentPatient.niiVue.loadVolumes([{ url, name: `${currentPatient.sid}_${visit}` }]);
+        await currentPatient.niiVue.loadVolumes([{ url, name: `${currentPatient.sid}_${visit}.nii.gz` }]);
         status.textContent = `Showing ${visit} · scroll/drag to navigate slices`;
     } catch (e) {
         status.textContent = 'Failed to load volume: ' + (e?.message || e);
