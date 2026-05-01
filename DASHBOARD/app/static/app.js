@@ -139,43 +139,37 @@ function renderDropdown(query = '') {
     const folders = discoveryData.scan_folders;
     $folderDropdown.innerHTML = '';
     let matches = 0;
-    
-    // Determine allowed type if folders are selected
-    let allowedType = null;
-    if (selectedScanFolders.length > 0) {
-        const firstSelected = folders.find(f => f.path === selectedScanFolders[0]);
-        if (firstSelected) allowedType = firstSelected.file_type;
-    }
 
+    // Mixed selection is now allowed: npz folders feed the matrix-based tabs
+    // (Overview / Manifold / Connectivity / Brain View) and nii.gz folders feed
+    // the QC viewer. Both backend walkers filter by extension, so a mixed list
+    // is safe to pass to every endpoint.
     folders.forEach(f => {
         if (selectedScanFolders.includes(f.path)) return; // Hide already selected
         const parts = f.path.replace(/\\/g,'/').split('/');
         const shortPath = parts.slice(-3).join(' / ');
-        
+
         if (query && !f.path.toLowerCase().includes(query)) return;
         matches++;
 
-        const isDisabled = allowedType && f.file_type !== allowedType;
         const bc = f.file_type==='nii.gz'?'badge-nii':f.file_type==='npz'?'badge-npz':'badge-mixed';
-        
+
         const el = document.createElement('div');
-        el.className = `folder-item ${isDisabled ? 'disabled' : ''}`;
-        el.title = isDisabled ? `Requires ${allowedType}` : f.path;
+        el.className = 'folder-item';
+        el.title = f.path;
         el.innerHTML = `
             <span class="folder-path">${shortPath}</span>
             <span class="badge ${bc}">${f.file_type}</span>
             <span style="font-size:.7rem;color:var(--text-2);white-space:nowrap">${f.scan_count} · ${f.subject_count} subj</span>`;
-        
-        if (!isDisabled) {
-            el.addEventListener('click', () => {
-                selectedScanFolders.push(f.path);
-                $folderSearch.value = '';
-                $folderDropdown.classList.remove('open');
-                renderTokens();
-                checkReady();
-                updateFormatBadge();
-            });
-        }
+
+        el.addEventListener('click', () => {
+            selectedScanFolders.push(f.path);
+            $folderSearch.value = '';
+            $folderDropdown.classList.remove('open');
+            renderTokens();
+            checkReady();
+            updateFormatBadge();
+        });
         $folderDropdown.appendChild(el);
     });
 
@@ -192,10 +186,12 @@ function renderTokens() {
         if (!f) return;
         const parts = f.path.replace(/\\/g,'/').split('/');
         const shortPath = parts.slice(-2).join(' / ');
-        
+        const bc = f.file_type==='nii.gz'?'badge-nii':f.file_type==='npz'?'badge-npz':'badge-mixed';
+
         const token = document.createElement('div');
         token.className = 'folder-token';
         token.innerHTML = `
+            <span class="badge ${bc}" style="margin-right:.4rem;font-size:.6rem">${f.file_type}</span>
             <span title="${f.path}">${shortPath}</span>
             <span class="btn-remove" title="Remove">×</span>
         `;
@@ -211,6 +207,20 @@ function renderTokens() {
 
 function updateFormatBadge() {
     if (!selectedScanFolders.length) { $formatBadge.classList.remove('visible'); return; }
+    // Summarise mixed types: how many .npz, how many .nii.gz
+    const types = new Map();
+    selectedScanFolders.forEach(p => {
+        const f = discoveryData.scan_folders.find(x => x.path === p);
+        if (!f) return;
+        types.set(f.file_type, (types.get(f.file_type) || 0) + 1);
+    });
+    if (types.size > 1) {
+        const summary = Array.from(types.entries())
+            .map(([t, n]) => `${n} <code>${t}</code>`).join(' + ');
+        $formatBadge.innerHTML = `📦 ${summary}`;
+        $formatBadge.classList.add('visible');
+        return;
+    }
     const folder = discoveryData.scan_folders.find(f=>f.path===selectedScanFolders[0]);
     if (folder?.format_info) {
         const fi = folder.format_info;
@@ -283,6 +293,11 @@ async function analyze() {
     const csvPath = $csvSelect.value;
     activeFilter = null;
     showLoading('Analyzing…');
+    // Invalidate cross-patient caches: cohort/UMAP, CN reference, atlas
+    // coords are keyed by file content and stay valid; clear the JS-level
+    // ones whose keys aren't watertight.
+    _cohortStatsCache.clear();
+    Object.keys(_cohortRefMatrices).forEach(k => delete _cohortRefMatrices[k]);
     try {
         lastScan = null; globalMeta = null; filteredMeta = null;
         if (selectedScanFolders.length) {
@@ -304,6 +319,15 @@ async function analyze() {
             if (!existing) saveRecent(csvPath, selectedScanFolders);
         }
         render(lastScan, globalMeta, filteredMeta);
+
+        // Pre-warm the cohort/UMAP cache in the background — first fit is
+        // ~5min on the full DELCODE cohort, so kicking it off here means
+        // the cache is usually ready by the time the user opens a patient.
+        if (csvPath && selectedScanFolders.length) {
+            fetch(`/api/cohort/warmup?csv_path=${encodeURIComponent(csvPath)}` +
+                  `&scan_folders=${encodeURIComponent(selectedScanFolders.join(','))}`)
+                .catch(() => {});
+        }
     } catch(e) { console.error(e); alert('Analysis failed'); }
     hideLoading();
 }
@@ -747,36 +771,63 @@ window.sortTable=function(col){
     renderRows(sorted);
 };
 
-// ── Patient Modal ──
-window.openPatient=async function(sid){
-    if(!sid) return;
-    document.querySelectorAll('.data-table tbody tr').forEach(tr=>tr.classList.toggle('selected',tr.dataset.sid===sid));
-    const patient=patientData.find(p=>p.subject_id===sid)||{};
-    $('modalTitle').textContent=`sub-${sid}`;
-    const diagC=diagColor(String(patient.diagnosis||''));
-    $('modalSubhead').innerHTML=patient.diagnosis?`<span style="color:${diagC};font-weight:600">${patient.diagnosis}</span>`:'';
+// ── Patient Modal — tabbed view ──
+//
+// State for the currently-open patient. The modal is laid out as a tab bar
+// (Overview / Manifold / Connectivity / QC Viewer / Brain View) and every
+// tab reads from this single object so that ``selectedVisit`` is consistent
+// across views.
+let currentPatient = null;
 
-    const fields=['sex','age','n_visits','apoe'];
-    const metaHtml=fields.filter(k=>patient[k]!=null).map(k=>
+// Module-level cache for /api/cohort/stats so opening multiple patients
+// doesn't refit UMAP each time. Keyed by csv+folders.
+const _cohortStatsCache = new Map();
+
+const TAB_DEFS = [
+    { id: 'overview',     label: 'Overview' },
+    { id: 'manifold',     label: 'Manifold' },
+    { id: 'connectivity', label: 'Connectivity' },
+    { id: 'qcviewer',     label: 'QC Viewer' },
+    { id: 'brainview',    label: 'Brain View' },
+];
+
+window.openPatient = async function(sid) {
+    if (!sid) return;
+    document.querySelectorAll('.data-table tbody tr').forEach(tr =>
+        tr.classList.toggle('selected', tr.dataset.sid === sid)
+    );
+    const patient = patientData.find(p => p.subject_id === sid) || {};
+    $('modalTitle').textContent = `sub-${sid}`;
+    const diagC = diagColor(String(patient.diagnosis || ''));
+    $('modalSubhead').innerHTML = patient.diagnosis
+        ? `<span style="color:${diagC};font-weight:600">${patient.diagnosis}</span>`
+        : '';
+
+    const fields = ['sex', 'age', 'n_visits', 'apoe'];
+    const metaHtml = fields.filter(k => patient[k] != null).map(k =>
         `<div class="meta-item"><div class="meta-label">${fmtCol(k)}</div><div class="meta-value">${fmtVal(patient[k])}</div></div>`
     ).join('');
 
-    // Visit tags
-    const visitHtml=(patient.visits||[]).map(v=>`<span class="visit-tag">${v}</span>`).join('') || '—';
-    const isConverter = String(patient.diagnosis||'').toLowerCase() === 'converter';
+    const visitHtml = (patient.visits || []).map(v => `<span class="visit-tag">${v}</span>`).join('') || '—';
+    const isConverter = String(patient.diagnosis || '').toLowerCase() === 'converter';
 
-    let toggleHtml = '';
-    if (isConverter) {
-        toggleHtml = `<div style="margin-left:auto;display:flex;align-items:center;">
+    const toggleHtml = isConverter ? `
+        <div style="margin-left:auto;display:flex;align-items:center;">
             <label class="switch">
                 <input type="checkbox" id="adScanToggle" class="switch-input">
                 <span class="switch-track"><span class="switch-thumb"></span></span>
                 <span class="switch-label">Include AD scans</span>
             </label>
-        </div>`;
-    }
+        </div>` : '';
 
-    $('modalBody').innerHTML=`
+    const tabBarHtml = TAB_DEFS.map((t, i) =>
+        `<button class="modal-tab${i === 0 ? ' active' : ''}" data-tab="${t.id}">${t.label}</button>`
+    ).join('');
+    const tabPanelsHtml = TAB_DEFS.map((t, i) =>
+        `<div class="tab-panel${i === 0 ? ' active' : ''}" data-tab="${t.id}" id="tab-${t.id}"></div>`
+    ).join('');
+
+    $('modalBody').innerHTML = `
         <div class="patient-meta-grid">${metaHtml}</div>
         <div style="display:flex;align-items:flex-end;margin-bottom:1rem">
             <div>
@@ -785,106 +836,287 @@ window.openPatient=async function(sid){
             </div>
             ${toggleHtml}
         </div>
-        <div class="trajectory-section">
-            <h3>📈 Longitudinal Trajectories</h3>
-            <div id="trajectoryContent"><div class="loading-text" style="padding:1rem;text-align:center">Loading biomarkers…</div></div>
-        </div>`;
+        <div class="modal-tabs" id="modalTabBar">${tabBarHtml}</div>
+        ${tabPanelsHtml}
+    `;
+
+    currentPatient = {
+        sid, diagC, isConverter, includeAD: false,
+        traj: null, clinical: null, manifold: null,
+        cohortStats: null, allVisits: [], mergedVisits: [],
+        selectedVisit: null,
+        activeTab: 'overview',
+        tabRendered: { overview: false, manifold: false, connectivity: false, qcviewer: false, brainview: false },
+        niiVue: null,
+        scansList: [],
+    };
+    _matrixCache.clear();  // per-visit correlation matrices belong to this patient
 
     $('modalBackdrop').classList.add('open');
 
+    // Tab switching
+    $('modalTabBar').addEventListener('click', e => {
+        const btn = e.target.closest('.modal-tab');
+        if (!btn) return;
+        switchTab(btn.dataset.tab);
+    });
+
     if (isConverter) {
         $('adScanToggle').addEventListener('change', (e) => {
-            loadPatientTrajectory(sid, diagC, e.target.checked);
+            currentPatient.includeAD = e.target.checked;
+            // Re-fetch and re-render every tab from scratch
+            currentPatient.tabRendered = { overview: false, manifold: false, connectivity: false, qcviewer: false, brainview: false };
+            loadPatientData();
         });
     }
 
-    loadPatientTrajectory(sid, diagC, false);
+    loadPatientData();
 };
 
-async function loadPatientTrajectory(sid, diagC, includeAD) {
-    $('trajectoryContent').innerHTML='<div class="loading-text" style="padding:1rem;text-align:center">Loading biomarkers…</div>';
-    try{
-        let traj = { sessions: [] };
-        
-        let foldersToQuery = [...selectedScanFolders];
-        if (includeAD && discoveryData && discoveryData.scan_folders) {
-            // Find AD and Converter folders from the same base dataset.
-            // Converters keep the same patient ID across folders — their post-conversion
-            // scans land in the AD folder (e.g. AD_postprocessed_v0) with the same subject ID,
-            // so we must include both AD and Converter sibling folders in the query.
-            const baseDatasets = new Set(selectedScanFolders.map(f => f.split('/')[0]));
-            const adFolders = discoveryData.scan_folders.filter(f => {
-                if (!baseDatasets.has(f.path.split('/')[0])) return false;
-                // Match any path segment that equals or starts with "ad" or "converter"
-                return f.path.split('/').some(seg => {
-                    const s = seg.toLowerCase();
-                    return s === 'ad' || s.startsWith('ad_') ||
-                           s === 'converter' || s.startsWith('converter_');
-                });
-            }).map(f => f.path);
-            adFolders.forEach(f => {
-                if(!foldersToQuery.includes(f)) foldersToQuery.push(f);
+function switchTab(tabId) {
+    if (!currentPatient) return;
+    document.querySelectorAll('#modalTabBar .modal-tab').forEach(b =>
+        b.classList.toggle('active', b.dataset.tab === tabId));
+    document.querySelectorAll('.tab-panel').forEach(p =>
+        p.classList.toggle('active', p.dataset.tab === tabId));
+    currentPatient.activeTab = tabId;
+    renderActiveTab();
+}
+
+function renderActiveTab() {
+    if (!currentPatient) return;
+    const t = currentPatient.activeTab;
+    if (t === 'overview')     renderOverviewTab();
+    else if (t === 'manifold')     renderManifoldTab();
+    else if (t === 'connectivity') renderConnectivityTab();
+    else if (t === 'qcviewer')     renderQCViewerTab();
+    else if (t === 'brainview')    renderBrainViewTab();
+}
+
+// Compute the folders to query, optionally adding sibling AD/Converter folders
+// for converter patients. Mirrors the original include-AD logic.
+function _resolveQueryFolders(includeAD) {
+    let folders = [...selectedScanFolders];
+    if (includeAD && discoveryData && discoveryData.scan_folders) {
+        const baseDatasets = new Set(selectedScanFolders.map(f => f.split('/')[0]));
+        const sib = discoveryData.scan_folders.filter(f => {
+            if (!baseDatasets.has(f.path.split('/')[0])) return false;
+            return f.path.split('/').some(seg => {
+                const s = seg.toLowerCase();
+                return s === 'ad' || s.startsWith('ad_') ||
+                       s === 'converter' || s.startsWith('converter_');
             });
-        }
-
-        if(foldersToQuery.length){
-            const r1 = await fetch(`/api/patient/${sid}/trajectory?scan_folders=${encodeURIComponent(foldersToQuery.join(','))}`);
-            traj = await r1.json();
-        }
-        
-        let clinical = {};
-        const currentCsv = $csvSelect.value;
-        if(currentCsv){
-            const r2 = await fetch(`/api/patient/${sid}/clinical?csv_path=${encodeURIComponent(currentCsv)}`);
-            if(r2.ok) clinical = await r2.json();
-        }
-
-        let adVisits = new Set();
-        if (clinical && clinical.diagnosis && clinical.visits) {
-            clinical.diagnosis.forEach((diag, i) => {
-                // Only true AD diagnoses drive the filter — converters are in the MCI folder
-                // and must show when the toggle is OFF; the toggle's job is adding the AD folder
-                const isAd = String(diag).toLowerCase() === 'ad' || String(diag) === '5';
-                if (isAd) adVisits.add(clinical.visits[i]);
-            });
-        }
-        clinical.adVisits = Array.from(adVisits);
-
-        if (!includeAD) {
-            if (clinical && clinical.visits) {
-                const allowedIndices = clinical.visits.map((v, i) => adVisits.has(v) ? -1 : i).filter(i => i !== -1);
-                clinical.visits = allowedIndices.map(i => clinical.visits[i]);
-                // Guard required: clinical.diagnosis can be absent if the CSV lacks a diagnosis column
-                if (clinical.diagnosis) {
-                    clinical.diagnosis = allowedIndices.map(i => clinical.diagnosis[i]);
-                }
-                if (clinical.cognitive) {
-                    clinical.cognitive.mmse = allowedIndices.map(i => clinical.cognitive.mmse[i]);
-                    clinical.cognitive.cdr = allowedIndices.map(i => clinical.cognitive.cdr[i]);
-                    clinical.cognitive.pacc5 = allowedIndices.map(i => clinical.cognitive.pacc5[i]);
-                }
-                if (clinical.csf) {
-                    clinical.csf.abeta42 = allowedIndices.map(i => clinical.csf.abeta42[i]);
-                    clinical.csf.tau = allowedIndices.map(i => clinical.csf.tau[i]);
-                    clinical.csf.ptau = allowedIndices.map(i => clinical.csf.ptau[i]);
-                }
-            }
-            if (traj && traj.sessions) {
-                traj.sessions = traj.sessions.filter(s => !adVisits.has(s.visit));
-            }
-        }
-        
-        renderTrajectory(traj, clinical, diagC);
-    }catch(e){
-        console.error(e);
-        $('trajectoryContent').innerHTML='<p class="no-trajectory">Error loading trajectory</p>';
+        }).map(f => f.path);
+        sib.forEach(f => { if (!folders.includes(f)) folders.push(f); });
     }
+    return folders;
+}
+
+async function _fetchCohortStats(csvPath, folders) {
+    const key = JSON.stringify([csvPath, [...folders].sort()]);
+    if (_cohortStatsCache.has(key)) return _cohortStatsCache.get(key);
+    if (!csvPath || !folders.length) return null;
+    try {
+        const r = await fetch(
+            `/api/cohort/stats?csv_path=${encodeURIComponent(csvPath)}` +
+            `&scan_folders=${encodeURIComponent(folders.join(','))}`
+        );
+        if (!r.ok) return null;
+        const json = await r.json();
+        _cohortStatsCache.set(key, json);
+        return json;
+    } catch (e) { console.warn('cohort/stats failed', e); return null; }
+}
+
+// Build the merged sessions table from whatever data we currently have.
+// Re-callable: harmless to invoke before manifold data arrives — that just
+// means manifold_x / conversion_score columns will be undefined for now.
+function _rebuildMergedVisits() {
+    if (!currentPatient) return;
+    const { traj, clinical, manifold } = currentPatient;
+    const visitNum = v => { const m = String(v).match(/M(\d+)/i); return m ? parseInt(m[1]) : 999; };
+    const allVisitSet = new Set();
+    (traj?.sessions || []).forEach(s => allVisitSet.add(s.visit));
+    (clinical?.visits || []).forEach(v => allVisitSet.add(v));
+    const allVisits = Array.from(allVisitSet).sort((a, b) => visitNum(a) - visitNum(b));
+
+    const mergedMap = new Map();
+    (traj?.sessions || []).forEach(s => mergedMap.set(s.visit, { ...s }));
+    if (clinical && clinical.visits) {
+        clinical.visits.forEach((v, i) => {
+            if (!mergedMap.has(v)) mergedMap.set(v, { visit: v });
+            const s = mergedMap.get(v);
+            s.mmse    = clinical.cognitive?.mmse?.[i];
+            s.cdr     = clinical.cognitive?.cdr?.[i];
+            s.pacc5   = clinical.cognitive?.pacc5?.[i];
+            s.abeta42 = clinical.csf?.abeta42?.[i];
+            s.tau     = clinical.csf?.tau?.[i];
+            s.ptau    = clinical.csf?.ptau?.[i];
+        });
+    }
+    if (manifold?.trajectory) {
+        manifold.trajectory.forEach(t => {
+            const s = mergedMap.get(t.visit) || { visit: t.visit };
+            s.manifold_x = t.x;
+            s.manifold_y = t.y;
+            s.conversion_score = t.conversion_score;
+            mergedMap.set(t.visit, s);
+        });
+    }
+    currentPatient.allVisits = allVisits;
+    currentPatient.mergedVisits = Array.from(mergedMap.values())
+        .sort((a, b) => visitNum(a.visit) - visitNum(b.visit));
+}
+
+// Compute the Set of AD-folder visits from clinical.diagnosis. Stable across
+// fast/slow loads — saved on currentPatient so the slow-path can reuse it.
+function _computeAdVisits(clinical) {
+    const set = new Set();
+    if (clinical?.diagnosis && clinical?.visits) {
+        clinical.diagnosis.forEach((diag, i) => {
+            const isAd = String(diag).toLowerCase() === 'ad' || String(diag) === '5';
+            if (isAd) set.add(clinical.visits[i]);
+        });
+    }
+    return set;
+}
+
+// Apply the "Include AD scans" filter in-place to traj / clinical / manifold.
+// Pass null for any input you don't want to filter (e.g. on the slow path
+// when only the manifold has just arrived).
+function _applyIncludeADFilter(traj, clinical, manifold, includeAD, adVisits) {
+    if (!adVisits) adVisits = _computeAdVisits(clinical);
+    if (clinical) clinical.adVisits = Array.from(adVisits);
+    if (includeAD) return adVisits;
+
+    if (clinical && clinical.visits) {
+        const allowed = clinical.visits.map((v, i) => adVisits.has(v) ? -1 : i).filter(i => i !== -1);
+        clinical.visits = allowed.map(i => clinical.visits[i]);
+        if (clinical.diagnosis) clinical.diagnosis = allowed.map(i => clinical.diagnosis[i]);
+        if (clinical.cognitive) {
+            clinical.cognitive.mmse  = allowed.map(i => clinical.cognitive.mmse[i]);
+            clinical.cognitive.cdr   = allowed.map(i => clinical.cognitive.cdr[i]);
+            clinical.cognitive.pacc5 = allowed.map(i => clinical.cognitive.pacc5[i]);
+        }
+        if (clinical.csf) {
+            clinical.csf.abeta42 = allowed.map(i => clinical.csf.abeta42[i]);
+            clinical.csf.tau     = allowed.map(i => clinical.csf.tau[i]);
+            clinical.csf.ptau    = allowed.map(i => clinical.csf.ptau[i]);
+        }
+    }
+    if (traj?.sessions) traj.sessions = traj.sessions.filter(s => !adVisits.has(s.visit));
+    if (manifold?.trajectory) manifold.trajectory = manifold.trajectory.filter(t => !adVisits.has(t.visit));
+    return adVisits;
+}
+
+async function loadPatientData() {
+    if (!currentPatient) return;
+    const { sid, includeAD } = currentPatient;
+    const myToken = ++currentPatient._loadToken || (currentPatient._loadToken = 1);
+    const csvPath = $csvSelect.value;
+    const folders = _resolveQueryFolders(includeAD);
+
+    // Show a loading hint in the active tab while the FAST data lands.
+    const activePanel = document.querySelector('.tab-panel.active');
+    if (activePanel) activePanel.innerHTML =
+        '<div class="loading-text" style="padding:2rem;text-align:center">Loading patient data…</div>';
+
+    // ── Fast path: trajectory + clinical + scans (~1-2s) ─────────────────
+    try {
+        const trajP = folders.length
+            ? fetch(`/api/patient/${sid}/trajectory?scan_folders=${encodeURIComponent(folders.join(','))}`).then(r => r.json())
+            : Promise.resolve({ sessions: [] });
+        const clinP = csvPath
+            ? fetch(`/api/patient/${sid}/clinical?csv_path=${encodeURIComponent(csvPath)}`).then(r => r.ok ? r.json() : {})
+            : Promise.resolve({});
+        const scansP = folders.length
+            ? fetch(`/api/patient/${sid}/scans?scan_folders=${encodeURIComponent(folders.join(','))}`).then(r => r.ok ? r.json() : { scans: [] }).catch(() => ({ scans: [] }))
+            : Promise.resolve({ scans: [] });
+
+        const [traj, clinical, scansResp] = await Promise.all([trajP, clinP, scansP]);
+        if (!currentPatient || currentPatient._loadToken !== myToken) return;  // user moved on
+
+        const adVisits = _applyIncludeADFilter(traj, clinical, null, includeAD);
+
+        currentPatient.traj = traj;
+        currentPatient.clinical = clinical;
+        currentPatient.manifold = null;       // arrives later
+        currentPatient.cohortStats = null;    // arrives later
+        currentPatient.scansList = scansResp?.scans || [];
+        currentPatient._adVisits = adVisits;
+
+        _rebuildMergedVisits();
+        currentPatient.selectedVisit = currentPatient.mergedVisits.length
+            ? currentPatient.mergedVisits[currentPatient.mergedVisits.length - 1].visit
+            : null;
+        currentPatient.tabRendered = {
+            overview: false, manifold: false, connectivity: false, qcviewer: false, brainview: false
+        };
+        renderActiveTab();
+    } catch (e) {
+        console.error('fast patient load failed', e);
+        const ap = document.querySelector('.tab-panel.active');
+        if (ap) ap.innerHTML = '<p class="no-trajectory">Error loading patient data</p>';
+        return;
+    }
+
+    // ── Slow path: cohort stats + manifold (depends on UMAP cache; can take
+    // minutes the first time but is ~30 ms once cached). Fire & forget; the
+    // Overview/Manifold tabs re-render once the data arrives.
+    if (!csvPath || !folders.length) return;
+    try {
+        const [cohortStats, manResp] = await Promise.all([
+            _fetchCohortStats(csvPath, folders),
+            fetch(`/api/patient/${sid}/manifold?csv_path=${encodeURIComponent(csvPath)}` +
+                  `&scan_folders=${encodeURIComponent(folders.join(','))}`)
+                .then(r => r.ok ? r.json() : null).catch(() => null),
+        ]);
+        if (!currentPatient || currentPatient._loadToken !== myToken) return;
+
+        _applyIncludeADFilter(null, null, manResp, includeAD, currentPatient._adVisits);
+
+        currentPatient.cohortStats = cohortStats;
+        currentPatient.manifold = manResp;
+        _rebuildMergedVisits();
+
+        // Re-render only the tabs that depend on this data.
+        currentPatient.tabRendered.overview = false;
+        currentPatient.tabRendered.manifold = false;
+        const t = currentPatient.activeTab;
+        if (t === 'overview' || t === 'manifold') renderActiveTab();
+    } catch (e) {
+        console.warn('manifold/cohort load failed', e);
+    }
+}
+
+// When the user clicks a visit in any view, propagate the change everywhere.
+function setSelectedVisit(visit) {
+    if (!currentPatient || !visit) return;
+    if (currentPatient.selectedVisit === visit) return;
+    currentPatient.selectedVisit = visit;
+    // Highlight the row in the session table (Overview is always rendered if visible)
+    document.querySelectorAll('#tab-overview .session-table tbody tr').forEach(tr => {
+        tr.classList.toggle('selected', tr.dataset.visit === visit);
+    });
+    // Re-render only the views that depend on the selected visit
+    if (currentPatient.tabRendered.connectivity) renderConnectivityHeatmap();
+    if (currentPatient.tabRendered.qcviewer)     loadQCViewerVolume();
+    if (currentPatient.tabRendered.brainview)    renderBrainGraph();
+    if (currentPatient.tabRendered.manifold)     redrawManifold();
 }
 
 function closeModal(){
     $('modalBackdrop').classList.remove('open');
     document.querySelectorAll('.data-table tbody tr.selected').forEach(tr=>tr.classList.remove('selected'));
-    ['trajFC','trajMod','trajCog','trajCSF'].forEach(k=>{if(activeCharts[k]){activeCharts[k].destroy();delete activeCharts[k];}});
+    ['trajFC','trajMod','trajCog','trajCSF','convScore'].forEach(k=>{
+        if(activeCharts[k]){activeCharts[k].destroy();delete activeCharts[k];}
+    });
+    // Tear down NiiVue (otherwise WebGL contexts pile up)
+    if (currentPatient) {
+        currentPatient.niiVue = null;
+        currentPatient.brainNv = null;
+    }
+    currentPatient = null;
 }
 
 // Returns a Chart.js plugin that marks the MCI → AD conversion boundary.
@@ -928,56 +1160,106 @@ function makeConvPlugin(convVisit) {
     };
 }
 
-function renderTrajectory(traj, clinical, diagColor) {
-    const el=$('trajectoryContent');
-    const hasFmri = traj.sessions?.length > 0;
+// ──────────────────────────────────────────────────────────────────────────────
+// Overview tab
+// ──────────────────────────────────────────────────────────────────────────────
+
+function _normativeRefCohort(stats) {
+    // Prefer mci (= MCI non-converters) — matches the converter baseline stage.
+    // Falls back to healthy if mci has no data.
+    if (!stats?.biomarker_stats) return null;
+    if (stats.biomarker_stats.mci && Object.keys(stats.biomarker_stats.mci).length) return 'mci';
+    if (stats.biomarker_stats.healthy && Object.keys(stats.biomarker_stats.healthy).length) return 'healthy';
+    return null;
+}
+
+function _devCard(label, value, refMean, format = v => v?.toFixed(3) ?? '—') {
+    if (value == null || refMean == null || !isFinite(refMean) || refMean === 0) {
+        return `<div class="dev-card normal">
+            <div class="dev-label">${label}</div>
+            <div class="dev-value">${format(value)}</div>
+            <div class="dev-sub">no reference</div>
+        </div>`;
+    }
+    const pct = ((value - refMean) / Math.abs(refMean)) * 100;
+    const cls = pct < -5 ? 'below' : pct > 5 ? 'above' : 'normal';
+    const sign = pct >= 0 ? '+' : '';
+    return `<div class="dev-card ${cls}">
+        <div class="dev-label">${label}</div>
+        <div class="dev-value">${format(value)}</div>
+        <div class="dev-sub">${sign}${pct.toFixed(0)}% vs MCI-NC</div>
+    </div>`;
+}
+
+function renderOverviewTab() {
+    if (!currentPatient) return;
+    const el = $('tab-overview');
+    const { traj, clinical, manifold, cohortStats, allVisits, mergedVisits, diagC } = currentPatient;
+    const hasFmri = traj?.sessions?.length > 0;
     const hasClinical = clinical?.visits?.length > 0;
-    
-    if(!hasFmri && !hasClinical){
-        el.innerHTML='<p class="no-trajectory">No longitudinal data found for this subject</p>';
+
+    if (!hasFmri && !hasClinical) {
+        el.innerHTML = '<p class="no-trajectory">No longitudinal data found for this subject</p>';
+        currentPatient.tabRendered.overview = true;
         return;
     }
-    
-    // Merge visits for the table
-    // We'll map by visit string
-    const mergedMap = new Map();
-    if(hasFmri){
-        traj.sessions.forEach(s => mergedMap.set(s.visit, { ...s }));
-    }
-    if(hasClinical){
-        clinical.visits.forEach((v, i) => {
-            if(!mergedMap.has(v)) mergedMap.set(v, { visit: v });
-            const s = mergedMap.get(v);
-            s.mmse = clinical.cognitive?.mmse[i];
-            s.cdr = clinical.cognitive?.cdr[i];
-            s.pacc5 = clinical.cognitive?.pacc5[i];
-            s.abeta42 = clinical.csf?.abeta42[i];
-            s.tau = clinical.csf?.tau[i];
-            s.ptau = clinical.csf?.ptau[i];
-        });
-    }
-    
-    // Sort merged visits chronologically (M0 < M12 < M24 …).
-    // parseInt("0") === 0 which is falsy, so we use a regex capture group
-    // to safely get the numeric part — M0 → 0, unknown → 999.
-    const visitNum = v => { const m = String(v).match(/M(\d+)/i); return m ? parseInt(m[1]) : 999; };
-    const mergedVisits = Array.from(mergedMap.values()).sort((a,b) => visitNum(a.visit) - visitNum(b.visit));
 
-    let html = '';
-    
-    if(hasFmri) {
+    const refCohort = _normativeRefCohort(cohortStats);
+    const refStats = refCohort ? cohortStats.biomarker_stats[refCohort] : null;
+    const refLabel = refCohort === 'mci' ? 'MCI-NC' : (refCohort || '—');
+
+    // Deviation strip — based on the LAST fMRI visit
+    let stripHtml = '';
+    if (refStats && hasFmri) {
+        const last = traj.sessions[traj.sessions.length - 1];
+        const cards = [
+            _devCard('Global FC',  last.global_fc,  refStats.global_fc?.mean),
+            _devCard('DMN FC',     last.dmn_fc,     refStats.dmn_fc?.mean),
+            _devCard('Modularity', last.modularity, refStats.modularity?.mean),
+        ];
+        const score = manifold?.trajectory?.[manifold.trajectory.length - 1]?.conversion_score;
+        if (score != null) {
+            const cls = score > 0.5 ? 'below' : score > 0.2 ? 'above' : 'normal';
+            cards.push(`<div class="dev-card ${cls}">
+                <div class="dev-label">Conversion Score</div>
+                <div class="dev-value">${score.toFixed(2)}</div>
+                <div class="dev-sub">0=MCI-NC · 1=AD</div>
+            </div>`);
+        }
+        stripHtml = `<div class="deviation-strip">${cards.join('')}</div>`;
+    }
+
+    // Conversion-score sparkline row
+    let convHtml = '';
+    if (manifold?.trajectory?.some(t => t.conversion_score != null)) {
+        const vals = manifold.trajectory.map(t =>
+            t.conversion_score != null ? t.conversion_score.toFixed(2) : '—');
+        const visits = manifold.trajectory.map(t => t.visit);
+        const pairs = visits.map((v, i) => `<span><span class="v">${v}</span>: ${vals[i]}</span>`).join(' · ');
+        convHtml = `<div class="conv-score-row">
+            <div>
+                <div class="conv-label">Conversion Score (fMRI-only)</div>
+                <div class="conv-vals">${pairs}</div>
+            </div>
+            <canvas id="chart-convScore"></canvas>
+        </div>`;
+    }
+
+    let html = stripHtml + convHtml;
+
+    if (hasFmri) {
         html += `
         <div class="trajectory-chart-wrap">
-            <h3 style="margin-bottom:.5rem;font-size:.75rem">Global FC &amp; DMN FC</h3>
+            <h3 style="margin-bottom:.5rem;font-size:.75rem">Global FC &amp; DMN FC ${refLabel !== '—' ? `<span style="color:var(--text-3);font-weight:400">· band = ${refLabel} ±1σ</span>` : ''}</h3>
             <div class="chart-container"><canvas id="chart-trajFC"></canvas></div>
         </div>
         <div class="trajectory-chart-wrap">
-            <h3 style="margin-bottom:.5rem;font-size:.75rem">Network Modularity Q</h3>
+            <h3 style="margin-bottom:.5rem;font-size:.75rem">Network Modularity Q ${refLabel !== '—' ? `<span style="color:var(--text-3);font-weight:400">· band = ${refLabel} ±1σ</span>` : ''}</h3>
             <div class="chart-container"><canvas id="chart-trajMod"></canvas></div>
         </div>`;
     }
-    
-    if(hasClinical) {
+
+    if (hasClinical) {
         html += `
         <div class="trajectory-chart-wrap">
             <h3 style="margin-bottom:.5rem;font-size:.75rem">Cognitive Scores</h3>
@@ -988,45 +1270,39 @@ function renderTrajectory(traj, clinical, diagColor) {
             <div class="chart-container"><canvas id="chart-trajCSF"></canvas></div>
         </div>`;
     }
-    
+
     html += `
         <div class="session-table-wrap">
             <table class="session-table">
-                <thead><tr><th>Visit</th><th>Global FC</th><th>Modularity</th><th>MMSE</th><th>CDR</th><th>Aβ42</th><th>tTau</th></tr></thead>
-                <tbody>${mergedVisits.map(s=>`<tr>
+                <thead><tr><th>Visit</th><th>Global FC</th><th>Modularity</th><th>Conv. Score</th><th>MMSE</th><th>CDR</th><th>Aβ42</th><th>tTau</th></tr></thead>
+                <tbody>${mergedVisits.map(s => `<tr data-visit="${s.visit}"${s.visit === currentPatient.selectedVisit ? ' class="selected"' : ''}>
                     <td>${s.visit}</td>
-                    <td>${s.global_fc?.toFixed(4)||'—'}</td>
-                    <td>${s.modularity?.toFixed(4)||'—'}</td>
-                    <td>${s.mmse!=null?s.mmse:'—'}</td>
-                    <td>${s.cdr!=null?s.cdr:'—'}</td>
-                    <td>${s.abeta42!=null?s.abeta42:'—'}</td>
-                    <td>${s.tau!=null?s.tau:'—'}</td>
-                    </tr>`).join('')}
+                    <td>${s.global_fc?.toFixed(4) || '—'}</td>
+                    <td>${s.modularity?.toFixed(4) || '—'}</td>
+                    <td>${s.conversion_score != null ? s.conversion_score.toFixed(2) : '—'}</td>
+                    <td>${s.mmse != null ? s.mmse : '—'}</td>
+                    <td>${s.cdr != null ? s.cdr : '—'}</td>
+                    <td>${s.abeta42 != null ? s.abeta42 : '—'}</td>
+                    <td>${s.tau != null ? s.tau : '—'}</td>
+                </tr>`).join('')}
                 </tbody>
             </table>
         </div>`;
-        
+
     el.innerHTML = html;
 
+    // Wire up: clicking a session row updates selectedVisit
+    el.querySelectorAll('.session-table tbody tr').forEach(tr => {
+        tr.addEventListener('click', () => setSelectedVisit(tr.dataset.visit));
+    });
 
-    const sharedY={grid:{color:'rgba(255,255,255,0.03)'}, grace: '15%', afterFit: function(axis) { axis.width = 45; }};
-    const sharedOpts={responsive:true,maintainAspectRatio:false,plugins:{tooltip:tooltipStyle()},animation:{duration:600}};
+    // ── Chart-axis setup ──────────────────────────────────────────────────────
+    const visitNum = v => { const m = String(v).match(/M(\d+)/i); return m ? parseInt(m[1]) : 999; };
+    const sharedY = { grid: { color: 'rgba(255,255,255,0.03)' }, grace: '15%', afterFit: a => { a.width = 45; } };
+    const sharedOpts = { responsive: true, maintainAspectRatio: false, plugins: { tooltip: tooltipStyle() }, animation: { duration: 600 } };
+    const sharedX = { grid: { display: false }, ticks: { font: { size: 11, weight: 500 } }, labels: allVisits };
 
-    // ── Unified visit axis ────────────────────────────────────────────────────────
-    // All four charts share the same x-axis covering every visit that exists in
-    // either the fMRI trajectory or the clinical CSV.  fMRI data is null (gap) for
-    // clinical-only visits; clinical data is null for fMRI-only visits.
-    const allVisitSet = new Set();
-    if (hasFmri) traj.sessions.forEach(s => allVisitSet.add(s.visit));
-    if (hasClinical) clinical.visits.forEach(v => allVisitSet.add(v));
-    const allVisits = Array.from(allVisitSet).sort((a,b) => visitNum(a) - visitNum(b));
-
-    const sharedX = {grid:{display:false}, ticks:{font:{size:11,weight:500}}, labels:allVisits};
-
-    // ── Conversion-point detection ────────────────────────────────────────────────
-    // Priority 1: file-path — first session whose file lives in the AD folder.
-    //   The converter keeps the same subject ID in both MCI and AD folders; AD-folder
-    //   sessions only appear when "Include AD Scans" adds those folders to the query.
+    // Conversion-point detection (file path → fallback to last-scan boundary)
     let conversionVisit = hasFmri
         ? (traj.sessions.find(s =>
               s.file && s.file.split('/').some(seg => {
@@ -1035,13 +1311,6 @@ function renderTrajectory(traj, clinical, diagColor) {
               })
           )?.visit ?? null)
         : null;
-
-    // Priority 2: last-scan / first-clinical-only boundary (converter, mixed folder).
-    //   When all scans live in the same mixed folder, file-path detection finds nothing.
-    //   For converters the pattern is: fMRI scans stop at the last MCI visit, then
-    //   follow-up continues as clinical-only rows. The first clinical visit that falls
-    //   *after* the last fMRI visit is therefore the first post-conversion timepoint.
-    //   e.g. last fMRI = M48, first clinical-only = M60 → line between M48 and M60.
     const isConverter = hasClinical &&
         (clinical.diagnosis?.some(d => String(d).toLowerCase() === 'converter') ?? false);
     if (!conversionVisit && isConverter && hasFmri && hasClinical) {
@@ -1051,41 +1320,63 @@ function renderTrajectory(traj, clinical, diagColor) {
             if (firstAfter) conversionVisit = firstAfter;
         }
     }
-    // ─────────────────────────────────────────────────────────────────────────────
-
     const convPlugin = makeConvPlugin(conversionVisit);
 
-    if(hasFmri){
-        // Map fMRI data onto the unified axis — null for visits without a scan
-        const sessMap = new Map(traj.sessions.map(s => [s.visit, s]));
-        const gFC  = allVisits.map(v => sessMap.get(v)?.global_fc   ?? null);
-        const dFC  = allVisits.map(v => sessMap.get(v)?.dmn_fc      ?? null);
-        const mod  = allVisits.map(v => sessMap.get(v)?.modularity   ?? null);
-        const accentColor = diagColor||C.indigo;
+    // Build a Chart.js dataset for a flat horizontal normative band on a metric.
+    // Uses the trick of two boundary datasets with fill:'+1' between them.
+    const makeBand = (metric, color) => {
+        if (!refStats || !refStats[metric]) return [];
+        const { mean, std } = refStats[metric];
+        if (mean == null || std == null) return [];
+        const upper = Array(allVisits.length).fill(mean + std);
+        const lower = Array(allVisits.length).fill(mean - std);
+        const meanLine = Array(allVisits.length).fill(mean);
+        return [
+            { label: '_band_upper_' + metric, data: upper, borderColor: 'transparent', backgroundColor: color + '22', pointRadius: 0, fill: '+1', order: 99, spanGaps: true },
+            { label: '_band_lower_' + metric, data: lower, borderColor: 'transparent', backgroundColor: 'transparent', pointRadius: 0, fill: false, order: 100, spanGaps: true },
+            { label: refLabel + ' mean', data: meanLine, borderColor: color + 'aa', borderDash: [4, 3], borderWidth: 1.2, pointRadius: 0, fill: false, order: 98, spanGaps: true },
+        ];
+    };
 
-        activeCharts['trajFC']=new Chart($('chart-trajFC').getContext('2d'),{
-            type:'line',
-            data:{labels:allVisits,datasets:[
-                {label:'Global FC',data:gFC,borderColor:C.indigo,backgroundColor:'rgba(129,140,248,0.1)',borderWidth:2.5,pointRadius:5,pointBackgroundColor:C.indigo,pointBorderColor:C.indigo,tension:0.3,fill:true,spanGaps:true},
-                {label:'DMN FC',data:dFC,borderColor:accentColor,backgroundColor:accentColor+'18',borderWidth:2.5,pointRadius:5,pointBackgroundColor:accentColor,pointBorderColor:accentColor,tension:0.3,fill:true,spanGaps:true},
-            ]},
-            options:{...sharedOpts,plugins:{...sharedOpts.plugins,legend:{position:'top',labels:{usePointStyle:true,boxWidth:10,padding:12,font:{size:11}}}},scales:{x:sharedX,y:sharedY}},
-            plugins:[convPlugin],
+    // Hide normative-band entries from the legend / tooltip
+    const bandLegendFilter = (item, data) => {
+        const ds = data.datasets[item.datasetIndex];
+        return ds && !String(ds.label || '').startsWith('_band_');
+    };
+
+    if (hasFmri) {
+        const sessMap = new Map(traj.sessions.map(s => [s.visit, s]));
+        const gFC = allVisits.map(v => sessMap.get(v)?.global_fc ?? null);
+        const dFC = allVisits.map(v => sessMap.get(v)?.dmn_fc ?? null);
+        const mod = allVisits.map(v => sessMap.get(v)?.modularity ?? null);
+        const accentColor = diagC || C.indigo;
+
+        const fcDatasets = [
+            ...makeBand('global_fc', '#6daa45'),  // band first → drawn under lines
+            { label: 'Global FC', data: gFC, borderColor: C.indigo, backgroundColor: 'rgba(129,140,248,0.1)', borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: C.indigo, pointBorderColor: C.indigo, tension: 0.3, fill: false, spanGaps: true },
+            { label: 'DMN FC', data: dFC, borderColor: accentColor, backgroundColor: accentColor + '18', borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: accentColor, pointBorderColor: accentColor, tension: 0.3, fill: false, spanGaps: true },
+        ];
+        activeCharts['trajFC'] = new Chart($('chart-trajFC').getContext('2d'), {
+            type: 'line',
+            data: { labels: allVisits, datasets: fcDatasets },
+            options: { ...sharedOpts, plugins: { ...sharedOpts.plugins, legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, padding: 12, font: { size: 11 }, filter: bandLegendFilter } }, tooltip: { ...tooltipStyle(), filter: c => !String(c.dataset?.label || '').startsWith('_band_') } }, scales: { x: sharedX, y: sharedY } },
+            plugins: [convPlugin],
         });
 
-        activeCharts['trajMod']=new Chart($('chart-trajMod').getContext('2d'),{
-            type:'line',
-            data:{labels:allVisits,datasets:[
-                {label:'Modularity Q',data:mod,borderColor:C.amber,backgroundColor:'rgba(251,191,36,0.08)',borderWidth:2.5,pointRadius:5,pointBackgroundColor:C.amber,pointBorderColor:C.amber,tension:0.3,fill:true,spanGaps:true},
-            ]},
-            options:{...sharedOpts,plugins:{...sharedOpts.plugins,legend:{position:'top',labels:{usePointStyle:true,boxWidth:10,padding:12,font:{size:11}}}},scales:{x:sharedX,y:sharedY}},
-            plugins:[convPlugin],
+        const modDatasets = [
+            ...makeBand('modularity', '#6daa45'),
+            { label: 'Modularity Q', data: mod, borderColor: C.amber, backgroundColor: 'rgba(251,191,36,0.08)', borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: C.amber, pointBorderColor: C.amber, tension: 0.3, fill: false, spanGaps: true },
+        ];
+        activeCharts['trajMod'] = new Chart($('chart-trajMod').getContext('2d'), {
+            type: 'line',
+            data: { labels: allVisits, datasets: modDatasets },
+            options: { ...sharedOpts, plugins: { ...sharedOpts.plugins, legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, padding: 12, font: { size: 11 }, filter: bandLegendFilter } }, tooltip: { ...tooltipStyle(), filter: c => !String(c.dataset?.label || '').startsWith('_band_') } }, scales: { x: sharedX, y: sharedY } },
+            plugins: [convPlugin],
         });
     }
 
-    if(hasClinical){
-        // Map clinical data onto the unified axis — null for visits without clinical data
-        const clinIdxMap = new Map(clinical.visits.map((v,i) => [v,i]));
+    if (hasClinical) {
+        const clinIdxMap = new Map(clinical.visits.map((v, i) => [v, i]));
         const mapClin = arr => allVisits.map(v => {
             const i = clinIdxMap.get(v);
             return i !== undefined ? (arr[i] ?? null) : null;
@@ -1094,43 +1385,801 @@ function renderTrajectory(traj, clinical, diagColor) {
         const c_cdr   = mapClin(clinical.cognitive.cdr);
         const c_pacc5 = mapClin(clinical.cognitive.pacc5);
 
-        activeCharts['trajCog']=new Chart($('chart-trajCog').getContext('2d'),{
-            type:'line',
-            data:{labels:allVisits,datasets:[
-                {label:'MMSE (0-30)',data:c_mmse,borderColor:C.green,backgroundColor:C.green+'18',borderWidth:2.5,pointRadius:5,pointBackgroundColor:C.green,pointBorderColor:C.green,tension:0.3,fill:true,spanGaps:true,yAxisID:'y'},
-                {label:'CDR',data:c_cdr,borderColor:C.rose,backgroundColor:'transparent',borderWidth:2.5,pointRadius:5,pointBackgroundColor:C.rose,pointBorderColor:C.rose,tension:0.3,fill:false,spanGaps:true,yAxisID:'y1'},
-                {label:'PACC5',data:c_pacc5,borderColor:C.cyan,backgroundColor:'transparent',borderWidth:2.5,pointRadius:5,pointBackgroundColor:C.cyan,pointBorderColor:C.cyan,tension:0.3,fill:false,spanGaps:true,yAxisID:'y2'},
+        activeCharts['trajCog'] = new Chart($('chart-trajCog').getContext('2d'), {
+            type: 'line',
+            data: { labels: allVisits, datasets: [
+                { label: 'MMSE (0-30)', data: c_mmse, borderColor: C.green, backgroundColor: C.green + '18', borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: C.green, pointBorderColor: C.green, tension: 0.3, fill: true, spanGaps: true, yAxisID: 'y' },
+                { label: 'CDR', data: c_cdr, borderColor: C.rose, backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: C.rose, pointBorderColor: C.rose, tension: 0.3, fill: false, spanGaps: true, yAxisID: 'y1' },
+                { label: 'PACC5', data: c_pacc5, borderColor: C.cyan, backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: C.cyan, pointBorderColor: C.cyan, tension: 0.3, fill: false, spanGaps: true, yAxisID: 'y2' },
             ]},
-            options:{...sharedOpts,plugins:{...sharedOpts.plugins,legend:{position:'top',labels:{usePointStyle:true,boxWidth:10,padding:12,font:{size:11}}}},
-                scales:{
-                    x:sharedX,
-                    y:{...sharedY, position:'left', title:{display:true, text:'MMSE', font:{size:9}}, min:0, max:30},
-                    y1:{grid:{display:false}, position:'right', title:{display:true, text:'CDR', font:{size:9}}, min:0, max:3},
-                    y2:{grid:{display:false}, position:'right', title:{display:true, text:'PACC5', font:{size:9}}}
+            options: { ...sharedOpts, plugins: { ...sharedOpts.plugins, legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, padding: 12, font: { size: 11 } } } },
+                scales: {
+                    x: sharedX,
+                    y:  { ...sharedY, position: 'left', title: { display: true, text: 'MMSE', font: { size: 9 } }, min: 0, max: 30 },
+                    y1: { grid: { display: false }, position: 'right', title: { display: true, text: 'CDR', font: { size: 9 } }, min: 0, max: 3 },
+                    y2: { grid: { display: false }, position: 'right', title: { display: true, text: 'PACC5', font: { size: 9 } } }
                 }
             },
-            plugins:[convPlugin],
+            plugins: [convPlugin],
         });
 
         const c_abeta = mapClin(clinical.csf.abeta42);
         const c_tau   = mapClin(clinical.csf.tau);
         const c_ptau  = mapClin(clinical.csf.ptau);
-        activeCharts['trajCSF']=new Chart($('chart-trajCSF').getContext('2d'),{
-            type:'line',
-            data:{labels:allVisits,datasets:[
-                {label:'Aβ42',data:c_abeta,borderColor:C.indigo,backgroundColor:'transparent',borderWidth:2.5,pointRadius:5,pointBackgroundColor:C.indigo,pointBorderColor:C.indigo,tension:0.3,fill:false,spanGaps:true,yAxisID:'y'},
-                {label:'t-Tau',data:c_tau,borderColor:C.amber,backgroundColor:'transparent',borderWidth:2.5,pointRadius:5,pointBackgroundColor:C.amber,pointBorderColor:C.amber,tension:0.3,fill:false,spanGaps:true,yAxisID:'y1'},
-                {label:'p-Tau',data:c_ptau,borderColor:C.violet,backgroundColor:'transparent',borderWidth:2.5,pointRadius:5,pointBackgroundColor:C.violet,pointBorderColor:C.violet,tension:0.3,fill:false,spanGaps:true,yAxisID:'y1'},
+        activeCharts['trajCSF'] = new Chart($('chart-trajCSF').getContext('2d'), {
+            type: 'line',
+            data: { labels: allVisits, datasets: [
+                { label: 'Aβ42', data: c_abeta, borderColor: C.indigo, backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: C.indigo, pointBorderColor: C.indigo, tension: 0.3, fill: false, spanGaps: true, yAxisID: 'y' },
+                { label: 't-Tau', data: c_tau, borderColor: C.amber, backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: C.amber, pointBorderColor: C.amber, tension: 0.3, fill: false, spanGaps: true, yAxisID: 'y1' },
+                { label: 'p-Tau', data: c_ptau, borderColor: C.violet, backgroundColor: 'transparent', borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: C.violet, pointBorderColor: C.violet, tension: 0.3, fill: false, spanGaps: true, yAxisID: 'y1' },
             ]},
-            options:{...sharedOpts,plugins:{...sharedOpts.plugins,legend:{position:'top',labels:{usePointStyle:true,boxWidth:10,padding:12,font:{size:11}}}},
-                scales:{
-                    x:sharedX,
-                    y:{...sharedY, position:'left', title:{display:true, text:'Aβ42 (pg/ml)', font:{size:9}}, grace: '15%'},
-                    y1:{grid:{display:false}, position:'right', title:{display:true, text:'Tau (pg/ml)', font:{size:9}}, grace: '15%'}
+            options: { ...sharedOpts, plugins: { ...sharedOpts.plugins, legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, padding: 12, font: { size: 11 } } } },
+                scales: {
+                    x: sharedX,
+                    y:  { ...sharedY, position: 'left', title: { display: true, text: 'Aβ42 (pg/ml)', font: { size: 9 } }, grace: '15%' },
+                    y1: { grid: { display: false }, position: 'right', title: { display: true, text: 'Tau (pg/ml)', font: { size: 9 } }, grace: '15%' }
                 }
             },
-            plugins:[convPlugin],
+            plugins: [convPlugin],
         });
+    }
+
+    // Conversion-score sparkline
+    if (manifold?.trajectory?.some(t => t.conversion_score != null)) {
+        const visits = manifold.trajectory.map(t => t.visit);
+        const data   = manifold.trajectory.map(t => t.conversion_score);
+        activeCharts['convScore'] = new Chart($('chart-convScore').getContext('2d'), {
+            type: 'line',
+            data: { labels: visits, datasets: [{
+                data, borderColor: C.orange, backgroundColor: 'rgba(224,128,64,0.18)',
+                borderWidth: 2, pointRadius: 3, pointBackgroundColor: C.orange,
+                tension: 0.25, fill: true, spanGaps: true,
+            }]},
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: tooltipStyle() }, scales: { x: { display: false }, y: { display: false, suggestedMin: 0, suggestedMax: 1 } } },
+        });
+    }
+
+    currentPatient.tabRendered.overview = true;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Manifold tab — 2D scatter on a Canvas (no extra library)
+// ──────────────────────────────────────────────────────────────────────────────
+
+const MANIFOLD_COLORS = {
+    healthy:   { fill: 'rgba(79,152,163,0.42)',  stroke: '#4f98a3' },
+    scd:       { fill: 'rgba(232,175,52,0.42)',  stroke: '#e8af34' },
+    mci:       { fill: 'rgba(109,170,69,0.42)',  stroke: '#6daa45' },
+    converter: { fill: 'rgba(224,128,64,0.42)',  stroke: '#e08040' },
+    ad:        { fill: 'rgba(209,99,167,0.42)',  stroke: '#d163a7' },
+};
+
+function renderManifoldTab() {
+    if (!currentPatient) return;
+    const el = $('tab-manifold');
+    const { cohortStats, manifold } = currentPatient;
+
+    // The cohort/UMAP fit is the heaviest backend operation (~5 min the very
+    // first time). Show progress instead of an error while it's still loading.
+    if (cohortStats === null) {
+        el.innerHTML = `<div class="manifold-wrap">
+            <div class="loading-text" style="padding:2rem;text-align:center">
+                Fitting baseline UMAP… this only happens once per dataset.<br>
+                <span style="font-size:.7rem;color:var(--text-3)">First fit on a full cohort can take a few minutes; subsequent opens are instant.</span>
+            </div>
+        </div>`;
+        return;  // don't mark tabRendered — re-render once data arrives
+    }
+    if (!cohortStats?.manifold?.points?.length) {
+        el.innerHTML = `<div class="manifold-wrap">
+            <p class="no-trajectory">Manifold could not be computed — make sure the cohort has enough baseline scans across CN/SCD/MCI/AD groups.</p>
+        </div>`;
+        currentPatient.tabRendered.manifold = true;
+        return;
+    }
+
+    const legendItems = Object.keys(MANIFOLD_COLORS)
+        .filter(k => cohortStats.manifold.centroids?.[k])
+        .map(k => `<span class="leg-item"><span class="leg-dot" style="background:${MANIFOLD_COLORS[k].stroke}"></span>${k}</span>`)
+        .join('');
+
+    el.innerHTML = `
+        <div class="manifold-wrap">
+            <h3 style="font-size:.78rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.5rem">2D UMAP — baselines + patient trajectory</h3>
+            <canvas class="manifold-canvas" id="manifoldCanvas"></canvas>
+            <div class="manifold-legend">${legendItems}
+                <span class="leg-item"><span class="leg-dot" style="background:#fff;outline:1px solid #fff"></span>this patient (visits)</span>
+            </div>
+            <div class="manifold-info">
+                Conversion axis runs from <strong>MCI-NC</strong> (= mci) toward <strong>AD</strong>. The patient's
+                visits are projected into the same UMAP space and connected chronologically.
+                Click a visit dot to sync the other tabs to that visit.
+            </div>
+        </div>`;
+
+    drawManifold();
+    currentPatient.tabRendered.manifold = true;
+}
+
+function drawManifold() {
+    if (!currentPatient) return;
+    const canvas = $('manifoldCanvas');
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width  = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const W = rect.width, H = rect.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const { cohortStats, manifold, selectedVisit } = currentPatient;
+    const points = cohortStats.manifold.points || [];
+    const centroids = cohortStats.manifold.centroids || {};
+    const axis = cohortStats.manifold.conversion_axis || {};
+
+    // Compute world bounds across all points + centroids + patient trajectory
+    let xs = points.map(p => p.x).filter(v => v != null);
+    let ys = points.map(p => p.y).filter(v => v != null);
+    Object.values(centroids).forEach(c => { if (c.x != null) xs.push(c.x); if (c.y != null) ys.push(c.y); });
+    (manifold?.trajectory || []).forEach(t => { if (t.x != null) xs.push(t.x); if (t.y != null) ys.push(t.y); });
+    if (!xs.length || !ys.length) return;
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const padX = (maxX - minX) * 0.08 || 0.5, padY = (maxY - minY) * 0.08 || 0.5;
+    const x0 = minX - padX, x1 = maxX + padX, y0 = minY - padY, y1 = maxY + padY;
+    const PAD = 32;
+    const sx = x => PAD + (x - x0) / (x1 - x0) * (W - 2 * PAD);
+    const sy = y => H - PAD - (y - y0) / (y1 - y0) * (H - 2 * PAD);
+
+    // Background grid (very subtle)
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 8; i++) {
+        const x = PAD + i * (W - 2 * PAD) / 8;
+        ctx.beginPath(); ctx.moveTo(x, PAD); ctx.lineTo(x, H - PAD); ctx.stroke();
+    }
+    for (let i = 1; i < 6; i++) {
+        const y = PAD + i * (H - 2 * PAD) / 6;
+        ctx.beginPath(); ctx.moveTo(PAD, y); ctx.lineTo(W - PAD, y); ctx.stroke();
+    }
+
+    // Cohort points (translucent)
+    points.forEach(p => {
+        if (p.x == null || p.y == null) return;
+        const col = MANIFOLD_COLORS[p.cohort];
+        if (!col) return;
+        ctx.fillStyle = col.fill;
+        ctx.beginPath();
+        ctx.arc(sx(p.x), sy(p.y), 4, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Conversion axis (dashed line from origin to target)
+    if (axis.origin && axis.target) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+        ctx.setLineDash([6, 5]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(sx(axis.origin.x), sy(axis.origin.y));
+        ctx.lineTo(sx(axis.target.x), sy(axis.target.y));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.font = '10px Inter, sans-serif';
+        ctx.fillText('disease axis ▶', sx(axis.target.x) + 6, sy(axis.target.y) - 4);
+        ctx.restore();
+    }
+
+    // Centroid markers
+    Object.entries(centroids).forEach(([cohort, c]) => {
+        if (c.x == null || c.y == null) return;
+        const col = MANIFOLD_COLORS[cohort];
+        if (!col) return;
+        const cx = sx(c.x), cy = sy(c.y);
+        ctx.fillStyle = col.stroke;
+        ctx.strokeStyle = '#0f0f0e';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(cohort.toUpperCase(), cx, cy + 12);
+        ctx.textAlign = 'start';
+        ctx.textBaseline = 'alphabetic';
+    });
+
+    // Patient trajectory
+    const traj = manifold?.trajectory || [];
+    const validTraj = traj.filter(t => t.x != null && t.y != null);
+    if (validTraj.length >= 2) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+        ctx.setLineDash([5, 4]);
+        ctx.lineWidth = 1.7;
+        ctx.beginPath();
+        ctx.moveTo(sx(validTraj[0].x), sy(validTraj[0].y));
+        for (let i = 1; i < validTraj.length; i++) ctx.lineTo(sx(validTraj[i].x), sy(validTraj[i].y));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Arrow on the final segment
+        const a = validTraj[validTraj.length - 2], b = validTraj[validTraj.length - 1];
+        const ax = sx(a.x), ay = sy(a.y), bx = sx(b.x), by = sy(b.y);
+        const ang = Math.atan2(by - ay, bx - ax);
+        const head = 8;
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.lineTo(bx - head * Math.cos(ang - 0.4), by - head * Math.sin(ang - 0.4));
+        ctx.lineTo(bx - head * Math.cos(ang + 0.4), by - head * Math.sin(ang + 0.4));
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.fill();
+    }
+    validTraj.forEach((t, i) => {
+        const cx = sx(t.x), cy = sy(t.y);
+        const isSel = t.visit === selectedVisit;
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#0f0f0e';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, isSel ? 8 : 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        if (isSel) {
+            ctx.strokeStyle = '#ffcb6b';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(cx, cy, 11, 0, Math.PI * 2); ctx.stroke();
+        }
+        ctx.fillStyle = '#0f0f0e';
+        ctx.font = 'bold 9px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${i + 1}`, cx, cy);
+        ctx.textAlign = 'start';
+        ctx.textBaseline = 'alphabetic';
+        // Visit label below dot
+        ctx.fillStyle = 'rgba(255,255,255,0.75)';
+        ctx.font = '10px Inter, sans-serif';
+        ctx.fillText(t.visit, cx + 10, cy + 3);
+    });
+
+    // Hit-test for visit clicks
+    canvas.onclick = e => {
+        const r = canvas.getBoundingClientRect();
+        const mx = e.clientX - r.left, my = e.clientY - r.top;
+        for (const t of validTraj) {
+            const cx = sx(t.x), cy = sy(t.y);
+            if (Math.hypot(mx - cx, my - cy) <= 9) {
+                setSelectedVisit(t.visit);
+                return;
+            }
+        }
+    };
+}
+
+function redrawManifold() {
+    if (currentPatient?.tabRendered.manifold) drawManifold();
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Connectivity tab — 200×200 heatmap on Canvas
+// ──────────────────────────────────────────────────────────────────────────────
+
+let _matrixCache = new Map();  // visit → matrix payload
+
+function _visitPills() {
+    if (!currentPatient) return '';
+    return currentPatient.allVisits.map(v =>
+        `<button class="visit-pill${v === currentPatient.selectedVisit ? ' active' : ''}" data-visit="${v}">${v}</button>`
+    ).join('');
+}
+
+function renderConnectivityTab() {
+    if (!currentPatient) return;
+    const el = $('tab-connectivity');
+    el.innerHTML = `
+        <div class="heatmap-wrap">
+            <div class="visit-selector">
+                <label>Visit:</label>
+                <div id="connVisitPills">${_visitPills()}</div>
+                <label style="margin-left:1rem">
+                    <input type="checkbox" id="heatmapGroup" style="margin-right:.3rem">
+                    Group by Schaefer network
+                </label>
+            </div>
+            <div class="heatmap-canvas-wrap">
+                <canvas class="heatmap-canvas" id="heatmapCanvas" width="540" height="540"></canvas>
+                <div class="heatmap-tooltip" id="heatmapTooltip"></div>
+            </div>
+            <div class="heatmap-colorbar">
+                <span>−0.5</span>
+                <div class="bar"></div>
+                <span>+0.5</span>
+            </div>
+        </div>`;
+
+    el.querySelectorAll('.visit-pill').forEach(p => {
+        p.addEventListener('click', () => setSelectedVisit(p.dataset.visit));
+    });
+    $('heatmapGroup').addEventListener('change', renderConnectivityHeatmap);
+    currentPatient.tabRendered.connectivity = true;
+    renderConnectivityHeatmap();
+}
+
+async function renderConnectivityHeatmap() {
+    if (!currentPatient) return;
+    const visit = currentPatient.selectedVisit;
+    if (!visit) return;
+    document.querySelectorAll('#connVisitPills .visit-pill').forEach(p =>
+        p.classList.toggle('active', p.dataset.visit === visit));
+
+    const canvas = $('heatmapCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.fillStyle = '#161614';
+    ctx.fillRect(0, 0, W, H);
+
+    let payload = _matrixCache.get(visit);
+    if (!payload) {
+        ctx.fillStyle = 'rgba(122,121,118,0.7)';
+        ctx.font = '12px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText('Loading…', W / 2, H / 2);
+        try {
+            const folders = _resolveQueryFolders(currentPatient.includeAD);
+            const r = await fetch(`/api/patient/${currentPatient.sid}/matrix?scan_folders=${encodeURIComponent(folders.join(','))}&visit=${encodeURIComponent(visit)}`);
+            if (!r.ok) throw new Error('fetch failed');
+            payload = await r.json();
+            _matrixCache.set(visit, payload);
+        } catch (e) {
+            ctx.fillStyle = '#d163a7';
+            ctx.fillText('Failed to load matrix', W / 2, H / 2);
+            return;
+        }
+    }
+
+    const grouped = $('heatmapGroup').checked;
+    const m = payload.matrix;
+    const n = m.length;
+    let order = Array.from({ length: n }, (_, i) => i);
+    if (grouped) {
+        // DMN indices first, then the rest, so the DMN block is visible at top-left.
+        const dmn = new Set(payload.dmn_indices || []);
+        order = [...order.filter(i => dmn.has(i)), ...order.filter(i => !dmn.has(i))];
+    }
+
+    // Resize canvas to match cell × cell so each pixel maps cleanly
+    const cell = Math.max(1, Math.floor(540 / n));
+    canvas.width  = cell * n;
+    canvas.height = cell * n;
+
+    const img = ctx.createImageData(canvas.width, canvas.height);
+    const cmap = (v) => {  // RdBu_r-ish, clamped to ±0.5
+        const t = Math.max(-1, Math.min(1, v / 0.5));
+        if (t >= 0) {
+            return [
+                Math.round(22 + (214 - 22) * t),
+                Math.round(22 + (90 - 22) * t),
+                Math.round(20 + (59 - 20) * t),
+            ];
+        } else {
+            const a = -t;
+            return [
+                Math.round(22 + (59 - 22) * a),
+                Math.round(22 + (108 - 22) * a),
+                Math.round(20 + (214 - 20) * a),
+            ];
+        }
+    };
+
+    for (let i = 0; i < n; i++) {
+        const ri = order[i];
+        for (let j = 0; j < n; j++) {
+            const cj = order[j];
+            const v = m[ri][cj];
+            const [r, g, b] = cmap(v);
+            for (let dy = 0; dy < cell; dy++) {
+                for (let dx = 0; dx < cell; dx++) {
+                    const px = ((i * cell + dy) * canvas.width + (j * cell + dx)) * 4;
+                    img.data[px]     = r;
+                    img.data[px + 1] = g;
+                    img.data[px + 2] = b;
+                    img.data[px + 3] = 255;
+                }
+            }
+        }
+    }
+    ctx.putImageData(img, 0, 0);
+
+    // Network divider for grouped view
+    if (grouped) {
+        const dmnSize = (payload.dmn_indices || []).length;
+        if (dmnSize > 0 && dmnSize < n) {
+            const px = dmnSize * cell;
+            ctx.strokeStyle = 'rgba(232,175,52,0.6)';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(px, 0); ctx.lineTo(px, canvas.height);
+            ctx.moveTo(0, px); ctx.lineTo(canvas.width, px);
+            ctx.stroke();
+        }
+    }
+
+    // Hover tooltip
+    const tip = $('heatmapTooltip');
+    canvas.onmousemove = e => {
+        const r = canvas.getBoundingClientRect();
+        const x = (e.clientX - r.left) * (canvas.width / r.width);
+        const y = (e.clientY - r.top) * (canvas.height / r.height);
+        const i = Math.floor(y / cell), j = Math.floor(x / cell);
+        if (i < 0 || i >= n || j < 0 || j >= n) { tip.style.display = 'none'; return; }
+        const ri = order[i], cj = order[j];
+        const v = m[ri][cj];
+        tip.textContent = `ROI ${ri} ↔ ROI ${cj}  ·  r = ${v.toFixed(3)}`;
+        tip.style.left = (e.clientX - r.left + 12) + 'px';
+        tip.style.top  = (e.clientY - r.top + 12) + 'px';
+        tip.style.display = 'block';
+    };
+    canvas.onmouseleave = () => { tip.style.display = 'none'; };
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// QC Viewer tab — embedded NiiVue
+// ──────────────────────────────────────────────────────────────────────────────
+
+function renderQCViewerTab() {
+    if (!currentPatient) return;
+    const el = $('tab-qcviewer');
+    el.innerHTML = `
+        <div class="qc-wrap">
+            <div class="visit-selector">
+                <label>Visit:</label>
+                <div id="qcVisitPills">${_visitPills()}</div>
+            </div>
+            <canvas class="qc-canvas" id="qcCanvas"></canvas>
+            <div class="qc-status" id="qcStatus"></div>
+        </div>`;
+
+    el.querySelectorAll('.visit-pill').forEach(p => {
+        p.addEventListener('click', () => setSelectedVisit(p.dataset.visit));
+    });
+
+    if (typeof niivue === 'undefined' || !niivue?.Niivue) {
+        $('qcStatus').textContent = 'NiiVue library failed to load (CDN blocked?). Check your network.';
+        currentPatient.tabRendered.qcviewer = true;
+        return;
+    }
+
+    try {
+        const nv = new niivue.Niivue({ backColor: [0, 0, 0, 1], show3Dcrosshair: true });
+        nv.attachTo('qcCanvas');
+        currentPatient.niiVue = nv;
+    } catch (e) {
+        $('qcStatus').textContent = 'NiiVue init failed: ' + e.message;
+    }
+
+    currentPatient.tabRendered.qcviewer = true;
+    loadQCViewerVolume();
+}
+
+async function loadQCViewerVolume() {
+    if (!currentPatient || !currentPatient.niiVue) return;
+    const status = $('qcStatus');
+    document.querySelectorAll('#qcVisitPills .visit-pill').forEach(p =>
+        p.classList.toggle('active', p.dataset.visit === currentPatient.selectedVisit));
+
+    const visit = currentPatient.selectedVisit;
+    const hasNifti = currentPatient.scansList.some(s =>
+        String(s.visit).toUpperCase() === String(visit).toUpperCase());
+    if (!hasNifti) {
+        status.textContent = `No .nii.gz on disk for ${visit}.` +
+            (currentPatient.scansList.length === 0
+                ? ' Selected scan folders contain only parcellated .npz files — switch to a NIfTI folder for QC.'
+                : '');
+        return;
+    }
+    status.textContent = `Loading ${visit}…`;
+    const folders = _resolveQueryFolders(currentPatient.includeAD);
+    const url = `/api/patient/${currentPatient.sid}/scan?scan_folders=${encodeURIComponent(folders.join(','))}&visit=${encodeURIComponent(visit)}`;
+    try {
+        await currentPatient.niiVue.loadVolumes([{ url, name: `${currentPatient.sid}_${visit}` }]);
+        status.textContent = `Showing ${visit} · scroll/drag to navigate slices`;
+    } catch (e) {
+        status.textContent = 'Failed to load volume: ' + (e?.message || e);
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Brain View tab — glass brain with strongest edges
+// ──────────────────────────────────────────────────────────────────────────────
+
+let _atlasCoords = null;  // cached across patients
+async function _getAtlasCoords() {
+    if (_atlasCoords) return _atlasCoords;
+    try {
+        const r = await fetch('/api/atlas/schaefer/coords?n_parcels=200');
+        if (!r.ok) return null;
+        _atlasCoords = await r.json();
+        return _atlasCoords;
+    } catch { return null; }
+}
+
+const NETWORK_COLORS = {
+    Default:    '#e08040',
+    Cont:       '#6daa45',
+    SalVentAttn:'#e8af34',
+    DorsAttn:   '#4f98a3',
+    Limbic:     '#d163a7',
+    SomMot:     '#7a7976',
+    Vis:        '#9f7fbf',
+};
+
+// Schaefer 7-network → integer index used for NiiVue node coloring.
+const NETWORK_INDEX = {
+    Vis: 0, SomMot: 1, DorsAttn: 2, SalVentAttn: 3, Limbic: 4, Cont: 5, Default: 6,
+};
+
+// Cohort reference matrix cache — fetched once per session, indexed by cohort.
+const _cohortRefMatrices = {};
+async function _getCohortReferenceMatrix(cohort = 'healthy') {
+    if (_cohortRefMatrices[cohort]) return _cohortRefMatrices[cohort];
+    const csv = $csvSelect.value;
+    if (!csv || !selectedScanFolders.length) return null;
+    try {
+        const r = await fetch(
+            `/api/cohort/reference?cohort=${encodeURIComponent(cohort)}` +
+            `&csv_path=${encodeURIComponent(csv)}` +
+            `&scan_folders=${encodeURIComponent(selectedScanFolders.join(','))}`
+        );
+        if (!r.ok) return null;
+        const json = await r.json();
+        _cohortRefMatrices[cohort] = json.matrix;
+        return _cohortRefMatrices[cohort];
+    } catch { return null; }
+}
+
+async function _ensureMatrix(visit) {
+    let payload = _matrixCache.get(visit);
+    if (payload) return payload;
+    const folders = _resolveQueryFolders(currentPatient.includeAD);
+    try {
+        const r = await fetch(
+            `/api/patient/${currentPatient.sid}/matrix` +
+            `?scan_folders=${encodeURIComponent(folders.join(','))}` +
+            `&visit=${encodeURIComponent(visit)}`
+        );
+        if (!r.ok) return null;
+        payload = await r.json();
+        _matrixCache.set(visit, payload);
+        return payload;
+    } catch { return null; }
+}
+
+function renderBrainViewTab() {
+    if (!currentPatient) return;
+    const el = $('tab-brainview');
+    el.innerHTML = `
+        <div class="brain-wrap">
+            <div class="visit-selector">
+                <label>Visit:</label>
+                <div id="brainVisitPills">${_visitPills()}</div>
+                <label style="margin-left:1rem">Mode:</label>
+                <select id="brainMode" class="config-input" style="max-width:240px;font-size:.78rem">
+                    <option value="raw">Raw — strongest edges</option>
+                    <option value="vs-cn">Δ vs CN baseline (deviation)</option>
+                    <option value="delta-baseline">Δ since first visit (progression)</option>
+                </select>
+            </div>
+            <div class="brain-controls">
+                <label>Top edges:</label>
+                <input type="range" id="brainTopPct" min="0.5" max="10" value="2" step="0.5">
+                <span id="brainTopPctVal" style="font-size:.78rem;color:var(--text-1);min-width:2.5em">2%</span>
+                <span style="font-size:.7rem;color:var(--text-3);margin-left:1rem">drag to rotate · scroll to zoom</span>
+            </div>
+            <div id="brainNetworkFilters" class="network-filters"></div>
+            <canvas id="brainNvCanvas" style="width:100%;height:520px;background:#000;border-radius:8px;display:block;cursor:grab"></canvas>
+            <div id="brainStatus" style="font-size:.72rem;color:var(--text-2);margin-top:.5rem;line-height:1.5"></div>
+        </div>`;
+
+    el.querySelectorAll('.visit-pill').forEach(p => {
+        p.addEventListener('click', () => setSelectedVisit(p.dataset.visit));
+    });
+    $('brainTopPct').addEventListener('input', e => {
+        $('brainTopPctVal').textContent = e.target.value + '%';
+        renderBrainGraph();
+    });
+    $('brainMode').addEventListener('change', renderBrainGraph);
+
+    // Initialize a dedicated NiiVue instance for the connectome.
+    if (typeof niivue !== 'undefined' && niivue?.Niivue) {
+        try {
+            const nv = new niivue.Niivue({
+                backColor: [0.06, 0.06, 0.055, 1],
+                show3Dcrosshair: false,
+                isOrientCube: true,
+            });
+            nv.attachTo('brainNvCanvas');
+            currentPatient.brainNv = nv;
+        } catch (e) {
+            $('brainStatus').textContent = 'NiiVue init failed: ' + e.message;
+        }
+    } else {
+        $('brainStatus').textContent = 'NiiVue library not loaded.';
+    }
+
+    currentPatient.tabRendered.brainview = true;
+    renderBrainGraph();
+}
+
+async function renderBrainGraph() {
+    if (!currentPatient) return;
+    const visit = currentPatient.selectedVisit;
+    document.querySelectorAll('#brainVisitPills .visit-pill').forEach(p =>
+        p.classList.toggle('active', p.dataset.visit === visit));
+
+    const status = $('brainStatus');
+    const coords = await _getAtlasCoords();
+    if (!coords?.rois?.length) {
+        if (status) status.innerHTML =
+            `Schaefer ROI coordinates not generated yet. Run <code>python -m app.generate_schaefer_coords --parcellation … --labels …</code> once.`;
+        return;
+    }
+
+    const payload = await _ensureMatrix(visit);
+    if (!payload) {
+        if (status) status.textContent = 'Failed to load matrix for ' + visit;
+        return;
+    }
+
+    // Network filter checkboxes
+    const networks = Array.from(new Set(coords.rois.map(r => r.network).filter(Boolean))).sort();
+    const filtersEl = $('brainNetworkFilters');
+    if (!filtersEl.dataset.populated) {
+        filtersEl.innerHTML = networks.map(n =>
+            `<label><input type="checkbox" data-net="${n}" checked>
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${NETWORK_COLORS[n] || '#7a7976'};margin-right:.25rem;vertical-align:middle"></span>${n}</label>`
+        ).join('');
+        filtersEl.dataset.populated = '1';
+        filtersEl.addEventListener('change', renderBrainGraph);
+    }
+    const enabledNetworks = new Set(
+        Array.from(filtersEl.querySelectorAll('input[type=checkbox]:checked'))
+             .map(i => i.dataset.net)
+    );
+
+    const m = payload.matrix;
+    const n = m.length;
+    if (n !== coords.rois.length) {
+        if (status) status.innerHTML =
+            `Matrix is ${n}×${n} but coords are ${coords.rois.length}×${coords.rois.length}. ` +
+            `Brain View requires the Schaefer parcellation to match the .npz size.`;
+        return;
+    }
+
+    // ── Compute the display matrix based on the current mode ────────────────
+    const mode = $('brainMode').value;
+    let displayMatrix = m;
+    let modeLabel = `raw correlation @ ${visit}`;
+
+    if (mode === 'vs-cn') {
+        const cn = await _getCohortReferenceMatrix('healthy');
+        if (!cn) {
+            status.textContent = 'CN reference unavailable — fitting cohort statistics first…';
+            return;
+        }
+        if (cn.length !== n) {
+            status.textContent = `CN reference is ${cn.length}×${cn.length}, current matrix is ${n}×${n}.`;
+            return;
+        }
+        displayMatrix = m.map((row, i) => row.map((v, j) => v - cn[i][j]));
+        modeLabel = `Δ vs CN baseline mean @ ${visit}`;
+    } else if (mode === 'delta-baseline') {
+        const firstVisit = currentPatient.allVisits.find(v =>
+            (currentPatient.traj?.sessions || []).some(s => s.visit === v));
+        if (!firstVisit) {
+            status.textContent = 'No fMRI baseline visit available.';
+            return;
+        }
+        if (firstVisit === visit) {
+            displayMatrix = m.map(row => row.map(() => 0));
+            modeLabel = `Δ since ${firstVisit} (= 0 — pick a later visit)`;
+        } else {
+            const basePayload = await _ensureMatrix(firstVisit);
+            if (!basePayload || basePayload.matrix.length !== n) {
+                status.textContent = `Could not load baseline matrix (${firstVisit}).`;
+                return;
+            }
+            const base = basePayload.matrix;
+            displayMatrix = m.map((row, i) => row.map((v, j) => v - base[i][j]));
+            modeLabel = `Δ since ${firstVisit} → ${visit} (progression)`;
+        }
+    }
+
+    // ── Pick top |weight| edges respecting network filters ──────────────────
+    const topPct = parseFloat($('brainTopPct').value) / 100;
+    const totalPairs = n * (n - 1) / 2;
+    const keepCount = Math.max(5, Math.floor(totalPairs * topPct));
+    const edges = [];
+    for (let i = 0; i < n; i++) {
+        if (!enabledNetworks.has(coords.rois[i].network)) continue;
+        for (let j = i + 1; j < n; j++) {
+            if (!enabledNetworks.has(coords.rois[j].network)) continue;
+            const w = displayMatrix[i][j];
+            if (w === 0) continue;
+            edges.push({ i, j, w });
+        }
+    }
+    edges.sort((a, b) => Math.abs(b.w) - Math.abs(a.w));
+    const top = edges.slice(0, keepCount);
+
+    const minKept = top.length > 0 ? Math.abs(top[top.length - 1].w).toFixed(3) : '—';
+    const maxKept = top.length > 0 ? Math.abs(top[0].w).toFixed(3) : '—';
+    const nPos = top.filter(e => e.w > 0).length;
+    const nNeg = top.length - nPos;
+    if (status) status.innerHTML =
+        `<strong>${modeLabel}</strong><br>` +
+        `${top.length} edges shown (top ${(topPct * 100).toFixed(1)}%)` +
+        ` · |w| ∈ [${minKept}, ${maxKept}]` +
+        ` · <span style="color:#d65a3b">${nPos} positive</span> · <span style="color:#3b6cd6">${nNeg} negative</span>`;
+
+    // ── Build connectome JSON for NiiVue ─────────────────────────────────────
+    // Edges format is the full symmetric n×n matrix flattened, but we zero
+    // everything outside the top-N so NiiVue draws only the strongest ones.
+    const sparseEdges = new Float32Array(n * n);
+    top.forEach(e => {
+        sparseEdges[e.i * n + e.j] = e.w;
+        sparseEdges[e.j * n + e.i] = e.w;
+    });
+    // Find which nodes touch a kept edge so we can downsize the rest
+    const activeNodes = new Set();
+    top.forEach(e => { activeNodes.add(e.i); activeNodes.add(e.j); });
+
+    const edgeMaxAbs = Math.max(0.05, Math.abs(top[0]?.w ?? 0.05));
+    const connectome = {
+        name: `sub-${currentPatient.sid} ${visit} ${mode}`,
+        nodeColormap: 'warm',
+        nodeColormapNegative: 'winter',
+        nodeMinColor: 0,
+        nodeMaxColor: 6,           // 7 networks → indices 0..6
+        nodeScale: 2.5,
+        edgeColormap: 'warm',
+        edgeColormapNegative: 'winter',
+        edgeMin: edgeMaxAbs * 0.05,
+        edgeMax: edgeMaxAbs,
+        edgeScale: 1.0,
+        nodes: {
+            names: coords.rois.map(r => r.label || `ROI${r.index}`),
+            prefilled: [],
+            X: coords.rois.map(r => r.x_mni),
+            Y: coords.rois.map(r => r.y_mni),
+            Z: coords.rois.map(r => r.z_mni),
+            Color: coords.rois.map(r => NETWORK_INDEX[r.network] ?? 0),
+            Size: coords.rois.map((r, i) =>
+                enabledNetworks.has(r.network)
+                    ? (activeNodes.has(i) ? 3.0 : 1.2)
+                    : 0.4
+            ),
+        },
+        edges: Array.from(sparseEdges),
+    };
+
+    const nv = currentPatient.brainNv;
+    if (!nv) {
+        status.innerHTML += '<br>NiiVue instance unavailable — cannot render 3D view.';
+        return;
+    }
+    try {
+        if (typeof nv.loadConnectomeFromJSON === 'function') {
+            await nv.loadConnectomeFromJSON(connectome);
+        } else if (typeof nv.loadConnectome === 'function') {
+            await nv.loadConnectome(connectome);
+        } else {
+            throw new Error('NiiVue version too old — needs loadConnectome(FromJSON)');
+        }
+    } catch (e) {
+        console.warn('connectome load failed', e);
+        status.innerHTML += '<br>Connectome load failed: ' + (e?.message || e);
     }
 }
 

@@ -13,7 +13,43 @@ Metrics:
 import os
 import re
 import math
+from threading import Lock
+
 import numpy as np
+
+
+# --------------------------------------------------------------------------- #
+# Module-level file-index cache                                               #
+#                                                                             #
+# Walking thousands of .npz / .nii.gz files for every patient open is the     #
+# main source of latency in the modal. We walk once per (data_root, folders)  #
+# pair and cache the result for the lifetime of the process — folders don't  #
+# change while the server is running. Restart the server to invalidate.       #
+# --------------------------------------------------------------------------- #
+
+_NPZ_INDEX_CACHE: dict[tuple, dict[str, list[dict]]] = {}
+_NIFTI_INDEX_CACHE: dict[tuple, dict[str, list[dict]]] = {}
+# Per-subject trajectory cache — modularity computation is the dominant cost
+# of opening a patient (~300ms/visit), so cache the full result per
+# (data_root, sorted folders, subject_id).
+_TRAJECTORY_CACHE: dict[tuple, dict] = {}
+# Per-visit loaded matrix cache — both /trajectory and /matrix endpoints can
+# share a single np.load call per .npz path.
+_MATRIX_CACHE: dict[str, np.ndarray] = {}
+_INDEX_LOCK = Lock()
+
+
+def _index_key(data_root: str, folder_paths: list[str]) -> tuple:
+    return (data_root, tuple(sorted(folder_paths)))
+
+
+def clear_index_cache() -> None:
+    """Drop the cached file indices and trajectory results."""
+    with _INDEX_LOCK:
+        _NPZ_INDEX_CACHE.clear()
+        _NIFTI_INDEX_CACHE.clear()
+        _TRAJECTORY_CACHE.clear()
+        _MATRIX_CACHE.clear()
 
 
 def _safe_float(v) -> float | None:
@@ -116,6 +152,169 @@ def _compute_modularity(corr_matrix: np.ndarray) -> float:
     return float(nx.community.modularity(G, communities))
 
 
+_VISIT_FILENAME_RE = re.compile(r"_(M\d+)_")
+_SUBJECT_RE = re.compile(r"sub-([a-zA-Z0-9]+)")
+
+
+def _detect_nifti_visit(filename: str, rel_dir: str) -> str:
+    """
+    Visit detection for NIfTI: filename first, then parent directory chain
+    (DELCODE longitudinal puts the visit in ``Postprocessed_M12/`` etc.).
+    """
+    m = _VISIT_FILENAME_RE.search(filename)
+    if m:
+        return m.group(1)
+    m = re.search(r"_(M\d+)$|_(M\d+)\.", filename)
+    if m:
+        return m.group(1) or m.group(2)
+    for seg in rel_dir.split(os.sep):
+        m = re.search(r"\bM(\d+)\b", seg)
+        if m:
+            return f"M{m.group(1)}"
+        m = re.search(r"_M(\d+)\b", seg)
+        if m:
+            return f"M{m.group(1)}"
+    return "unknown"
+
+
+def _vkey(rec: dict) -> int:
+    m = re.search(r"M(\d+)", rec.get("visit", "M999"))
+    return int(m.group(1)) if m else 999
+
+
+def _build_npz_index(data_root: str, folder_paths: list[str]) -> dict[str, list[dict]]:
+    by_sid: dict[str, list[dict]] = {}
+    for folder_rel in folder_paths:
+        folder = os.path.join(data_root, folder_rel)
+        if not os.path.isdir(folder):
+            continue
+        for dirpath, _, filenames in os.walk(folder):
+            for fn in filenames:
+                if not fn.endswith(".npz"):
+                    continue
+                if "z_transformed" in fn or "z_transform" in fn:
+                    continue
+                m = _SUBJECT_RE.search(fn)
+                if not m:
+                    continue
+                sid = m.group(1)
+                abs_path = os.path.join(dirpath, fn)
+                vmatch = _VISIT_FILENAME_RE.search(fn)
+                visit = vmatch.group(1) if vmatch else "unknown"
+                by_sid.setdefault(sid, []).append({
+                    "visit": visit,
+                    "abs_path": abs_path,
+                    "rel_path": os.path.relpath(abs_path, data_root),
+                    "filename": fn,
+                })
+    for recs in by_sid.values():
+        recs.sort(key=_vkey)
+    return by_sid
+
+
+def _build_nifti_index(data_root: str, folder_paths: list[str]) -> dict[str, list[dict]]:
+    by_sid: dict[str, list[dict]] = {}
+    for folder_rel in folder_paths:
+        folder = os.path.join(data_root, folder_rel)
+        if not os.path.isdir(folder):
+            continue
+        for dirpath, _, filenames in os.walk(folder):
+            rel_dir = os.path.relpath(dirpath, data_root)
+            for fn in filenames:
+                if not (fn.endswith(".nii.gz") or fn.endswith(".nii")):
+                    continue
+                m = _SUBJECT_RE.search(fn)
+                if not m:
+                    continue
+                sid = m.group(1)
+                abs_path = os.path.join(dirpath, fn)
+                by_sid.setdefault(sid, []).append({
+                    "visit": _detect_nifti_visit(fn, rel_dir),
+                    "abs_path": abs_path,
+                    "rel_path": os.path.relpath(abs_path, data_root),
+                    "filename": fn,
+                })
+    for recs in by_sid.values():
+        recs.sort(key=_vkey)
+    return by_sid
+
+
+def index_npz_by_subject(
+    data_root: str,
+    folder_paths: list[str],
+) -> dict[str, list[dict]]:
+    """
+    Walk each scan folder ONCE and group every .npz correlation-matrix file
+    by subject_id. Cached at module level for the lifetime of the process.
+
+    Returns ``{subject_id: [{visit, abs_path, rel_path, filename}, ...]}``,
+    each list sorted chronologically by visit (M0, M12…).
+    """
+    key = _index_key(data_root, folder_paths)
+    with _INDEX_LOCK:
+        cached = _NPZ_INDEX_CACHE.get(key)
+        if cached is not None:
+            return cached
+    built = _build_npz_index(data_root, folder_paths)
+    with _INDEX_LOCK:
+        _NPZ_INDEX_CACHE[key] = built
+    return built
+
+
+def index_nifti_by_subject(
+    data_root: str,
+    folder_paths: list[str],
+) -> dict[str, list[dict]]:
+    """Cached counterpart of ``index_npz_by_subject`` for ``.nii.gz`` volumes."""
+    key = _index_key(data_root, folder_paths)
+    with _INDEX_LOCK:
+        cached = _NIFTI_INDEX_CACHE.get(key)
+        if cached is not None:
+            return cached
+    built = _build_nifti_index(data_root, folder_paths)
+    with _INDEX_LOCK:
+        _NIFTI_INDEX_CACHE[key] = built
+    return built
+
+
+def find_subject_npz_files(
+    data_root: str,
+    folder_paths: list[str],
+    subject_id: str,
+) -> list[dict]:
+    """Look up a single subject's .npz files via the cached folder index."""
+    return index_npz_by_subject(data_root, folder_paths).get(subject_id, [])
+
+
+def find_subject_nifti_files(
+    data_root: str,
+    folder_paths: list[str],
+    subject_id: str,
+) -> list[dict]:
+    """Look up a single subject's .nii.gz files via the cached folder index."""
+    return index_nifti_by_subject(data_root, folder_paths).get(subject_id, [])
+
+
+def load_correlation_matrix(npz_path: str) -> np.ndarray:
+    """
+    Load a correlation matrix from an .npz file (uses first key).
+    Cached by absolute path — the same matrix can be requested by /trajectory,
+    /manifold, /matrix, and the Brain View edge plot in quick succession.
+    """
+    cached = _MATRIX_CACHE.get(npz_path)
+    if cached is not None:
+        return cached
+    data = np.load(npz_path)
+    key = list(data.keys())[0]
+    arr = data[key]
+    # Cap cache size to avoid memory blowup over a long session.
+    with _INDEX_LOCK:
+        if len(_MATRIX_CACHE) > 256:
+            _MATRIX_CACHE.clear()
+        _MATRIX_CACHE[npz_path] = arr
+    return arr
+
+
 def get_subject_trajectory(
     data_root: str,
     folder_paths: list[str],
@@ -125,6 +324,11 @@ def get_subject_trajectory(
     For a given subject, find all their .npz correlation matrix files
     across the selected scan folders, compute biomarkers per session,
     and return time-ordered metrics.
+
+    Result is cached by ``(data_root, sorted_folders, subject_id)`` — the
+    biomarker computation is the dominant cost of opening a patient and
+    is fully deterministic, so caching is safe for the lifetime of the
+    process.
 
     Parameters
     ----------
@@ -141,56 +345,33 @@ def get_subject_trajectory(
       - subject_id
       - sessions: list of dicts, each with visit, file, and biomarker values
     """
+    cache_key = (*_index_key(data_root, folder_paths), subject_id)
+    with _INDEX_LOCK:
+        cached = _TRAJECTORY_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
     sessions = []
+    for rec in find_subject_npz_files(data_root, folder_paths, subject_id):
+        try:
+            matrix = load_correlation_matrix(rec["abs_path"])
+            is_dmn = matrix.shape[0] <= 50
+            biomarkers = compute_fmri_biomarkers(matrix, is_dmn_only=is_dmn)
+        except Exception as e:
+            biomarkers = {"error": str(e)}
 
-    for folder_rel in folder_paths:
-        folder = os.path.join(data_root, folder_rel)
-        if not os.path.isdir(folder):
-            continue
+        sessions.append({
+            "visit": rec["visit"],
+            "file": rec["rel_path"],
+            "filename": rec["filename"],
+            **biomarkers,
+        })
 
-        for dirpath, _, filenames in os.walk(folder):
-            for fn in filenames:
-                if not fn.endswith(".npz"):
-                    continue
-                if f"sub-{subject_id}" not in fn:
-                    continue
-                # Skip z-transformed variants to avoid double-counting
-                if "z_transformed" in fn or "z_transform" in fn:
-                    continue
-
-                full = os.path.join(dirpath, fn)
-                rel = os.path.relpath(full, data_root)
-
-                # Extract visit
-                visit_match = re.search(r"_(M\d+)_", fn)
-                visit = visit_match.group(1) if visit_match else "unknown"
-
-                # Load and compute
-                try:
-                    data = np.load(full)
-                    key = list(data.keys())[0]  # Usually 'array'
-                    matrix = data[key]
-                    is_dmn = matrix.shape[0] <= 50
-                    biomarkers = compute_fmri_biomarkers(matrix, is_dmn_only=is_dmn)
-                except Exception as e:
-                    biomarkers = {"error": str(e)}
-
-                sessions.append({
-                    "visit": visit,
-                    "file": rel,
-                    "filename": fn,
-                    **biomarkers,
-                })
-
-    # Sort by visit (M0, M12, M24...)
-    def visit_sort_key(s):
-        m = re.search(r"M(\d+)", s.get("visit", "M999"))
-        return int(m.group(1)) if m else 999
-
-    sessions.sort(key=visit_sort_key)
-
-    return {
+    result = {
         "subject_id": subject_id,
         "total_sessions": len(sessions),
         "sessions": sessions,
     }
+    with _INDEX_LOCK:
+        _TRAJECTORY_CACHE[cache_key] = result
+    return result

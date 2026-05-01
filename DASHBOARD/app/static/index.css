@@ -246,7 +246,7 @@ body::before{
 .modal-backdrop.open{display:flex;animation:fadeIn .2s ease}
 .patient-modal{
     background:var(--bg-1);border:1px solid var(--border);border-radius:14px;
-    width:100%;max-width:820px;max-height:90vh;overflow-y:auto;
+    width:100%;max-width:980px;max-height:92vh;overflow-y:auto;
     box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);
     animation:slideUp .25s ease;
 }
@@ -286,6 +286,149 @@ body::before{
 .session-table{width:100%;border-collapse:collapse;font-size:.78rem}
 .session-table th{background:var(--bg-3);color:var(--text-2);font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:.45rem .7rem;text-align:left;border-bottom:1px solid var(--border)}
 .session-table td{padding:.45rem .7rem;border-bottom:1px solid rgba(255,255,255,.025);color:var(--text-1)}
+.session-table tr.selected td{background:rgba(79,152,163,0.12)}
+.session-table tr{cursor:pointer}
+.session-table tr:hover td{background:rgba(255,255,255,0.025)}
+
+/* ── Patient modal: tab bar ── */
+.modal-tabs{
+    display:flex;gap:.25rem;margin-bottom:1.25rem;
+    border-bottom:1px solid var(--border);
+    overflow-x:auto;
+}
+.modal-tab{
+    background:transparent;border:none;color:var(--text-2);
+    padding:.6rem 1rem;font-size:.78rem;font-weight:500;
+    cursor:pointer;border-bottom:2px solid transparent;
+    transition:color var(--transition),border-color var(--transition);
+    white-space:nowrap;letter-spacing:.02em;
+}
+.modal-tab:hover{color:var(--text-1)}
+.modal-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-panel{display:none}
+.tab-panel.active{display:block;animation:fadeIn .15s ease}
+
+/* Visit selector (used in Connectivity / QC / Brain View) */
+.visit-selector{display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+.visit-selector label{font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.visit-pill{
+    background:var(--bg-2);border:1px solid var(--border);color:var(--text-1);
+    padding:.3rem .7rem;border-radius:14px;font-size:.75rem;cursor:pointer;
+    transition:all var(--transition);
+}
+.visit-pill:hover{border-color:var(--border-active);color:var(--text-0)}
+.visit-pill.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+
+/* Deviation strip — Overview */
+.deviation-strip{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));
+    gap:.5rem;margin-bottom:1rem;
+}
+.dev-card{
+    background:var(--bg-2);border:1px solid var(--border);border-radius:8px;
+    padding:.6rem .75rem;
+}
+.dev-card .dev-label{font-size:.65rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em}
+.dev-card .dev-value{font-size:1.1rem;font-weight:600;margin-top:.15rem}
+.dev-card .dev-sub{font-size:.7rem;color:var(--text-2);margin-top:.1rem}
+.dev-card.below .dev-value{color:var(--rose)}
+.dev-card.above .dev-value{color:var(--green)}
+.dev-card.normal .dev-value{color:var(--text-0)}
+
+/* Conversion-score row (sparkline) */
+.conv-score-row{
+    display:flex;align-items:center;gap:1rem;
+    background:var(--bg-2);border:1px solid var(--border);border-radius:8px;
+    padding:.75rem 1rem;margin-bottom:1rem;
+}
+.conv-score-row .conv-label{font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em}
+.conv-score-row .conv-vals{display:flex;gap:.75rem;flex-wrap:wrap;font-size:.78rem;color:var(--text-1)}
+.conv-score-row .conv-vals .v{font-weight:600;color:var(--text-0)}
+.conv-score-row canvas{flex:1;min-width:120px;max-height:42px}
+
+/* Manifold tab */
+.manifold-wrap{
+    background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);
+    padding:1rem;
+}
+.manifold-canvas{
+    width:100%;height:480px;background:var(--bg-1);border-radius:8px;
+    display:block;cursor:crosshair;
+}
+.manifold-legend{
+    display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.75rem;font-size:.72rem;color:var(--text-1);
+}
+.manifold-legend .leg-item{display:inline-flex;align-items:center;gap:.35rem}
+.manifold-legend .leg-dot{width:10px;height:10px;border-radius:50%}
+.manifold-info{
+    margin-top:.75rem;font-size:.75rem;color:var(--text-2);line-height:1.5;
+}
+
+/* Connectivity heatmap */
+.heatmap-wrap{
+    background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);
+    padding:1rem;
+}
+.heatmap-controls{display:flex;align-items:center;gap:1rem;margin-bottom:.75rem;flex-wrap:wrap}
+.heatmap-canvas-wrap{position:relative;width:100%;aspect-ratio:1;max-width:540px;margin:0 auto}
+.heatmap-canvas{
+    width:100%;height:100%;background:var(--bg-1);border-radius:6px;display:block;
+    image-rendering:pixelated;
+}
+.heatmap-tooltip{
+    position:absolute;pointer-events:none;
+    background:rgba(15,15,14,.95);border:1px solid var(--border);
+    border-radius:5px;padding:.35rem .55rem;font-size:.7rem;color:var(--text-0);
+    white-space:nowrap;z-index:5;display:none;
+}
+.heatmap-colorbar{display:flex;align-items:center;gap:.5rem;margin-top:.5rem;font-size:.7rem;color:var(--text-2)}
+.heatmap-colorbar .bar{flex:1;height:8px;border-radius:3px;
+    background:linear-gradient(90deg,#3b6cd6 0%,#161614 50%,#d65a3b 100%);
+}
+
+/* QC Viewer */
+.qc-wrap{
+    background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);
+    padding:1rem;
+}
+.qc-canvas{
+    width:100%;height:520px;background:#000;border-radius:8px;display:block;
+}
+.qc-status{font-size:.75rem;color:var(--text-2);margin-top:.5rem;min-height:1.1em}
+
+/* Brain View glass brain */
+.brain-wrap{
+    background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);
+    padding:1rem;
+}
+.brain-controls{display:flex;align-items:center;gap:1rem;margin-bottom:.75rem;flex-wrap:wrap}
+.brain-controls label{font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.brain-controls input[type=range]{flex:1;min-width:100px;max-width:200px}
+.brain-svg-wrap{
+    display:grid;grid-template-columns:1fr 1fr;gap:.5rem;
+    background:var(--bg-1);border-radius:8px;padding:.5rem;
+}
+.brain-svg-wrap > div{position:relative}
+.brain-svg-wrap .view-label{
+    position:absolute;top:.4rem;left:.6rem;font-size:.65rem;color:var(--text-2);
+    text-transform:uppercase;letter-spacing:.05em;
+}
+.brain-svg-wrap svg{width:100%;height:auto;max-height:260px;display:block}
+.network-filters{
+    display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem;
+}
+.network-filters label{
+    display:inline-flex;align-items:center;gap:.3rem;
+    font-size:.72rem;color:var(--text-1);cursor:pointer;
+    background:var(--bg-1);border:1px solid var(--border);
+    padding:.2rem .55rem;border-radius:12px;text-transform:none;letter-spacing:0;
+}
+.network-filters input{accent-color:var(--accent)}
+
+@media(max-width:768px){
+    .brain-svg-wrap{grid-template-columns:1fr}
+    .manifold-canvas{height:380px}
+}
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar{width:5px;height:5px}
