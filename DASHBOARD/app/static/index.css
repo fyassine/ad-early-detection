@@ -250,6 +250,7 @@ body::before{
     box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);
     animation:slideUp .25s ease;
 }
+.patient-modal.brainview-expanded{max-width:min(1400px,96vw)}
 @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 .modal-header{
     display:flex;justify-content:space-between;align-items:center;
@@ -401,9 +402,153 @@ body::before{
     background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);
     padding:1rem;
 }
+.brain-canvas{
+    /* Aspect ratio 4:3 with a sensible cap; centred horizontally so it doesn't
+       stretch into a thin band on a 1400px-wide modal. */
+    width:100%;
+    max-width:1200px;
+    aspect-ratio:4/3;
+    height:auto;
+    max-height:min(78vh, 850px);
+    background:#000;
+    border-radius:8px;
+    display:block;
+    margin:0 auto;
+    cursor:grab;
+    /* Stay visible while the user drags the threshold slider / changes mode. */
+    position:sticky;
+    top:.5rem;
+    z-index:1;
+}
+.brain-canvas:active{cursor:grabbing}
 .brain-controls{display:flex;align-items:center;gap:1rem;margin-bottom:.75rem;flex-wrap:wrap}
 .brain-controls label{font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
 .brain-controls input[type=range]{flex:1;min-width:100px;max-width:200px}
+.brain-controls input[type=number]{
+    width:70px;background:var(--bg-3);border:1px solid var(--border);
+    color:var(--text-0);padding:.25rem .4rem;border-radius:5px;
+    font-size:.78rem;font-family:'JetBrains Mono',monospace;
+}
+.brain-controls .actions{margin-left:auto;display:flex;gap:.4rem}
+.brain-action-btn{
+    background:var(--bg-3);border:1px solid var(--border);color:var(--text-1);
+    padding:.3rem .55rem;border-radius:6px;cursor:pointer;font-size:.78rem;
+    display:inline-flex;align-items:center;gap:.3rem;transition:all var(--transition);
+    text-transform:none;letter-spacing:0;
+}
+.brain-action-btn:hover{border-color:var(--accent);color:var(--accent)}
+.brain-action-btn.active{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
+.brain-action-btn[disabled]{opacity:.4;cursor:not-allowed}
+
+/* Radio-card mode selector */
+.mode-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.4rem;margin-bottom:.75rem}
+.mode-card{
+    background:var(--bg-3);border:1px solid var(--border);border-radius:8px;
+    padding:.55rem .7rem;cursor:pointer;transition:all var(--transition);
+    display:flex;flex-direction:column;gap:.15rem;
+}
+.mode-card:hover{border-color:var(--border-active);background:var(--bg-2)}
+.mode-card.selected{border-color:var(--accent);background:var(--accent-dim)}
+.mode-card .mode-title{font-size:.78rem;font-weight:600;color:var(--text-0);display:flex;align-items:center;gap:.4rem}
+.mode-card .mode-title .dot{width:8px;height:8px;border-radius:50%;background:var(--text-3)}
+.mode-card.selected .mode-title .dot{background:var(--accent)}
+.mode-card .mode-sub{font-size:.68rem;color:var(--text-2);line-height:1.35}
+
+/* Edge-sign legend pills */
+.edge-pills{display:inline-flex;gap:.4rem;font-size:.72rem;align-items:center}
+.edge-pill{
+    display:inline-flex;align-items:center;gap:.3rem;
+    padding:.18rem .5rem;border-radius:14px;font-weight:600;
+    background:var(--bg-3);border:1px solid var(--border);
+}
+.edge-pill .pill-dot{width:7px;height:7px;border-radius:50%}
+.edge-pill.pos .pill-dot{background:#d65a3b}
+.edge-pill.pos{color:#e08461}
+.edge-pill.neg .pill-dot{background:#3b6cd6}
+.edge-pill.neg{color:#6da0e3}
+
+/* Color legend gradient bar */
+.brain-colorbar{
+    display:flex;align-items:center;gap:.5rem;margin-top:.6rem;font-size:.7rem;color:var(--text-2);
+    font-family:'JetBrains Mono',monospace;
+}
+.brain-colorbar .scale{
+    flex:1;height:10px;border-radius:5px;
+    background:linear-gradient(90deg,#3b6cd6 0%,rgba(255,255,255,0.08) 50%,#d65a3b 100%);
+    border:1px solid var(--border);
+}
+.brain-colorbar .tick-mid{flex-shrink:0;text-align:center;min-width:2.5em}
+
+/* Sticky patient summary */
+.patient-summary-bar{
+    position:sticky;top:0;z-index:9;
+    background:var(--bg-1);
+    padding:0 0 .9rem 0;margin:-.4rem 0 0 0;
+    border-bottom:1px solid var(--border);
+}
+.patient-summary-bar .meta-row{
+    display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;
+}
+.patient-summary-bar .meta-tile{
+    display:flex;flex-direction:column;font-size:.72rem;
+}
+.patient-summary-bar .meta-tile .meta-label{
+    color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;font-size:.6rem;
+}
+.patient-summary-bar .meta-tile .meta-value{font-size:.95rem;font-weight:600;color:var(--text-0)}
+.patient-summary-bar .visit-tags{display:flex;gap:.25rem;flex-wrap:wrap}
+
+/* Global visit bar (shared across all tabs) */
+.visit-bar-row{
+    display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-top:.6rem;
+}
+.vbr-label{font-size:.65rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.vbr-pills{display:flex;gap:.3rem;flex-wrap:wrap}
+.vbr-pills .visit-pill{
+    background:var(--bg-2);border:1px solid var(--border);color:var(--text-1);
+    padding:.32rem .8rem;border-radius:14px;font-size:.78rem;font-weight:500;cursor:pointer;
+    transition:all var(--transition);
+}
+.vbr-pills .visit-pill:hover{border-color:var(--border-active);color:var(--text-0)}
+.vbr-pills .visit-pill.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);font-weight:600}
+.vbr-empty{font-size:.7rem;color:var(--text-3);font-style:italic}
+.vbr-spacer{flex:1}
+.vbr-csv{display:inline-flex;align-items:center;gap:.4rem}
+.vbr-csv-label{font-size:.6rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em}
+
+/* Current-visit badge in modal header */
+.current-visit-badge{
+    display:inline-flex;align-items:center;gap:.4rem;
+    background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);
+    padding:.15rem .55rem;border-radius:12px;font-size:.7rem;font-weight:600;
+    margin-left:.6rem;
+}
+.current-visit-badge .label{color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;font-size:.6rem;font-weight:500}
+
+/* Inline help icons (ⓘ) — picks up the native title tooltip on hover/focus */
+.help-tip{
+    color:var(--text-3);cursor:help;margin-left:.35rem;font-size:.85em;
+    border:1px solid var(--border);border-radius:50%;
+    width:1.05em;height:1.05em;display:inline-flex;align-items:center;justify-content:center;
+    line-height:1;
+}
+.help-tip:hover,.help-tip:focus{color:var(--accent);border-color:var(--accent);outline:none}
+
+/* Loading skeletons */
+.skeleton{
+    background:linear-gradient(90deg,var(--bg-2) 0%,var(--bg-3) 50%,var(--bg-2) 100%);
+    background-size:200% 100%;
+    animation:skeleton-pulse 1.4s ease-in-out infinite;
+    border-radius:6px;
+}
+@keyframes skeleton-pulse{
+    0%{background-position:200% 0}
+    100%{background-position:-200% 0}
+}
+.skeleton-card{height:160px;margin-bottom:1rem}
+.skeleton-line{height:14px;margin-bottom:.5rem}
+.skeleton-line.short{width:40%}
+.skeleton-line.medium{width:70%}
 .brain-svg-wrap{
     display:grid;grid-template-columns:1fr 1fr;gap:.5rem;
     background:var(--bg-1);border-radius:8px;padding:.5rem;
@@ -428,6 +573,7 @@ body::before{
 @media(max-width:768px){
     .brain-svg-wrap{grid-template-columns:1fr}
     .manifold-canvas{height:380px}
+    .brain-canvas{aspect-ratio:1/1;max-height:65vh;position:static}
 }
 
 /* ── Scrollbar ── */

@@ -91,7 +91,14 @@ async function init() {
     });
     $('btnCloseModal').addEventListener('click', closeModal);
     $('modalBackdrop').addEventListener('click', e => { if(e.target===$('modalBackdrop')) closeModal(); });
-    
+
+    // Keyboard shortcuts (only active when the patient modal is open).
+    //   ←/→  step visits
+    //   1–5  switch tabs
+    //   r    reset Brain View rotation (when on Brain View tab)
+    //   Esc  close modal
+    document.addEventListener('keydown', _patientModalKeyHandler);
+
     // Collapsible sections
     document.querySelectorAll('.section-header').forEach(hdr => {
         hdr.addEventListener('click', () => {
@@ -99,6 +106,41 @@ async function init() {
             if(sec) sec.classList.toggle('collapsed');
         });
     });
+}
+
+function _patientModalKeyHandler(e) {
+    // Only handle keys when the modal is actually open and the user isn't
+    // typing into a form control.
+    if (!$('modalBackdrop')?.classList.contains('open')) return;
+    const target = e.target;
+    if (target && /input|textarea|select/i.test(target.tagName)) return;
+
+    if (e.key === 'Escape') { closeModal(); return; }
+    if (!currentPatient) return;
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const visits = currentPatient.allVisits || [];
+        if (visits.length < 2) return;
+        const cur = visits.indexOf(currentPatient.selectedVisit);
+        const idx = e.key === 'ArrowRight'
+            ? (cur < 0 ? 0 : (cur + 1) % visits.length)
+            : (cur < 0 ? visits.length - 1 : (cur - 1 + visits.length) % visits.length);
+        setSelectedVisit(visits[idx]);
+        return;
+    }
+
+    if (/^[1-5]$/.test(e.key)) {
+        e.preventDefault();
+        const idx = parseInt(e.key, 10) - 1;
+        if (TAB_DEFS[idx]) switchTab(TAB_DEFS[idx].id);
+        return;
+    }
+
+    if ((e.key === 'r' || e.key === 'R') && currentPatient.activeTab === 'brainview') {
+        e.preventDefault();
+        resetBrainView();
+    }
 }
 
 // ── Config: CSV (show short name, full path as title) ──
@@ -792,6 +834,12 @@ const TAB_DEFS = [
     { id: 'brainview',    label: 'Brain View' },
 ];
 
+function _syncPatientModalSize(activeTab) {
+    const modal = $('patientModal');
+    if (!modal) return;
+    modal.classList.toggle('brainview-expanded', activeTab === 'brainview');
+}
+
 window.openPatient = async function(sid) {
     if (!sid) return;
     document.querySelectorAll('.data-table tbody tr').forEach(tr =>
@@ -829,17 +877,35 @@ window.openPatient = async function(sid) {
     ).join('');
 
     $('modalBody').innerHTML = `
-        <div class="patient-meta-grid">${metaHtml}</div>
-        <div style="display:flex;align-items:flex-end;margin-bottom:1rem">
-            <div>
-                <div style="font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">Visits in CSV</div>
-                <div class="visit-tags">${visitHtml}</div>
+        <div class="patient-summary-bar">
+            <div class="patient-meta-grid">${metaHtml}</div>
+            <div class="visit-bar-row">
+                <span class="vbr-label">Visit:</span>
+                <div id="globalVisitPills" class="vbr-pills"><span class="vbr-empty">— loading visits —</span></div>
+                <span class="vbr-spacer"></span>
+                <div class="vbr-csv">
+                    <span class="vbr-csv-label">in CSV</span>
+                    <div class="visit-tags">${visitHtml}</div>
+                </div>
+                ${toggleHtml}
             </div>
-            ${toggleHtml}
         </div>
         <div class="modal-tabs" id="modalTabBar">${tabBarHtml}</div>
         ${tabPanelsHtml}
     `;
+
+    // Reset the current-visit badge in the header (populated once selectedVisit lands).
+    const headerSubhead = $('modalSubhead');
+    if (headerSubhead && !document.getElementById('currentVisitBadge')) {
+        const badge = document.createElement('span');
+        badge.id = 'currentVisitBadge';
+        badge.className = 'current-visit-badge';
+        badge.style.display = 'none';
+        badge.innerHTML = `<span class="label">visit</span><span id="currentVisitText"></span>`;
+        headerSubhead.appendChild(badge);
+    } else if (document.getElementById('currentVisitBadge')) {
+        document.getElementById('currentVisitBadge').style.display = 'none';
+    }
 
     currentPatient = {
         sid, diagC, isConverter, includeAD: false,
@@ -854,6 +920,7 @@ window.openPatient = async function(sid) {
     _matrixCache.clear();  // per-visit correlation matrices belong to this patient
 
     $('modalBackdrop').classList.add('open');
+    _syncPatientModalSize('overview');
 
     // Tab switching
     $('modalTabBar').addEventListener('click', e => {
@@ -881,6 +948,7 @@ function switchTab(tabId) {
     document.querySelectorAll('.tab-panel').forEach(p =>
         p.classList.toggle('active', p.dataset.tab === tabId));
     currentPatient.activeTab = tabId;
+    _syncPatientModalSize(tabId);
     renderActiveTab();
 }
 
@@ -932,7 +1000,24 @@ async function _fetchCohortStats(csvPath, folders) {
 function _setPatientLoadingText(text) {
     const panel = document.querySelector('.tab-panel.active');
     if (!panel) return;
-    panel.innerHTML = `<div class="loading-text" style="padding:2rem;text-align:center">${text}</div>`;
+    // Show shimmering skeletons (perceived faster than a spinner) plus a small
+    // status line so the user knows roughly which step is running.
+    const tabId = panel.dataset.tab;
+    const skeletons = (tabId === 'overview') ? `
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-line medium"></div>
+        <div class="skeleton skeleton-line short"></div>` :
+        (tabId === 'manifold') ? `
+        <div class="skeleton" style="height:480px;border-radius:12px"></div>` :
+        (tabId === 'connectivity') ? `
+        <div class="skeleton" style="height:540px;border-radius:8px;max-width:540px;margin:0 auto"></div>` :
+        (tabId === 'qcviewer' || tabId === 'brainview') ? `
+        <div class="skeleton" style="height:520px;border-radius:8px"></div>` :
+        `<div class="skeleton skeleton-card"></div>`;
+    panel.innerHTML = `
+        <div style="font-size:.75rem;color:var(--text-2);text-align:center;margin-bottom:.6rem">${text}</div>
+        ${skeletons}`;
 }
 
 async function _fetchTrajectoryStream(sid, folders, token, preferredVisit, signal) {
@@ -1107,6 +1192,8 @@ async function loadPatientData() {
         currentPatient.selectedVisit = currentPatient.mergedVisits.length
             ? currentPatient.mergedVisits[currentPatient.mergedVisits.length - 1].visit
             : null;
+        _updateCurrentVisitBadge(currentPatient.selectedVisit);
+        _renderGlobalVisitPills();
         currentPatient.tabRendered = {
             overview: false, manifold: false, connectivity: false, qcviewer: false, brainview: false
         };
@@ -1149,11 +1236,49 @@ async function loadPatientData() {
     }
 }
 
+function _updateCurrentVisitBadge(visit) {
+    const badge = document.getElementById('currentVisitBadge');
+    const text = document.getElementById('currentVisitText');
+    if (!badge || !text) return;
+    if (visit) {
+        text.textContent = visit;
+        badge.style.display = 'inline-flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+// Populate / refresh the single visit-pill row at the top of the modal.
+// Each tab's render function used to template its own pills; now they all
+// observe this single bar via `setSelectedVisit`.
+function _renderGlobalVisitPills() {
+    const host = document.getElementById('globalVisitPills');
+    if (!host || !currentPatient) return;
+    const visits = currentPatient.allVisits || [];
+    if (!visits.length) {
+        host.innerHTML = `<span class="vbr-empty">— no visits available —</span>`;
+        return;
+    }
+    const sel = currentPatient.selectedVisit;
+    host.innerHTML = visits.map(v =>
+        `<button class="visit-pill${v === sel ? ' active' : ''}" data-visit="${v}">${v}</button>`
+    ).join('');
+    host.querySelectorAll('.visit-pill').forEach(p => {
+        p.addEventListener('click', () => setSelectedVisit(p.dataset.visit));
+        // Pre-fetch QC mean volume on hover so the QC tab feels instant.
+        p.addEventListener('mouseenter', () => _prefetchQCVolume(p.dataset.visit));
+    });
+}
+
 // When the user clicks a visit in any view, propagate the change everywhere.
 function setSelectedVisit(visit) {
     if (!currentPatient || !visit) return;
     if (currentPatient.selectedVisit === visit) return;
     currentPatient.selectedVisit = visit;
+    _updateCurrentVisitBadge(visit);
+    // Refresh the global visit pill bar's active state
+    document.querySelectorAll('#globalVisitPills .visit-pill').forEach(p =>
+        p.classList.toggle('active', p.dataset.visit === visit));
     // Highlight the row in the session table (Overview is always rendered if visible)
     document.querySelectorAll('#tab-overview .session-table tbody tr').forEach(tr => {
         tr.classList.toggle('selected', tr.dataset.visit === visit);
@@ -1167,12 +1292,18 @@ function setSelectedVisit(visit) {
 
 function closeModal(){
     $('modalBackdrop').classList.remove('open');
+    $('patientModal').classList.remove('brainview-expanded');
     document.querySelectorAll('.data-table tbody tr.selected').forEach(tr=>tr.classList.remove('selected'));
     ['trajFC','trajMod','trajCog','trajCSF','convScore'].forEach(k=>{
         if(activeCharts[k]){activeCharts[k].destroy();delete activeCharts[k];}
     });
-    // Tear down NiiVue (otherwise WebGL contexts pile up)
+    // Tear down NiiVue (otherwise WebGL contexts pile up) and stop any
+    // brain-view animation timer so we don't leak setInterval.
     if (currentPatient) {
+        if (currentPatient._brainPlayTimer) {
+            clearInterval(currentPatient._brainPlayTimer);
+            currentPatient._brainPlayTimer = null;
+        }
         currentPatient.niiVue = null;
         currentPatient.brainNv = null;
     }
@@ -1506,13 +1637,19 @@ function renderOverviewTab() {
 // Manifold tab — 2D scatter on a Canvas (no extra library)
 // ──────────────────────────────────────────────────────────────────────────────
 
-const MANIFOLD_COLORS = {
-    healthy:   { fill: 'rgba(79,152,163,0.42)',  stroke: '#4f98a3' },
-    scd:       { fill: 'rgba(232,175,52,0.42)',  stroke: '#e8af34' },
-    mci:       { fill: 'rgba(109,170,69,0.42)',  stroke: '#6daa45' },
-    converter: { fill: 'rgba(224,128,64,0.42)',  stroke: '#e08040' },
-    ad:        { fill: 'rgba(209,99,167,0.42)',  stroke: '#d163a7' },
-};
+// Derive Manifold cohort dot colors from DIAG_COLORS so they stay in sync with
+// the diagnosis bar chart, the patient-row diagnosis dot, and the deviation
+// strip. (The earlier hand-coded version had scd / mci swapped vs the bar.)
+function _hexToRgba(hex, alpha) {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!m) return `rgba(127,127,127,${alpha})`;
+    return `rgba(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)},${alpha})`;
+}
+const MANIFOLD_COLORS = ['healthy','scd','mci','converter','ad'].reduce((acc, k) => {
+    const hex = DIAG_COLORS[k];
+    acc[k] = { fill: _hexToRgba(hex, 0.42), stroke: hex };
+    return acc;
+}, {});
 
 function renderManifoldTab() {
     if (!currentPatient) return;
@@ -1739,12 +1876,11 @@ function renderConnectivityTab() {
     const el = $('tab-connectivity');
     el.innerHTML = `
         <div class="heatmap-wrap">
-            <div class="visit-selector">
-                <label>Visit:</label>
-                <div id="connVisitPills">${_visitPills()}</div>
-                <label style="margin-left:1rem">
+            <div class="visit-selector" style="justify-content:flex-end">
+                <label style="display:inline-flex;align-items:center">
                     <input type="checkbox" id="heatmapGroup" style="margin-right:.3rem">
                     Group by Schaefer network
+                    <span class="help-tip" tabindex="0" title="Reorders the matrix so ROIs from the same Schaefer 7-network sit next to each other (Default → Cont → SalVentAttn → DorsAttn → Limbic → SomMot → Vis). Diagonal blocks then show within-network connectivity; off-diagonal blocks show between-network coupling. The yellow dividers mark the DMN boundary.">ⓘ</span>
                 </label>
             </div>
             <div class="heatmap-canvas-wrap">
@@ -1893,17 +2029,17 @@ function renderQCViewerTab() {
     const el = $('tab-qcviewer');
     el.innerHTML = `
         <div class="qc-wrap">
-            <div class="visit-selector">
-                <label>Visit:</label>
-                <div id="qcVisitPills">${_visitPills()}</div>
+            <div class="visit-selector" style="justify-content:flex-end">
+                <label class="qc-toggle" style="display:inline-flex;align-items:center;gap:.4rem;font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;cursor:pointer">
+                    <input type="checkbox" id="qcFull4D">
+                    Load full 4D timeseries
+                </label>
             </div>
             <canvas class="qc-canvas" id="qcCanvas"></canvas>
             <div class="qc-status" id="qcStatus"></div>
         </div>`;
 
-    el.querySelectorAll('.visit-pill').forEach(p => {
-        p.addEventListener('click', () => setSelectedVisit(p.dataset.visit));
-    });
+    $('qcFull4D').addEventListener('change', () => loadQCViewerVolume());
 
     if (typeof niivue === 'undefined' || !niivue?.Niivue) {
         $('qcStatus').textContent = 'NiiVue library failed to load (CDN blocked?). Check your network.';
@@ -1912,8 +2048,22 @@ function renderQCViewerTab() {
     }
 
     try {
-        const nv = new niivue.Niivue({ backColor: [0, 0, 0, 1], show3Dcrosshair: true });
+        const nv = new niivue.Niivue({
+            backColor: [0, 0, 0, 1],
+            show3Dcrosshair: false,            // these were the only thing the user saw on a black canvas
+            isColorbar: true,
+            isOrientCube: true,
+        });
         nv.attachTo('qcCanvas');
+        try {
+            if (nv.opts) {
+                nv.opts.show3Dcrosshair = false;
+                nv.opts.isCornerOrientationText = true;
+            }
+            if (typeof nv.setSliceType === 'function' && typeof nv.sliceTypeMultiplanar !== 'undefined') {
+                nv.setSliceType(nv.sliceTypeMultiplanar);
+            }
+        } catch (_) {}
         currentPatient.niiVue = nv;
     } catch (e) {
         $('qcStatus').textContent = 'NiiVue init failed: ' + e.message;
@@ -1921,6 +2071,35 @@ function renderQCViewerTab() {
 
     currentPatient.tabRendered.qcviewer = true;
     loadQCViewerVolume();
+}
+
+function _qcVolumeUrl(visit, full4D) {
+    if (!currentPatient) return null;
+    const folders = _resolveQueryFolders(currentPatient.includeAD);
+    let url = `/api/patient/${currentPatient.sid}/scan?scan_folders=${encodeURIComponent(folders.join(','))}&visit=${encodeURIComponent(visit)}&ext=.nii.gz`;
+    if (!full4D) url += '&reduce=mean';
+    return url;
+}
+
+// Fire-and-forget HEAD-then-GET prefetch: once the file is in the browser HTTP
+// cache (Cache-Control: max-age=86400 from the backend) the actual NiiVue load
+// is essentially instant. We only prefetch the *mean* volume — the full 4D
+// download is heavy enough that we don't want to do it speculatively.
+const _qcPrefetched = new Set();
+function _prefetchQCVolume(visit) {
+    if (!currentPatient || !visit) return;
+    const key = `${currentPatient.sid}|${visit}|mean`;
+    if (_qcPrefetched.has(key)) return;
+    const hasNifti = currentPatient.scansList.some(s =>
+        String(s.visit).toUpperCase() === String(visit).toUpperCase());
+    if (!hasNifti) return;
+    _qcPrefetched.add(key);
+    const url = _qcVolumeUrl(visit, false);
+    if (!url) return;
+    fetch(url, { method: 'GET', cache: 'force-cache' }).catch(() => {
+        // best-effort; never surface prefetch failures
+        _qcPrefetched.delete(key);
+    });
 }
 
 async function loadQCViewerVolume() {
@@ -1939,12 +2118,47 @@ async function loadQCViewerVolume() {
                 : '');
         return;
     }
-    status.textContent = `Loading ${visit}…`;
-    const folders = _resolveQueryFolders(currentPatient.includeAD);
-    const url = `/api/patient/${currentPatient.sid}/scan?scan_folders=${encodeURIComponent(folders.join(','))}&visit=${encodeURIComponent(visit)}&ext=.nii.gz`;
+    const full4D = $('qcFull4D')?.checked;
+    const modeLabel = full4D ? 'full 4D timeseries' : '3D temporal mean (cached)';
+    status.textContent = `Loading ${visit} · ${modeLabel}…`;
+    const url = _qcVolumeUrl(visit, full4D);
     try {
         await currentPatient.niiVue.loadVolumes([{ url, name: `${currentPatient.sid}_${visit}.nii.gz` }]);
-        status.textContent = `Showing ${visit} · scroll/drag to navigate slices`;
+        // The temporal mean of fMRI lives in a tight band of float32 values
+        // (~700–3000 BOLD-magnitude). NiiVue's auto-window can collapse this
+        // into a near-black canvas — clamp the cal_min/cal_max to the
+        // 2nd–98th percentile of the volume's actual data so the brain is
+        // visible.
+        try {
+            const nv = currentPatient.niiVue;
+            const vol = nv.volumes?.[0];
+            if (vol) {
+                if (typeof nv.setColormap === 'function') nv.setColormap(vol.id, 'gray');
+                const data = vol.img2RAS ? vol.img2RAS() : vol.img;
+                if (data && data.length) {
+                    // sample for percentile to avoid a full sort on millions of voxels
+                    const N = data.length;
+                    const stride = Math.max(1, Math.floor(N / 100000));
+                    const sample = [];
+                    for (let i = 0; i < N; i += stride) {
+                        const v = data[i];
+                        if (Number.isFinite(v) && v !== 0) sample.push(v);
+                    }
+                    if (sample.length) {
+                        sample.sort((a, b) => a - b);
+                        const p2  = sample[Math.floor(sample.length * 0.02)];
+                        const p98 = sample[Math.floor(sample.length * 0.98)];
+                        vol.cal_min = p2;
+                        vol.cal_max = p98;
+                    }
+                }
+                if (typeof nv.updateGLVolume === 'function') nv.updateGLVolume();
+                if (typeof nv.drawScene === 'function') nv.drawScene();
+            }
+        } catch (e) {
+            console.warn('QC windowing fallback', e);
+        }
+        status.textContent = `Showing ${visit} · ${modeLabel} · scroll/drag to navigate slices`;
     } catch (e) {
         status.textContent = 'Failed to load volume: ' + (e?.message || e);
     }
@@ -2016,40 +2230,76 @@ async function _ensureMatrix(visit) {
     } catch { return null; }
 }
 
+// Brain mesh underlay — semi-transparent ICBM152 cortex from NiiVue's demo CDN.
+// Best-effort: if the CDN is unreachable, the connectome still renders alone.
+const BRAIN_MESH_LH = 'https://niivue.github.io/niivue-demo-images/BrainMesh_ICBM152.lh.mz3';
+const BRAIN_MESH_RH = 'https://niivue.github.io/niivue-demo-images/BrainMesh_ICBM152.rh.mz3';
+
+const BRAIN_MODES = [
+    { id: 'raw',             title: 'Raw',          sub: 'Strongest correlations at this visit.' },
+    { id: 'vs-cn',           title: 'Δ vs CN',      sub: 'Deviation from healthy-control baseline mean.' },
+    { id: 'delta-baseline',  title: 'Δ since M0',   sub: 'Progression — change vs the patient\'s first visit.' },
+];
+
 function renderBrainViewTab() {
     if (!currentPatient) return;
     const el = $('tab-brainview');
+    const modeCardsHtml = BRAIN_MODES.map((m, i) => `
+        <div class="mode-card${i === 0 ? ' selected' : ''}" data-mode="${m.id}">
+            <div class="mode-title"><span class="dot"></span>${m.title}</div>
+            <div class="mode-sub">${m.sub}</div>
+        </div>`).join('');
+
     el.innerHTML = `
         <div class="brain-wrap">
-            <div class="visit-selector">
-                <label>Visit:</label>
-                <div id="brainVisitPills">${_visitPills()}</div>
-                <label style="margin-left:1rem">Mode:</label>
-                <select id="brainMode" class="config-input" style="max-width:240px;font-size:.78rem">
-                    <option value="raw">Raw — strongest edges</option>
-                    <option value="vs-cn">Δ vs CN baseline (deviation)</option>
-                    <option value="delta-baseline">Δ since first visit (progression)</option>
-                </select>
-            </div>
+            <div class="mode-cards" id="brainModeCards">${modeCardsHtml}</div>
             <div class="brain-controls">
                 <label>Top edges:</label>
                 <input type="range" id="brainTopPct" min="0.5" max="10" value="2" step="0.5">
                 <span id="brainTopPctVal" style="font-size:.78rem;color:var(--text-1);min-width:2.5em">2%</span>
-                <span style="font-size:.7rem;color:var(--text-3);margin-left:1rem">drag to rotate · scroll to zoom</span>
+                <label style="margin-left:.6rem">|w| ≥</label>
+                <input type="number" id="brainAbsThr" min="0" max="1" step="0.01" placeholder="auto" title="Optional: only show edges whose absolute weight is at least this value (overrides Top % if set)">
+                <div class="actions">
+                    <button class="brain-action-btn" id="brainPlayBtn" title="Cycle through visits (1 / s)">▶ Play</button>
+                    <button class="brain-action-btn" id="brainResetBtn" title="Reset rotation (r)">⟳ Reset</button>
+                    <button class="brain-action-btn" id="brainSnapBtn" title="Download PNG of the current view">📷 Snapshot</button>
+                </div>
             </div>
             <div id="brainNetworkFilters" class="network-filters"></div>
-            <canvas id="brainNvCanvas" style="width:100%;height:520px;background:#000;border-radius:8px;display:block;cursor:grab"></canvas>
-            <div id="brainStatus" style="font-size:.72rem;color:var(--text-2);margin-top:.5rem;line-height:1.5"></div>
+            <div style="font-size:.7rem;color:var(--text-3);margin:.4rem 0 .25rem;text-align:right">drag to rotate · scroll to zoom · press r to reset</div>
+            <canvas id="brainNvCanvas" class="brain-canvas"></canvas>
+            <div class="brain-colorbar" id="brainColorbar">
+                <span id="brainCbarMin" class="tick-mid">−</span>
+                <div class="scale"></div>
+                <span id="brainCbarMax" class="tick-mid">+</span>
+            </div>
+            <div id="brainStatus" style="font-size:.75rem;color:var(--text-2);margin-top:.5rem;line-height:1.55"></div>
         </div>`;
 
-    el.querySelectorAll('.visit-pill').forEach(p => {
-        p.addEventListener('click', () => setSelectedVisit(p.dataset.visit));
-    });
+    let _brainSliderTimer = null;
     $('brainTopPct').addEventListener('input', e => {
         $('brainTopPctVal').textContent = e.target.value + '%';
-        renderBrainGraph();
+        clearTimeout(_brainSliderTimer);
+        _brainSliderTimer = setTimeout(renderBrainGraph, 60);
     });
-    $('brainMode').addEventListener('change', renderBrainGraph);
+    $('brainAbsThr').addEventListener('input', () => {
+        clearTimeout(_brainSliderTimer);
+        _brainSliderTimer = setTimeout(renderBrainGraph, 120);
+    });
+
+    // Mode radio cards
+    el.querySelectorAll('#brainModeCards .mode-card').forEach(card => {
+        card.addEventListener('click', () => {
+            el.querySelectorAll('#brainModeCards .mode-card').forEach(c =>
+                c.classList.toggle('selected', c === card));
+            renderBrainGraph();
+        });
+    });
+
+    // Action buttons
+    $('brainResetBtn').addEventListener('click', resetBrainView);
+    $('brainSnapBtn').addEventListener('click', snapshotBrainView);
+    $('brainPlayBtn').addEventListener('click', toggleBrainPlayback);
 
     // Initialize a dedicated NiiVue instance for the connectome.
     if (typeof niivue !== 'undefined' && niivue?.Niivue) {
@@ -2060,6 +2310,20 @@ function renderBrainViewTab() {
                 isOrientCube: true,
             });
             nv.attachTo('brainNvCanvas');
+            try {
+                if (nv.opts) {
+                    // showLegend is the actual opt that hides the connectome
+                    // node label list (NiiVue 0.45). The previously-tried
+                    // meshLabelTextSize doesn't exist in this version.
+                    nv.opts.showLegend = false;
+                    nv.opts.isColorbar = false;            // we draw our own
+                    nv.opts.isCornerOrientationText = false;
+                    nv.opts.show3Dcrosshair = false;
+                }
+                if (typeof nv.setMeshThicknessOn2D === 'function') {
+                    nv.setMeshThicknessOn2D(0);
+                }
+            } catch (_) { /* older NiiVue builds may not expose every opt */ }
             currentPatient.brainNv = nv;
         } catch (e) {
             $('brainStatus').textContent = 'NiiVue init failed: ' + e.message;
@@ -2070,6 +2334,64 @@ function renderBrainViewTab() {
 
     currentPatient.tabRendered.brainview = true;
     renderBrainGraph();
+}
+
+function _selectedBrainMode() {
+    const card = document.querySelector('#brainModeCards .mode-card.selected');
+    return card?.dataset.mode || 'raw';
+}
+
+function resetBrainView() {
+    const nv = currentPatient?.brainNv;
+    if (!nv?.scene) return;
+    nv.scene.renderAzimuth = -45;
+    nv.scene.renderElevation = 15;
+    if (typeof nv.scene.renderZoom === 'number') nv.scene.renderZoom = 1.0;
+    if (typeof nv.drawScene === 'function') nv.drawScene();
+}
+
+async function snapshotBrainView() {
+    const nv = currentPatient?.brainNv;
+    if (!nv) return;
+    const canvas = nv.canvas || $('brainNvCanvas');
+    if (!canvas) return;
+    // Make sure the latest frame is in the bitmap
+    if (typeof nv.drawScene === 'function') nv.drawScene();
+    canvas.toBlob(blob => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const visit = currentPatient.selectedVisit || 'visit';
+        const mode = _selectedBrainMode();
+        a.href = url;
+        a.download = `sub-${currentPatient.sid}_${visit}_${mode}_brainview.png`;
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+    }, 'image/png');
+}
+
+function toggleBrainPlayback() {
+    if (!currentPatient) return;
+    const btn = $('brainPlayBtn');
+    if (currentPatient._brainPlayTimer) {
+        clearInterval(currentPatient._brainPlayTimer);
+        currentPatient._brainPlayTimer = null;
+        btn.textContent = '▶ Play';
+        btn.classList.remove('active');
+        return;
+    }
+    const visits = currentPatient.allVisits || [];
+    if (visits.length < 2) return;
+    btn.textContent = '⏸ Pause';
+    btn.classList.add('active');
+    let idx = visits.indexOf(currentPatient.selectedVisit);
+    if (idx < 0) idx = 0;
+    currentPatient._brainPlayTimer = setInterval(() => {
+        idx = (idx + 1) % visits.length;
+        setSelectedVisit(visits[idx]);
+        // Stop after one full cycle to avoid burning rendering forever.
+        if (idx === 0) toggleBrainPlayback();
+    }, 1100);
 }
 
 async function renderBrainGraph() {
@@ -2118,7 +2440,7 @@ async function renderBrainGraph() {
     }
 
     // ── Compute the display matrix based on the current mode ────────────────
-    const mode = $('brainMode').value;
+    const mode = _selectedBrainMode();
     let displayMatrix = m;
     let modeLabel = `raw correlation @ ${visit}`;
 
@@ -2157,31 +2479,49 @@ async function renderBrainGraph() {
     }
 
     // ── Pick top |weight| edges respecting network filters ──────────────────
+    // Cache the *sorted* edge list per (visit, mode, enabled-networks) on the
+    // matrix payload. The K%-slider then becomes an O(keepCount) slice
+    // instead of an O(n²) scan + sort on every tick.
     const topPct = parseFloat($('brainTopPct').value) / 100;
+    const absThrInput = parseFloat($('brainAbsThr').value);
+    const useAbsThr = Number.isFinite(absThrInput) && absThrInput > 0;
     const totalPairs = n * (n - 1) / 2;
     const keepCount = Math.max(5, Math.floor(totalPairs * topPct));
-    const edges = [];
-    for (let i = 0; i < n; i++) {
-        if (!enabledNetworks.has(coords.rois[i].network)) continue;
-        for (let j = i + 1; j < n; j++) {
-            if (!enabledNetworks.has(coords.rois[j].network)) continue;
-            const w = displayMatrix[i][j];
-            if (w === 0) continue;
-            edges.push({ i, j, w });
+    const edgeKey = `${visit}|${mode}|${[...enabledNetworks].sort().join(',')}`;
+    let sortedEdges = (payload._sortedEdgesKey === edgeKey) ? payload._sortedEdges : null;
+    if (!sortedEdges) {
+        sortedEdges = [];
+        for (let i = 0; i < n; i++) {
+            if (!enabledNetworks.has(coords.rois[i].network)) continue;
+            for (let j = i + 1; j < n; j++) {
+                if (!enabledNetworks.has(coords.rois[j].network)) continue;
+                const w = displayMatrix[i][j];
+                if (w === 0) continue;
+                sortedEdges.push({ i, j, w });
+            }
         }
+        sortedEdges.sort((a, b) => Math.abs(b.w) - Math.abs(a.w));
+        payload._sortedEdges = sortedEdges;
+        payload._sortedEdgesKey = edgeKey;
     }
-    edges.sort((a, b) => Math.abs(b.w) - Math.abs(a.w));
-    const top = edges.slice(0, keepCount);
+    const top = useAbsThr
+        ? sortedEdges.filter(e => Math.abs(e.w) >= absThrInput)
+        : sortedEdges.slice(0, keepCount);
 
     const minKept = top.length > 0 ? Math.abs(top[top.length - 1].w).toFixed(3) : '—';
     const maxKept = top.length > 0 ? Math.abs(top[0].w).toFixed(3) : '—';
     const nPos = top.filter(e => e.w > 0).length;
     const nNeg = top.length - nPos;
+    const selectorBlurb = useAbsThr
+        ? `|w| ≥ ${absThrInput}`
+        : `top ${(topPct * 100).toFixed(1)}%`;
     if (status) status.innerHTML =
         `<strong>${modeLabel}</strong><br>` +
-        `${top.length} edges shown (top ${(topPct * 100).toFixed(1)}%)` +
-        ` · |w| ∈ [${minKept}, ${maxKept}]` +
-        ` · <span style="color:#d65a3b">${nPos} positive</span> · <span style="color:#3b6cd6">${nNeg} negative</span>`;
+        `${top.length} edges (${selectorBlurb}) · |w| ∈ [${minKept}, ${maxKept}]` +
+        ` &nbsp; <span class="edge-pills">` +
+            `<span class="edge-pill pos"><span class="pill-dot"></span>${nPos} increased</span>` +
+            `<span class="edge-pill neg"><span class="pill-dot"></span>${nNeg} decreased</span>` +
+        `</span>`;
 
     // ── Build connectome JSON for NiiVue ─────────────────────────────────────
     // Edges format is the full symmetric n×n matrix flattened, but we zero
@@ -2209,7 +2549,10 @@ async function renderBrainGraph() {
         edgeMax: edgeMaxAbs,
         edgeScale: 1.0,
         nodes: {
-            names: coords.rois.map(r => r.label || `ROI${r.index}`),
+            // Empty names so NiiVue's connectome legend (if it gets reenabled)
+            // has nothing to render. We expose ROI labels via our own status
+            // line / hover instead.
+            names: coords.rois.map(() => ''),
             prefilled: [],
             X: coords.rois.map(r => r.x_mni),
             Y: coords.rois.map(r => r.y_mni),
@@ -2224,23 +2567,100 @@ async function renderBrainGraph() {
         edges: Array.from(sparseEdges),
     };
 
+    // Update the colorbar to match the active edge-weight scale
+    const cbarMin = $('brainCbarMin'), cbarMax = $('brainCbarMax');
+    if (cbarMin && cbarMax) {
+        cbarMin.textContent = `−${edgeMaxAbs.toFixed(2)}`;
+        cbarMax.textContent = `+${edgeMaxAbs.toFixed(2)}`;
+    }
+
     const nv = currentPatient.brainNv;
     if (!nv) {
         status.innerHTML += '<br>NiiVue instance unavailable — cannot render 3D view.';
         return;
     }
     try {
-        if (typeof nv.loadConnectomeFromJSON === 'function') {
-            await nv.loadConnectomeFromJSON(connectome);
-        } else if (typeof nv.loadConnectome === 'function') {
-            await nv.loadConnectome(connectome);
-        } else {
-            throw new Error('NiiVue version too old — needs loadConnectome(FromJSON)');
+        await _ensureBrainMeshUnderlay(nv);
+        await _renderConnectomeKeepingMesh(nv, connectome);
+
+        // Sensible default angle (3/4 view, slightly tilted so frontal lobes
+        // are visible) — only set on the very first load so user-rotation is
+        // preserved across visit/mode switches.
+        if (!currentPatient._brainViewAngled && nv.scene) {
+            nv.scene.renderAzimuth = -45;
+            nv.scene.renderElevation = 15;
+            currentPatient._brainViewAngled = true;
+            if (typeof nv.drawScene === 'function') nv.drawScene();
         }
     } catch (e) {
         console.warn('connectome load failed', e);
         status.innerHTML += '<br>Connectome load failed: ' + (e?.message || e);
     }
+}
+
+// Load a semi-transparent ICBM152 cortex mesh once per patient. Uses
+// loadMeshes (which clears any previous meshes) — we re-add the connectome
+// afterwards via addMesh so the brain underlay isn't wiped on visit/mode
+// switches.
+async function _ensureBrainMeshUnderlay(nv) {
+    if (!currentPatient || !nv) return;
+    if (currentPatient._brainMeshesLoaded || currentPatient._brainMeshesFailed) return;
+    try {
+        await nv.loadMeshes([
+            { url: BRAIN_MESH_LH, rgba255: [200, 200, 200, 60] },
+            { url: BRAIN_MESH_RH, rgba255: [200, 200, 200, 60] },
+        ]);
+        currentPatient._brainMeshesLoaded = true;
+    } catch (e) {
+        console.warn('brain-mesh underlay unavailable (offline?):', e);
+        currentPatient._brainMeshesFailed = true;
+    }
+}
+
+// Add a connectome on top of the existing brain meshes without wiping them.
+// `loadConnectome` and `loadConnectomeFromJSON` both reset `nv.meshes` to []
+// internally, so we use the lower-level `loadConnectomeAsMesh` + `addMesh`
+// pair when available, falling back to the destructive call otherwise.
+async function _renderConnectomeKeepingMesh(nv, connectome) {
+    if (!nv) return;
+    const tryAppendPath =
+        typeof nv.loadConnectomeAsMesh === 'function' &&
+        typeof nv.addMesh === 'function';
+
+    if (tryAppendPath) {
+        try {
+            // Remove the previous connectome mesh (by stored id) so we don't stack copies
+            if (currentPatient._connectomeMeshId && Array.isArray(nv.meshes)) {
+                const old = nv.meshes.find(m => m && m.id === currentPatient._connectomeMeshId);
+                if (old && typeof nv.removeMesh === 'function') {
+                    try { nv.removeMesh(old); } catch (_) {}
+                }
+            }
+            const mesh = nv.loadConnectomeAsMesh(connectome);
+            if (mesh) {
+                if (typeof mesh.updateMesh === 'function') {
+                    try { mesh.updateMesh(nv.gl); } catch (_) {}
+                }
+                nv.addMesh(mesh);
+                currentPatient._connectomeMeshId = mesh.id;
+                if (typeof nv.drawScene === 'function') nv.drawScene();
+                return;
+            }
+        } catch (e) {
+            console.warn('append-mesh connectome path failed; falling back', e);
+        }
+    }
+
+    // Fallback: destructive load (will replace the brain underlay too)
+    if (typeof nv.loadConnectomeFromJSON === 'function') {
+        await nv.loadConnectomeFromJSON(connectome);
+    } else if (typeof nv.loadConnectome === 'function') {
+        await nv.loadConnectome(connectome);
+    } else {
+        throw new Error('NiiVue version too old — needs loadConnectome(FromJSON)');
+    }
+    // After a destructive reload the underlay flag is no longer accurate.
+    currentPatient._brainMeshesLoaded = false;
 }
 
 // ── Loading ──

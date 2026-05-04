@@ -18,8 +18,11 @@ and acts as a fixed anchor cloud in the manifold.
 
 from __future__ import annotations
 
+import hashlib
 import math
 import os
+import pickle
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from threading import Lock
 from typing import Optional
@@ -68,7 +71,13 @@ class CohortStats:
     # Per-cohort mean correlation matrix (n_rois × n_rois). Used by the Brain
     # View "vs CN" comparison mode. Stored as float32 to halve the cache cost.
     cohort_means: dict = field(default_factory=dict)  # {cohort: np.ndarray}
-    # Internal — kept for transform() of new visits
+    # Patient-visit coordinates from the same UMAP fit (NOT via transform()).
+    # Shape: {subject_id: {visit: {x, y, conversion_score}}}
+    # Built by including every longitudinal visit in the UMAP fit so visits
+    # land naturally inside the manifold instead of being projected to its
+    # boundary by transform().
+    patient_visit_coords: dict = field(default_factory=dict)
+    # Internal — kept for transform() fallback on truly unseen subjects
     umap_mapper: object = field(default=None, repr=False)
     edge_dim: int = 0  # length of the upper-triangle feature vector
     n_rois: int = 0
@@ -151,6 +160,8 @@ def _collect_baseline_fc_vectors(
     data_root: str,
     df: pd.DataFrame,
     scan_folders: list[str],
+    npz_index: Optional[dict] = None,
+    executor: Optional[ThreadPoolExecutor] = None,
 ) -> tuple[np.ndarray, list[str], list[str], int]:
     """
     For every baseline subject in ``df``, find their baseline .npz, load the
@@ -165,40 +176,55 @@ def _collect_baseline_fc_vectors(
     if baseline.empty:
         return np.empty((0, 0)), [], [], 0
 
-    feature_rows: list[np.ndarray] = []
-    cohorts: list[str] = []
-    subject_ids: list[str] = []
-    n_rois: int = 0
+    if npz_index is None:
+        npz_index = index_npz_by_subject(data_root, scan_folders)
 
-    # Build the file index once — avoids walking the folders once per subject.
-    npz_index = index_npz_by_subject(data_root, scan_folders)
-
+    # Pre-resolve (sid, cohort, abs_path) so the parallel load step has nothing
+    # to do but np.load. Order is preserved so cohorts/subject_ids stay aligned
+    # with feature rows after filtering.
+    plan: list[tuple[str, str, str]] = []
     for _, row in baseline.iterrows():
         sid = str(row.get("subject_id", "")).strip()
         cohort = str(row.get("diagnosis", "")).strip().lower()
         if not sid or cohort not in COHORTS:
             continue
-
-        records = npz_index.get(sid, [])
-        rec = _pick_baseline_npz(records)
+        rec = _pick_baseline_npz(npz_index.get(sid, []))
         if rec is None:
             continue
+        plan.append((sid, cohort, rec["abs_path"]))
 
+    if not plan:
+        return np.empty((0, 0)), [], [], 0
+
+    paths = [p[2] for p in plan]
+
+    def _safe_load(path: str):
         try:
-            matrix = load_correlation_matrix(rec["abs_path"])
+            return load_correlation_matrix(path)
         except Exception:
+            return None
+
+    if executor is not None:
+        matrices = list(executor.map(_safe_load, paths))
+    else:
+        matrices = [_safe_load(p) for p in paths]
+
+    feature_rows: list[np.ndarray] = []
+    cohorts: list[str] = []
+    subject_ids: list[str] = []
+    n_rois: int = 0
+
+    for (sid, cohort, _path), matrix in zip(plan, matrices):
+        if matrix is None:
             continue
         if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
             continue
-
         if n_rois == 0:
             n_rois = matrix.shape[0]
         elif matrix.shape[0] != n_rois:
             # Atlas mismatch — keep the dominant size, drop the rest
             continue
-
         vec = _upper_triangle(matrix).astype(np.float32, copy=False)
-        # Replace NaN/inf with 0 so UMAP doesn't choke
         vec = np.nan_to_num(vec, nan=0.0, posinf=0.0, neginf=0.0)
         feature_rows.append(vec)
         cohorts.append(cohort)
@@ -208,6 +234,94 @@ def _collect_baseline_fc_vectors(
         return np.empty((0, 0)), [], [], 0
 
     return np.vstack(feature_rows), cohorts, subject_ids, n_rois
+
+
+# --------------------------------------------------------------------------- #
+# Stage 1b — longitudinal FC vectors (converters' non-baseline visits)         #
+# --------------------------------------------------------------------------- #
+
+def _collect_longitudinal_fc_vectors(
+    data_root: str,
+    df: pd.DataFrame,
+    scan_folders: list[str],
+    npz_index: Optional[dict] = None,
+    baseline_subject_ids: Optional[set] = None,
+    n_rois_lock: int = 0,
+    executor=None,
+) -> tuple[np.ndarray, list[str], list[str]]:
+    """
+    For every converter, collect their non-baseline visit FC vectors so the
+    UMAP fit sees them as real samples (not unseen points to ``transform()``).
+
+    The baseline visit is intentionally skipped because
+    ``_collect_baseline_fc_vectors`` already collected it as a converter-cohort
+    row. Including all visits is what fixes the "patient trajectory dots
+    always at the embedding boundary" bug.
+
+    Returns ``(features (N, edge_dim), subject_ids, visits)`` parallel arrays.
+    Subjects whose .npz files don't match the locked ``n_rois_lock`` are
+    silently dropped.
+    """
+    if "diagnosis" not in df.columns or "subject_id" not in df.columns:
+        return np.empty((0, 0), dtype=np.float32), [], []
+
+    if npz_index is None:
+        npz_index = index_npz_by_subject(data_root, scan_folders)
+
+    converter_ids = (
+        df[df["diagnosis"].astype(str).str.strip().str.lower() == "converter"]
+        ["subject_id"].dropna().astype(str).str.strip().unique().tolist()
+    )
+    if not converter_ids:
+        return np.empty((0, 0), dtype=np.float32), [], []
+
+    plan: list[tuple[str, str, str]] = []  # (sid, visit, abs_path)
+    for sid in converter_ids:
+        records = npz_index.get(sid, []) or []
+        if not records:
+            continue
+        baseline_rec = _pick_baseline_npz(records)
+        baseline_path = baseline_rec["abs_path"] if baseline_rec else None
+        for rec in records:
+            if rec["abs_path"] == baseline_path:
+                continue  # already in baseline collector
+            plan.append((sid, rec["visit"], rec["abs_path"]))
+
+    if not plan:
+        return np.empty((0, 0), dtype=np.float32), [], []
+
+    paths = [p[2] for p in plan]
+
+    def _safe_load(path: str):
+        try:
+            return load_correlation_matrix(path)
+        except Exception:
+            return None
+
+    if executor is not None:
+        matrices = list(executor.map(_safe_load, paths))
+    else:
+        matrices = [_safe_load(p) for p in paths]
+
+    feature_rows: list[np.ndarray] = []
+    sids: list[str] = []
+    visits: list[str] = []
+    for (sid, visit, _path), matrix in zip(plan, matrices):
+        if matrix is None:
+            continue
+        if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
+            continue
+        if n_rois_lock and matrix.shape[0] != n_rois_lock:
+            continue
+        vec = _upper_triangle(matrix).astype(np.float32, copy=False)
+        vec = np.nan_to_num(vec, nan=0.0, posinf=0.0, neginf=0.0)
+        feature_rows.append(vec)
+        sids.append(sid)
+        visits.append(visit)
+
+    if not feature_rows:
+        return np.empty((0, 0), dtype=np.float32), [], []
+    return np.vstack(feature_rows), sids, visits
 
 
 # --------------------------------------------------------------------------- #
@@ -244,6 +358,7 @@ def _biomarker_stats_from_features(
     features: np.ndarray,
     cohorts: list[str],
     n_rois: int,
+    executor: Optional[ThreadPoolExecutor] = None,
 ) -> dict:
     """
     Reconstruct the symmetric matrix from each feature row, run
@@ -256,15 +371,19 @@ def _biomarker_stats_from_features(
     iu = np.triu_indices(n_rois, k=1)
     is_dmn_only = n_rois <= 50
 
-    per_subject: list[dict] = []
-    for row in features:
+    def _one(row):
         m = np.zeros((n_rois, n_rois), dtype=np.float32)
         m[iu] = row
         m = m + m.T  # symmetrize
         try:
-            per_subject.append(compute_fmri_biomarkers(m, is_dmn_only=is_dmn_only))
+            return compute_fmri_biomarkers(m, is_dmn_only=is_dmn_only)
         except Exception:
-            per_subject.append({})
+            return {}
+
+    if executor is not None:
+        per_subject: list[dict] = list(executor.map(_one, features))
+    else:
+        per_subject = [_one(row) for row in features]
 
     out: dict = {}
     for cohort in COHORTS:
@@ -298,21 +417,35 @@ def _fit_manifold(
     features: np.ndarray,
     cohorts: list[str],
     subject_ids: list[str],
+    extra_features: Optional[np.ndarray] = None,
 ):
     """
-    Fit UMAP on all baseline FC vectors. Returns ``(mapper, points, centroids)``.
+    Fit UMAP on baseline FC vectors *concatenated with* ``extra_features``
+    (longitudinal converter visits). Co-fitting avoids the well-known
+    ``mapper.transform()`` failure mode that pushes unseen samples to the
+    boundary of the trained manifold.
+
+    Returns ``(mapper, points, centroids, embedding)`` where:
+      - ``points`` and ``centroids`` are computed from the BASELINE rows only
+        (so the cohort scatter / centroids are unchanged).
+      - ``embedding`` is the FULL ``(n_baseline + n_extra, 2)`` matrix; the
+        caller slices ``embedding[n_baseline:]`` to look up per-visit coords.
 
     UMAP needs at least ``n_neighbors + 1`` rows; below that we fall back to a
     deterministic PCA-style projection so the endpoint still returns something
     visualizable on tiny datasets.
     """
-    n = features.shape[0]
-    if n == 0:
-        return None, [], {}
+    n_baseline = features.shape[0] if features.size else 0
+    extra = extra_features if extra_features is not None and extra_features.size else None
+    if n_baseline == 0 and extra is None:
+        return None, [], {}, np.zeros((0, 2), dtype=np.float32)
 
+    fit_input = features if extra is None else np.vstack([features, extra])
+    n = fit_input.shape[0]
     n_neighbors = min(UMAP_N_NEIGHBORS, max(2, n - 1))
 
     mapper = None
+    embedding = None
     if n >= 4:
         try:
             from umap import UMAP
@@ -324,26 +457,26 @@ def _fit_manifold(
                 random_state=UMAP_RANDOM_STATE,
                 metric="euclidean",
             )
-            embedding = mapper.fit_transform(features)
+            embedding = mapper.fit_transform(fit_input)
         except Exception:
             mapper = None
             embedding = None
-    else:
-        embedding = None
 
     if embedding is None:
-        # PCA fallback (also used when UMAP isn't available).
         try:
             from sklearn.decomposition import PCA
 
             n_components = min(2, max(1, n - 1))
-            embedding = PCA(n_components=n_components).fit_transform(features)
+            embedding = PCA(n_components=n_components).fit_transform(fit_input)
             if embedding.shape[1] == 1:
                 embedding = np.hstack([embedding, np.zeros_like(embedding)])
         except Exception:
-            # Last resort — just zero the embedding so callers don't crash.
             embedding = np.zeros((n, 2), dtype=np.float32)
 
+    embedding = np.asarray(embedding, dtype=np.float32)
+
+    # Baseline-only points + centroids (the cohort scatter / centroids should
+    # not be skewed by per-visit converter rows).
     points = [
         {
             "x": _safe_float(embedding[i, 0]),
@@ -351,7 +484,7 @@ def _fit_manifold(
             "cohort": cohorts[i],
             "subject_id": subject_ids[i],
         }
-        for i in range(n)
+        for i in range(n_baseline)
     ]
 
     centroids: dict = {}
@@ -363,7 +496,72 @@ def _fit_manifold(
         cy = float(embedding[idx, 1].mean())
         centroids[cohort] = {"x": _safe_float(cx), "y": _safe_float(cy), "n": len(idx)}
 
-    return mapper, points, centroids
+    return mapper, points, centroids, embedding
+
+
+def _conversion_score(x: float, y: float, axis: dict) -> Optional[float]:
+    """Project (x, y) onto the normalised MCI-NC → AD axis. Returns 0 at the
+    origin centroid, 1 at the target centroid."""
+    if not axis:
+        return None
+    origin = axis.get("origin"); direction = axis.get("direction"); length = axis.get("length", 0.0) or 0.0
+    if not origin or not direction or length <= 1e-9:
+        return None
+    dx = x - origin["x"]; dy = y - origin["y"]
+    raw = dx * direction["x"] + dy * direction["y"]
+    return _safe_float(raw / length)
+
+
+def _build_patient_visit_coords(
+    embedding: np.ndarray,
+    baseline_cohorts: list[str],
+    baseline_subject_ids: list[str],
+    baseline_npz_index: dict,
+    long_sids: list[str],
+    long_visits: list[str],
+    conversion_axis: dict,
+) -> dict:
+    """
+    Combine baseline-row + longitudinal-row coords into one
+    ``{subject_id: {visit: {x, y, conversion_score}}}`` lookup.
+
+    Converters get their baseline-cohort row mapped to their actual baseline
+    visit name (M0 if present, else the chronologically earliest .npz).
+    """
+    out: dict[str, dict[str, dict]] = {}
+    n_baseline = len(baseline_subject_ids)
+
+    # Baseline-cohort converters: their baseline row IS in the embedding's
+    # first N_baseline slice. Map to the actual visit code so the frontend's
+    # lookup by visit string works.
+    for i in range(n_baseline):
+        if baseline_cohorts[i] != "converter":
+            continue
+        sid = baseline_subject_ids[i]
+        recs = baseline_npz_index.get(sid, []) if baseline_npz_index else []
+        baseline_rec = _pick_baseline_npz(recs)
+        if baseline_rec is None:
+            continue
+        x = float(embedding[i, 0]); y = float(embedding[i, 1])
+        out.setdefault(sid, {})[baseline_rec["visit"]] = {
+            "x": _safe_float(x),
+            "y": _safe_float(y),
+            "conversion_score": _conversion_score(x, y, conversion_axis),
+        }
+
+    # Longitudinal rows live in the tail of the embedding.
+    for k, sid in enumerate(long_sids):
+        row = n_baseline + k
+        if row >= embedding.shape[0]:
+            break
+        x = float(embedding[row, 0]); y = float(embedding[row, 1])
+        out.setdefault(sid, {})[long_visits[k]] = {
+            "x": _safe_float(x),
+            "y": _safe_float(y),
+            "conversion_score": _conversion_score(x, y, conversion_axis),
+        }
+
+    return out
 
 
 def _compute_disease_axes(centroids: dict) -> dict:
@@ -400,6 +598,110 @@ def _compute_disease_axes(centroids: dict) -> dict:
 
 
 # --------------------------------------------------------------------------- #
+# Disk cache                                                                  #
+# --------------------------------------------------------------------------- #
+
+# Bump when the pickle payload schema changes.
+# v2: adds patient_visit_coords (Round 4 manifold co-fit).
+_DISK_CACHE_VERSION = 2
+
+
+def _disk_cache_dir(data_root: str) -> str:
+    return os.path.join(
+        os.environ.get("CACHE_ROOT", os.path.join(data_root, ".cache")),
+        "cohort_stats",
+    )
+
+
+def _disk_cache_path(data_root: str, csv_path: str, scan_folders: list[str]) -> str:
+    h = hashlib.sha1()
+    h.update(csv_path.encode("utf-8"))
+    for f in sorted(scan_folders):
+        h.update(b"\x00")
+        h.update(f.encode("utf-8"))
+    return os.path.join(
+        _disk_cache_dir(data_root),
+        f"cohort_stats_v{_DISK_CACHE_VERSION}_{h.hexdigest()}.pkl",
+    )
+
+
+def _index_fingerprint(npz_index: dict) -> str:
+    """SHA1 over (rel_path, mtime_ns, size) for every .npz — invalidates on edit."""
+    h = hashlib.sha1()
+    triples: list[tuple[str, int, int]] = []
+    for sid in sorted(npz_index.keys()):
+        for rec in npz_index[sid]:
+            path = rec.get("abs_path") or rec.get("rel_path") or ""
+            try:
+                st = os.stat(path)
+                triples.append((rec.get("rel_path", path), st.st_mtime_ns, st.st_size))
+            except OSError:
+                continue
+    triples.sort()
+    for rel, mt, sz in triples:
+        h.update(rel.encode("utf-8"))
+        h.update(b"|")
+        h.update(str(mt).encode("ascii"))
+        h.update(b"|")
+        h.update(str(sz).encode("ascii"))
+        h.update(b"\n")
+    return h.hexdigest()
+
+
+def _load_disk_cache(path: str, fingerprint: str) -> Optional[CohortStats]:
+    try:
+        with open(path, "rb") as f:
+            payload = pickle.load(f)
+    except Exception:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    if payload.get("version") != _DISK_CACHE_VERSION:
+        return None
+    if payload.get("fingerprint") != fingerprint:
+        return None
+    try:
+        return CohortStats(
+            biomarker_stats=payload["biomarker_stats"],
+            points=payload["points"],
+            centroids=payload["centroids"],
+            conversion_axis=payload["conversion_axis"],
+            cohort_means=payload.get("cohort_means", {}),
+            patient_visit_coords=payload.get("patient_visit_coords", {}),
+            umap_mapper=payload.get("umap_mapper"),
+            edge_dim=int(payload.get("edge_dim", 0)),
+            n_rois=int(payload.get("n_rois", 0)),
+        )
+    except Exception:
+        return None
+
+
+def _save_disk_cache(path: str, fingerprint: str, stats: CohortStats) -> None:
+    payload = {
+        "version": _DISK_CACHE_VERSION,
+        "fingerprint": fingerprint,
+        "biomarker_stats": stats.biomarker_stats,
+        "points": stats.points,
+        "centroids": stats.centroids,
+        "conversion_axis": stats.conversion_axis,
+        "cohort_means": stats.cohort_means,
+        "patient_visit_coords": stats.patient_visit_coords,
+        "umap_mapper": stats.umap_mapper,
+        "edge_dim": stats.edge_dim,
+        "n_rois": stats.n_rois,
+    }
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        tmp = path + ".tmp"
+        with open(tmp, "wb") as f:
+            pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
+        os.replace(tmp, path)
+    except Exception:
+        # Best-effort — disk cache is an optimization, never break the request.
+        pass
+
+
+# --------------------------------------------------------------------------- #
 # Public API                                                                  #
 # --------------------------------------------------------------------------- #
 
@@ -411,24 +713,68 @@ def get_cohort_stats(
 ) -> CohortStats:
     """
     Returns a populated ``CohortStats`` for the given dataset selection.
-    Cached per ``(csv_path, sorted scan_folders)``.
+    Cached per ``(csv_path, sorted scan_folders)`` in process memory and on
+    disk under ``$CACHE_ROOT/cohort_stats/`` (defaults to ``$DATA_ROOT/.cache``).
+    The disk cache is fingerprinted against .npz mtime+size and invalidates
+    automatically when matrices are regenerated.
     """
     key = _cache_key(csv_path, scan_folders)
     with _LOCK:
         if not force_refresh and key in _CACHE:
             return _CACHE[key]
 
+    # Build the .npz index once; reused for fingerprinting + collection.
+    npz_index = index_npz_by_subject(data_root, scan_folders)
+    fingerprint = _index_fingerprint(npz_index)
+    disk_path = _disk_cache_path(data_root, csv_path, scan_folders)
+
+    if not force_refresh:
+        cached = _load_disk_cache(disk_path, fingerprint)
+        if cached is not None:
+            with _LOCK:
+                _CACHE[key] = cached
+            return cached
+
     abs_csv = os.path.join(data_root, csv_path)
     df = load_metadata(abs_csv)
 
-    features, cohorts, subject_ids, n_rois = _collect_baseline_fc_vectors(
-        data_root, df, scan_folders
-    )
+    max_workers = min(8, (os.cpu_count() or 4))
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        features, cohorts, subject_ids, n_rois = _collect_baseline_fc_vectors(
+            data_root, df, scan_folders, npz_index=npz_index, executor=executor
+        )
+        biomarker_stats = _biomarker_stats_from_features(
+            features, cohorts, n_rois, executor=executor
+        )
+        # Co-fit: include every converter's non-baseline visits in the UMAP
+        # training set so per-visit coords come from the actual fit (not from
+        # an unstable transform()).
+        long_features, long_sids, long_visits = _collect_longitudinal_fc_vectors(
+            data_root, df, scan_folders,
+            npz_index=npz_index,
+            baseline_subject_ids=set(subject_ids),
+            n_rois_lock=n_rois,
+            executor=executor,
+        )
 
-    biomarker_stats = _biomarker_stats_from_features(features, cohorts, n_rois)
-    mapper, points, centroids = _fit_manifold(features, cohorts, subject_ids)
+    mapper, points, centroids, embedding = _fit_manifold(
+        features, cohorts, subject_ids, extra_features=long_features
+    )
     conversion_axis = _compute_disease_axes(centroids)
     cohort_means = _cohort_mean_matrices(features, cohorts, n_rois)
+
+    # Build the per-(subject_id, visit) coordinate lookup. Converters' M0 is
+    # already in the baseline embedding; non-baseline visits live in the
+    # tail of the same fit.
+    patient_visit_coords = _build_patient_visit_coords(
+        embedding=embedding,
+        baseline_cohorts=cohorts,
+        baseline_subject_ids=subject_ids,
+        baseline_npz_index=npz_index,
+        long_sids=long_sids,
+        long_visits=long_visits,
+        conversion_axis=conversion_axis,
+    )
 
     stats = CohortStats(
         biomarker_stats=biomarker_stats,
@@ -436,6 +782,7 @@ def get_cohort_stats(
         centroids=centroids,
         conversion_axis=conversion_axis,
         cohort_means=cohort_means,
+        patient_visit_coords=patient_visit_coords,
         umap_mapper=mapper,
         edge_dim=features.shape[1] if features.size else 0,
         n_rois=n_rois,
@@ -443,6 +790,7 @@ def get_cohort_stats(
 
     with _LOCK:
         _CACHE[key] = stats
+    _save_disk_cache(disk_path, fingerprint, stats)
     return stats
 
 
