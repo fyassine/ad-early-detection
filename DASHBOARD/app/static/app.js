@@ -916,6 +916,11 @@ window.openPatient = async function(sid) {
         tabRendered: { overview: false, manifold: false, connectivity: false, qcviewer: false, brainview: false },
         niiVue: null,
         scansList: [],
+        _cortexVisible: true,
+        _cortexMeshIds: [],
+        _cortexMeshCount: 0,
+        _brainMeshesLoaded: false,
+        _brainMeshesFailed: false,
     };
     _matrixCache.clear();  // per-visit correlation matrices belong to this patient
 
@@ -1893,10 +1898,6 @@ function renderConnectivityTab() {
                 <span>+0.5</span>
             </div>
         </div>`;
-
-    el.querySelectorAll('.visit-pill').forEach(p => {
-        p.addEventListener('click', () => setSelectedVisit(p.dataset.visit));
-    });
     $('heatmapGroup').addEventListener('change', renderConnectivityHeatmap);
     currentPatient.tabRendered.connectivity = true;
     renderConnectivityHeatmap();
@@ -1906,8 +1907,6 @@ async function renderConnectivityHeatmap() {
     if (!currentPatient) return;
     const visit = currentPatient.selectedVisit;
     if (!visit) return;
-    document.querySelectorAll('#connVisitPills .visit-pill').forEach(p =>
-        p.classList.toggle('active', p.dataset.visit === visit));
 
     const canvas = $('heatmapCanvas');
     if (!canvas) return;
@@ -2105,8 +2104,6 @@ function _prefetchQCVolume(visit) {
 async function loadQCViewerVolume() {
     if (!currentPatient || !currentPatient.niiVue) return;
     const status = $('qcStatus');
-    document.querySelectorAll('#qcVisitPills .visit-pill').forEach(p =>
-        p.classList.toggle('active', p.dataset.visit === currentPatient.selectedVisit));
 
     const visit = currentPatient.selectedVisit;
     const hasNifti = currentPatient.scansList.some(s =>
@@ -2230,10 +2227,8 @@ async function _ensureMatrix(visit) {
     } catch { return null; }
 }
 
-// Brain mesh underlay — semi-transparent ICBM152 cortex from NiiVue's demo CDN.
-// Best-effort: if the CDN is unreachable, the connectome still renders alone.
-const BRAIN_MESH_LH = 'https://niivue.github.io/niivue-demo-images/BrainMesh_ICBM152.lh.mz3';
-const BRAIN_MESH_RH = 'https://niivue.github.io/niivue-demo-images/BrainMesh_ICBM152.rh.mz3';
+const BRAIN_MESH_LH = '/static/data/BrainMesh_ICBM152.lh.mz3';
+const BRAIN_MESH_RH = null;
 
 const BRAIN_MODES = [
     { id: 'raw',             title: 'Raw',          sub: 'Strongest correlations at this visit.' },
@@ -2259,6 +2254,7 @@ function renderBrainViewTab() {
                 <span id="brainTopPctVal" style="font-size:.78rem;color:var(--text-1);min-width:2.5em">2%</span>
                 <label style="margin-left:.6rem">|w| ≥</label>
                 <input type="number" id="brainAbsThr" min="0" max="1" step="0.01" placeholder="auto" title="Optional: only show edges whose absolute weight is at least this value (overrides Top % if set)">
+                <label class="brain-toggle"><input type="checkbox" id="brainShowCortex" checked>Show cortex</label>
                 <div class="actions">
                     <button class="brain-action-btn" id="brainPlayBtn" title="Cycle through visits (1 / s)">▶ Play</button>
                     <button class="brain-action-btn" id="brainResetBtn" title="Reset rotation (r)">⟳ Reset</button>
@@ -2274,6 +2270,7 @@ function renderBrainViewTab() {
                 <span id="brainCbarMax" class="tick-mid">+</span>
             </div>
             <div id="brainStatus" style="font-size:.75rem;color:var(--text-2);margin-top:.5rem;line-height:1.55"></div>
+            <div id="brainMeshStatus" class="brain-mesh-status"></div>
         </div>`;
 
     let _brainSliderTimer = null;
@@ -2286,6 +2283,16 @@ function renderBrainViewTab() {
         clearTimeout(_brainSliderTimer);
         _brainSliderTimer = setTimeout(renderBrainGraph, 120);
     });
+
+    const cortexToggle = $('brainShowCortex');
+    if (cortexToggle) {
+        cortexToggle.checked = currentPatient._cortexVisible !== false;
+        cortexToggle.addEventListener('change', () => {
+            currentPatient._cortexVisible = cortexToggle.checked;
+            _applyCortexVisibility();
+            _updateBrainMeshStatus();
+        });
+    }
 
     // Mode radio cards
     el.querySelectorAll('#brainModeCards .mode-card').forEach(card => {
@@ -2333,6 +2340,7 @@ function renderBrainViewTab() {
     }
 
     currentPatient.tabRendered.brainview = true;
+    _updateBrainMeshStatus();
     renderBrainGraph();
 }
 
@@ -2397,8 +2405,6 @@ function toggleBrainPlayback() {
 async function renderBrainGraph() {
     if (!currentPatient) return;
     const visit = currentPatient.selectedVisit;
-    document.querySelectorAll('#brainVisitPills .visit-pill').forEach(p =>
-        p.classList.toggle('active', p.dataset.visit === visit));
 
     const status = $('brainStatus');
     const coords = await _getAtlasCoords();
@@ -2605,15 +2611,25 @@ async function renderBrainGraph() {
 async function _ensureBrainMeshUnderlay(nv) {
     if (!currentPatient || !nv) return;
     if (currentPatient._brainMeshesLoaded || currentPatient._brainMeshesFailed) return;
+    const meshList = [];
+    if (BRAIN_MESH_LH) meshList.push({ url: BRAIN_MESH_LH, rgba255: [200, 200, 200, 60] });
+    if (BRAIN_MESH_RH) meshList.push({ url: BRAIN_MESH_RH, rgba255: [200, 200, 200, 60] });
+    if (!meshList.length) {
+        currentPatient._brainMeshesFailed = true;
+        _updateBrainMeshStatus();
+        return;
+    }
     try {
-        await nv.loadMeshes([
-            { url: BRAIN_MESH_LH, rgba255: [200, 200, 200, 60] },
-            { url: BRAIN_MESH_RH, rgba255: [200, 200, 200, 60] },
-        ]);
+        await nv.loadMeshes(meshList);
         currentPatient._brainMeshesLoaded = true;
+        currentPatient._cortexMeshIds = Array.isArray(nv.meshes) ? nv.meshes.map(m => m.id) : [];
+        currentPatient._cortexMeshCount = currentPatient._cortexMeshIds.length;
+        _applyCortexVisibility();
+        _updateBrainMeshStatus();
     } catch (e) {
         console.warn('brain-mesh underlay unavailable (offline?):', e);
         currentPatient._brainMeshesFailed = true;
+        _updateBrainMeshStatus();
     }
 }
 
@@ -2661,6 +2677,39 @@ async function _renderConnectomeKeepingMesh(nv, connectome) {
     }
     // After a destructive reload the underlay flag is no longer accurate.
     currentPatient._brainMeshesLoaded = false;
+    currentPatient._cortexMeshIds = [];
+    currentPatient._cortexMeshCount = 0;
+    _updateBrainMeshStatus();
+}
+
+function _applyCortexVisibility() {
+    const nv = currentPatient?.brainNv;
+    if (!nv || !Array.isArray(nv.meshes)) return;
+    const visible = currentPatient._cortexVisible !== false;
+    const alpha = visible ? 60 : 0;
+    const ids = new Set(currentPatient._cortexMeshIds || []);
+    nv.meshes.forEach(m => {
+        if (m && ids.has(m.id)) m.rgba255 = [200, 200, 200, alpha];
+    });
+    if (typeof nv.drawScene === 'function') nv.drawScene();
+}
+
+function _updateBrainMeshStatus() {
+    const el = $('brainMeshStatus');
+    if (!el || !currentPatient) return;
+    const toggle = $('brainShowCortex');
+    if (toggle) toggle.disabled = !currentPatient._brainMeshesLoaded;
+    if (currentPatient._brainMeshesLoaded) {
+        const count = currentPatient._cortexMeshCount || 0;
+        const suffix = count === 1 ? ' (LH)' : (count > 1 ? '' : '');
+        el.textContent = currentPatient._cortexVisible !== false
+            ? `cortex underlay loaded${suffix}`
+            : 'cortex underlay hidden';
+    } else if (currentPatient._brainMeshesFailed) {
+        el.textContent = 'cortex underlay unavailable';
+    } else {
+        el.textContent = '';
+    }
 }
 
 // ── Loading ──

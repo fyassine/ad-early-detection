@@ -429,6 +429,12 @@ body::before{
     color:var(--text-0);padding:.25rem .4rem;border-radius:5px;
     font-size:.78rem;font-family:'JetBrains Mono',monospace;
 }
+.brain-toggle{
+    display:inline-flex;align-items:center;gap:.35rem;
+    font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;
+    cursor:pointer;
+}
+.brain-toggle input{accent-color:var(--accent)}
 .brain-controls .actions{margin-left:auto;display:flex;gap:.4rem}
 .brain-action-btn{
     background:var(--bg-3);border:1px solid var(--border);color:var(--text-1);
@@ -478,6 +484,7 @@ body::before{
     border:1px solid var(--border);
 }
 .brain-colorbar .tick-mid{flex-shrink:0;text-align:center;min-width:2.5em}
+.brain-mesh-status{font-size:.7rem;color:var(--text-3);margin-top:.25rem}
 
 /* Sticky patient summary */
 .patient-summary-bar{
