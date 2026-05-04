@@ -1,6 +1,10 @@
-import pandas as pd
+import hashlib
+import json
+import logging
 import os
+
 import numpy as np
+import pandas as pd
 import torch
 from torch_geometric.data import Data, InMemoryDataset
 from torch_geometric.utils import dense_to_sparse
@@ -121,7 +125,10 @@ class ClassificationDataset(InMemoryDataset):
         split_tag = "all"
         if self.filter_csv_path:
             split_tag = os.path.splitext(os.path.basename(self.filter_csv_path))[0]
-        return [f'data_classification_{variant_tag}_{split_tag}{suffix}.pt']
+        fn_name = getattr(self.adjacency_function, "__name__", "adj")
+        args_str = json.dumps(self.adjacency_args, sort_keys=True)
+        graph_tag = hashlib.md5(f"{fn_name}_{args_str}".encode()).hexdigest()[:8]
+        return [f'data_classification_{variant_tag}_{split_tag}_graph{graph_tag}{suffix}.pt']
 
     def process(self):
         data_list = []
@@ -132,6 +139,7 @@ class ClassificationDataset(InMemoryDataset):
             else:
                 key = list(data_npz.keys())[0]
                 feature_matrix = data_npz[key]
+            feature_matrix = np.nan_to_num(feature_matrix, nan=0.0, posinf=0.0, neginf=0.0)
             feature_matrix = torch.tensor(feature_matrix, dtype=torch.float)
             abs_feature_matrix = torch.abs(feature_matrix.clone())
 
@@ -155,6 +163,7 @@ class ClassificationDataset(InMemoryDataset):
                 age_value = patient_row.get("age", 50.0)
                 age_tensor = torch.tensor(min(max(age_value / 100.0, 0.0), 1.0), dtype=torch.float)
             else:
+                logging.warning(f"Patient {patient_id} not found in metadata; using defaults.")
                 sex_tensor = torch.tensor(0, dtype=torch.long)
                 age_tensor = torch.tensor(0.5, dtype=torch.float)
 

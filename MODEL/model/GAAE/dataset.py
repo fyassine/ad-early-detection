@@ -1,9 +1,14 @@
-import pandas as pd
+import hashlib
+import json
+import logging
 import os
+
 import numpy as np
+import pandas as pd
 import torch
 from torch_geometric.data import Data, InMemoryDataset
 from torch_geometric.utils import dense_to_sparse
+
 from .utils import knn_binary_adjacency_matrix_no_diag
 
 
@@ -48,6 +53,7 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
         default_age = torch.tensor(0.5, dtype=torch.float)  # normalized 50 years
         
         if self.patient_info is None or patient_id not in self.patient_info.index:
+            logging.warning(f"Patient {patient_id} not found in metadata; using defaults.")
             return default_sex, default_age
         
         patient_row = self.patient_info.loc[patient_id]
@@ -66,6 +72,7 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
         data_list = []
         for raw_path in self.raw_paths:
             feature_matrix = np.load(raw_path)['array']
+            feature_matrix = np.nan_to_num(feature_matrix, nan=0.0, posinf=0.0, neginf=0.0)
             feature_matrix = torch.tensor(feature_matrix, dtype=torch.float)
             abs_feature_matrix = torch.abs(torch.clone(feature_matrix))
 
@@ -127,7 +134,10 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
     def processed_file_names(self):
         variant_tag = str(self.file_variant).lower().replace("-", "_")
         split_tag = os.path.splitext(os.path.basename(self.filter_csv_path))[0]
-        return [f"data_filtered_{variant_tag}_{split_tag}.pt"]
+        fn_name = getattr(self.adjacency_function, "__name__", "adj")
+        args_str = json.dumps(self.adjacency_args, sort_keys=True)
+        graph_tag = hashlib.md5(f"{fn_name}_{args_str}".encode()).hexdigest()[:8]
+        return [f"data_filtered_{variant_tag}_{split_tag}_graph{graph_tag}.pt"]
 
 
 class GraphDMNDatasetInMemoryFiltered(GraphDatasetInMemoryFiltered):

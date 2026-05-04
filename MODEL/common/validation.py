@@ -93,7 +93,8 @@ def run_kfold_cv(
         train_dataset = torch.utils.data.Subset(combined_dataset, train_idx)
         val_dataset = torch.utils.data.Subset(combined_dataset, val_idx)
 
-        train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+        train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,
+                                  worker_init_fn=lambda wid: np.random.seed(RANDOM_STATE + wid))
         val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
         pos_weight = compute_class_weights(train_labels_fold, device=device)
