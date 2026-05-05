@@ -130,6 +130,24 @@ def compute_fmri_biomarkers(corr_matrix: np.ndarray, is_dmn_only: bool = False) 
     # FC density (proportion of strong connections, |r| > 0.3)
     metrics["density"] = _safe_float(np.sum(np.abs(upper_tri) > 0.3) / max(len(upper_tri), 1))
 
+    # ── Schaefer 7-network metrics (Setton 2023; Chan 2014 segregation) ─────
+    # Only attempt when the matrix matches a Schaefer N-parcel atlas (n in
+    # {100, 200, 400, 600, 800, 1000}); skipped silently for DMN-only or
+    # mismatched sizes.
+    if not is_dmn_only and n in (100, 200, 400, 600, 800, 1000):
+        try:
+            from .services.networks import per_network_fc, system_segregation
+            net_fc = per_network_fc(corr_matrix, n_parcels=n)
+            if net_fc:
+                metrics["network_fc"] = net_fc
+            seg = system_segregation(corr_matrix, n_parcels=n)
+            if seg is not None:
+                metrics["system_segregation"] = seg
+        except Exception:
+            # Network labels missing or atlas JSON unavailable — keep
+            # legacy biomarkers without crashing.
+            pass
+
     return metrics
 
 

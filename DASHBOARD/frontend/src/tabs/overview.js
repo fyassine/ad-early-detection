@@ -184,7 +184,30 @@ export function renderOverviewTab() {
     }
     const convPlugin = makeConvPlugin(conversionVisit);
 
+    // Prefer percentile bands (5/25/50/75/95, Rutherford 2022 / PCNtoolkit
+    // pattern) when the cohort_stats payload includes them; fall back to
+    // mean ± 1σ for legacy cached payloads.
+    const refPctMap = (cohortStats?.biomarker_percentiles || {})[refCohort] || {};
     const makeBand = (metric, color) => {
+        const pct = refPctMap[metric];
+        if (pct && pct.p5 != null && pct.p95 != null) {
+            const N = allVisits.length;
+            const p5 = Array(N).fill(pct.p5);
+            const p25 = Array(N).fill(pct.p25);
+            const p50 = Array(N).fill(pct.p50);
+            const p75 = Array(N).fill(pct.p75);
+            const p95 = Array(N).fill(pct.p95);
+            return [
+                // 5-95 outer band
+                { label: '_band_p95_' + metric, data: p95, borderColor: 'transparent', backgroundColor: color + '14', pointRadius: 0, fill: '+1', order: 100, spanGaps: true },
+                { label: '_band_p5_' + metric,  data: p5,  borderColor: 'transparent', backgroundColor: 'transparent', pointRadius: 0, fill: false, order: 101, spanGaps: true },
+                // 25-75 inner band
+                { label: '_band_p75_' + metric, data: p75, borderColor: 'transparent', backgroundColor: color + '26', pointRadius: 0, fill: '+1', order: 99, spanGaps: true },
+                { label: '_band_p25_' + metric, data: p25, borderColor: 'transparent', backgroundColor: 'transparent', pointRadius: 0, fill: false, order: 102, spanGaps: true },
+                // Median line
+                { label: refLabel + ' median', data: p50, borderColor: color + 'cc', borderDash: [4, 3], borderWidth: 1.2, pointRadius: 0, fill: false, order: 98, spanGaps: true },
+            ];
+        }
         if (!refStats || !refStats[metric]) return [];
         const { mean, std } = refStats[metric];
         if (mean == null || std == null) return [];

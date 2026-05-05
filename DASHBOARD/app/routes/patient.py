@@ -51,13 +51,151 @@ async def api_patient_clinical(
     subject_id: str,
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
 ):
-    """Get longitudinal clinical biomarker trajectory (MMSE, CDR, PACC5, Abeta42, Tau, pTau)."""
+    """
+    Longitudinal clinical biomarker trajectory + A/T/N classification per visit
+    (NIA-AA 2024 criteria). Returns the legacy schema with an extra ``atn``
+    array so the frontend can render badges without a second round-trip.
+    """
     abs_csv = os.path.join(DATA_ROOT, csv_path)
     if not os.path.exists(abs_csv):
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
     df = load_metadata(abs_csv)
     result = get_patient_clinical_trajectory(df, subject_id)
+
+    # A/T/N classification per visit
+    try:
+        from ..services.atn import classify_visits
+        result["atn"] = classify_visits(result)
+    except Exception as e:
+        result["atn"] = []
+        result["atn_error"] = str(e)
+
     return JSONResponse(result)
+
+
+@router.get("/api/patient/{subject_id}/staging")
+async def api_patient_staging(
+    subject_id: str,
+    csv_path: str = Query(..., description="Relative path to metadata CSV"),
+    scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
+):
+    """
+    Cohort-aware staging payload: per-visit EBM stage + brain-age gap +
+    per-patient time-shift on the cohort-mean disease curve.
+    """
+    abs_csv = os.path.join(DATA_ROOT, csv_path)
+    if not os.path.exists(abs_csv):
+        return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
+    folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
+    stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
+
+    # ── Per-visit fMRI biomarkers (re-uses cached stream) ────────────────
+    visits_payload: list[dict] = []
+    fmri_records = find_subject_npz_files(DATA_ROOT, folder_list, subject_id)
+    fmri_records_by_visit = {str(r["visit"]).upper(): r for r in fmri_records}
+
+    df = load_metadata(abs_csv)
+    clinical = get_patient_clinical_trajectory(df, subject_id)
+
+    from ..services.atn import classify_visits
+    from ..services.ebm import stage_visit
+    from ..services.brain_age import predict_brain_age
+    from ..services.time_shift import estimate_patient_time_shift
+
+    atn_records = classify_visits(clinical)
+    atn_by_visit = {str(r["visit"]).upper(): r for r in atn_records}
+
+    # Patient chronological age (use baseline row in the CSV)
+    age = None
+    if "subject_id" in df.columns and "age" in df.columns:
+        sub = df[df["subject_id"] == subject_id]
+        if not sub.empty:
+            try:
+                age = float(sub["age"].dropna().iloc[0])
+            except (IndexError, ValueError, TypeError):
+                age = None
+
+    # Build merged per-visit dict for EBM + time-shift
+    all_visits = sorted(
+        set(fmri_records_by_visit.keys()) | set(atn_by_visit.keys()),
+        key=lambda v: int(v.lstrip("M")) if v.lstrip("M").isdigit() else 9999,
+    )
+
+    ebm = stats.ebm or {}
+    brain_age_model = stats.brain_age_model
+
+    for v in all_visits:
+        merged: dict = {"visit": v}
+        # fMRI biomarkers via cached matrix load
+        rec = fmri_records_by_visit.get(v)
+        bag = None
+        if rec is not None:
+            try:
+                from ..biomarkers import compute_fmri_biomarkers, load_correlation_matrix
+                matrix = load_correlation_matrix(rec["abs_path"])
+                is_dmn = matrix.shape[0] <= 50
+                bms = compute_fmri_biomarkers(matrix, is_dmn_only=is_dmn)
+                for k in ("global_fc", "dmn_fc", "modularity", "density",
+                          "pos_fc_ratio", "system_segregation"):
+                    if bms.get(k) is not None:
+                        merged[k] = bms[k]
+                if bms.get("network_fc"):
+                    merged["network_fc"] = bms["network_fc"]
+                if brain_age_model is not None and age is not None:
+                    bag = predict_brain_age(brain_age_model, matrix, age)
+                    merged["brain_age"] = bag
+            except Exception:
+                pass
+
+        # Clinical biomarkers
+        atn = atn_by_visit.get(v)
+        if atn is not None:
+            merged["atn"] = atn
+            merged["abeta42"] = atn.get("abeta42")
+            merged["p_tau"] = atn.get("p_tau")
+            merged["total_tau"] = atn.get("total_tau")
+        # Cognition (read directly from clinical trajectory)
+        if clinical.get("visits"):
+            try:
+                idx = clinical["visits"].index(v)
+                cog = clinical.get("cognitive", {}) or {}
+                for col_key, alias in (("mmse", "mmse_total"), ("cdr", "cdr_global"),
+                                       ("pacc5", "pacc5")):
+                    arr = cog.get(col_key) or []
+                    if idx < len(arr) and arr[idx] is not None:
+                        merged[alias] = arr[idx]
+            except ValueError:
+                pass
+
+        # EBM stage uses the merged dict directly
+        if ebm:
+            merged["ebm_stage"] = stage_visit(merged, ebm)
+
+        visits_payload.append(merged)
+
+    # Time-shift: needs the per-visit mergedVisits over the patient
+    time_shift_payload = {"tau_months": None, "n_obs": 0}
+    if stats.time_shift_model is not None:
+        try:
+            time_shift_payload = estimate_patient_time_shift(
+                stats.time_shift_model, visits_payload
+            )
+        except Exception:
+            pass
+
+    return JSONResponse({
+        "subject_id": subject_id,
+        "age": age,
+        "visits": visits_payload,
+        "time_shift": time_shift_payload,
+        "ebm_sequence": (ebm.get("sequence") or []),
+        "brain_age_summary": {
+            "available": brain_age_model is not None,
+            "cv_mae": getattr(brain_age_model, "cv_mae", None),
+            "cv_r2": getattr(brain_age_model, "cv_r2", None),
+            "n_train": getattr(brain_age_model, "n_train", 0),
+        },
+    })
 
 
 @router.get("/api/patient/{subject_id}/manifold")

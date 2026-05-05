@@ -1,6 +1,7 @@
 import { $, diagColor, fmtCol, fmtVal } from './utils.js';
 import { state } from './state.js';
 import { renderOverviewTab } from './tabs/overview.js';
+import { renderStagingTab } from './tabs/staging.js';
 import { renderManifoldTab, redrawManifold } from './tabs/manifold.js';
 import { renderConnectivityTab, renderConnectivityHeatmap } from './tabs/connectivity.js';
 import { renderQCViewerTab, loadQCViewerVolume, _prefetchQCVolume } from './tabs/qcviewer.js';
@@ -8,6 +9,7 @@ import { renderBrainViewTab, renderBrainGraph } from './tabs/brainview.js';
 
 export const TAB_DEFS = [
     { id: 'overview',     label: 'Overview' },
+    { id: 'staging',      label: 'Staging' },
     { id: 'manifold',     label: 'Manifold' },
     { id: 'connectivity', label: 'Connectivity' },
     { id: 'qcviewer',     label: 'QC Viewer' },
@@ -87,7 +89,7 @@ export async function openPatient(sid) {
         cohortStats: null, allVisits: [], mergedVisits: [],
         selectedVisit: (patient.visits && patient.visits.length) ? patient.visits[patient.visits.length - 1] : null,
         activeTab: 'overview',
-        tabRendered: { overview: false, manifold: false, connectivity: false, qcviewer: false, brainview: false },
+        tabRendered: { overview: false, staging: false, manifold: false, connectivity: false, qcviewer: false, brainview: false },
         niiVue: null,
         scansList: [],
         _cortexVisible: true,
@@ -110,7 +112,7 @@ export async function openPatient(sid) {
     if (isConverter) {
         $('adScanToggle').addEventListener('change', e => {
             state.currentPatient.includeAD = e.target.checked;
-            state.currentPatient.tabRendered = { overview: false, manifold: false, connectivity: false, qcviewer: false, brainview: false };
+            state.currentPatient.tabRendered = { overview: false, staging: false, manifold: false, connectivity: false, qcviewer: false, brainview: false };
             loadPatientData();
         });
     }
@@ -133,6 +135,7 @@ function renderActiveTab() {
     if (!state.currentPatient) return;
     const t = state.currentPatient.activeTab;
     if (t === 'overview')          renderOverviewTab();
+    else if (t === 'staging')      renderStagingTab();
     else if (t === 'manifold')     renderManifoldTab();
     else if (t === 'connectivity') renderConnectivityTab();
     else if (t === 'qcviewer')     renderQCViewerTab();
@@ -349,7 +352,7 @@ export async function loadPatientData() {
             : null;
         _updateCurrentVisitBadge(state.currentPatient.selectedVisit);
         _renderGlobalVisitPills();
-        state.currentPatient.tabRendered = { overview: false, manifold: false, connectivity: false, qcviewer: false, brainview: false };
+        state.currentPatient.tabRendered = { overview: false, staging: false, manifold: false, connectivity: false, qcviewer: false, brainview: false };
         renderActiveTab();
     } catch (e) {
         if (e?.name === 'AbortError') return;

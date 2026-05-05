@@ -66,7 +66,143 @@ export function render(scan, global, filtered) {
     renderDiag(global, scan);
     renderScans(scan, filtered);
     renderClinical(filtered);
+    renderCohortAnalytics();
     renderTable(filtered, scan);
+}
+
+// ── Cohort analytics: effect sizes + Kaplan-Meier ─────────────────────────────
+
+export async function renderCohortAnalytics() {
+    const sec = $('sectionAnalytics');
+    if (!sec) return;
+    const csvPath = $('csvSelect').value;
+    if (!csvPath) { sec.style.display = 'none'; return; }
+    sec.style.display = '';
+
+    const folders = state.selectedScanFolders.join(',');
+    const cont = $('analyticsContent');
+    cont.innerHTML = `<div class="loading-text" style="padding:1rem;text-align:center;font-size:.8rem">Computing effect sizes + survival curves…</div>`;
+
+    let effectSizes = null;
+    let survival = null;
+    try {
+        const [esR, svR] = await Promise.all([
+            folders ? fetch(`/api/cohort/effect-sizes?csv_path=${encodeURIComponent(csvPath)}&scan_folders=${encodeURIComponent(folders)}`).then(r => r.ok ? r.json() : null) : Promise.resolve(null),
+            fetch(`/api/cohort/survival?csv_path=${encodeURIComponent(csvPath)}&stratify_by=apoe4`).then(r => r.ok ? r.json() : null),
+        ]);
+        effectSizes = esR;
+        survival = svR;
+    } catch (e) {
+        cont.innerHTML = `<p style="font-size:.75rem;color:var(--rose);text-align:center">Analytics fetch failed: ${e.message}</p>`;
+        return;
+    }
+
+    const surveHtml = `<div class="analytics-card">
+        <h3>Time to conversion (Kaplan–Meier)</h3>
+        <p class="analytics-sub">At-risk: baseline diagnosis ∈ {converter, mci}. Event: first visit labelled <code>ad</code>. Stratified by APOE4 carrier status.</p>
+        <div class="chart-container" style="height:240px"><canvas id="survivalChart"></canvas></div>
+        <div id="survivalLegend" class="survival-legend"></div>
+    </div>`;
+
+    const efHtml = `<div class="analytics-card">
+        <h3>Pairwise effect sizes <span style="font-size:.65rem;color:var(--text-3);font-weight:400">(Cohen's d, Hedges-corrected, bootstrap 95% CI)</span></h3>
+        <div class="effect-controls">
+            <label style="font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;font-weight:600">Metric:</label>
+            <select id="effectMetricSelect" class="config-input" style="width:auto;padding:.3rem .5rem;font-size:.78rem"></select>
+        </div>
+        <div id="effectForestPlot" class="effect-forest"></div>
+    </div>`;
+
+    cont.innerHTML = `<div class="analytics-grid">${surveHtml}${efHtml}</div>`;
+
+    // ── Render survival curve ──
+    if (survival?.strata?.length) {
+        const ctx = $('survivalChart').getContext('2d');
+        const colors = [C.indigo, C.rose, C.violet];
+        const datasets = survival.strata.flatMap((s, i) => {
+            const col = colors[i % colors.length];
+            return [
+                {
+                    label: `${s.label} (n=${s.n}, events=${s.n_events})`,
+                    data: s.timeline.map((t, j) => ({ x: t, y: s.survival[j] })),
+                    borderColor: col, backgroundColor: col + '22',
+                    pointRadius: 0, borderWidth: 2.5, stepped: 'after', spanGaps: true, fill: false, order: 2,
+                },
+                {
+                    label: `_ci_upper_${i}`,
+                    data: s.timeline.map((t, j) => ({ x: t, y: s.ci_hi[j] })),
+                    borderColor: 'transparent', backgroundColor: col + '14',
+                    pointRadius: 0, fill: '+1', stepped: 'after', spanGaps: true, order: 99,
+                },
+                {
+                    label: `_ci_lower_${i}`,
+                    data: s.timeline.map((t, j) => ({ x: t, y: s.ci_lo[j] })),
+                    borderColor: 'transparent', backgroundColor: 'transparent',
+                    pointRadius: 0, fill: false, stepped: 'after', spanGaps: true, order: 100,
+                },
+            ];
+        });
+        state.activeCharts['survival'] = new Chart(ctx, {
+            type: 'line',
+            data: { datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false, parsing: false,
+                plugins: {
+                    legend: { display: true, labels: { usePointStyle: true, boxWidth: 8, padding: 10, filter: it => !String(it.text || '').startsWith('_ci_') } },
+                    tooltip: { ...tooltipStyle(), filter: c => !String(c.dataset?.label || '').startsWith('_ci_') },
+                },
+                scales: {
+                    x: { type: 'linear', title: { display: true, text: 'Months from baseline' }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                    y: { min: 0, max: 1, title: { display: true, text: 'Survival (= not yet converted)' }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                },
+            },
+        });
+    } else {
+        const c = $('survivalChart');
+        if (c) {
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = '#7a7976';
+            ctx.font = '12px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Insufficient data for survival analysis', c.width / 2, c.height / 2);
+        }
+    }
+
+    // ── Render effect-sizes forest plot ──
+    if (effectSizes?.metrics) {
+        const sel = $('effectMetricSelect');
+        const metrics = Object.keys(effectSizes.metrics).filter(k => effectSizes.metrics[k].length > 0);
+        sel.innerHTML = metrics.map(m => `<option value="${m}">${m}</option>`).join('');
+        const renderForest = () => {
+            const metric = sel.value;
+            const rows = effectSizes.metrics[metric] || [];
+            const host = $('effectForestPlot');
+            if (!rows.length) { host.innerHTML = '<p class="no-trajectory">No data</p>'; return; }
+            const maxAbs = Math.max(...rows.map(r => Math.max(Math.abs(r.ci_lo ?? 0), Math.abs(r.ci_hi ?? 0), Math.abs(r.d ?? 0))), 1);
+            host.innerHTML = rows.map(r => {
+                const d = r.d ?? 0;
+                const cls = Math.abs(d) > 0.8 ? 'large' : Math.abs(d) > 0.5 ? 'medium' : Math.abs(d) > 0.2 ? 'small' : 'none';
+                const cLo = (r.ci_lo ?? 0) / maxAbs * 50 + 50;
+                const cHi = (r.ci_hi ?? 0) / maxAbs * 50 + 50;
+                const cD = d / maxAbs * 50 + 50;
+                return `<div class="forest-row">
+                    <div class="forest-label">${r.a} vs ${r.b}<span class="forest-n">n=${r.n_a}/${r.n_b}</span></div>
+                    <div class="forest-track">
+                        <div class="forest-axis"></div>
+                        <div class="forest-zero"></div>
+                        <div class="forest-ci ${cls}" style="left:${Math.min(cLo, cHi)}%; width:${Math.abs(cHi - cLo)}%"></div>
+                        <div class="forest-point ${cls}" style="left:${cD}%"></div>
+                    </div>
+                    <div class="forest-d">${d == null ? '—' : (d > 0 ? '+' : '') + d.toFixed(2)} <span class="forest-ci-text">[${r.ci_lo?.toFixed(2) ?? '—'}, ${r.ci_hi?.toFixed(2) ?? '—'}]</span></div>
+                </div>`;
+            }).join('');
+        };
+        sel.addEventListener('change', renderForest);
+        if (metrics.length) {
+            sel.value = metrics.includes('global_fc') ? 'global_fc' : metrics[0];
+            renderForest();
+        }
+    }
 }
 
 // ── Summary cards ─────────────────────────────────────────────────────────────

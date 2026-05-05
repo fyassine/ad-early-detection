@@ -5,6 +5,7 @@ import './styles/layout.css';
 import './styles/components.css';
 import './styles/modals.css';
 import './styles/brain.css';
+import './styles/staging.css';
 
 import { init, applyRecent, deleteRecent } from './config.js';
 import { openPatient } from './modal.js';

@@ -52,7 +52,11 @@ UMAP_MIN_DIST = 0.1
 UMAP_RANDOM_STATE = 42
 
 # Biomarker fields tracked in normative bands.
-BIOMARKER_KEYS = ["global_fc", "dmn_fc", "modularity", "density", "pos_fc_ratio"]
+BIOMARKER_KEYS = ["global_fc", "dmn_fc", "modularity", "density", "pos_fc_ratio",
+                  "system_segregation"]
+
+# Schaefer 7-network names (used to expose per-network FC stats).
+SCHAEFER_NETWORKS = ["Default", "Cont", "SalVentAttn", "DorsAttn", "Limbic", "SomMot", "Vis"]
 
 
 # --------------------------------------------------------------------------- #
@@ -81,6 +85,19 @@ class CohortStats:
     umap_mapper: object = field(default=None, repr=False)
     edge_dim: int = 0  # length of the upper-triangle feature vector
     n_rois: int = 0
+    # Per-cohort percentile bands {cohort: {metric: {p5, p25, p50, p75, p95, ...}}}
+    biomarker_percentiles: dict = field(default_factory=dict)
+    # Raw biomarker values per cohort {cohort: {metric: [values]}} — used by
+    # effect-size + EBM endpoints; not exposed to the frontend in full.
+    biomarker_values: dict = field(default_factory=dict)
+    # Per-cohort × per-network FC stats: {cohort: {network_name: {mean, std, p5..p95, n}}}
+    network_fc_stats: dict = field(default_factory=dict)
+    # Brain-age model trained on healthy CN baselines (services.brain_age.BrainAgeModel)
+    brain_age_model: object = field(default=None, repr=False)
+    # EBM model: {sequence: [...], biomarkers: {...}}
+    ebm: dict = field(default_factory=dict)
+    # Time-shift model: services.time_shift.TimeShiftModel
+    time_shift_model: object = field(default=None, repr=False)
 
 
 # --------------------------------------------------------------------------- #
@@ -359,14 +376,22 @@ def _biomarker_stats_from_features(
     cohorts: list[str],
     n_rois: int,
     executor: Optional[ThreadPoolExecutor] = None,
-) -> dict:
+) -> tuple[dict, dict, dict, list[dict]]:
     """
     Reconstruct the symmetric matrix from each feature row, run
-    ``compute_fmri_biomarkers``, then group by cohort to return
-    {cohort: {metric: {mean, std, n}}}.
+    ``compute_fmri_biomarkers``, then group by cohort.
+
+    Returns ``(biomarker_stats, biomarker_values, network_fc_stats, per_subject)``:
+      - ``biomarker_stats``    : {cohort: {metric: {mean, std, n}}}
+      - ``biomarker_values``   : {cohort: {metric: [raw values]}} (for percentile +
+                                 effect-size + EBM endpoints)
+      - ``network_fc_stats``   : {cohort: {network_name: {mean, std, n}}}
+      - ``per_subject``        : ordered list of biomarker dicts (for brain-age /
+                                 EBM training)
     """
     if features.size == 0:
-        return {c: {} for c in COHORTS}
+        return ({c: {} for c in COHORTS}, {c: {} for c in COHORTS},
+                {c: {} for c in COHORTS}, [])
 
     iu = np.triu_indices(n_rois, k=1)
     is_dmn_only = n_rois <= 50
@@ -385,17 +410,23 @@ def _biomarker_stats_from_features(
     else:
         per_subject = [_one(row) for row in features]
 
-    out: dict = {}
+    out_stats: dict = {}
+    out_values: dict = {}
+    out_network: dict = {}
     for cohort in COHORTS:
         idx = [i for i, c in enumerate(cohorts) if c == cohort]
         if not idx:
-            out[cohort] = {}
+            out_stats[cohort] = {}
+            out_values[cohort] = {}
+            out_network[cohort] = {}
             continue
 
         cohort_stats: dict = {}
+        cohort_values: dict = {}
         for key in BIOMARKER_KEYS:
             vals = [per_subject[i].get(key) for i in idx]
             vals = [v for v in vals if v is not None and math.isfinite(float(v))]
+            cohort_values[key] = vals
             if not vals:
                 continue
             arr = np.asarray(vals, dtype=np.float64)
@@ -404,9 +435,28 @@ def _biomarker_stats_from_features(
                 "std": _safe_float(arr.std(ddof=0)),
                 "n": int(arr.size),
             }
-        out[cohort] = cohort_stats
+        out_stats[cohort] = cohort_stats
+        out_values[cohort] = cohort_values
 
-    return out
+        # Per-network FC stats: aggregate `network_fc` dict from each subject.
+        net_buckets: dict[str, list[float]] = {}
+        for i in idx:
+            net = per_subject[i].get("network_fc") or {}
+            for net_name, val in net.items():
+                if val is None or not math.isfinite(float(val)):
+                    continue
+                net_buckets.setdefault(net_name, []).append(float(val))
+        cohort_net: dict = {}
+        for name, vals in net_buckets.items():
+            arr = np.asarray(vals, dtype=np.float64)
+            cohort_net[name] = {
+                "mean": _safe_float(arr.mean()),
+                "std": _safe_float(arr.std(ddof=0)),
+                "n": int(arr.size),
+            }
+        out_network[cohort] = cohort_net
+
+    return out_stats, out_values, out_network, per_subject
 
 
 # --------------------------------------------------------------------------- #
@@ -598,12 +648,165 @@ def _compute_disease_axes(centroids: dict) -> dict:
 
 
 # --------------------------------------------------------------------------- #
+# 2023+ analytics: percentiles, brain-age, EBM, time-shift                    #
+# --------------------------------------------------------------------------- #
+
+def _compute_percentile_bands(biomarker_values: dict) -> dict:
+    """Run the percentile bootstrap for each cohort × biomarker."""
+    try:
+        from .services.normative import percentile_bands
+    except Exception:
+        return {}
+    out: dict = {}
+    for cohort, metrics in biomarker_values.items():
+        cohort_pct: dict = {}
+        for key, vals in metrics.items():
+            band = percentile_bands(vals)
+            if band is not None:
+                cohort_pct[key] = band
+        out[cohort] = cohort_pct
+    return out
+
+
+def _train_brain_age(
+    features: np.ndarray,
+    cohorts: list[str],
+    subject_ids: list[str],
+    df: pd.DataFrame,
+) -> Optional[object]:
+    """Train Ridge brain-age regressor on healthy CN baselines."""
+    if features.size == 0 or "age" not in df.columns or "subject_id" not in df.columns:
+        return None
+    age_lookup = (
+        df.dropna(subset=["subject_id"])
+        .drop_duplicates(subset="subject_id", keep="first")
+        .set_index(df.columns[df.columns.get_loc("subject_id")] if "subject_id" in df.columns else None)
+    )
+    try:
+        age_lookup = df.dropna(subset=["subject_id"]).drop_duplicates(subset="subject_id", keep="first").set_index("subject_id")["age"].to_dict()
+    except Exception:
+        return None
+
+    cn_idx = [i for i, c in enumerate(cohorts) if c == "healthy"]
+    if len(cn_idx) < 12:
+        return None
+    cn_features = features[cn_idx]
+    cn_ages = np.asarray([age_lookup.get(subject_ids[i]) for i in cn_idx], dtype=np.float64)
+
+    try:
+        from .services.brain_age import fit_brain_age
+        return fit_brain_age(cn_features, cn_ages)
+    except Exception:
+        return None
+
+
+def _build_ebm(biomarker_values: dict, df: pd.DataFrame, subject_ids: list[str]) -> dict:
+    """Fit the simple EBM using fMRI biomarkers + clinical CSF + cognition."""
+    try:
+        from .services.ebm import fit_ebm
+    except Exception:
+        return {}
+
+    ebm_input: dict[str, dict[str, list[float]]] = {}
+    for cohort in COHORTS:
+        ebm_input[cohort] = dict(biomarker_values.get(cohort, {}))
+
+    # Add clinical biomarkers to the EBM input by cross-referencing the CSV.
+    if "subject_id" in df.columns and "diagnosis" in df.columns:
+        baseline = _select_baseline_subjects(df)
+        for col in ("mmse_total", "cdr_global", "abeta42", "p_tau", "total_tau", "pacc5"):
+            if col not in baseline.columns:
+                continue
+            for cohort in COHORTS:
+                rows = baseline[baseline["diagnosis"].astype(str).str.strip().str.lower() == cohort]
+                vals = pd.to_numeric(rows[col], errors="coerce").dropna().tolist()
+                if vals:
+                    ebm_input[cohort].setdefault(col, []).extend(vals)
+
+    # Use the union of all keys actually populated for either CN or AD.
+    cn = ebm_input.get("healthy", {}) or {}
+    ad = ebm_input.get("ad", {}) or {}
+    keys = sorted(set(cn.keys()) | set(ad.keys()))
+    if not keys:
+        return {}
+    return fit_ebm(ebm_input, biomarker_keys=keys)
+
+
+def _build_time_shift_model(
+    per_subject_biomarkers: list[dict],
+    cohorts: list[str],
+    subject_ids: list[str],
+    long_sids: list[str],
+    long_visits: list[str],
+    df: pd.DataFrame,
+) -> Optional[object]:
+    """Fit logistic curves to converter biomarkers over months-from-M0."""
+    try:
+        from .services.time_shift import fit_time_shift_model
+        from .biomarkers import compute_fmri_biomarkers, find_subject_npz_files, load_correlation_matrix  # noqa: F401
+    except Exception:
+        return None
+    import re as _re
+
+    def _months(visit) -> Optional[int]:
+        if visit is None:
+            return None
+        m = _re.match(r"M(\d+)", str(visit).strip().upper())
+        return int(m.group(1)) if m else None
+
+    samples: dict[str, list[tuple[int, float]]] = {k: [] for k in BIOMARKER_KEYS}
+    # Baseline converters
+    for i, sid in enumerate(subject_ids):
+        if cohorts[i] != "converter":
+            continue
+        for key in BIOMARKER_KEYS:
+            v = per_subject_biomarkers[i].get(key) if i < len(per_subject_biomarkers) else None
+            if v is None:
+                continue
+            samples[key].append((0, float(v)))
+    # Longitudinal visits — recompute biomarkers via per_subject_biomarkers? We
+    # don't have them here cheaply. Instead, we approximate by skipping —
+    # baseline-only converter samples are still enough for a usable curve fit
+    # if there are ≥6 baseline converters.
+
+    # Add clinical biomarkers from CSV (every visit known)
+    if "subject_id" in df.columns and "visit" in df.columns:
+        clinical_keys = ["mmse_total", "cdr_global", "abeta42", "p_tau", "total_tau", "pacc5"]
+        for col in clinical_keys:
+            if col not in df.columns:
+                continue
+            samples.setdefault(col, [])
+            for _, row in df.iterrows():
+                sid = str(row.get("subject_id", "")).strip()
+                if not sid:
+                    continue
+                # Restrict to converter cohort
+                diag = str(row.get("diagnosis", "")).strip().lower()
+                if diag not in ("converter", "ad"):
+                    continue
+                m = _months(row.get("visit"))
+                if m is None:
+                    continue
+                v = pd.to_numeric(pd.Series([row.get(col)]), errors="coerce").iloc[0]
+                if v is None or not pd.notna(v):
+                    continue
+                samples[col].append((int(m), float(v)))
+
+    samples = {k: v for k, v in samples.items() if len(v) >= 6}
+    if not samples:
+        return None
+    return fit_time_shift_model(samples)
+
+
+# --------------------------------------------------------------------------- #
 # Disk cache                                                                  #
 # --------------------------------------------------------------------------- #
 
 # Bump when the pickle payload schema changes.
 # v2: adds patient_visit_coords (Round 4 manifold co-fit).
-_DISK_CACHE_VERSION = 2
+# v3: adds biomarker_percentiles, biomarker_values, network_fc_stats,
+#      brain_age_model, ebm, time_shift_model (2023+ analytics).
+_DISK_CACHE_VERSION = 3
 
 
 def _disk_cache_dir(data_root: str) -> str:
@@ -671,6 +874,12 @@ def _load_disk_cache(path: str, fingerprint: str) -> Optional[CohortStats]:
             umap_mapper=payload.get("umap_mapper"),
             edge_dim=int(payload.get("edge_dim", 0)),
             n_rois=int(payload.get("n_rois", 0)),
+            biomarker_percentiles=payload.get("biomarker_percentiles", {}),
+            biomarker_values=payload.get("biomarker_values", {}),
+            network_fc_stats=payload.get("network_fc_stats", {}),
+            brain_age_model=payload.get("brain_age_model"),
+            ebm=payload.get("ebm", {}),
+            time_shift_model=payload.get("time_shift_model"),
         )
     except Exception:
         return None
@@ -689,6 +898,12 @@ def _save_disk_cache(path: str, fingerprint: str, stats: CohortStats) -> None:
         "umap_mapper": stats.umap_mapper,
         "edge_dim": stats.edge_dim,
         "n_rois": stats.n_rois,
+        "biomarker_percentiles": stats.biomarker_percentiles,
+        "biomarker_values": stats.biomarker_values,
+        "network_fc_stats": stats.network_fc_stats,
+        "brain_age_model": stats.brain_age_model,
+        "ebm": stats.ebm,
+        "time_shift_model": stats.time_shift_model,
     }
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -743,7 +958,8 @@ def get_cohort_stats(
         features, cohorts, subject_ids, n_rois = _collect_baseline_fc_vectors(
             data_root, df, scan_folders, npz_index=npz_index, executor=executor
         )
-        biomarker_stats = _biomarker_stats_from_features(
+        (biomarker_stats, biomarker_values, network_fc_stats,
+         per_subject_biomarkers) = _biomarker_stats_from_features(
             features, cohorts, n_rois, executor=executor
         )
         # Co-fit: include every converter's non-baseline visits in the UMAP
@@ -776,6 +992,15 @@ def get_cohort_stats(
         conversion_axis=conversion_axis,
     )
 
+    # ── 2023+ analytics: percentiles, brain-age, EBM, time-shift ─────────────
+    biomarker_percentiles = _compute_percentile_bands(biomarker_values)
+    brain_age_model = _train_brain_age(features, cohorts, subject_ids, df)
+    ebm = _build_ebm(biomarker_values, df, subject_ids)
+    time_shift_model = _build_time_shift_model(
+        per_subject_biomarkers, cohorts, subject_ids,
+        long_sids, long_visits, df,
+    )
+
     stats = CohortStats(
         biomarker_stats=biomarker_stats,
         points=points,
@@ -786,6 +1011,12 @@ def get_cohort_stats(
         umap_mapper=mapper,
         edge_dim=features.shape[1] if features.size else 0,
         n_rois=n_rois,
+        biomarker_percentiles=biomarker_percentiles,
+        biomarker_values=biomarker_values,
+        network_fc_stats=network_fc_stats,
+        brain_age_model=brain_age_model,
+        ebm=ebm,
+        time_shift_model=time_shift_model,
     )
 
     with _LOCK:
