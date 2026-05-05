@@ -2,8 +2,8 @@
   "name": "ad-dashboard",
   "private": true,
   "scripts": {
-    "dev": "vite",
-    "build": "vite build"
+    "dev": "PATH=/tmp/node/bin:$PATH vite",
+    "build": "PATH=/tmp/node/bin:$PATH vite build"
   },
   "dependencies": {
     "chart.js": "^4.4.0",
