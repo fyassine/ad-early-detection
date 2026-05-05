@@ -1,1 +1,0 @@
-contains all scans from all subjects (no stratification)
