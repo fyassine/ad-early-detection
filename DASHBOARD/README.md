@@ -2,6 +2,18 @@
 
 ## Launching the Dashboard
 
+### Build the frontend (one time, or after editing JS/CSS)
+
+The dashboard frontend is a Vite project under `frontend/`. Build it before
+starting uvicorn — the FastAPI server serves the bundled output from
+`app/static/dist/`.
+
+```bash
+cd /mnt/e/fyassine/ad-early-detection/DASHBOARD/frontend
+npm install
+npm run build
+```
+
 ### On the Remote Server
 
 ```bash

@@ -1,0 +1,79 @@
+.app{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column}
+
+/* ── Header ── */
+.header{
+    background:rgba(22,22,20,.92);backdrop-filter:blur(24px);
+    border-bottom:1px solid var(--border);padding:.85rem 1.5rem;
+    position:sticky;top:0;z-index:100;
+}
+.header-inner{max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.header-brand{display:flex;align-items:center;gap:.7rem}
+.header-brand .logo{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:var(--accent);background:var(--bg-2);border:1px solid var(--border)}
+.brand-text{display:flex;flex-direction:column;gap:2px}
+.brand-text h1{font-size:1.05rem;font-weight:700;color:var(--text-0);letter-spacing:-.01em}
+.brand-text span{font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2)}
+.header-status{display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--text-2)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(109,170,69,.6);animation:pulse 2s ease infinite}
+
+/* ── Main ── */
+.main{flex:1;max-width:1440px;margin:0 auto;padding:1.25rem 1.5rem;width:100%}
+
+/* ── Config Panel (Wizard) ── */
+.config-panel{
+    background:var(--bg-card);backdrop-filter:blur(16px);
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:1.5rem;margin-bottom:1.5rem;
+}
+.config-wizard{display:flex;flex-direction:column;gap:1.5rem}
+.wizard-step{display:flex;gap:1rem;align-items:flex-start}
+.step-badge{
+    width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;
+    flex-shrink:0;box-shadow:0 0 10px rgba(129,140,248,0.4);
+}
+.step-content{flex:1;display:flex;flex-direction:column;gap:.4rem}
+.step-content label{font-size:.85rem;font-weight:600;color:var(--text-1)}
+.config-input{
+    background:var(--bg-2);border:1px solid var(--border);border-radius:6px;
+    padding:.6rem .8rem;color:var(--text-0);font-family:inherit;font-size:.85rem;
+    outline:none;transition:border var(--transition);width:100%;
+}
+.config-input:focus{border-color:var(--accent)}
+
+.config-bottom{display:flex;align-items:center;gap:1rem;margin-top:1rem;flex-wrap:wrap}
+
+/* ── Dashboard Sections ── */
+.dashboard-results{display:none}
+.dashboard-results.active{display:block;animation:fadeIn .4s ease-out}
+
+.dash-section{margin-bottom:2rem}
+.section-header{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s ease;padding:.5rem;border-radius:4px;}
+.section-header:hover{background:var(--bg-3);}
+.section-header h2{font-size:.8rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em}
+.section-icon{font-size:1rem;opacity:.7}
+.toggle-icon{margin-left:auto;font-size:.65rem;color:var(--text-3);transition:transform .3s ease;}
+
+/* Collapsed state */
+.dash-section.collapsed .toggle-icon{transform:rotate(-90deg);}
+.dash-section.collapsed > div:not(.section-header){display:none;}
+
+/* ── Charts Grid ── */
+.charts-row{display:grid;gap:1rem;margin-bottom:1rem}
+.charts-row.cols-2{grid-template-columns:1fr 1fr}
+.charts-row.cols-3{grid-template-columns:1fr 1fr 1fr}
+.charts-row.cols-1{grid-template-columns:1fr}
+
+/* ── Empty State ── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 2rem;text-align:center;gap:.75rem}
+.empty-state .empty-icon{font-size:2.5rem;opacity:.4}
+.empty-state h3{font-size:1.1rem;color:var(--text-1)}
+.empty-state p{font-size:.85rem;color:var(--text-2);max-width:360px}
+
+/* ── Responsive ── */
+@media(max-width:1100px){.charts-row.cols-3{grid-template-columns:1fr 1fr}}
+@media(max-width:768px){
+    .config-grid{grid-template-columns:1fr}
+    .charts-row.cols-2,.charts-row.cols-3{grid-template-columns:1fr}
+    .main{padding:.75rem}
+    .patient-modal{max-width:100%}
+}
