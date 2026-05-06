@@ -17,7 +17,7 @@ const NETWORK_INDEX = {
     Vis: 0, SomMot: 1, DorsAttn: 2, SalVentAttn: 3, Limbic: 4, Cont: 5, Default: 6,
 };
 
-const BRAIN_MESH_LH = '/static/data/BrainMesh_ICBM152.lh.mz3';
+const BRAIN_MESH_LH = null;
 const BRAIN_MESH_RH = null;
 
 const BRAIN_MODES = [
@@ -482,7 +482,7 @@ function _updateBrainMeshStatus() {
         el.textContent = state.currentPatient._cortexVisible !== false
             ? `cortex underlay loaded${suffix}`
             : 'cortex underlay hidden';
-    } else if (state.currentPatient._brainMeshesFailed) {
+    } else if (state.currentPatient._brainMeshesFailed && (BRAIN_MESH_LH || BRAIN_MESH_RH)) {
         el.textContent = 'cortex underlay unavailable';
     } else {
         el.textContent = '';

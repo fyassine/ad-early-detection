@@ -51,13 +51,19 @@ def time_to_conversion_table(df: pd.DataFrame) -> pd.DataFrame:
 
     out_rows: list[dict] = []
     for sid, grp in df.dropna(subset=["subject_id"]).groupby("subject_id"):
+        # Sort by visit time so baseline = earliest visit regardless of CSV row order
+        grp = grp.copy()
+        grp["_months"] = grp["visit"].apply(_visit_months)
+        grp = grp.sort_values("_months", na_position="last").reset_index(drop=True)
+
         diags = grp["diagnosis"].astype(str).str.lower().str.strip()
-        # Baseline diagnosis (first non-empty, non-NaN)
-        baseline_diag = diags.iloc[0] if len(diags) else ""
+        # First non-empty, non-NaN diagnosis (handles CSVs where M0 row has no label)
+        valid_diags = diags[~diags.isin(["nan", "", "none", "nat"])]
+        baseline_diag = valid_diags.iloc[0] if len(valid_diags) else ""
         if baseline_diag not in ("converter", "mci"):
             continue
 
-        months = grp["visit"].apply(_visit_months)
+        months = grp["_months"]
         ad_mask = diags == "ad"
         if ad_mask.any():
             duration = int(months[ad_mask].min() or 0)
@@ -86,19 +92,51 @@ def time_to_conversion_table(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(out_rows)
 
 
+def _attach_atn_stage(table: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
+    """Add an 'atn_stage' column to ``table`` from the baseline ATN classification."""
+    try:
+        from .atn import classify_atn
+    except ImportError:
+        table["atn_stage"] = None
+        return table
+
+    stage_map: dict[str, str] = {}
+    for sid, grp in df.dropna(subset=["subject_id"]).groupby("subject_id"):
+        grp2 = grp.copy()
+        grp2["_m"] = grp2["visit"].apply(_visit_months)
+        grp2 = grp2.sort_values("_m", na_position="last").reset_index(drop=True)
+        # Compute ATN for each visit, take the baseline stage
+        for _, row in grp2.iterrows():
+            atn = classify_atn(row)
+            if atn and atn.get("stage") is not None:
+                stage_map[str(sid)] = f"Stage {atn['stage']}"
+                break
+
+    table = table.copy()
+    table["atn_stage"] = table["subject_id"].map(stage_map)
+    return table
+
+
 def kaplan_meier(
     df: pd.DataFrame,
     stratify_by: Optional[str] = None,
 ) -> dict:
     """
-    Fit a Kaplan-Meier curve. ``stratify_by`` may be 'apoe4' or None.
+    Fit a Kaplan-Meier curve. ``stratify_by`` may be 'apoe4', 'atn', or None.
 
     Returns a JSON-friendly dict with one curve per stratum:
         {strata: [{label, timeline: [...], survival: [...], ci_lo, ci_hi, n, n_events}]}
     """
     table = time_to_conversion_table(df)
     if table.empty:
-        return {"strata": []}
+        return {
+            "strata": [],
+            "reason": (
+                "No subjects with baseline diagnosis 'mci' or 'converter' were found after "
+                "sorting each subject's visits chronologically. Kaplan-Meier requires longitudinal "
+                "MCI subjects so that time-to-conversion (first visit labelled 'ad') can be measured."
+            ),
+        }
 
     try:
         from lifelines import KaplanMeierFitter
@@ -137,15 +175,44 @@ def kaplan_meier(
             curve = _fit_one(sub, label)
             if curve:
                 strata.append(curve)
-        # Unknown APOE -> separate stratum so we don't lose subjects
         unk = table[table["apoe4"].isna()]
         if len(unk) >= 3:
             curve = _fit_one(unk, "APOE unknown")
             if curve:
                 strata.append(curve)
+        if not strata:
+            curve = _fit_one(table, "All at-risk (APOE unknown)")
+            if curve:
+                strata.append(curve)
+
+    elif stratify_by == "atn":
+        table = _attach_atn_stage(table, df)
+        atn_order = ["Stage 0", "Stage 1", "Stage 2", "Stage 3"]
+        for stage in atn_order:
+            sub = table[table["atn_stage"] == stage]
+            if len(sub) >= 3:
+                curve = _fit_one(sub, stage)
+                if curve:
+                    strata.append(curve)
+        if not strata:
+            curve = _fit_one(table, "All at-risk")
+            if curve:
+                strata.append(curve)
+
     else:
         curve = _fit_one(table, "All at-risk")
         if curve:
             strata.append(curve)
+
+    if not strata:
+        return {
+            "strata": [],
+            "n_total": int(len(table)),
+            "reason": (
+                f"Found {len(table)} at-risk subjects but could not fit a survival curve. "
+                "Check that subjects have valid visit months (M0/M12/…) and at least one "
+                "non-zero duration."
+            ),
+        }
 
     return {"strata": strata, "n_total": int(len(table))}

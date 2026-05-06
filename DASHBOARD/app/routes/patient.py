@@ -16,7 +16,7 @@ from ..biomarkers import (
 )
 from ..cohort_stats import get_cohort_stats, project_visits
 from ..services.utils import _safe_round_matrix, _safe_under_root
-from ..services.qc import _ensure_qc_mean
+from ..services.qc import _ensure_qc_reduce as _ensure_qc_mean
 
 router = APIRouter()
 
@@ -373,4 +373,74 @@ async def api_patient_scans(
             {"visit": r["visit"], "filename": r["filename"], "file": r["rel_path"]}
             for r in records
         ],
+    })
+
+
+@router.get("/api/patient/{subject_id}/conversion-risk")
+async def api_patient_conversion_risk(
+    subject_id: str,
+    csv_path: str = Query(..., description="Relative path to metadata CSV"),
+):
+    """
+    Return 1-year, 3-year and 5-year conversion-to-AD probability for a patient
+    by reading off the cohort-level KM curve at the patient's current follow-up
+    duration. Returns null values for subjects not at-risk (non-MCI/converter).
+    """
+    abs_csv = os.path.join(DATA_ROOT, csv_path)
+    if not os.path.exists(abs_csv):
+        return JSONResponse({"error": f"CSV not found"}, status_code=404)
+
+    df = load_metadata(abs_csv)
+    from ..services.survival import time_to_conversion_table, kaplan_meier, _is_apoe4_carrier
+
+    table = time_to_conversion_table(df)
+    if table.empty:
+        return JSONResponse({"available": False, "reason": "No at-risk subjects in dataset"})
+
+    # Locate this subject
+    row = table[table["subject_id"] == subject_id]
+    if row.empty:
+        return JSONResponse({"available": False, "reason": "Subject not in at-risk group"})
+
+    patient_apoe4 = row.iloc[0]["apoe4"]
+    patient_duration = float(row.iloc[0]["duration"])
+
+    # Fit the KM for the patient's APOE4 stratum (or all-at-risk if unknown)
+    try:
+        from lifelines import KaplanMeierFitter
+    except ImportError:
+        return JSONResponse({"available": False, "reason": "lifelines not installed"})
+
+    if patient_apoe4 is True:
+        sub = table[table["apoe4"] == True]
+        label = "APOE4+"
+    elif patient_apoe4 is False:
+        sub = table[table["apoe4"] == False]
+        label = "APOE4−"
+    else:
+        sub = table
+        label = "All at-risk"
+
+    if len(sub) < 3:
+        sub = table
+        label = "All at-risk"
+
+    kmf = KaplanMeierFitter()
+    kmf.fit(durations=sub["duration"].values,
+            event_observed=sub["event_observed"].values)
+
+    def _risk_at(months: int) -> float:
+        sf = kmf.survival_function_at_times([months]).iloc[0]
+        return round(float(1 - sf), 3)
+
+    return JSONResponse({
+        "available": True,
+        "subject_id": subject_id,
+        "stratum": label,
+        "n_stratum": int(len(sub)),
+        "patient_followup_months": int(patient_duration),
+        "risk_1yr": _risk_at(12),
+        "risk_3yr": _risk_at(36),
+        "risk_5yr": _risk_at(60),
+        "note": "Derived from cohort KM curve — not a validated clinical prediction.",
     })

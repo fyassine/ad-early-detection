@@ -69,7 +69,7 @@
     padding:.5rem .6rem;
 }
 .net-card .net-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.25rem}
-.net-card canvas{width:100%;height:90px}
+.net-card canvas{width:100%;height:100%}
 
 /* ── Cohort Analytics section (effect sizes + survival) ── */
 

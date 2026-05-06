@@ -71,9 +71,14 @@ export async function renderStagingTab() {
     }
 
     let netStats = null;
+    let convRisk = null;
     try {
-        const r = await fetch(`/api/cohort/network-stats?csv_path=${encodeURIComponent(csvPath)}&scan_folders=${encodeURIComponent(folders)}`);
-        if (r.ok) netStats = await r.json();
+        const [nsR, crR] = await Promise.all([
+            fetch(`/api/cohort/network-stats?csv_path=${encodeURIComponent(csvPath)}&scan_folders=${encodeURIComponent(folders)}`).then(r => r.ok ? r.json() : null),
+            csvPath ? fetch(`/api/patient/${sid}/conversion-risk?csv_path=${encodeURIComponent(csvPath)}`).then(r => r.ok ? r.json() : null) : Promise.resolve(null),
+        ]);
+        netStats = nsR;
+        convRisk = crR;
     } catch { /* non-fatal */ }
 
     const visits = payload.visits || [];
@@ -105,6 +110,24 @@ export async function renderStagingTab() {
     if (tau != null) {
         const cls = tau > 12 ? 'below' : tau < -12 ? 'above' : 'normal';
         heroCards.push(`<div class="dev-card ${cls}"><div class="dev-label">Time-shift</div><div class="dev-value">${_fmtMonths(tau)}</div><div class="dev-sub">vs cohort mean trajectory</div></div>`);
+    }
+
+    if (convRisk?.available) {
+        const r1 = (convRisk.risk_1yr * 100).toFixed(0);
+        const r3 = (convRisk.risk_3yr * 100).toFixed(0);
+        const r5 = (convRisk.risk_5yr * 100).toFixed(0);
+        const cls5 = convRisk.risk_5yr > 0.5 ? 'below' : convRisk.risk_5yr > 0.25 ? 'above' : 'normal';
+        const _chip = (pct, label) => {
+            const c = pct > 50 ? 'var(--rose)' : pct > 25 ? 'var(--orange)' : pct > 10 ? 'var(--amber)' : 'var(--green)';
+            return `<span style="display:inline-flex;flex-direction:column;align-items:center;min-width:36px">
+                <span style="font-size:1rem;font-weight:700;color:${c};font-family:'JetBrains Mono',monospace">${pct}%</span>
+                <span style="font-size:.6rem;color:var(--text-3)">${label}</span></span>`;
+        };
+        heroCards.push(`<div class="dev-card ${cls5}">
+            <div class="dev-label">Conversion risk</div>
+            <div class="dev-value" style="display:flex;gap:.75rem">${_chip(r1,'1 yr')}${_chip(r3,'3 yr')}${_chip(r5,'5 yr')}</div>
+            <div class="dev-sub" title="${convRisk.note}">KM · ${convRisk.stratum} (n=${convRisk.n_stratum}) ⓘ</div>
+        </div>`);
     }
 
     // ── Per-visit A/T/N + stage table ──────────────────────────────────────────
@@ -263,7 +286,7 @@ export async function renderStagingTab() {
                 const card = document.createElement('div');
                 card.className = 'net-card';
                 card.innerHTML = `<div class="net-label" style="color:${NETWORK_COLORS[net]}">${net}</div>
-                    <canvas id="netChart-${net}"></canvas>`;
+                    <div style="position:relative;height:90px"><canvas id="netChart-${net}"></canvas></div>`;
                 grid.appendChild(card);
                 const ctx = document.getElementById(`netChart-${net}`).getContext('2d');
                 const datasets = [{

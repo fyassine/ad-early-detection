@@ -21,6 +21,15 @@ export function renderQCViewerTab() {
     $('qcFull4D').addEventListener('change', () => loadQCViewerVolume());
 
     try {
+        // Pre-size the canvas with explicit pixel dimensions before NiiVue attaches.
+        // Without this, NiiVue reads clientHeight=0 when the tab panel has display:none,
+        // causing the GL viewport to be initialised at 0×0.
+        const qcCanvas = $('qcCanvas');
+        const targetH = Math.min(Math.floor(window.innerHeight * 0.72), 780);
+        const targetW = Math.max(qcCanvas.parentElement?.clientWidth || 0, Math.floor(window.innerWidth * 0.55), 400);
+        qcCanvas.width = targetW;
+        qcCanvas.height = targetH;
+
         const nv = new Niivue({
             backColor: [0, 0, 0, 1],
             show3Dcrosshair: false,
@@ -28,6 +37,10 @@ export function renderQCViewerTab() {
             isOrientCube: true,
         });
         nv.attachTo('qcCanvas');
+        // Sync NiiVue's GL viewport with the pre-sized canvas after one layout frame
+        requestAnimationFrame(() => {
+            try { if (typeof nv.resizeListener === 'function') nv.resizeListener(); } catch (_) {}
+        });
         try {
             if (nv.opts) {
                 nv.opts.show3Dcrosshair = false;
@@ -84,7 +97,7 @@ export async function loadQCViewerVolume() {
         return;
     }
     const full4D = $('qcFull4D')?.checked;
-    const modeLabel = full4D ? 'full 4D timeseries' : '3D temporal mean (cached)';
+    const modeLabel = full4D ? 'full 4D timeseries' : 'temporal σ — signal variability (cached)';
     status.textContent = `Loading ${visit} · ${modeLabel}…`;
     const url = _qcVolumeUrl(visit, full4D);
     try {
@@ -94,27 +107,29 @@ export async function loadQCViewerVolume() {
             const vol = nv.volumes?.[0];
             if (vol) {
                 if (typeof nv.setColormap === 'function') nv.setColormap(vol.id, 'gray');
-                const data = vol.img2RAS ? vol.img2RAS() : vol.img;
-                if (data && data.length) {
-                    const N = data.length;
-                    const stride = Math.max(1, Math.floor(N / 100000));
-                    const sample = [];
-                    for (let i = 0; i < N; i += stride) {
-                        const v = data[i];
-                        if (Number.isFinite(v) && v !== 0) sample.push(v);
-                    }
-                    if (sample.length) {
-                        sample.sort((a, b) => a - b);
-                        const p2 = sample[Math.floor(sample.length * 0.02)];
-                        const p98 = sample[Math.floor(sample.length * 0.98)];
-                        vol.cal_min = p2;
-                        vol.cal_max = p98;
+                // Fallback windowing: if the NIfTI header has no valid range (cal_min ≈ cal_max),
+                // compute p2/p98 from the raw voxel buffer so NiiVue renders visible contrast.
+                if (Math.abs((vol.cal_max ?? 0) - (vol.cal_min ?? 0)) < 0.01) {
+                    const raw = vol.img;
+                    if (raw?.length) {
+                        const stride = Math.max(1, Math.floor(raw.length / 80000));
+                        const vals = [];
+                        for (let i = 0; i < raw.length; i += stride) {
+                            const v = raw[i];
+                            if (Number.isFinite(v) && v > 0) vals.push(v);
+                        }
+                        if (vals.length > 10) {
+                            vals.sort((a, b) => a - b);
+                            vol.cal_min = vals[Math.floor(vals.length * 0.02)];
+                            vol.cal_max = vals[Math.floor(vals.length * 0.98)];
+                        }
                     }
                 }
                 if (typeof nv.updateGLVolume === 'function') nv.updateGLVolume();
+                if (typeof nv.resizeListener === 'function') { try { nv.resizeListener(); } catch (_) {} }
                 if (typeof nv.drawScene === 'function') nv.drawScene();
             }
-        } catch (e) { console.warn('QC windowing fallback', e); }
+        } catch (e) { console.warn('QC post-load', e); }
         status.textContent = `Showing ${visit} · ${modeLabel} · scroll/drag to navigate slices`;
     } catch (e) {
         status.textContent = 'Failed to load volume: ' + (e?.message || e);

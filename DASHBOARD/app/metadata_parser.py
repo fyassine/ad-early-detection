@@ -257,6 +257,14 @@ def compute_metadata_metrics(df: pd.DataFrame, scan_subjects: Optional[list[str]
         if len(apoe) > 0:
             apoe_counts = apoe.value_counts().to_dict()
             metrics["apoe_distribution"] = {str(k): int(v) for k, v in apoe_counts.items()}
+            # ε4 zygosity grouping (Yin 2023 JAMA Neurol: OR ≈3× het, 8–12× hom)
+            zyg = apoe.apply(_classify_apoe4_zygosity)
+            zyg_counts = zyg.value_counts().to_dict()
+            metrics["apoe4_zygosity_distribution"] = {
+                "non-carrier": int(zyg_counts.get("non-carrier", 0)),
+                "heterozygous": int(zyg_counts.get("heterozygous", 0)),
+                "homozygous":  int(zyg_counts.get("homozygous", 0)),
+            }
 
     # Train/Val/Test split
     if "split" in df.columns:
@@ -380,6 +388,17 @@ def _compute_age(birth_str) -> Optional[float]:
         pass
 
     return None
+
+
+def _classify_apoe4_zygosity(apoe_str: str) -> str:
+    """Return 'non-carrier', 'heterozygous', or 'homozygous' for an APOE genotype string."""
+    s = str(apoe_str).strip().lower().replace("e", "").replace("ε", "").replace("/", "").replace("\\", "").replace(" ", "")
+    count = s.count("4")
+    if count >= 2:
+        return "homozygous"
+    if count == 1:
+        return "heterozygous"
+    return "non-carrier"
 
 
 def _safe_int(val) -> Optional[int]:

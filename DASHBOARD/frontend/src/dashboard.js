@@ -85,13 +85,16 @@ export async function renderCohortAnalytics() {
 
     let effectSizes = null;
     let survival = null;
+    let missingness = null;
     try {
-        const [esR, svR] = await Promise.all([
+        const [esR, svR, msR] = await Promise.all([
             folders ? fetch(`/api/cohort/effect-sizes?csv_path=${encodeURIComponent(csvPath)}&scan_folders=${encodeURIComponent(folders)}`).then(r => r.ok ? r.json() : null) : Promise.resolve(null),
             fetch(`/api/cohort/survival?csv_path=${encodeURIComponent(csvPath)}&stratify_by=apoe4`).then(r => r.ok ? r.json() : null),
+            fetch(`/api/cohort/missingness?csv_path=${encodeURIComponent(csvPath)}`).then(r => r.ok ? r.json() : null),
         ]);
         effectSizes = esR;
         survival = svR;
+        missingness = msR;
     } catch (e) {
         cont.innerHTML = `<p style="font-size:.75rem;color:var(--rose);text-align:center">Analytics fetch failed: ${e.message}</p>`;
         return;
@@ -99,80 +102,99 @@ export async function renderCohortAnalytics() {
 
     const surveHtml = `<div class="analytics-card">
         <h3>Time to conversion (Kaplan–Meier)</h3>
-        <p class="analytics-sub">At-risk: baseline diagnosis ∈ {converter, mci}. Event: first visit labelled <code>ad</code>. Stratified by APOE4 carrier status.</p>
-        <div class="chart-container" style="height:240px"><canvas id="survivalChart"></canvas></div>
+        <p class="analytics-sub">At-risk: earliest visit diagnosis <em>mci</em> or <em>converter</em>. Event: first visit labelled <em>ad</em>.</p>
+        <div class="effect-controls" style="margin-bottom:.5rem">
+            <label style="font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;font-weight:600">Stratify by:</label>
+            <select id="kmStratSelect" class="config-input" style="width:auto;padding:.3rem .5rem;font-size:.78rem">
+                <option value="apoe4">APOE4 carrier status</option>
+                <option value="atn">ATN biological stage</option>
+                <option value="none">None (all at-risk)</option>
+            </select>
+        </div>
+        <div class="chart-container" style="height:220px"><canvas id="survivalChart"></canvas></div>
         <div id="survivalLegend" class="survival-legend"></div>
     </div>`;
 
     const efHtml = `<div class="analytics-card">
         <h3>Pairwise effect sizes <span style="font-size:.65rem;color:var(--text-3);font-weight:400">(Cohen's d, Hedges-corrected, bootstrap 95% CI)</span></h3>
+        <p class="analytics-sub">Each row compares two diagnosis groups for the selected biomarker. The bar shows the 95% bootstrap CI; the dot is Cohen's d (Hedges-corrected). Positive d = first group has higher values. Colour: <span style="color:var(--rose)">large</span> |<span style="color:var(--orange)"> medium</span> | <span style="color:var(--amber)">small</span> | <span style="color:var(--text-3)">negligible</span>.</p>
         <div class="effect-controls">
-            <label style="font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;font-weight:600">Metric:</label>
+            <label style="font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;font-weight:600">Biomarker:</label>
             <select id="effectMetricSelect" class="config-input" style="width:auto;padding:.3rem .5rem;font-size:.78rem"></select>
         </div>
         <div id="effectForestPlot" class="effect-forest"></div>
     </div>`;
 
-    cont.innerHTML = `<div class="analytics-grid">${surveHtml}${efHtml}</div>`;
+    const missHtml = missingness?.subjects?.length ? `<div class="analytics-card" style="margin-top:1rem">
+        <h3>Missing data heatmap <span style="font-size:.65rem;color:var(--text-3);font-weight:400">subjects × biomarkers — cohorts side by side</span></h3>
+        <canvas id="missingnessCanvas" style="display:block;max-width:100%;height:auto;border-radius:4px"></canvas>
+    </div>` : '';
 
-    // ── Render survival curve ──
-    if (survival?.strata?.length) {
-        const ctx = $('survivalChart').getContext('2d');
-        const colors = [C.indigo, C.rose, C.violet];
-        const datasets = survival.strata.flatMap((s, i) => {
-            const col = colors[i % colors.length];
-            return [
-                {
-                    label: `${s.label} (n=${s.n}, events=${s.n_events})`,
-                    data: s.timeline.map((t, j) => ({ x: t, y: s.survival[j] })),
-                    borderColor: col, backgroundColor: col + '22',
-                    pointRadius: 0, borderWidth: 2.5, stepped: 'after', spanGaps: true, fill: false, order: 2,
+    cont.innerHTML = `<div class="analytics-grid">${surveHtml}${efHtml}</div>${missHtml}`;
+
+    // ── Survival chart renderer (called on load and on stratification change) ──
+    const _renderSurvival = (survData) => {
+        if (state.activeCharts['survival']) { state.activeCharts['survival'].destroy(); delete state.activeCharts['survival']; }
+        const chartWrap = $('survivalChart')?.closest('.chart-container');
+        if (!chartWrap) return;
+        chartWrap.innerHTML = '<canvas id="survivalChart"></canvas>';
+        if (survData?.strata?.length) {
+            const ctx = $('survivalChart').getContext('2d');
+            const colors = [C.indigo, C.rose, C.violet, C.amber, C.green];
+            const datasets = survData.strata.flatMap((s, i) => {
+                const col = colors[i % colors.length];
+                return [
+                    { label: `${s.label} (n=${s.n}, events=${s.n_events})`, data: s.timeline.map((t, j) => ({ x: t, y: s.survival[j] })),
+                      borderColor: col, backgroundColor: col + '22', pointRadius: 0, borderWidth: 2.5, stepped: 'after', spanGaps: true, fill: false, order: 2 },
+                    { label: `_ci_hi_${i}`, data: s.timeline.map((t, j) => ({ x: t, y: s.ci_hi[j] })),
+                      borderColor: 'transparent', backgroundColor: col + '14', pointRadius: 0, fill: '+1', stepped: 'after', spanGaps: true, order: 99 },
+                    { label: `_ci_lo_${i}`, data: s.timeline.map((t, j) => ({ x: t, y: s.ci_lo[j] })),
+                      borderColor: 'transparent', backgroundColor: 'transparent', pointRadius: 0, fill: false, stepped: 'after', spanGaps: true, order: 100 },
+                ];
+            });
+            state.activeCharts['survival'] = new Chart(ctx, {
+                type: 'line', data: { datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false, parsing: false,
+                    plugins: {
+                        legend: { display: true, labels: { usePointStyle: true, boxWidth: 8, padding: 10, filter: it => !String(it.text || '').startsWith('_ci_') } },
+                        tooltip: { ...tooltipStyle(), filter: c => !String(c.dataset?.label || '').startsWith('_ci_') },
+                    },
+                    scales: {
+                        x: { type: 'linear', title: { display: true, text: 'Months from baseline' }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                        y: { min: 0, max: 1, title: { display: true, text: 'Survival probability' }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                    },
                 },
-                {
-                    label: `_ci_upper_${i}`,
-                    data: s.timeline.map((t, j) => ({ x: t, y: s.ci_hi[j] })),
-                    borderColor: 'transparent', backgroundColor: col + '14',
-                    pointRadius: 0, fill: '+1', stepped: 'after', spanGaps: true, order: 99,
-                },
-                {
-                    label: `_ci_lower_${i}`,
-                    data: s.timeline.map((t, j) => ({ x: t, y: s.ci_lo[j] })),
-                    borderColor: 'transparent', backgroundColor: 'transparent',
-                    pointRadius: 0, fill: false, stepped: 'after', spanGaps: true, order: 100,
-                },
-            ];
-        });
-        state.activeCharts['survival'] = new Chart(ctx, {
-            type: 'line',
-            data: { datasets },
-            options: {
-                responsive: true, maintainAspectRatio: false, parsing: false,
-                plugins: {
-                    legend: { display: true, labels: { usePointStyle: true, boxWidth: 8, padding: 10, filter: it => !String(it.text || '').startsWith('_ci_') } },
-                    tooltip: { ...tooltipStyle(), filter: c => !String(c.dataset?.label || '').startsWith('_ci_') },
-                },
-                scales: {
-                    x: { type: 'linear', title: { display: true, text: 'Months from baseline' }, grid: { color: 'rgba(255,255,255,0.03)' } },
-                    y: { min: 0, max: 1, title: { display: true, text: 'Survival (= not yet converted)' }, grid: { color: 'rgba(255,255,255,0.03)' } },
-                },
-            },
-        });
-    } else {
-        const c = $('survivalChart');
-        if (c) {
-            const ctx = c.getContext('2d');
-            ctx.fillStyle = '#7a7976';
-            ctx.font = '12px Inter, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Insufficient data for survival analysis', c.width / 2, c.height / 2);
+            });
+        } else {
+            const reason = survData?.reason || 'No at-risk subjects found with valid visit data.';
+            chartWrap.innerHTML = `<p style="font-size:.72rem;color:var(--text-2);padding:1.5rem .5rem;line-height:1.55">
+                <strong style="display:block;margin-bottom:.35rem;color:var(--text-1)">Insufficient data for survival analysis</strong>${reason}</p>`;
         }
+    };
+    _renderSurvival(survival);
+
+    // KM stratification toggle
+    const kmSel = $('kmStratSelect');
+    if (kmSel) {
+        kmSel.addEventListener('change', async () => {
+            const stratum = kmSel.value;
+            try {
+                const svR = await fetch(`/api/cohort/survival?csv_path=${encodeURIComponent(csvPath)}&stratify_by=${stratum}`).then(r => r.ok ? r.json() : null);
+                _renderSurvival(svR);
+            } catch (_) {}
+        });
     }
 
     // ── Render effect-sizes forest plot ──
     if (effectSizes?.metrics) {
+        const METRIC_LABELS = {
+            global_fc: 'Global FC', dmn_fc: 'DMN FC', modularity: 'Modularity',
+            system_segregation: 'System segregation', density: 'Edge density', pos_fc_ratio: 'Positive FC ratio',
+        };
         const sel = $('effectMetricSelect');
         const metrics = Object.keys(effectSizes.metrics).filter(k => effectSizes.metrics[k].length > 0);
-        sel.innerHTML = metrics.map(m => `<option value="${m}">${m}</option>`).join('');
+        sel.innerHTML = metrics.map(m => `<option value="${m}">${METRIC_LABELS[m] || m}</option>`).join('');
         const renderForest = () => {
             const metric = sel.value;
             const rows = effectSizes.metrics[metric] || [];
@@ -201,6 +223,68 @@ export async function renderCohortAnalytics() {
         if (metrics.length) {
             sel.value = metrics.includes('global_fc') ? 'global_fc' : metrics[0];
             renderForest();
+        }
+    }
+
+    // ── Missing data heatmap ──
+    if (missingness?.subjects?.length) {
+        const canvas = $('missingnessCanvas');
+        if (canvas) {
+            const { subjects, biomarkers, matrix, diag_colors: diagColors, diagnoses } = missingness;
+            const nSubj = subjects.length, nBio = biomarkers.length;
+
+            // Transposed: X = subjects (grouped by cohort side-by-side), Y = biomarkers
+            const cellW = 2;   // px per subject column
+            const cellH = 9;   // px per biomarker row
+            const GAP   = 4;   // px gap between diagnosis groups
+            const LM    = 52;  // left margin for biomarker labels
+            const TM    = 14;  // top margin for group name labels
+
+            // Build diagnosis groups
+            const groups = [];
+            let gi = 0;
+            while (gi < nSubj) {
+                const d = diagnoses[gi];
+                let end = gi;
+                while (end < nSubj && diagnoses[end] === d) end++;
+                groups.push({ diag: d, start: gi, end, color: diagColors[gi] });
+                gi = end;
+            }
+
+            canvas.width  = LM + nSubj * cellW + (groups.length - 1) * GAP;
+            canvas.height = TM + nBio * cellH;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#161614';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw cells — each cohort block side-by-side
+            let xOff = LM;
+            groups.forEach(({ start, end, color }, i) => {
+                if (i > 0) xOff += GAP;
+                const blockW = (end - start) * cellW;
+                // Group name at top
+                ctx.fillStyle = color + 'dd';
+                ctx.font = '8px Inter, sans-serif';
+                ctx.textAlign = 'left';
+                const label = (missingness.diag_color_map ? Object.entries(missingness.diag_color_map).find(([k, v]) => v === color)?.[0] : '') || '';
+                ctx.fillText(label.substring(0, 4), xOff, TM - 3);
+                // Cells
+                for (let s = start; s < end; s++) {
+                    for (let b = 0; b < nBio; b++) {
+                        ctx.fillStyle = matrix[s][b] > 0 ? color + 'bb' : '#242422';
+                        ctx.fillRect(xOff + (s - start) * cellW, TM + b * cellH, cellW, cellH - 1);
+                    }
+                }
+                xOff += blockW;
+            });
+
+            // Biomarker labels on left
+            ctx.font = '8px Inter, sans-serif';
+            ctx.textAlign = 'right';
+            biomarkers.forEach((bm, b) => {
+                ctx.fillStyle = '#7a7976';
+                ctx.fillText(bm, LM - 3, TM + b * cellH + cellH - 2);
+            });
         }
     }
 }
@@ -428,6 +512,15 @@ export function renderClinical(meta) {
     if (meta.mmse_histogram) addVBar('clinicalCharts', 'mmse', 'MMSE Distribution', meta.mmse_histogram);
     if (meta.cdr_distribution) addHBar('clinicalCharts', 'cdr', 'CDR Global', meta.cdr_distribution, BAR_COLORS);
     if (meta.apoe_distribution) addHBar('clinicalCharts', 'apoe', 'ApoE Genotype', meta.apoe_distribution, BAR_COLORS);
+    if (meta.apoe4_zygosity_distribution) {
+        const zyg = meta.apoe4_zygosity_distribution;
+        // Annotate with approximate OR labels from Yin 2023 JAMA Neurol
+        const labels = ['Non-carrier (ε3/ε3)', 'Heterozygous (ε3/ε4) ≈3×', 'Homozygous (ε4/ε4) ≈8–12×'];
+        const values = [zyg['non-carrier'] || 0, zyg['heterozygous'] || 0, zyg['homozygous'] || 0];
+        addHBar('clinicalCharts', 'apoe4zyg', 'APOE ε4 Zygosity (AD risk)',
+            { labels, counts: values },
+            ['#6daa45', '#e8af34', '#d163a7']);
+    }
     if (meta.split_distribution) addHBar('clinicalCharts', 'split', 'Train / Val / Test', meta.split_distribution, BAR_COLORS);
 }
 
