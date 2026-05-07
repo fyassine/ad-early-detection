@@ -111,6 +111,28 @@ def knn_binary_adjacency_matrix_no_diag(corr_matrix, k):
     return binary_adjacency_matrix
 
 
+def knn_weighted_adjacency_matrix_no_diag(corr_matrix, k):
+    """kNN adjacency where edge weights equal |correlation| instead of 1."""
+    if isinstance(corr_matrix, torch.Tensor):
+        corr_np = corr_matrix.detach().cpu().numpy()
+    else:
+        corr_np = np.asarray(corr_matrix)
+
+    N = corr_np.shape[0]
+    abs_corr = np.abs(corr_np)
+    adjacency_matrix = np.zeros((N, N), dtype=np.float32)
+
+    for i in range(N):
+        row = abs_corr[i, :].copy()
+        row[i] = -np.inf
+        nearest_indices = np.argsort(-row)[:k]
+        adjacency_matrix[i, nearest_indices] = abs_corr[i, nearest_indices]
+
+    # Symmetrize: keep the larger weight when both directions had an edge
+    weighted_adjacency_matrix = np.maximum(adjacency_matrix, adjacency_matrix.T)
+    return weighted_adjacency_matrix
+
+
 def create_mask(batch_mask):
     num_nodes = batch_mask.size(0)
     mask = batch_mask.unsqueeze(0) == batch_mask.unsqueeze(1)

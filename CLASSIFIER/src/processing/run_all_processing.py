@@ -1,0 +1,228 @@
+"""
+run_all_processing.py — Master script to generate all network-subset FC matrices.
+
+Runs the Schaefer-only subset experiments (no fMRI reprocessing needed) and
+prints ready-to-run commands for the Tian-atlas experiments that require a
+Tian NIfTI file.
+
+Usage (from repo root):
+    python -m CLASSIFIER.src.processing.run_all_processing
+
+For Tian-based experiments (__v5__, __v8__, __v10__, __v11__), provide the atlas:
+    python -m CLASSIFIER.src.processing.run_all_processing \\
+        --tian-atlas /path/to/Tian_Subcortex_S2_3T.nii.gz \\
+        --tian-labels /path/to/Tian_Subcortex_S2_3T_label.txt
+
+Experiment table:
+    __v5__  Hippocampus only          (Tian Scale II, 4 ROIs)
+    __v6__  Limbic only               (Schaefer subset, 12 ROIs)
+    __v7__  Dorsal Attention only     (Schaefer subset, 26 ROIs)
+    __v8__  DMN + Hippocampus         (combined masker, 50 ROIs)
+    __v9__  DMN + Limbic              (Schaefer subset, 58 ROIs)
+    __v10__ DMN + Hippocampus + Limbic (combined masker, 62 ROIs)
+    __v11__ All combined              (combined masker, 88 ROIs)
+"""
+
+from __future__ import annotations
+
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+
+# Schaefer-only experiments: no fMRI data needed, just slice __v3__ matrices.
+SCHAEFER_JOBS = [
+    {
+        "version": "__v6__",
+        "networks": ["Limbic"],
+        "suffix": "limbic",
+        "description": "Limbic only (12 ROIs)",
+    },
+    {
+        "version": "__v7__",
+        "networks": ["DorsAttn"],
+        "suffix": "dorsal_attention",
+        "description": "Dorsal Attention Network only (26 ROIs)",
+    },
+    {
+        "version": "__v9__",
+        "networks": ["Default", "Limbic"],
+        "suffix": "dmn_limbic",
+        "description": "DMN + Limbic (58 ROIs)",
+    },
+]
+
+# Tian-atlas experiments: require fMRI data + Tian NIfTI.
+TIAN_JOBS = [
+    {
+        "version": "__v5__",
+        "description": "Hippocampus only (Tian Scale II, 4 ROIs)",
+        "script": "process_using_tian_atlas",
+        "extra_args": [],
+    },
+    {
+        "version": "__v8__",
+        "description": "DMN + Hippocampus (50 ROIs)",
+        "script": "process_combined_schaefer_tian",
+        "extra_args": ["--networks", "Default", "--output-suffix", "dmn_hippo"],
+    },
+    {
+        "version": "__v10__",
+        "description": "DMN + Limbic + Hippocampus (62 ROIs)",
+        "script": "process_combined_schaefer_tian",
+        "extra_args": ["--networks", "Default", "Limbic", "--output-suffix", "dmn_limbic_hippo"],
+    },
+    {
+        "version": "__v11__",
+        "description": "All combined — DMN + Limbic + DAN + Hippocampus (88 ROIs)",
+        "script": "process_combined_schaefer_tian",
+        "extra_args": ["--networks", "Default", "Limbic", "DorsAttn", "--output-suffix", "all_combined"],
+    },
+]
+
+
+def run_schaefer_job(job: dict) -> bool:
+    version = job["version"]
+    networks = job["networks"]
+    suffix = job["suffix"]
+    description = job["description"]
+
+    print(f"\n{'='*60}")
+    print(f"  {version} — {description}")
+    print(f"{'='*60}")
+
+    cmd = [
+        sys.executable, "-m",
+        "CLASSIFIER.src.processing.subset_schaefer_networks",
+        "--networks", *networks,
+        "--output-version", version,
+        "--output-suffix", suffix,
+    ]
+    print(f"  Command: {' '.join(cmd[2:])}")
+
+    result = subprocess.run(cmd, cwd=str(REPO_ROOT))
+    if result.returncode != 0:
+        print(f"  ERROR: {version} failed with return code {result.returncode}")
+        return False
+    return True
+
+
+def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None) -> None:
+    print("\n" + "=" * 60)
+    print("  TIAN-ATLAS EXPERIMENTS")
+    print("=" * 60)
+
+    if tian_atlas is None:
+        print(
+            "\n  Tian atlas not provided — skipping __v5__, __v8__, __v10__, __v11__.\n"
+            "  Download Tian Scale II atlas and re-run with:\n"
+            "    --tian-atlas /path/to/Tian_Subcortex_S2_3T.nii.gz\n"
+            "    --tian-labels /path/to/Tian_Subcortex_S2_3T_label.txt\n"
+            "\n  Atlas download: https://github.com/yetianmed/subcortex\n"
+            "  Or via templateflow: tpl-MNI152NLin6Asym_atlas-Tian_res-1_dseg.nii.gz"
+        )
+        print("\n  Ready-to-run commands once atlas is available:")
+        for job in TIAN_JOBS:
+            script = job["script"]
+            version = job["version"]
+            extra = " ".join(job["extra_args"])
+            print(
+                f"\n  # {version} — {job['description']}\n"
+                f"  python -m CLASSIFIER.src.processing.{script} \\\n"
+                f"      --atlas-path /path/to/Tian_Subcortex_S2_3T.nii.gz \\\n"
+                f"      --labels-path /path/to/Tian_Subcortex_S2_3T_label.txt"
+                + (f" \\\n      {extra}" if extra else "")
+                + (f" \\\n      --output-version {version}" if "output-version" not in extra else "")
+            )
+        return
+
+    for job in TIAN_JOBS:
+        version = job["version"]
+        script = job["script"]
+        description = job["description"]
+        extra_args = job["extra_args"]
+
+        print(f"\n{'='*60}")
+        print(f"  {version} — {description}")
+        print(f"{'='*60}")
+
+        cmd = [
+            sys.executable, "-m",
+            f"CLASSIFIER.src.processing.{script}",
+            "--atlas-path", str(tian_atlas),
+            "--labels-path", str(tian_labels) if tian_labels else "",
+            *extra_args,
+            "--output-version", version,
+        ]
+        # Remove empty labels arg if not provided
+        cmd = [c for c in cmd if c != ""]
+        if tian_labels is None:
+            cmd = [c for c in cmd if c != "--labels-path"]
+
+        print(f"  Command: {' '.join(cmd[2:])}")
+        result = subprocess.run(cmd, cwd=str(REPO_ROOT))
+        if result.returncode != 0:
+            print(f"  ERROR: {version} failed with return code {result.returncode}")
+
+
+def main(tian_atlas: Path | None, tian_labels: Path | None, skip_schaefer: bool) -> None:
+    print("=" * 60)
+    print("  NETWORK SUBSET PROCESSING — MASTER RUNNER")
+    print("=" * 60)
+    print(f"  Repo root: {REPO_ROOT}")
+    print(f"  Schaefer jobs: {len(SCHAEFER_JOBS)}")
+    print(f"  Tian jobs: {len(TIAN_JOBS)} ({'atlas provided' if tian_atlas else 'atlas missing — will print commands only'})")
+
+    # Step 1: Schaefer-only subsets (fast, no fMRI access required)
+    if not skip_schaefer:
+        print("\n\n── SCHAEFER SUBSET EXPERIMENTS ──────────────────────────────")
+        failed = []
+        for job in SCHAEFER_JOBS:
+            ok = run_schaefer_job(job)
+            if not ok:
+                failed.append(job["version"])
+        if failed:
+            print(f"\nWARNING: {len(failed)} Schaefer job(s) failed: {failed}")
+        else:
+            print(f"\nAll {len(SCHAEFER_JOBS)} Schaefer subset experiments completed.")
+    else:
+        print("\n  Schaefer-only jobs skipped (--skip-schaefer).")
+
+    # Step 2: Tian-atlas experiments
+    print("\n── TIAN ATLAS EXPERIMENTS ───────────────────────────────────")
+    print_tian_commands(tian_atlas, tian_labels)
+
+    print("\n\n── NEXT STEPS ───────────────────────────────────────────────")
+    print(
+        "  For each data version, run the experiment notebooks in order:\n"
+        "  1. CLASSIFIER/notebooks/NETWORK_GAAE_RUNNER.ipynb  (GAAE pretraining)\n"
+        "  2. CLASSIFIER/notebooks/NETWORK_GEC_RUNNER.ipynb   (GEC classification)\n"
+        "\n  See DOCS/experiment_notebooks.md for full instructions."
+    )
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--tian-atlas", type=Path, default=None,
+        help="Path to Tian Subcortex Scale II NIfTI file",
+    )
+    parser.add_argument(
+        "--tian-labels", type=Path, default=None,
+        help="Path to Tian label text file (one label per line)",
+    )
+    parser.add_argument(
+        "--skip-schaefer", action="store_true",
+        help="Skip Schaefer-only subset jobs (useful if already run)",
+    )
+    args = parser.parse_args()
+    main(
+        tian_atlas=args.tian_atlas,
+        tian_labels=args.tian_labels,
+        skip_schaefer=args.skip_schaefer,
+    )

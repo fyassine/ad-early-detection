@@ -1,13 +1,13 @@
 import torch
 import numpy as np
 from sklearn.model_selection import StratifiedGroupKFold
-from sklearn.metrics import roc_curve, auc, confusion_matrix
+from sklearn.metrics import roc_curve, auc, confusion_matrix, precision_recall_curve
 from copy import deepcopy
 import wandb
 
 from torch_geometric.loader import DataLoader
 from model.CostWeightedGEC.train import train_classifier
-from model.common.utils import load_frozen_encoder_from_gaae, compute_class_weights, compute_class_cost_weights
+from common.utils import load_frozen_encoder_from_gaae, compute_class_weights, compute_class_cost_weights
 
 
 def run_kfold_cv(
@@ -199,7 +199,27 @@ def run_kfold_cv(
     fpr_oof, tpr_oof, thresholds_oof = roc_curve(oof_targets_arr, oof_preds_arr)
     j_oof = tpr_oof - fpr_oof
     best_threshold_overall = float(thresholds_oof[np.argmax(j_oof)])
-    print(f'\nOOF Youden threshold (used for all downstream evaluation): {best_threshold_overall:.4f}')
+    print(f'\nOOF Youden threshold: {best_threshold_overall:.4f}')
+
+    # F1-optimal threshold on OOF predictions
+    precisions, recalls, pr_thresholds = precision_recall_curve(oof_targets_arr, oof_preds_arr)
+    f1_scores_oof = np.where(
+        (precisions[:-1] + recalls[:-1]) > 0,
+        2 * precisions[:-1] * recalls[:-1] / (precisions[:-1] + recalls[:-1]),
+        0.0,
+    )
+    best_f1_threshold = float(pr_thresholds[np.argmax(f1_scores_oof)])
+    best_f1_value = float(np.max(f1_scores_oof))
+    print(f'OOF F1-optimal threshold: {best_f1_threshold:.4f}  (OOF F1={best_f1_value:.4f})')
+
+    print('\nOOF metrics comparison:')
+    for label, thr in [('Youden', best_threshold_overall), ('F1-optimal', best_f1_threshold)]:
+        preds_bin = (oof_preds_arr >= thr).astype(int)
+        tn_o, fp_o, fn_o, tp_o = confusion_matrix(oof_targets_arr, preds_bin).ravel()
+        sens_o = tp_o / (tp_o + fn_o) if (tp_o + fn_o) > 0 else 0
+        spec_o = tn_o / (tn_o + fp_o) if (tn_o + fp_o) > 0 else 0
+        f1_o = 2 * tp_o / (2 * tp_o + fp_o + fn_o) if (2 * tp_o + fp_o + fn_o) > 0 else 0
+        print(f'  [{label:10s}] thr={thr:.4f} | sens={sens_o:.3f} | spec={spec_o:.3f} | F1={f1_o:.3f}')
 
     if best_model_state is not None:
         best_model = model_class(**model_kwargs).to(device)
@@ -216,4 +236,4 @@ def run_kfold_cv(
     print('CROSS-VALIDATION COMPLETE')
     print('========================')
 
-    return cv_results, cv_histories, best_model_state, best_model, best_val_auc, best_fold, best_threshold_overall, oof_preds, oof_targets
+    return cv_results, cv_histories, best_model_state, best_model, best_val_auc, best_fold, best_threshold_overall, best_f1_threshold, oof_preds, oof_targets

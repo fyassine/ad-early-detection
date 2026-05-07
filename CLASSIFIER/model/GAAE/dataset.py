@@ -22,6 +22,7 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
         patient_info_path=None,
         separator=",",
         file_variant="z_transformed",
+        file_suffix=None,
         transform=None,
         pre_transform=None,
     ):
@@ -33,6 +34,7 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
         self.patient_info = None
         self.separator = separator
         self.file_variant = file_variant
+        self.file_suffix = file_suffix  # overrides variant lookup when set
         if patient_info_path:
             self.patient_info = pd.read_csv(patient_info_path, sep=self.separator)
             self.patient_info.set_index("Repseudonym", inplace=True)
@@ -104,30 +106,27 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
 
     @property
     def raw_file_names(self):
-        variant_map = {
-            "raw": "_whole_brain_correlation_matrix.npz",
-            "z_transformed": "_whole_brain_correlation_matrix_z_transformed.npz",
-        }
-        variant_key = str(self.file_variant).lower()
-        if variant_key not in variant_map:
-            raise ValueError(
-                "file_variant must be one of: raw, z, z_transformed, both"
-            )
-
         all_npz_files = sorted([f for f in os.listdir(self.raw_dir) if f.endswith('.npz')])
-        suffix = variant_map[variant_key]
-        if suffix is None:
-            all_files = all_npz_files
+
+        if self.file_suffix:
+            all_files = [f for f in all_npz_files if f.endswith(self.file_suffix)]
         else:
-            all_files = [f for f in all_npz_files if f.endswith(suffix)]
-        
+            variant_map = {
+                "raw": "_whole_brain_correlation_matrix.npz",
+                "z_transformed": "_whole_brain_correlation_matrix_z_transformed.npz",
+            }
+            variant_key = str(self.file_variant).lower()
+            if variant_key not in variant_map:
+                raise ValueError("file_variant must be one of: raw, z_transformed")
+            all_files = [f for f in all_npz_files if f.endswith(variant_map[variant_key])]
+
         if not os.path.exists(self.filter_csv_path):
             raise FileNotFoundError(f"Filter CSV not found at {self.filter_csv_path}")
         filter_df = pd.read_csv(self.filter_csv_path, sep=self.separator)
         if 'Repseudonym' not in filter_df.columns:
-             raise ValueError(f"Filter CSV must contain 'Repseudonym' column. Found: {filter_df.columns}")
+            raise ValueError(f"Filter CSV must contain 'Repseudonym' column. Found: {filter_df.columns}")
         allowed_ids = set(filter_df['Repseudonym'].astype(str))
-        
+
         return [f for f in all_files if f.split('_')[0].replace('sub-', '') in allowed_ids]
 
     @property
@@ -143,26 +142,26 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
 class GraphDMNDatasetInMemoryFiltered(GraphDatasetInMemoryFiltered):
     """Dataset for DMN-only correlation matrices (46 nodes).
 
-    Identical to GraphDatasetInMemoryFiltered except that it looks for
-    files with '_dmn_correlation_matrix' suffixes instead of
-    '_whole_brain_correlation_matrix' suffixes.
+    Identical to GraphDatasetInMemoryFiltered except that it defaults to
+    DMN file suffixes. Prefer GraphDatasetInMemoryFiltered with file_suffix
+    for new network experiments.
     """
 
     @property
     def raw_file_names(self):
-        variant_map = {
-            "raw": "_dmn_correlation_matrix.npz",
-            "z_transformed": "_dmn_correlation_matrix_z_transformed.npz",
-        }
-        variant_key = str(self.file_variant).lower()
-        if variant_key not in variant_map:
-            raise ValueError(
-                "file_variant must be one of: raw, z_transformed"
-            )
-
         all_npz_files = sorted([f for f in os.listdir(self.raw_dir) if f.endswith('.npz')])
-        suffix = variant_map[variant_key]
-        all_files = [f for f in all_npz_files if f.endswith(suffix)]
+
+        if self.file_suffix:
+            all_files = [f for f in all_npz_files if f.endswith(self.file_suffix)]
+        else:
+            variant_map = {
+                "raw": "_dmn_correlation_matrix.npz",
+                "z_transformed": "_dmn_correlation_matrix_z_transformed.npz",
+            }
+            variant_key = str(self.file_variant).lower()
+            if variant_key not in variant_map:
+                raise ValueError("file_variant must be one of: raw, z_transformed")
+            all_files = [f for f in all_npz_files if f.endswith(variant_map[variant_key])]
 
         if not os.path.exists(self.filter_csv_path):
             raise FileNotFoundError(f"Filter CSV not found at {self.filter_csv_path}")

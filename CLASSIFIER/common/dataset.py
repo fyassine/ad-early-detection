@@ -7,10 +7,11 @@ from torch_geometric.utils import dense_to_sparse
 
 
 class ClassificationDataset(InMemoryDataset):
-    def __init__(self, root, adjacency_function, adjacency_args=None, transform=None, 
-                 pre_transform=None, patient_info_path=None, converter_list_path=None, 
+    def __init__(self, root, adjacency_function, adjacency_args=None, transform=None,
+                 pre_transform=None, patient_info_path=None, converter_list_path=None,
                  is_converter_dataset=False, separator=",", correlation_type="pearson",
-                 filter_csv_path=None, subject_ids=None, file_variant="z_transformed"):
+                 filter_csv_path=None, subject_ids=None, file_variant="z_transformed",
+                 file_suffix=None):
         self.adjacency_function = adjacency_function
         self.adjacency_args = adjacency_args or {}
         self.patient_info = None
@@ -20,6 +21,7 @@ class ClassificationDataset(InMemoryDataset):
         self.separator = separator
         self.filter_csv_path = filter_csv_path
         self.file_variant = str(file_variant).lower()
+        self.file_suffix = file_suffix  # overrides variant/correlation_type matching when set
         self.allowed_ids = set()
 
         if subject_ids is not None:
@@ -68,6 +70,9 @@ class ClassificationDataset(InMemoryDataset):
         return self.root
 
     def _resolve_candidate_files(self, all_files):
+        if self.file_suffix:
+            return [f for f in all_files if f.endswith(self.file_suffix)]
+
         variant_suffixes = {
             "raw": [
                 "_dmn_correlation_matrix.npz",
