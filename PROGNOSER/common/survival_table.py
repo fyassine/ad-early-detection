@@ -69,6 +69,8 @@ def build_survival_table(
     splits_dir: str | Path | None = None,
     split: str | None = None,
     include_features: Iterable[str] = ("age", "sex", "mmstot", "cdrglobal", "apoe4"),
+    longitudinal_features: Iterable[str] = (),
+    longitudinal_aggs: Iterable[str] = ("baseline", "last", "slope", "delta"),
 ) -> pd.DataFrame:
     """
     Build a per-subject survival table from a longitudinal cohorts CSV.
@@ -118,6 +120,15 @@ def build_survival_table(
             raise ValueError(f"Split CSV {split_csv} missing subject ID column")
         allowed_subjects = set(sdf[sid_col].astype(str))
 
+    long_features = list(longitudinal_features)
+    long_aggs = list(longitudinal_aggs)
+
+    # Build LongitudinalAggregator if longitudinal features requested
+    agg = None
+    if long_features:
+        from PROGNOSER.common.longitudinal import LongitudinalAggregator
+        agg = LongitudinalAggregator(df, id_col=id_col, visit_col="visit", diagnosis_col="diagnosis")
+
     rows: list[dict] = []
     for sid, grp in df.dropna(subset=[id_col]).groupby(id_col):
         if allowed_subjects is not None and sid not in allowed_subjects:
@@ -153,6 +164,7 @@ def build_survival_table(
             "baseline_diagnosis": baseline_diag,
             "baseline_visit": baseline_visit,
             "baseline_filename": baseline_filename,
+            "n_visits_in_window": int((months < duration).sum()) if months.notna().any() else 0,
         }
 
         if "age" in include_features:
@@ -172,6 +184,20 @@ def build_survival_table(
                     apoe4_val = int(c)
                     break
             record["apoe4"] = apoe4_val
+
+        # Longitudinal aggregate features — computed within the at-risk window,
+        # same logic for converters and non-converters
+        if agg is not None:
+            for feat in long_features:
+                for agg_name in long_aggs:
+                    col_name = f"{feat}_{agg_name}"
+                    fn = getattr(agg, agg_name, None)
+                    if fn is None:
+                        continue
+                    try:
+                        record[col_name] = fn(str(sid), feat, duration)
+                    except Exception:
+                        record[col_name] = None
 
         if split is not None:
             record["split"] = split

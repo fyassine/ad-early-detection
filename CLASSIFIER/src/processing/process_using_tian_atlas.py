@@ -31,12 +31,11 @@ except ImportError:
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-BASELINE_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "fmri" / "baseline"
-OUTPUT_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__v5__"
+DEFAULT_FMRI_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__v1__" / "fmri"
+DEFAULT_OUTPUT_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__v5__"
 SUBJECT_GLOB = "sub-*"
 OUTPUT_RAW_SUFFIX = "_hippocampus_correlation_matrix.npz"
 OUTPUT_Z_SUFFIX = "_hippocampus_correlation_matrix_z_transformed.npz"
-OVERWRITE_EXISTING = False
 
 
 def load_hippocampus_labels(labels_path: Path) -> list[str]:
@@ -134,7 +133,7 @@ def process_file(
     raw_out = matrices_out / f"{prefix}{OUTPUT_RAW_SUFFIX}"
     z_out = matrices_out / f"{prefix}{OUTPUT_Z_SUFFIX}"
 
-    if not OVERWRITE_EXISTING and raw_out.exists() and z_out.exists():
+    if raw_out.exists() and z_out.exists():
         return f"SKIP {bold_path.name}"
 
     corr, z = compute_connectivity_matrices(bold_path, masker, hippo_indices, correlation_measure)
@@ -143,17 +142,24 @@ def process_file(
     return f"DONE {bold_path.name} -> shape={corr.shape}"
 
 
-def main(atlas_path: Path, labels_path: Path | None) -> None:
-    if not BASELINE_ROOT.exists():
-        raise FileNotFoundError(f"Baseline fMRI directory not found: {BASELINE_ROOT}")
+def main(
+    atlas_path: Path,
+    labels_path: Path | None,
+    fmri_root: Path | None = None,
+    output_root: Path | None = None,
+) -> None:
+    fmri_root = fmri_root or DEFAULT_FMRI_ROOT
+    output_root = output_root or DEFAULT_OUTPUT_ROOT
+
+    if not fmri_root.exists():
+        raise FileNotFoundError(f"fMRI root directory not found: {fmri_root}")
     if not atlas_path.exists():
         raise FileNotFoundError(f"Tian atlas not found: {atlas_path}")
 
-    matrices_out = OUTPUT_ROOT / "matrices"
+    matrices_out = output_root / "matrices"
     matrices_out.mkdir(parents=True, exist_ok=True)
 
-    # Symlink metadata from __v3__
-    metadata_link = OUTPUT_ROOT / "metadata"
+    metadata_link = output_root / "metadata"
     if not metadata_link.exists():
         v3_meta = REPO_ROOT / "DATA" / "DELCODE" / "__v3__" / "metadata"
         if v3_meta.exists():
@@ -161,11 +167,12 @@ def main(atlas_path: Path, labels_path: Path | None) -> None:
 
     masker, hippo_indices = build_masker(atlas_path, labels_path)
     print(f"Hippocampal parcel indices (1-based): {hippo_indices or 'all'}")
+    print(f"Source: {fmri_root}  |  Output: {matrices_out}")
 
     correlation_measure = ConnectivityMeasure(kind="correlation")
-    bold_files = list(iter_bold_files(BASELINE_ROOT))
+    bold_files = list(iter_bold_files(fmri_root))
     if not bold_files:
-        print(f"No rest BOLD files found under {BASELINE_ROOT}")
+        print(f"No rest BOLD files found under {fmri_root}")
         return
 
     processed, skipped, failed = 0, 0, 0
@@ -191,19 +198,12 @@ def main(atlas_path: Path, labels_path: Path | None) -> None:
     if tqdm is not None:
         iterator.close()
 
-    print(
-        f"\nDone — processed={processed}, skipped={skipped}, failed={failed}"
-        f"\nOutput: {matrices_out}"
-    )
+    print(f"\nDone — processed={processed}, skipped={skipped}, failed={failed}\nOutput: {matrices_out}")
 
-    # Save parcel label list
     if labels_path and labels_path.exists():
         all_labels = labels_path.read_text().splitlines()
-        if hippo_indices:
-            selected = [all_labels[i - 1] for i in hippo_indices if i <= len(all_labels)]
-        else:
-            selected = all_labels
-        (OUTPUT_ROOT / "parcel_labels.txt").write_text("\n".join(selected) + "\n")
+        selected = [all_labels[i - 1] for i in hippo_indices if i <= len(all_labels)] if hippo_indices else all_labels
+        (output_root / "parcel_labels.txt").write_text("\n".join(selected) + "\n")
         print(f"Parcel labels: {selected}")
 
 
@@ -211,5 +211,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--atlas-path", required=True, type=Path, help="Path to Tian atlas NIfTI file")
     parser.add_argument("--labels-path", type=Path, default=None, help="Path to Tian label text file (optional)")
+    parser.add_argument("--fmri-root", type=Path, default=DEFAULT_FMRI_ROOT, help="Root fMRI directory (all visits)")
+    parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT, help="Output version root (e.g. __v5__)")
     args = parser.parse_args()
-    main(atlas_path=args.atlas_path, labels_path=args.labels_path)
+    main(atlas_path=args.atlas_path, labels_path=args.labels_path,
+         fmri_root=args.fmri_root, output_root=args.output_root)

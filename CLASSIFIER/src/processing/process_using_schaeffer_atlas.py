@@ -1,3 +1,19 @@
+"""
+process_using_schaeffer_atlas.py — Compute whole-brain 200×200 Schaefer FC matrices.
+
+Reads resting-state BOLD NIfTI files from a source directory, applies the
+Schaefer 2018 (200 ROI, 7 Yeo networks) atlas, and saves Pearson FC + Fisher
+z-transformed matrices to an output directory.
+
+Usage (process all visits from __v1__ into __v3__):
+    python -m CLASSIFIER.src.processing.process_using_schaeffer_atlas \\
+        --fmri-root DATA/DELCODE/__v1__/fmri \\
+        --output-dir DATA/DELCODE/__v3__/matrices
+"""
+
+from __future__ import annotations
+
+import argparse
 from pathlib import Path
 from typing import Any, cast
 
@@ -12,7 +28,9 @@ except ImportError:  # pragma: no cover
     tqdm = None
 
 
-BASELINE_ROOT = Path("/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/fmri/baseline")
+REPO_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_FMRI_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__v1__" / "fmri"
+DEFAULT_OUTPUT_DIR = REPO_ROOT / "DATA" / "DELCODE" / "__v3__" / "matrices"
 SUBJECT_GLOB = "sub-*"
 OUTPUT_RAW_SUFFIX = "_whole_brain_correlation_matrix.npz"
 OUTPUT_Z_SUFFIX = "_whole_brain_correlation_matrix_z_transformed.npz"
@@ -54,8 +72,8 @@ def iter_bold_files(baseline_root: Path):
                 yield nii_path
 
 
-def should_skip_file(bold_path: Path) -> bool:
-    raw_output_path, z_output_path = build_output_paths(bold_path)
+def should_skip_file(bold_path: Path, output_dir: Path | None = None) -> bool:
+    raw_output_path, z_output_path = build_output_paths(bold_path, output_dir)
     return raw_output_path.exists() and z_output_path.exists()
 
 
@@ -65,11 +83,12 @@ def build_progress_iterator(bold_files: list[Path]) -> Any:
     return tqdm(bold_files, total=len(bold_files), unit="file", dynamic_ncols=True)
 
 
-def build_output_paths(bold_path: Path) -> tuple[Path, Path]:
+def build_output_paths(bold_path: Path, output_dir: Path | None = None) -> tuple[Path, Path]:
     prefix = strip_nifti_suffix(bold_path.name)
+    base = output_dir if output_dir is not None else bold_path.parent
     return (
-        bold_path.parent / f"{prefix}{OUTPUT_RAW_SUFFIX}",
-        bold_path.parent / f"{prefix}{OUTPUT_Z_SUFFIX}",
+        base / f"{prefix}{OUTPUT_RAW_SUFFIX}",
+        base / f"{prefix}{OUTPUT_Z_SUFFIX}",
     )
 
 
@@ -93,9 +112,11 @@ def process_file(
     bold_path: Path,
     masker: NiftiLabelsMasker,
     correlation_measure: ConnectivityMeasure,
+    output_dir: Path | None = None,
+    overwrite: bool = False,
 ) -> str:
-    raw_output_path, z_output_path = build_output_paths(bold_path)
-    if not OVERWRITE_EXISTING and should_skip_file(bold_path):
+    raw_output_path, z_output_path = build_output_paths(bold_path, output_dir)
+    if not overwrite and raw_output_path.exists() and z_output_path.exists():
         return f"SKIP {bold_path}"
 
     corr_matrix, z_matrix = compute_connectivity_matrices(
@@ -109,14 +130,27 @@ def process_file(
     return f"DONE {bold_path} -> {raw_output_path.name}, {z_output_path.name}"
 
 
-def main() -> None:
-    if not BASELINE_ROOT.exists():
-        raise FileNotFoundError(f"Baseline directory not found: {BASELINE_ROOT}")
+def main(
+    fmri_root: Path | None = None,
+    output_dir: Path | None = None,
+    overwrite: bool = False,
+) -> None:
+    fmri_root = fmri_root or DEFAULT_FMRI_ROOT
+    output_dir = output_dir or DEFAULT_OUTPUT_DIR
 
-    bold_files = list(iter_bold_files(BASELINE_ROOT))
+    if not fmri_root.exists():
+        raise FileNotFoundError(f"fMRI root directory not found: {fmri_root}")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    bold_files = list(iter_bold_files(fmri_root))
     if not bold_files:
-        print(f"No rest-state BOLD files found under {BASELINE_ROOT}")
+        print(f"No rest-state BOLD files found under {fmri_root}")
         return
+
+    print(f"Source:  {fmri_root}  ({len(bold_files)} BOLD files)")
+    print(f"Output:  {output_dir}")
+    print(f"Overwrite: {overwrite}")
 
     masker = build_masker()
     correlation_measure = ConnectivityMeasure(kind="correlation")
@@ -132,6 +166,8 @@ def main() -> None:
                 bold_path=bold_path,
                 masker=masker,
                 correlation_measure=correlation_measure,
+                output_dir=output_dir,
+                overwrite=overwrite,
             )
             if message.startswith("SKIP"):
                 skipped_count += 1
@@ -172,10 +208,17 @@ def main() -> None:
         progress.close()
 
     print(
-        "Finished DELCODE baseline processing: "
-        f"processed={processed_count}, skipped={skipped_count}, failed={failed_count}"
+        f"Finished: processed={processed_count}, skipped={skipped_count}, failed={failed_count}"
     )
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--fmri-root", type=Path, default=DEFAULT_FMRI_ROOT,
+                        help="Root directory containing sub-*/ directories with BOLD NIfTI files")
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR,
+                        help="Flat output directory for .npz matrix files")
+    parser.add_argument("--overwrite", action="store_true",
+                        help="Re-compute matrices that already exist in output-dir")
+    args = parser.parse_args()
+    main(fmri_root=args.fmri_root, output_dir=args.output_dir, overwrite=args.overwrite)

@@ -2,18 +2,23 @@
 run_all_processing.py — Master script to generate all network-subset FC matrices.
 
 Runs the Schaefer-only subset experiments (no fMRI reprocessing needed) and
-prints ready-to-run commands for the Tian-atlas experiments that require a
-Tian NIfTI file.
+optionally processes all follow-up fMRI visits for full longitudinal coverage.
 
 Usage (from repo root):
+    # Schaefer-only subsets from existing __v3__ matrices:
     python -m CLASSIFIER.src.processing.run_all_processing
 
-For Tian-based experiments (__v5__, __v8__, __v10__, __v11__), provide the atlas:
+    # Also reprocess all follow-up visits from __v1__/fmri into __v3__:
+    python -m CLASSIFIER.src.processing.run_all_processing --reprocess-followups
+
+    # Full run including Tian-atlas experiments:
     python -m CLASSIFIER.src.processing.run_all_processing \\
+        --reprocess-followups \\
         --tian-atlas /path/to/Tian_Subcortex_S2_3T.nii.gz \\
         --tian-labels /path/to/Tian_Subcortex_S2_3T_label.txt
 
 Experiment table:
+    __v3__  Whole brain               (Schaefer 200, all visits after reprocessing)
     __v5__  Hippocampus only          (Tian Scale II, 4 ROIs)
     __v6__  Limbic only               (Schaefer subset, 12 ROIs)
     __v7__  Dorsal Attention only     (Schaefer subset, 26 ROIs)
@@ -167,15 +172,54 @@ def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None) -> No
             print(f"  ERROR: {version} failed with return code {result.returncode}")
 
 
-def main(tian_atlas: Path | None, tian_labels: Path | None, skip_schaefer: bool) -> None:
+def run_followup_reprocessing(fmri_root: Path) -> bool:
+    """Process all follow-up visits from fmri_root into __v3__/matrices/."""
+    print(f"\n{'='*60}")
+    print(f"  __v3__ — Reprocess all visits from {fmri_root.name}")
+    print(f"{'='*60}")
+    output_dir = REPO_ROOT / "DATA" / "DELCODE" / "__v3__" / "matrices"
+    cmd = [
+        sys.executable, "-m",
+        "CLASSIFIER.src.processing.process_using_schaeffer_atlas",
+        "--fmri-root", str(fmri_root),
+        "--output-dir", str(output_dir),
+    ]
+    print(f"  Command: {' '.join(cmd[2:])}")
+    result = subprocess.run(cmd, cwd=str(REPO_ROOT))
+    if result.returncode != 0:
+        print(f"  ERROR: __v3__ reprocessing failed (code {result.returncode})")
+        return False
+    return True
+
+
+def main(
+    tian_atlas: Path | None,
+    tian_labels: Path | None,
+    skip_schaefer: bool,
+    reprocess_followups: bool,
+) -> None:
     print("=" * 60)
     print("  NETWORK SUBSET PROCESSING — MASTER RUNNER")
     print("=" * 60)
     print(f"  Repo root: {REPO_ROOT}")
+    print(f"  Reprocess follow-ups: {reprocess_followups}")
     print(f"  Schaefer jobs: {len(SCHAEFER_JOBS)}")
     print(f"  Tian jobs: {len(TIAN_JOBS)} ({'atlas provided' if tian_atlas else 'atlas missing — will print commands only'})")
 
-    # Step 1: Schaefer-only subsets (fast, no fMRI access required)
+    # Step 0: Reprocess all follow-up visits from __v1__/fmri into __v3__/matrices
+    if reprocess_followups:
+        fmri_root = REPO_ROOT / "DATA" / "DELCODE" / "__v1__" / "fmri"
+        if not fmri_root.exists():
+            print(f"\nWARNING: __v1__/fmri not found at {fmri_root}, skipping reprocessing.")
+        else:
+            print("\n\n── STEP 0: REPROCESS ALL VISITS ────────────────────────────")
+            ok = run_followup_reprocessing(fmri_root)
+            if ok:
+                print("  __v3__ matrices updated with all follow-up visits.")
+            # Re-run Schaefer subsets after __v3__ is updated so follow-ups are sliced too
+            skip_schaefer = False
+
+    # Step 1: Schaefer-only subsets
     if not skip_schaefer:
         print("\n\n── SCHAEFER SUBSET EXPERIMENTS ──────────────────────────────")
         failed = []
@@ -199,7 +243,9 @@ def main(tian_atlas: Path | None, tian_labels: Path | None, skip_schaefer: bool)
         "  For each data version, run the experiment notebooks in order:\n"
         "  1. CLASSIFIER/notebooks/NETWORK_GAAE_RUNNER.ipynb  (GAAE pretraining)\n"
         "  2. CLASSIFIER/notebooks/NETWORK_GEC_RUNNER.ipynb   (GEC classification)\n"
-        "\n  See DOCS/experiment_notebooks.md for full instructions."
+        "  3. Precompute longitudinal embeddings:\n"
+        "     python -m PROGNOSER.src.build_subject_embeddings --all --strategy all_aggs\n"
+        "\n  See DOCS/prognosis_pipeline.md for full instructions."
     )
 
 
@@ -208,21 +254,18 @@ if __name__ == "__main__":
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument(
-        "--tian-atlas", type=Path, default=None,
-        help="Path to Tian Subcortex Scale II NIfTI file",
-    )
-    parser.add_argument(
-        "--tian-labels", type=Path, default=None,
-        help="Path to Tian label text file (one label per line)",
-    )
-    parser.add_argument(
-        "--skip-schaefer", action="store_true",
-        help="Skip Schaefer-only subset jobs (useful if already run)",
-    )
+    parser.add_argument("--tian-atlas", type=Path, default=None,
+                        help="Path to Tian Subcortex Scale II NIfTI file")
+    parser.add_argument("--tian-labels", type=Path, default=None,
+                        help="Path to Tian label text file (one label per line)")
+    parser.add_argument("--skip-schaefer", action="store_true",
+                        help="Skip Schaefer-only subset jobs")
+    parser.add_argument("--reprocess-followups", action="store_true",
+                        help="Reprocess all follow-up visits from __v1__/fmri into __v3__/matrices")
     args = parser.parse_args()
     main(
         tian_atlas=args.tian_atlas,
         tian_labels=args.tian_labels,
         skip_schaefer=args.skip_schaefer,
+        reprocess_followups=args.reprocess_followups,
     )

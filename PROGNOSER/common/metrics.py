@@ -105,9 +105,14 @@ def evaluate_model(
     eval_times_arr = np.asarray(list(eval_times), dtype=float)
     surv_test = model.predict_survival(X_test, eval_times_arr)
 
+    try:
+        ibs = integrated_brier_score(T_train, E_train, T_test, E_test, surv_test, eval_times_arr)
+    except (ValueError, Exception):
+        ibs = float("nan")
+
     out: dict = {
         "c_index": c_index(T_test, E_test, risk),
-        "ibs": integrated_brier_score(T_train, E_train, T_test, E_test, surv_test, eval_times_arr),
+        "ibs": ibs,
         "auc": time_dependent_auc(T_train, E_train, T_test, E_test, risk, times=(24, 36, 60)),
     }
     return out

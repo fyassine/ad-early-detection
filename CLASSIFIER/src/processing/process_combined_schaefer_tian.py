@@ -50,11 +50,10 @@ except ImportError:
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-BASELINE_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "fmri" / "baseline"
+DEFAULT_FMRI_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__v1__" / "fmri"
 DELCODE_ROOT = REPO_ROOT / "DATA" / "DELCODE"
 ATLAS_JSON = REPO_ROOT / "DASHBOARD" / "app" / "static" / "data" / "schaefer_200_coords.json"
 SUBJECT_GLOB = "sub-*"
-OVERWRITE_EXISTING = False
 
 
 def load_schaefer_network_indices(networks: list[str]) -> tuple[list[int], list[str]]:
@@ -165,7 +164,7 @@ def process_file(
     raw_out = matrices_out / f"{prefix}{raw_suffix}"
     z_out = matrices_out / f"{prefix}{z_suffix}"
 
-    if not OVERWRITE_EXISTING and raw_out.exists() and z_out.exists():
+    if raw_out.exists() and z_out.exists():
         return f"SKIP {bold_path.name}"
 
     corr, z = compute_joint_connectivity(
@@ -183,9 +182,11 @@ def main(
     output_suffix: str,
     tian_atlas: Path,
     tian_labels: Path | None,
+    fmri_root: Path | None = None,
 ) -> None:
-    if not BASELINE_ROOT.exists():
-        raise FileNotFoundError(f"Baseline fMRI directory not found: {BASELINE_ROOT}")
+    fmri_root = fmri_root or DEFAULT_FMRI_ROOT
+    if not fmri_root.exists():
+        raise FileNotFoundError(f"fMRI root directory not found: {fmri_root}")
     if not tian_atlas.exists():
         raise FileNotFoundError(f"Tian atlas not found: {tian_atlas}")
 
@@ -220,9 +221,10 @@ def main(
     tian_masker = build_tian_masker(tian_atlas)
     correlation_measure = ConnectivityMeasure(kind="correlation")
 
-    bold_files = list(iter_bold_files(BASELINE_ROOT))
+    print(f"Source: {fmri_root}  |  Output: {matrices_out}")
+    bold_files = list(iter_bold_files(fmri_root))
     if not bold_files:
-        print(f"No rest BOLD files found under {BASELINE_ROOT}")
+        print(f"No rest BOLD files found under {fmri_root}")
         return
 
     processed, skipped, failed = 0, 0, 0
@@ -276,6 +278,8 @@ if __name__ == "__main__":
     parser.add_argument("--output-suffix", required=True, help="File suffix (e.g. dmn_hippo)")
     parser.add_argument("--tian-atlas", required=True, type=Path, help="Tian atlas NIfTI")
     parser.add_argument("--tian-labels", type=Path, default=None, help="Tian label text file")
+    parser.add_argument("--fmri-root", type=Path, default=DEFAULT_FMRI_ROOT,
+                        help="Root fMRI directory (all visits, default: __v1__/fmri)")
     args = parser.parse_args()
     main(
         networks=args.networks,
@@ -283,4 +287,5 @@ if __name__ == "__main__":
         output_suffix=args.output_suffix,
         tian_atlas=args.tian_atlas,
         tian_labels=args.tian_labels,
+        fmri_root=args.fmri_root,
     )

@@ -6,12 +6,17 @@ End-to-end guide for running the time-to-conversion (MCI → AD) survival pipeli
 
 ## 1. Goal
 
-CLASSIFIER answers *will this subject convert?* PROGNOSER answers *when, and how does prognosis depend on the network we use?*
+CLASSIFIER answers *will this subject convert?* PROGNOSER answers *when, and how does prognosis depend on which brain network we use?*
 
-Specifically, the pipeline:
-1. Builds per-subject `(duration, event_observed)` tuples from `cohorts.csv` longitudinal visits
-2. Trains baseline survival models (Kaplan-Meier, Cox PH, Random Survival Forest, DeepSurv) on (clinical) + (optional GAAE network embeddings)
-3. Compares the 8 network combinations (DMN, hippocampus, limbic, DAN, and combinations) by **test C-index**, **integrated Brier score**, and **time-dependent AUC at 24/36/60 months**
+The pipeline supports longitudinal data for **both converters and non-converters** using a symmetric at-risk window:
+
+```
+window_start = M0
+window_end   = months_to_first_AD_visit   (converter, event=1)
+             OR months_to_last_MCI_visit  (non-converter, event=0)
+```
+
+All feature extraction (clinical aggregates, embeddings, visit sequences) is restricted to visits within `[window_start, window_end)` — the same code path for both groups.
 
 ---
 
@@ -19,105 +24,128 @@ Specifically, the pipeline:
 
 | File | Used for |
 |---|---|
-| `DATA/DELCODE/__v3__/metadata/cohorts.csv` | Per-visit `diagnosis` to compute (T, E) per subject |
-| `DATA/DELCODE/__v3__/metadata/splits_gec/{train,val,test}.csv` | Same subject splits as the classifier — for consistent comparison |
-| `DATA/DELCODE/__v{4-11}__/matrices/*.npz` | Baseline FC matrices for GAAE embedding extraction |
-| `CLASSIFIER/notebooks/checkpoints_gaae_{combo}/{run_name}/model_*.pth` | Trained GAAE encoders (prerequisite) |
+| `DATA/DELCODE/__v1__/fmri/sub-*/` | Raw BOLD NIfTIs for all visits (M0–M108) |
+| `DATA/DELCODE/__v3__/matrices/` | Per-visit FC matrices (Schaefer 200, all visits after reprocessing) |
+| `DATA/DELCODE/__v3__/metadata/cohorts.csv` | Longitudinal visits, `diagnosis` tracks MCI → AD |
+| `DATA/DELCODE/__v3__/metadata/splits_gec/{train,val,test}.csv` | Subject splits (same as CLASSIFIER) |
+| `DATA/DELCODE/__v{4-11}__/matrices/` | Per-visit FC matrices for each network combo |
+| `CLASSIFIER/notebooks/checkpoints_gaae_{combo}/` | Trained GAAE encoders (prerequisite) |
 
 ### Censoring rules
 
-A subject is included if their **earliest non-NaN diagnosis** in `cohorts.csv` is `mci` or `converter`. Then:
-- `event_observed = 1`, `duration = months_to_first_AD_visit` if any visit has `diagnosis == 'ad'`
-- `event_observed = 0`, `duration = months_to_last_visit` otherwise (right-censored)
+Include subjects whose **earliest non-NaN diagnosis** is `mci` or `converter`. Then:
+- `event_observed = 1`, `duration = months to first 'ad' visit`
+- `event_observed = 0`, `duration = months of last MCI visit` (right-censored)
 
-Implementation: `PROGNOSER/common/survival_table.py:build_survival_table()` (ported and extended from `DASHBOARD/app/services/survival.py:39-92`).
+Both groups follow the **same code path** in `build_survival_table()`.
 
 ---
 
 ## 3. Methods
 
-| Method | Library | Features | When to use |
+| Method | Library | Features | Notes |
 |---|---|---|---|
-| `km` | lifelines KaplanMeierFitter | none | Population reference, stratified plots |
-| `cox_clinical` | lifelines CoxPHFitter | age, sex, MMSE, CDR, ApoE4 | Clinical baseline (literature C-index ~0.65–0.72) |
-| `cox_embedding` | lifelines + PCA | 64-dim GAAE → PCA(16) | Test if connectivity carries prognosis signal alone |
-| `cox_combined` | lifelines + PCA | clinical + 64-dim GAAE | Should beat clinical-only if H2 holds |
-| `rsf` | scikit-survival RandomSurvivalForest | clinical / embedding / combined | Non-linear baseline; handles interactions |
-| `deepsurv` | pycox CoxPH + MLPVanilla | any | Stretch — install `pycox torchtuples` first |
+| `km` | lifelines | None | Population KM — no covariates |
+| `cox_clinical` | lifelines | age, sex, MMSE, CDR, ApoE4 at M0 | Literature baseline |
+| `cox_clinical_longitudinal` | lifelines | clinical + MMSE/CDR slope/delta | Extends Cox with trajectories |
+| `cox_embedding` | lifelines + PCA | 64-dim GAAE (strategy-selected) | Connectivity signal alone |
+| `cox_combined` | lifelines + PCA | clinical + embedding | Main comparison |
+| `cox_time_varying` | lifelines CoxTVF | per-visit (start, stop) long-format | Proper longitudinal survival |
+| `rsf` | scikit-survival | any feature set | Non-linear baseline |
+| `deepsurv` | pycox (optional) | any feature set | Neural Cox |
+| `lstm_surv` | PyTorch LSTM | visit-sequence clinical/embedding | Full longitudinal sequence model |
+
+### Embedding strategies
+
+For methods that use GAAE embeddings, the `embedding_strategy` controls which visit(s) are encoded:
+
+| Strategy | Which visit(s) | Notes |
+|---|---|---|
+| `baseline` | M0 only | Backward-compatible |
+| `last` | Latest visit < `window_end` | Closest to event/censoring |
+| `mean` | All visits in window | Average connectivity profile |
+| `slope` | `last - baseline` vector | Connectivity change direction |
+| `all_aggs` | Concat of all four | 4×latent_dim features |
+| `sequence` | All visits as time series | For LSTM training |
 
 ---
 
 ## 4. End-to-End Run Order
 
-### Prerequisite — Train GAAE encoders (already covered by the network framing pipeline)
+### Prerequisites — train GAAE encoders
 
-For each combo, run `CLASSIFIER/notebooks/NETWORK_GAAE_RUNNER.ipynb` once. Each run produces `CLASSIFIER/notebooks/checkpoints_gaae_{combo}/{run_name}/model_{run_name}.pth`. Without these, only the clinical-only methods will work.
+For each network combo, run `CLASSIFIER/notebooks/NETWORK_GAAE_RUNNER.ipynb` once (already covered by the network-framing pipeline).
 
-### Step A — Install survival packages
+### Step A — Install packages
 
 ```bash
 pip install -r PROGNOSER/requirements.txt
 ```
 
-### Step B — Population-level Kaplan-Meier
+### Step B — Reprocess all follow-up visits
+
+This populates `__v3__/matrices/` with M12/M24/M36... FC matrices (currently mostly M0):
+
+```bash
+python -m CLASSIFIER.src.processing.run_all_processing --reprocess-followups
+```
+
+After this runs, re-run subset scripts to propagate follow-ups to `__v6__`, `__v7__`, `__v9__`:
+
+```bash
+python -m CLASSIFIER.src.processing.run_all_processing --skip-schaefer  # just update subsets
+# or simply:
+python -m CLASSIFIER.src.processing.run_all_processing  # runs both in sequence
+```
+
+**Verification**: confirm `DATA/DELCODE/__v3__/matrices/sub-95c562d3e_ses-01_M12_*` exists.
+
+### Step C — Population-level Kaplan-Meier
 
 ```bash
 jupyter notebook PROGNOSER/notebooks/KAPLAN_MEIER_BASELINE.ipynb
-# Run all cells. Outputs:
-#   _artifacts_/km_overall.png
-#   _artifacts_/km_by_apoe4.png
-#   _artifacts_/km_by_sex.png
-#   _artifacts_/km_by_baseline_diagnosis.png
-#   _artifacts_/km_curves.json
 ```
 
-### Step C — Clinical-only Cox baseline (no embeddings needed)
+### Step D — Clinical-only Cox baseline (no GAAE needed)
 
-Edit `PROGNOSER/notebooks/PROGNOSER_RUNNER.ipynb` config cell:
+Set `method='cox_clinical'`, `feature_set='clinical'` in `PROGNOSER_RUNNER.ipynb` and run.
+This gives the reference C-index (~0.65–0.72) for network-augmented runs to beat.
 
-```python
-EXPERIMENT = {
-    "network_combo": "dmn",          # arbitrary placeholder; ignored for clinical-only
-    "data_version": "__v4__",
-    "file_suffix": "...",
-    "method": "cox_clinical",
-    "feature_set": "clinical",
-    ...
-}
-```
-
-Run all cells. Test C-index in `_artifacts_/run_summary.json` is your reference baseline for the network-augmented runs to beat.
-
-### Step D — Precompute GAAE embeddings (once per combo)
+### Step E — Precompute GAAE embeddings
 
 ```bash
-# One combo:
-python -m PROGNOSER.src.build_baseline_embeddings --combo dmn_hippo
+# One combo, last-visit strategy:
+python -m PROGNOSER.src.build_subject_embeddings --combo dmn_hippo --strategy last
 
-# All 8 (skips combos with no GAAE checkpoint):
-python -m PROGNOSER.src.build_baseline_embeddings --all
+# All combos, all aggregations (takes longer but maximises feature options):
+python -m PROGNOSER.src.build_subject_embeddings --all --strategy all_aggs
+
+# Sequence embeddings for LSTM:
+python -m PROGNOSER.src.build_subject_embeddings --all --strategy sequence
 ```
 
-Cached parquets land in `PROGNOSER/notebooks/_embeddings_cache_/{combo}_baseline_embeddings.parquet`. The runner notebook auto-loads these.
+Cached to `PROGNOSER/notebooks/_embeddings_cache_/{combo}_{strategy}_embeddings.parquet`.
 
-### Step E — Method × combo sweep
+### Step F — Method × combo sweep
 
-For each (combo, method) pair, edit `EXPERIMENT` in `PROGNOSER_RUNNER.ipynb` and run all cells. Each run saves:
+For each `(method, network_combo)` combination, edit `EXPERIMENT` in `PROGNOSER_RUNNER.ipynb`
+and run all cells. Each run saves to `checkpoints_prognoser_{combo}/{run_name}/`.
 
-```
-PROGNOSER/notebooks/checkpoints_prognoser_{combo}/{run_name}/
-├── run_summary.json     # all metrics + config
-├── model_{run_name}.joblib
-└── predictions_test.csv
-```
+Suggested sweep order:
+1. `cox_clinical` (baseline, no embeddings)
+2. `cox_clinical_longitudinal` (adds MMSE/CDR trajectories)
+3. `cox_combined` with `strategy='last'` per combo
+4. `cox_time_varying` (per-visit long format)
+5. `rsf` with `feature_set='clinical_longitudinal'`
+6. `lstm_surv` (requires sequence embeddings)
 
-### Step F — Cross-network leaderboard
+### Step G — Cross-network leaderboard
 
 ```bash
 jupyter notebook PROGNOSER/notebooks/CROSS_NETWORK_COMPARISON.ipynb
 ```
 
-Walks all checkpoint dirs, ranks (combo × method) by test C-index, and writes `_artifacts_/leaderboard_*.csv` and `_artifacts_/leaderboard_barplot.png`.
+Produces `_artifacts_/leaderboard_heatmap.png` and `_artifacts_/leaderboard_all_runs.csv`.
 
 ---
 
@@ -125,42 +153,52 @@ Walks all checkpoint dirs, ranks (combo × method) by test C-index, and writes `
 
 ```json
 {
-  "run_name": "cox_clinical_clinical_2026-05-08_14-30-00",
-  "method": "cox_clinical",
-  "feature_set": "clinical",
-  "experiment": { "network_combo": "...", "data_version": "...", "...": "..." },
-  "n_features": 5,
-  "feature_columns": ["age", "sex", "mmstot", "cdrglobal", "apoe4"],
-  "n_train": 51,  "n_val": 10,  "n_test": 8,  "n_events_test": 6,
+  "run_name": "cox_time_varying_clinical_longitudinal_last_2026-05-08_...",
+  "method": "cox_time_varying",
+  "feature_set": "clinical_longitudinal",
+  "embedding_strategy": "last",
+  "n_features": 13,
+  "feature_columns": ["age", "sex", "mmstot", "cdrglobal", "apoe4",
+                      "mmstot_baseline", "mmstot_last", "mmstot_slope", "mmstot_delta",
+                      "cdrglobal_baseline", "cdrglobal_last", "cdrglobal_slope", "cdrglobal_delta"],
+  "n_train": 51, "n_val": 10, "n_test": 8, "n_events_test": 6,
   "metrics": {
-    "train": {"c_index": 0.66, "ibs": 0.18, "auc": {"24": 0.71, "36": 0.69, "60": 0.65}},
+    "train": {"c_index": 0.72, "ibs": 0.16, "auc": {"24": 0.74, "36": 0.71, "60": 0.68}},
     "val":   {...},
     "test":  {...}
-  },
-  "eval_times": [12, 24, 36, 48, 60, 72]
+  }
 }
 ```
 
-The leaderboard notebook tabulates these into a tidy DataFrame for ranking.
+---
+
+## 6. Symmetric Longitudinal Handling
+
+The key change from the baseline implementation: **all feature extraction uses the at-risk window**, computed identically for both groups:
+
+```python
+# In survival_table.py — same code path, different endpoint
+window_end = first_AD_visit_month     # converter (event=1)
+window_end = last_MCI_visit_month     # non-converter (event=0)
+
+# All aggregates use only visits < window_end
+mmstot_slope = agg.slope(subject_id, 'mmstot', window_end)  # ← same function call
+z_last       = embedding(subject_id, last_visit_before=window_end)
+```
+
+This avoids:
+- **Look-ahead bias**: no post-event data leaks into features for converters
+- **Asymmetric information**: non-converters get the same window treatment as converters
 
 ---
 
-## 6. Known Limitations
-
-- **Small test set (n=8 events).** Test C-index is high-variance — interpret with confidence intervals via bootstrap if you need formal claims.
-- **Baseline-only features.** Time-varying covariates (multi-visit MMSE/CDR trajectories) are not used. This rules out joint longitudinal-survival, RNN/LSTM, and DeepHit dynamic-risk models.
-- **GAAE encoders are unsupervised.** Trained on autoencoder reconstruction, not conversion prediction. A supervised encoder (or fine-tuning the GAAE on the survival loss) could add signal.
-
----
-
-## 7. Deferred Methods (Future Work)
+## 7. Deferred Methods
 
 | Method | Why deferred | What it needs |
 |---|---|---|
-| DeepHit | Discrete-time multi-event; needs interval discretization + competing-risks setup | Same data + binning strategy |
-| Joint longitudinal-survival | Per-visit feature trajectories + landmarking | Multi-visit feature tensors |
-| RNN/LSTM | Sequence model over visits | Per-visit feature sequences |
-| Neural ODE (BrainODE, DISCLOSE, LaTiM) | Continuous-time trajectory modeling | Multi-visit imaging features in a structured tensor |
-| Subtyping/kernel (DCSM, MCI-CPS) | Subtype discovery + kernel survival | Multi-modal features (PET + MRI + CSF) |
+| DeepHit | Multi-event competing risks | Competing-risks formulation |
+| Joint longitudinal-survival | Shared latent process | Per-visit latent state model |
+| Neural ODE (BrainODE, DISCLOSE) | Continuous-time trajectories | Irregular-time ODE solver |
+| Subtyping/kernel (DCSM, MCI-CPS) | Unsupervised subtype discovery | Multi-modal features |
 
-These all share a common prerequisite: a **per-visit feature pipeline** (not just baseline). When that's built, swap in the corresponding model wrapper at the same `SurvivalModel` interface used here — the runner notebook architecture is designed to absorb new methods.
+All share the prerequisite of a complete per-visit feature pipeline, which is now in place after Phase 0 reprocessing — these can be added as new `SurvivalModel` subclasses without changing the runner architecture.
