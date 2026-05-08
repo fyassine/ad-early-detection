@@ -2,9 +2,7 @@ An alzheimer's dementia prediction project.
 
 # Outline
 
-- `DATA`: stratified versions of the dataset.
-- `DATA/DELCODE/__v5__/metadata`: latest used startification of DELCODE (using the `prmdiag` column)
-- `MODEL/model`: model definitions.
-- `MODEL/notebooks`: trained models.
-- `MODEL/src`: scripts and notebooks for other tasks.
-- `MODEL/src/processing`: parcellation code.
+- `/CLASSIFIER`: source code for graph autoencoders and classifiers.
+- `/CLASSIFIER/notebooks/MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb`: comparison of all models for classification task of converters vs non-converters in DELCODE database.
+- `/CLASSIFIER/notebooks`: training notebooks for all models (all models use longitudinal data except `COST_WEIGHTED_GEC_DELCODE_WHOLE_BRAIN_REFACTORED.ipynb`).
+- `/DCI`: source code for ABI
