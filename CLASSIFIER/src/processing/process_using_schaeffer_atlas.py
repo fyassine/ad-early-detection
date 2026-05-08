@@ -153,8 +153,10 @@ def main(
     print(f"Overwrite: {overwrite}")
 
     masker = build_masker()
-    correlation_measure = ConnectivityMeasure(kind="correlation")
-
+    correlation_measure = ConnectivityMeasure(
+        kind="correlation", 
+        standardize=cast(Any, "zscore_sample")
+    )
     processed_count = 0
     skipped_count = 0
     failed_count = 0

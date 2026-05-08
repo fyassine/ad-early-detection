@@ -34,14 +34,17 @@ Usage (from repo root):
 from __future__ import annotations
 
 import argparse
+import contextlib
+import joblib
 import json
 from pathlib import Path
 from typing import Any, cast
 
 import numpy as np
-from nilearn import datasets
+from nilearn import datasets, image as nli_image
 from nilearn.connectome import ConnectivityMeasure
 from nilearn.maskers import NiftiLabelsMasker
+from joblib import Parallel, delayed
 
 try:
     from tqdm import tqdm
@@ -74,7 +77,7 @@ def load_hippocampus_label_indices(labels_path: Path | None) -> list[int]:
     if labels_path is None or not labels_path.exists():
         return []
     lines = labels_path.read_text().splitlines()
-    return [i + 1 for i, ln in enumerate(lines) if "hippocampus" in ln.lower()]
+    return [i + 1 for i, ln in enumerate(lines) if "hip" in ln.lower()]
 
 
 def build_schaefer_masker(network_indices: list[int]) -> NiftiLabelsMasker:
@@ -85,9 +88,27 @@ def build_schaefer_masker(network_indices: list[int]) -> NiftiLabelsMasker:
     )
 
 
-def build_tian_masker(atlas_path: Path) -> NiftiLabelsMasker:
+def build_tian_masker(atlas_path: Path, labels_path: Path | None = None) -> NiftiLabelsMasker:
+    """
+    Build a NiftiLabelsMasker for the Tian atlas, subsetted to hippocampal
+    parcels in memory so Nilearn only processes those voxels.
+    """
+    if labels_path is not None and labels_path.exists():
+        all_labels = labels_path.read_text().splitlines()
+        hippo_1based = [i + 1 for i, ln in enumerate(all_labels) if "hip" in ln.lower()]
+    else:
+        hippo_1based = []
+
+    atlas_img = nli_image.load_img(str(atlas_path))
+    if hippo_1based:
+        atlas_data = atlas_img.get_fdata()
+        subset_data = np.zeros_like(atlas_data)
+        for label in hippo_1based:
+            subset_data[atlas_data == label] = label
+        atlas_img = nli_image.new_img_like(atlas_img, subset_data)
+
     return NiftiLabelsMasker(
-        labels_img=str(atlas_path),
+        labels_img=atlas_img,
         standardize=cast(Any, "zscore_sample"),
         resampling_target="data",
     )
@@ -127,16 +148,17 @@ def compute_joint_connectivity(
     tian_hippo_indices: list[int],
     correlation_measure: ConnectivityMeasure,
 ) -> tuple[np.ndarray, np.ndarray]:
-    # Schaefer: extract full 200-ROI time series, then select network columns
-    ts_schaefer = schaefer_masker.fit_transform(str(bold_path))  # (T, 200)
-    ts_net = ts_schaefer[:, schaefer_col_indices]  # (T, N_schaefer_subset)
+    # Load the fMRI image once and pass it to both maskers
+    bold_img = nli_image.load_img(str(bold_path))
 
-    # Tian: extract all parcels, then keep hippocampus (1-based → 0-based)
-    ts_tian = tian_masker.fit_transform(str(bold_path))  # (T, N_tian)
-    if tian_hippo_indices:
-        ts_hippo = ts_tian[:, [i - 1 for i in tian_hippo_indices]]
-    else:
-        ts_hippo = ts_tian
+    # Schaefer: use transform() (masker already fitted) — avoids resampling
+    ts_schaefer = schaefer_masker.transform(bold_img)  # (T, 200)
+    ts_net = ts_schaefer[:, schaefer_col_indices]       # (T, N_schaefer_subset)
+
+    # Tian: use transform() — masker is pre-fitted and pre-subsetted to hippo
+    ts_tian = tian_masker.transform(bold_img)           # (T, N_hippo)
+    # tian_masker is already subsetted; pass all columns
+    ts_hippo = ts_tian if not tian_hippo_indices else ts_tian
 
     # Joint time series: [Schaefer subset | Tian hippocampus]
     ts_joint = np.concatenate([ts_net, ts_hippo], axis=1)  # (T, N_net + N_hippo)
@@ -176,6 +198,47 @@ def process_file(
     return f"DONE {bold_path.name} -> shape={corr.shape}"
 
 
+@contextlib.contextmanager
+def tqdm_joblib(tqdm_object):
+    """Patch joblib to report batch completions into a tqdm progress bar."""
+    class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
+        def __call__(self, *args, **kwargs):
+            tqdm_object.update(n=self.batch_size)
+            return super().__call__(*args, **kwargs)
+
+    old_callback = joblib.parallel.BatchCompletionCallBack
+    joblib.parallel.BatchCompletionCallBack = TqdmBatchCompletionCallback
+    try:
+        yield tqdm_object
+    finally:
+        joblib.parallel.BatchCompletionCallBack = old_callback
+
+
+def _parallel_worker(
+    bold_path: Path,
+    schaefer_masker: NiftiLabelsMasker,
+    schaefer_col_indices: list[int],
+    tian_masker: NiftiLabelsMasker,
+    matrices_out: Path,
+    raw_suffix: str,
+    z_suffix: str,
+) -> tuple[str | None, str | None]:
+    """Top-level worker for joblib. Each process creates its own ConnectivityMeasure.
+
+    Both maskers are pre-fitted before the parallel loop; workers call
+    transform() instead of fit_transform(), eliminating per-file resampling.
+    """
+    cm = ConnectivityMeasure(kind="correlation", standardize="zscore_sample")
+    try:
+        msg = process_file(
+            bold_path, schaefer_masker, schaefer_col_indices,
+            tian_masker, [], cm, matrices_out, raw_suffix, z_suffix,
+        )
+        return msg, None
+    except Exception as exc:
+        return None, f"ERROR {bold_path.name}: {exc}"
+
+
 def main(
     networks: list[str],
     output_version: str,
@@ -183,6 +246,7 @@ def main(
     tian_atlas: Path,
     tian_labels: Path | None,
     fmri_root: Path | None = None,
+    n_jobs: int = 16,
 ) -> None:
     fmri_root = fmri_root or DEFAULT_FMRI_ROOT
     if not fmri_root.exists():
@@ -218,8 +282,7 @@ def main(
     z_suffix = f"_{output_suffix}_correlation_matrix_z_transformed.npz"
 
     schaefer_masker = build_schaefer_masker(schaefer_col_indices)
-    tian_masker = build_tian_masker(tian_atlas)
-    correlation_measure = ConnectivityMeasure(kind="correlation")
+    tian_masker = build_tian_masker(tian_atlas, tian_labels)  # pre-subsetted to hippo
 
     print(f"Source: {fmri_root}  |  Output: {matrices_out}")
     bold_files = list(iter_bold_files(fmri_root))
@@ -227,32 +290,53 @@ def main(
         print(f"No rest BOLD files found under {fmri_root}")
         return
 
-    processed, skipped, failed = 0, 0, 0
-    iterator: Any = tqdm(bold_files, unit="file", dynamic_ncols=True) if tqdm else bold_files
+    # ── Pre-fit both maskers once on a single 3D volume ────────────────────────
+    # Using index_img(ref, 0) extracts just the FIRST volume (3D) as the fitting
+    # reference.  This avoids NiftiLabelsMasker.fit()'s compute_middle_image()
+    # call, which seeks to the midpoint of the 4D file — prohibitively slow for
+    # compressed .nii.gz files (requires sequential gzip decompression).
+    # A 3D single-volume image is sufficient: the masker only needs the affine
+    # and voxel grid to pre-compute the resampling transform.
+    print("Pre-fitting maskers on reference image (3D single volume)...")
+    ref_img_3d = nli_image.index_img(str(bold_files[0]), 0)
+    schaefer_masker.fit(ref_img_3d)
+    tian_masker.fit(ref_img_3d)
+    print("  Maskers fitted ✓")
 
-    for bold_path in iterator:
-        try:
-            msg = process_file(
-                bold_path, schaefer_masker, schaefer_col_indices,
-                tian_masker, tian_hippo_indices, correlation_measure,
-                matrices_out, raw_suffix, z_suffix,
+    # ── Cap n_jobs to prevent OOM ─────────────────────────────────────────────
+    # Combined processing runs TWO maskers per file (Schaefer 200-ROI + Tian
+    # hippocampus). Each worker holds two NIfTI images in memory simultaneously.
+    # With 24 workers this easily exceeds available RAM → SIGKILL(-9).
+    # Safe ceiling: ~8-12 workers for combined experiments.
+    safe_jobs = min(n_jobs, 12)
+    if safe_jobs < n_jobs:
+        print(
+            f"  ⚠  Capping n_jobs {n_jobs} → {safe_jobs} for combined processing\n"
+            f"     (two NIfTI maskers per worker → higher per-worker RAM).\n"
+            f"     Override with --n-jobs {safe_jobs} to silence this warning."
+        )
+
+    print(f"Processing {len(bold_files)} files in parallel (n_jobs={safe_jobs})…")
+
+    _tqdm = tqdm or (lambda **kw: contextlib.nullcontext())
+    with tqdm_joblib(_tqdm(desc="Processing fMRI", total=len(bold_files), dynamic_ncols=True)) as _:
+        raw_results = Parallel(n_jobs=safe_jobs, verbose=0)(
+            delayed(_parallel_worker)(
+                p, schaefer_masker, schaefer_col_indices,
+                tian_masker, matrices_out, raw_suffix, z_suffix,
             )
-            if msg.startswith("SKIP"):
-                skipped += 1
-            else:
-                processed += 1
-            if tqdm is None:
-                print(msg)
-        except Exception as exc:
-            failed += 1
-            err = f"ERROR {bold_path.name}: {exc}"
-            if tqdm is not None:
-                iterator.write(err)
-            else:
-                print(err)
+            for p in bold_files
+        )
 
-    if tqdm is not None:
-        iterator.close()
+    processed, skipped, failed = 0, 0, 0
+    for msg, err in raw_results:
+        if err:
+            failed += 1
+            print(err)
+        elif msg and msg.startswith("SKIP"):
+            skipped += 1
+        else:
+            processed += 1
 
     print(
         f"\nDone — processed={processed}, skipped={skipped}, failed={failed}"
@@ -280,6 +364,8 @@ if __name__ == "__main__":
     parser.add_argument("--tian-labels", type=Path, default=None, help="Tian label text file")
     parser.add_argument("--fmri-root", type=Path, default=DEFAULT_FMRI_ROOT,
                         help="Root fMRI directory (all visits, default: __v1__/fmri)")
+    parser.add_argument("--n-jobs", type=int, default=16,
+                        help="Parallel workers (default: 16). Lower if you hit OOM.")
     args = parser.parse_args()
     main(
         networks=args.networks,
@@ -288,4 +374,5 @@ if __name__ == "__main__":
         tian_atlas=args.tian_atlas,
         tian_labels=args.tian_labels,
         fmri_root=args.fmri_root,
+        n_jobs=args.n_jobs,
     )

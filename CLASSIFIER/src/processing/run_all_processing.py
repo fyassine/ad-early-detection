@@ -114,7 +114,7 @@ def run_schaefer_job(job: dict) -> bool:
     return True
 
 
-def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None) -> None:
+def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None, n_jobs: int = 16) -> None:
     print("\n" + "=" * 60)
     print("  TIAN-ATLAS EXPERIMENTS")
     print("=" * 60)
@@ -153,18 +153,31 @@ def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None) -> No
         print(f"  {version} — {description}")
         print(f"{'='*60}")
 
-        cmd = [
-            sys.executable, "-m",
-            f"CLASSIFIER.src.processing.{script}",
-            "--atlas-path", str(tian_atlas),
-            "--labels-path", str(tian_labels) if tian_labels else "",
-            *extra_args,
-            "--output-version", version,
-        ]
-        # Remove empty labels arg if not provided
-        cmd = [c for c in cmd if c != ""]
-        if tian_labels is None:
-            cmd = [c for c in cmd if c != "--labels-path"]
+        if script == "process_using_tian_atlas":
+            # This script uses --atlas-path / --labels-path / --output-root
+            output_root = REPO_ROOT / "DATA" / "DELCODE" / version
+            cmd = [
+                sys.executable, "-m",
+                f"CLASSIFIER.src.processing.{script}",
+                "--atlas-path", str(tian_atlas),
+                "--output-root", str(output_root),
+                "--n-jobs", str(n_jobs),
+                *extra_args,
+            ]
+            if tian_labels is not None:
+                cmd += ["--labels-path", str(tian_labels)]
+        else:
+            # process_combined_schaefer_tian uses --tian-atlas / --tian-labels / --output-version
+            cmd = [
+                sys.executable, "-m",
+                f"CLASSIFIER.src.processing.{script}",
+                "--tian-atlas", str(tian_atlas),
+                "--output-version", version,
+                "--n-jobs", str(n_jobs),
+                *extra_args,
+            ]
+            if tian_labels is not None:
+                cmd += ["--tian-labels", str(tian_labels)]
 
         print(f"  Command: {' '.join(cmd[2:])}")
         result = subprocess.run(cmd, cwd=str(REPO_ROOT))
@@ -197,6 +210,7 @@ def main(
     tian_labels: Path | None,
     skip_schaefer: bool,
     reprocess_followups: bool,
+    n_jobs: int = 16,
 ) -> None:
     print("=" * 60)
     print("  NETWORK SUBSET PROCESSING — MASTER RUNNER")
@@ -205,6 +219,7 @@ def main(
     print(f"  Reprocess follow-ups: {reprocess_followups}")
     print(f"  Schaefer jobs: {len(SCHAEFER_JOBS)}")
     print(f"  Tian jobs: {len(TIAN_JOBS)} ({'atlas provided' if tian_atlas else 'atlas missing — will print commands only'})")
+    print(f"  Tian parallel workers: {n_jobs}")
 
     # Step 0: Reprocess all follow-up visits from __v1__/fmri into __v3__/matrices
     if reprocess_followups:
@@ -236,7 +251,7 @@ def main(
 
     # Step 2: Tian-atlas experiments
     print("\n── TIAN ATLAS EXPERIMENTS ───────────────────────────────────")
-    print_tian_commands(tian_atlas, tian_labels)
+    print_tian_commands(tian_atlas, tian_labels, n_jobs=n_jobs)
 
     print("\n\n── NEXT STEPS ───────────────────────────────────────────────")
     print(
@@ -262,10 +277,13 @@ if __name__ == "__main__":
                         help="Skip Schaefer-only subset jobs")
     parser.add_argument("--reprocess-followups", action="store_true",
                         help="Reprocess all follow-up visits from __v1__/fmri into __v3__/matrices")
+    parser.add_argument("--n-jobs", type=int, default=16,
+                        help="Parallel workers for Tian atlas jobs (default: 16). Lower if you hit OOM.")
     args = parser.parse_args()
     main(
         tian_atlas=args.tian_atlas,
         tian_labels=args.tian_labels,
         skip_schaefer=args.skip_schaefer,
         reprocess_followups=args.reprocess_followups,
+        n_jobs=args.n_jobs,
     )

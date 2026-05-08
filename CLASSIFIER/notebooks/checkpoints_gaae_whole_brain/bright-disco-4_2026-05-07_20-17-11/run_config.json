@@ -1,0 +1,31 @@
+{
+    "run_name": "bright-disco-4_2026-05-07_20-17-11",
+    "wandb_run_name": "bright-disco-4",
+    "timestamp": "2026-05-07_20-17-11",
+    "dataset_info": {
+        "dataset_name": "Whole-brain Schaefer 400-node (60/20/20 subject-level split)",
+        "kNN_param": 8,
+        "correlation_type": "z_transformed",
+        "num_features": 200,
+        "train_dataset_size": 582,
+        "val_dataset_size": 113,
+        "test_dataset_size": 78,
+        "batch_size": 64
+    },
+    "model_config": {
+        "model_type": "GraphAttentionAutoencoderConditioned",
+        "in_features": 200,
+        "hidden_size": 200,
+        "latent_dim": 64,
+        "attention_heads": 2,
+        "device": "cuda",
+        "dropout": 0.3
+    },
+    "training_config": {
+        "batch_size": 64,
+        "learning_rate": 0.001,
+        "adj_loss_weight": 0.1,
+        "epochs": 1000,
+        "early_stopping_patience": 100
+    }
+}
