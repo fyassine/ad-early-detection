@@ -1,4 +1,4 @@
-__pycache__/
+**/__pycache__/
 *.py[cod]
 .env
 .venv/
@@ -13,7 +13,8 @@ __pycache__/
 !.vscode/tasks.json
 !.vscode/git-on-close.sh
 
-DATA/
+DATA/*
+!DATA/src/
 node_modules/
 **/node_modules/
 dist/
@@ -28,3 +29,5 @@ coverage/
 **/*.pth
 DASHBOARD/app/static/dist/
 DASHBOARD/frontend/dist/
+
+logs/
