@@ -6,7 +6,7 @@ from copy import deepcopy
 import wandb
 
 from torch_geometric.loader import DataLoader
-from model.CostWeightedGEC.train import train_classifier
+from CLASSIFIER.model.GEC.CostWeightedGEC.train import train_classifier
 from common.utils import load_frozen_encoder_from_gaae, compute_class_weights, compute_class_cost_weights
 
 
