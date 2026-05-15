@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.get("/api/metadata")
-async def api_metadata(
+def api_metadata(
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
     scan_folders: str = Query(default="", description="Comma-separated relative folder paths"),
     cohort: str = Query(default=None, description="Optional diagnosis cohort to filter by"),

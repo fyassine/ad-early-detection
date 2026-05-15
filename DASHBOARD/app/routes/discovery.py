@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.get("/api/discover")
-async def api_discover():
+def api_discover():
     """Discover all available CSVs and scan folders under DATA_ROOT."""
     csvs = discover_csvs(DATA_ROOT)
     folders = discover_scan_folders(DATA_ROOT)
@@ -21,7 +21,7 @@ async def api_discover():
 
 
 @router.get("/api/scan")
-async def api_scan(folders: str = Query(..., description="Comma-separated relative folder paths")):
+def api_scan(folders: str = Query(..., description="Comma-separated relative folder paths")):
     """
     Scan selected folders for fMRI/parcellated files.
     Also pre-warms the .npz / .nii.gz subject indices.

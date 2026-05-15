@@ -44,7 +44,7 @@ export async function init() {
     });
 }
 
-const TAB_IDS = ['overview', 'staging', 'manifold', 'connectivity', 'qcviewer', 'brainview'];
+const TAB_IDS = ['overview', 'staging', 'risk', 'networks', 'topology', 'manifold', 'connectivity', 'qcviewer', 'brainview'];
 
 function _patientModalKeyHandler(e) {
     if (!$('modalBackdrop')?.classList.contains('open')) return;
@@ -66,7 +66,7 @@ function _patientModalKeyHandler(e) {
         return;
     }
 
-    if (/^[1-6]$/.test(e.key)) {
+    if (/^[1-9]$/.test(e.key)) {
         e.preventDefault();
         const tabId = TAB_IDS[parseInt(e.key, 10) - 1];
         if (tabId) switchTab(tabId);

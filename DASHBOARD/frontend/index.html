@@ -39,9 +39,28 @@
         </div>
     </header>
 
+    <!-- Top-level view tabs (Population / Cohort / Patient) -->
+    <nav class="top-tabs" id="topTabs" role="tablist" aria-label="Dashboard tiers">
+        <button class="top-tab" data-view="population" role="tab" aria-selected="false">
+            <span class="top-tab-icon">🌍</span>
+            <span class="top-tab-label">Population</span>
+            <span class="top-tab-sub">Multi-cohort &amp; model</span>
+        </button>
+        <button class="top-tab active" data-view="cohort" role="tab" aria-selected="true">
+            <span class="top-tab-icon">👥</span>
+            <span class="top-tab-label">Cohort</span>
+            <span class="top-tab-sub">Group-level analytics</span>
+        </button>
+        <button class="top-tab" data-view="patient" role="tab" aria-selected="false">
+            <span class="top-tab-icon">👤</span>
+            <span class="top-tab-label">Patient</span>
+            <span class="top-tab-sub">Individual trajectory</span>
+        </button>
+    </nav>
+
     <!-- Main -->
     <main class="main">
-        <!-- Config -->
+        <!-- Config (shared across views) -->
         <section class="config-panel">
             <div class="config-wizard">
                 <!-- Step 1 -->
@@ -79,25 +98,40 @@
             </div>
         </section>
 
-        <!-- Empty State -->
-        <div class="empty-state" id="emptyState">
-            <div class="empty-icon">📊</div>
-            <h3>Select data to begin</h3>
-            <p>Choose a metadata CSV and scan folders, then click Analyze.</p>
-        </div>
-
-        <!-- Dashboard -->
-        <div class="dashboard-results" id="dashboardResults">
-
-            <!-- Global Cohort Dropdown -->
-            <div class="dashboard-controls" id="dashboardControls" style="display:none; justify-content: flex-end; margin-bottom: 1.5rem;">
-                <div style="display:inline-flex; align-items:center; gap: 0.5rem; background: var(--bg-card); padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--border); box-shadow: var(--shadow);">
-                    <span style="font-size: 0.7rem; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Cohort Filter:</span>
-                    <select id="globalCohortSelect" style="background: transparent; border: none; color: var(--accent); outline: none; font-weight: 600; font-size: 0.85rem; cursor: pointer; -webkit-appearance: none; padding-right: 15px;">
-                        <option value="">— All Patients —</option>
-                    </select>
-                </div>
+        <!-- ════════════════════════════ POPULATION VIEW ════════════════════════════ -->
+        <section class="view-panel" id="viewPopulation" style="display:none" role="tabpanel" aria-labelledby="tab-population">
+            <div class="view-header">
+                <h2>Population</h2>
+                <p class="view-sub">Multi-cohort aggregation, epidemiology overlay, network-disruption atlas and deployed-model performance.</p>
             </div>
+            <div class="view-empty" id="populationEmpty">
+                <div class="empty-icon">🌍</div>
+                <h3>Population view</h3>
+                <p>Cross-cohort summary, lifetime-risk overlay and GELSTM model card will appear here once data is loaded.</p>
+            </div>
+            <div class="view-content" id="populationContent" style="display:none"></div>
+        </section>
+
+        <!-- ════════════════════════════ COHORT VIEW ════════════════════════════════ -->
+        <section class="view-panel active" id="viewCohort" role="tabpanel" aria-labelledby="tab-cohort">
+            <!-- Empty State (cohort-scoped: shown until Analyze loads data) -->
+            <div class="empty-state" id="emptyState">
+                <div class="empty-icon">📊</div>
+                <h3>Select data to begin</h3>
+                <p>Choose a metadata CSV and scan folders, then click Analyze.</p>
+            </div>
+
+            <div class="dashboard-results" id="dashboardResults">
+
+                <!-- Global Cohort Dropdown -->
+                <div class="dashboard-controls" id="dashboardControls" style="display:none; justify-content: flex-end; margin-bottom: 1.5rem;">
+                    <div style="display:inline-flex; align-items:center; gap: 0.5rem; background: var(--bg-card); padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--border); box-shadow: var(--shadow);">
+                        <span style="font-size: 0.7rem; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Cohort Filter:</span>
+                        <select id="globalCohortSelect" style="background: transparent; border: none; color: var(--accent); outline: none; font-weight: 600; font-size: 0.85rem; cursor: pointer; -webkit-appearance: none; padding-right: 15px;">
+                            <option value="">— All Patients —</option>
+                        </select>
+                    </div>
+                </div>
 
             <!-- Summary Cards -->
             <section class="summary-cards" id="summaryCards"></section>
@@ -147,6 +181,46 @@
                 <div id="analyticsContent"></div>
             </section>
 
+            <!-- § Network-level connectivity panel (Phase 3) -->
+            <section class="dash-section" id="sectionNetworkPanel" style="display:none">
+                <div class="section-header">
+                    <span class="section-icon">🕸️</span>
+                    <h2>Network connectivity (Schaefer 7 networks)</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div id="networkPanelContent"></div>
+            </section>
+
+            <!-- § Graph-theoretic topology (Phase 3) -->
+            <section class="dash-section" id="sectionGraphTopology" style="display:none">
+                <div class="section-header">
+                    <span class="section-icon">🌐</span>
+                    <h2>Graph topology by cohort</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div id="graphTopologyContent"></div>
+            </section>
+
+            <!-- § Dynamic FC state distributions (Phase 3 stub) -->
+            <section class="dash-section" id="sectionDfcStates" style="display:none">
+                <div class="section-header">
+                    <span class="section-icon">🔁</span>
+                    <h2>Dynamic FC states &amp; dwell times</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div id="dfcStatesContent"></div>
+            </section>
+
+            <!-- § GELSTM risk distribution (Phase 3) -->
+            <section class="dash-section" id="sectionRiskDist" style="display:none">
+                <div class="section-header">
+                    <span class="section-icon">🎯</span>
+                    <h2>GELSTM risk distribution by cohort</h2>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div id="riskDistContent"></div>
+            </section>
+
             <!-- § Patient Directory -->
             <section class="dash-section">
                 <div class="section-header">
@@ -166,7 +240,23 @@
                     </div>
                 </div>
             </section>
-        </div>
+            </div>
+        </section>
+
+        <!-- ════════════════════════════ PATIENT VIEW ════════════════════════════════ -->
+        <section class="view-panel" id="viewPatient" style="display:none" role="tabpanel" aria-labelledby="tab-patient">
+            <div class="view-header">
+                <h2>Patient</h2>
+                <p class="view-sub">Full-screen longitudinal view for a single subject. Pick a patient from the cohort directory or pass <code>?sid=&lt;subject_id&gt;</code>.</p>
+            </div>
+            <div class="view-empty" id="patientEmpty">
+                <div class="empty-icon">👤</div>
+                <h3>No patient selected</h3>
+                <p>Open the Cohort view and click a row in the Patient Directory, or append <code>?sid=&lt;subject_id&gt;</code> to the URL.</p>
+                <button class="btn-analyze" id="btnGoCohort" style="margin-top:1rem">Go to Cohort →</button>
+            </div>
+            <div class="view-content" id="patientContent" style="display:none"></div>
+        </section>
     </main>
 
     <!-- Patient Modal -->

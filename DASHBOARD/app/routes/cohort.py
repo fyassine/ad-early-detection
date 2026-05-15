@@ -1,15 +1,16 @@
 import os
-from threading import Thread
 
-from fastapi import APIRouter, Query
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Query, Request
+from fastapi.responses import JSONResponse, Response
 
-from ..config import DATA_ROOT
+from ..config import DATA_ROOT, DASHBOARD_CACHE_ROOT
 from ..metadata_parser import load_metadata
 from ..biomarkers import find_subject_nifti_files
-from ..cohort_stats import COHORTS, get_cohort_stats, project_visits
-from ..services.utils import _safe_round_matrix
-from ..services.qc import _ensure_qc_reduce as _ensure_qc_mean
+from ..cohort_stats import COHORTS, get_cohort_stats, is_stats_cached, project_visits
+from ..services.utils import _safe_round_matrix, cache_headers, check_not_modified
+from ..services.job_manager import (
+    start_job, get_status, list_jobs, cancel_job, register_workspace,
+)
 
 router = APIRouter()
 
@@ -20,48 +21,63 @@ async def api_cohort_warmup(
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
 ):
     """
-    Kick off the cohort_stats UMAP fit in a background thread so that the
-    cache is ready by the time the user clicks a patient. After the fit
-    settles, pre-computes QC 3D mean volumes for converter visits.
-    Returns immediately.
+    Launch a detached precompute job for this dataset. The job runs all
+    expensive stages (UMAP fit, EBM, brain-age, graph metrics, GELSTM
+    predictions, QC volumes) and writes disk caches that survive server
+    restarts. Returns the job_id immediately — poll /api/cohort/jobs/{id}
+    for progress.
+
+    The subprocess is detached (start_new_session=True) so it keeps running
+    even if uvicorn is restarted. The workspace is registered in
+    watched_workspaces.json so it auto-restarts on the next server boot.
     """
     abs_csv = os.path.join(DATA_ROOT, csv_path)
     if not os.path.exists(abs_csv):
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
     folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
 
-    def _fit():
-        try:
-            get_cohort_stats(DATA_ROOT, csv_path, folder_list)
-        except Exception as e:
-            print(f"[warmup] cohort fit failed: {e}")
-            return
-        try:
-            df = load_metadata(abs_csv)
-            if "diagnosis" not in df.columns or "subject_id" not in df.columns:
-                return
-            converters = (
-                df[df["diagnosis"].astype(str).str.lower() == "converter"]
-                ["subject_id"].dropna().astype(str).unique().tolist()
-            )
-            n_done = 0
-            for sid in converters:
-                for rec in find_subject_nifti_files(DATA_ROOT, folder_list, sid):
-                    try:
-                        _ensure_qc_mean(rec["abs_path"])
-                        n_done += 1
-                    except Exception:
-                        continue
-            print(f"[warmup] pre-computed {n_done} QC mean volumes for {len(converters)} converters")
-        except Exception as e:
-            print(f"[warmup] QC pre-compute failed: {e}")
+    # Register so startup auto-warmup picks this workspace up on next boot.
+    register_workspace(csv_path, folder_list, DASHBOARD_CACHE_ROOT)
 
-    Thread(target=_fit, daemon=True).start()
-    return JSONResponse({"status": "warming"})
+    job_id, already_running = start_job(
+        csv_path=csv_path,
+        scan_folders=folder_list,
+        data_root=DATA_ROOT,
+        cache_root=DASHBOARD_CACHE_ROOT,
+    )
+    status = get_status(job_id, DASHBOARD_CACHE_ROOT)
+    return JSONResponse({
+        "status": "warming",
+        "job_id": job_id,
+        "already_running": already_running,
+        "job": status,
+    })
+
+
+@router.get("/api/cohort/jobs")
+def api_cohort_jobs():
+    """List all precompute job statuses."""
+    return JSONResponse(list_jobs(DASHBOARD_CACHE_ROOT))
+
+
+@router.get("/api/cohort/jobs/{job_id}")
+def api_cohort_job_status(job_id: str):
+    """Get status for a specific precompute job."""
+    status = get_status(job_id, DASHBOARD_CACHE_ROOT)
+    if status.get("status") == "unknown":
+        return JSONResponse(status, status_code=404)
+    return JSONResponse(status)
+
+
+@router.delete("/api/cohort/jobs/{job_id}")
+def api_cohort_job_cancel(job_id: str):
+    """Send SIGTERM to a running precompute job."""
+    sent = cancel_job(job_id, DASHBOARD_CACHE_ROOT)
+    return JSONResponse({"job_id": job_id, "signal_sent": sent})
 
 
 @router.get("/api/cohort/stats")
-async def api_cohort_stats(
+def api_cohort_stats(
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
 ):
@@ -82,11 +98,11 @@ async def api_cohort_stats(
             "conversion_axis": stats.conversion_axis,
             "n_rois": stats.n_rois,
         },
-    })
+    }, headers=cache_headers(stats.fingerprint))
 
 
 @router.get("/api/cohort/effect-sizes")
-async def api_cohort_effect_sizes(
+def api_cohort_effect_sizes(
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
 ):
@@ -103,11 +119,12 @@ async def api_cohort_effect_sizes(
                    "density", "pos_fc_ratio"):
         cohort_vals = {c: vals.get(metric, []) for c, vals in stats.biomarker_values.items()}
         out[metric] = pairwise_effect_sizes(cohort_vals)
-    return JSONResponse({"metrics": out, "cohorts": COHORTS})
+    return JSONResponse({"metrics": out, "cohorts": COHORTS},
+                        headers=cache_headers(stats.fingerprint))
 
 
 @router.get("/api/cohort/survival")
-async def api_cohort_survival(
+def api_cohort_survival(
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
     stratify_by: str = Query(default="apoe4", description="'apoe4' or 'none'"),
 ):
@@ -126,7 +143,7 @@ async def api_cohort_survival(
 
 
 @router.get("/api/cohort/ebm")
-async def api_cohort_ebm(
+def api_cohort_ebm(
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
 ):
@@ -136,11 +153,12 @@ async def api_cohort_ebm(
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
     folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
     stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
-    return JSONResponse(stats.ebm or {"sequence": [], "biomarkers": {}})
+    return JSONResponse(stats.ebm or {"sequence": [], "biomarkers": {}},
+                        headers=cache_headers(stats.fingerprint))
 
 
 @router.get("/api/cohort/brain-age")
-async def api_cohort_brain_age(
+def api_cohort_brain_age(
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
 ):
@@ -152,7 +170,7 @@ async def api_cohort_brain_age(
     stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
     m = stats.brain_age_model
     if m is None:
-        return JSONResponse({"available": False})
+        return JSONResponse({"available": False}, headers=cache_headers(stats.fingerprint))
     return JSONResponse({
         "available": True,
         "n_train": m.n_train,
@@ -163,11 +181,11 @@ async def api_cohort_brain_age(
         "bias_slope": m.bias_slope,
         "bias_intercept": m.bias_intercept,
         "cohort_bag_cv": m.cohort_bag,
-    })
+    }, headers=cache_headers(stats.fingerprint))
 
 
 @router.get("/api/cohort/network-stats")
-async def api_cohort_network_stats(
+def api_cohort_network_stats(
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
 ):
@@ -181,11 +199,11 @@ async def api_cohort_network_stats(
         "cohorts": COHORTS,
         "network_fc_stats": stats.network_fc_stats,
         "biomarker_percentiles": stats.biomarker_percentiles,
-    })
+    }, headers=cache_headers(stats.fingerprint))
 
 
 @router.get("/api/cohort/reference")
-async def api_cohort_reference(
+def api_cohort_reference(
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
     cohort: str = Query("healthy", description="Cohort whose mean matrix you want"),
@@ -215,7 +233,7 @@ async def api_cohort_reference(
 
 
 @router.get("/api/cohort/missingness")
-async def api_cohort_missingness(
+def api_cohort_missingness(
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
 ):
     """
@@ -292,4 +310,261 @@ async def api_cohort_missingness(
         "biomarkers":      biomarker_labels,
         "matrix":          matrix,
         "diag_color_map":  DIAG_COLORS,
+    })
+
+
+# --------------------------------------------------------------------------- #
+# Phase 3 — graph topology, dynamic FC, risk distribution                     #
+# --------------------------------------------------------------------------- #
+
+@router.get("/api/cohort/graph-topology")
+def api_cohort_graph_topology(
+    csv_path: str = Query(..., description="Relative path to metadata CSV"),
+    scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
+    density: float = Query(0.20, description="Edge density threshold (0–1)"),
+    max_subjects: int = Query(40, description="Cap subjects per cohort to bound CPU"),
+):
+    """
+    Per-cohort distribution of graph-theoretic metrics on baseline FC:
+    small-worldness (Humphries 2008), modularity Q, clustering, path
+    length, global efficiency. Computed on density-thresholded binary
+    graphs to control for global FC differences.
+
+    Heavy: ~0.5s per subject. We cap subjects per cohort via ``max_subjects``
+    (random sample, seed=42) to keep total compute under ~30s.
+    """
+    import numpy as np
+    abs_csv = os.path.join(DATA_ROOT, csv_path)
+    if not os.path.exists(abs_csv):
+        return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
+    folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
+    stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
+
+    from ..services.graph_metrics import (
+        subject_graph_metrics, _HAS_NX,
+        load_graph_metrics_cache, save_graph_metrics_cache,
+    )
+    from ..biomarkers import find_subject_npz_files, load_correlation_matrix
+    from ..metadata_parser import load_metadata, _get_baseline
+
+    if not _HAS_NX:
+        return JSONResponse({
+            "available": False,
+            "note": "networkx is not installed in the dashboard environment.",
+        })
+
+    # Check disk cache first (written by precompute.py / previous on-demand call).
+    cached_gm = load_graph_metrics_cache(DASHBOARD_CACHE_ROOT, csv_path, folder_list, density)
+    if cached_gm is not None:
+        cached_gm["cached"] = True
+        return JSONResponse(cached_gm, headers=cache_headers(stats.fingerprint))
+
+    df = load_metadata(abs_csv)
+    if "diagnosis" not in df.columns or "subject_id" not in df.columns:
+        return JSONResponse({"available": False, "note": "metadata missing diagnosis/subject_id"})
+
+    baseline = _get_baseline(df)
+    cohort_subjects: dict[str, list[str]] = {}
+    for _, row in baseline.iterrows():
+        diag = str(row.get("diagnosis", "")).lower()
+        sid = str(row.get("subject_id"))
+        if not sid or sid == "nan":
+            continue
+        cohort_subjects.setdefault(diag, []).append(sid)
+
+    rng = np.random.default_rng(42)
+    metrics_by_cohort: dict[str, dict] = {}
+    for cohort in COHORTS:
+        ids = cohort_subjects.get(cohort, [])
+        if not ids:
+            metrics_by_cohort[cohort] = {"n": 0, "metrics": {}}
+            continue
+        if len(ids) > max_subjects:
+            sampled = list(rng.choice(ids, size=max_subjects, replace=False))
+        else:
+            sampled = list(ids)
+
+        buckets: dict[str, list[float]] = {
+            "small_worldness": [], "clustering": [], "path_length": [],
+            "global_efficiency": [],
+        }
+        used = 0
+        for sid in sampled:
+            recs = find_subject_npz_files(DATA_ROOT, folder_list, sid)
+            if not recs:
+                continue
+            try:
+                m = load_correlation_matrix(recs[0]["abs_path"])
+            except Exception:
+                continue
+            res = subject_graph_metrics(np.asarray(m), density=density,
+                                        compute_hubs=False)
+            for k in buckets:
+                v = res.get(k)
+                if v is not None:
+                    buckets[k].append(float(v))
+            used += 1
+
+        metric_summary: dict = {}
+        for k, vals in buckets.items():
+            if not vals:
+                metric_summary[k] = None
+                continue
+            arr = np.asarray(vals, dtype=np.float64)
+            metric_summary[k] = {
+                "mean": float(arr.mean()),
+                "std": float(arr.std(ddof=0)) if arr.size > 1 else 0.0,
+                "p5":  float(np.quantile(arr, 0.05)),
+                "p25": float(np.quantile(arr, 0.25)),
+                "p50": float(np.quantile(arr, 0.50)),
+                "p75": float(np.quantile(arr, 0.75)),
+                "p95": float(np.quantile(arr, 0.95)),
+                "n": int(arr.size),
+            }
+        metrics_by_cohort[cohort] = {"n": used, "n_sampled": len(sampled), "metrics": metric_summary}
+
+    result = {
+        "available": True,
+        "density": density,
+        "max_subjects": max_subjects,
+        "cohorts": COHORTS,
+        "metrics_by_cohort": metrics_by_cohort,
+    }
+    # Persist for subsequent requests (including after server restart).
+    save_graph_metrics_cache(DASHBOARD_CACHE_ROOT, csv_path, folder_list, density, result)
+    return JSONResponse(result, headers=cache_headers(stats.fingerprint))
+
+
+@router.get("/api/cohort/risk-distribution")
+def api_cohort_risk_distribution(
+    csv_path: str = Query(..., description="Relative path to metadata CSV"),
+    scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
+    bins: int = Query(20, description="Histogram bins"),
+):
+    """
+    GELSTM ensemble conversion-probability distribution per cohort.
+
+    Returns ``available=False`` when no checkpoints are deployed. When
+    available, batches inference over baseline subjects and bins
+    predictions per diagnosis cohort.
+    """
+    import numpy as np
+    abs_csv = os.path.join(DATA_ROOT, csv_path)
+    if not os.path.exists(abs_csv):
+        return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
+
+    from ..services.gelstm import get_gelstm_service
+    svc = get_gelstm_service()
+    if not svc.is_available():
+        return JSONResponse({
+            "available": False,
+            "note": "GELSTM ensemble not deployed.",
+        })
+
+    folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
+    from ..biomarkers import find_subject_npz_files, load_correlation_matrix
+    from ..metadata_parser import load_metadata
+
+    df = load_metadata(abs_csv)
+    if "diagnosis" not in df.columns or "subject_id" not in df.columns:
+        return JSONResponse({"available": False, "note": "metadata missing diagnosis/subject_id"})
+
+    cohort_probs: dict[str, list[float]] = {c: [] for c in COHORTS}
+    for sid, grp in df.groupby(df["subject_id"].astype(str)):
+        diag = (grp["diagnosis"].astype(str).str.lower().dropna().head(1).iloc[0]
+                if "diagnosis" in grp.columns and not grp["diagnosis"].dropna().empty
+                else None)
+        if diag not in cohort_probs:
+            continue
+        recs = find_subject_npz_files(DATA_ROOT, folder_list, sid)
+        if not recs:
+            continue
+        try:
+            m = load_correlation_matrix(recs[0]["abs_path"])
+        except Exception:
+            continue
+        sex_val = None
+        age_val = None
+        first = grp.iloc[0]
+        if "sex" in first.index and first.get("sex") is not None:
+            s0 = str(first["sex"]).strip().upper()[:1]
+            sex_val = 0.0 if s0 == "F" else (1.0 if s0 == "M" else None)
+        if "age" in first.index:
+            try:
+                age_val = float(first["age"])
+            except (TypeError, ValueError):
+                age_val = None
+        pred = svc.predict_subject(sid, [np.asarray(m)], [0.0], sex_val, age_val)
+        if pred.get("prob") is not None:
+            cohort_probs[diag].append(float(pred["prob"]))
+
+    edges = np.linspace(0, 1, bins + 1)
+    histograms: dict[str, dict] = {}
+    for cohort, probs in cohort_probs.items():
+        if not probs:
+            histograms[cohort] = {"counts": [0] * bins, "n": 0}
+            continue
+        arr = np.asarray(probs, dtype=np.float64)
+        counts, _ = np.histogram(arr, bins=edges)
+        histograms[cohort] = {
+            "counts": counts.astype(int).tolist(),
+            "n": int(arr.size),
+            "mean": float(arr.mean()),
+            "median": float(np.median(arr)),
+        }
+
+    return JSONResponse({
+        "available": True,
+        "model_version": svc._ensemble.model_version if svc._ensemble else "",
+        "bin_edges": edges.tolist(),
+        "histograms": histograms,
+        "cohorts": COHORTS,
+    })
+
+
+@router.get("/api/cohort/network-disruption")
+def api_cohort_network_disruption(
+    csv_path: str = Query(..., description="Relative path to metadata CSV"),
+    scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
+):
+    """
+    Per-Schaefer-7-network effect sizes between cohort pairs — same data
+    as ``/api/population/network-atlas`` but exposed under the cohort
+    namespace for the Cohort tier's per-network panel.
+    """
+    abs_csv = os.path.join(DATA_ROOT, csv_path)
+    if not os.path.exists(abs_csv):
+        return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
+    folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
+    stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
+    from ..services.population import network_disruption_atlas
+    return JSONResponse(network_disruption_atlas(stats),
+                        headers=cache_headers(stats.fingerprint))
+
+
+@router.get("/api/cohort/dfc-states")
+def api_cohort_dfc_states(
+    csv_path: str = Query(..., description="Relative path to metadata CSV"),
+    scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
+):
+    """
+    Dynamic FC state distributions per cohort.
+
+    Currently returns ``available=False`` with a clear note: dFC requires
+    raw ROI time-series and the dashboard ingest stores only static
+    correlation matrices. Phase 3.x will add a time-series cache to
+    populate this endpoint.
+    """
+    abs_csv = os.path.join(DATA_ROOT, csv_path)
+    if not os.path.exists(abs_csv):
+        return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
+    return JSONResponse({
+        "available": False,
+        "note": (
+            "Dynamic FC requires raw ROI time-series. The dashboard "
+            "currently caches only static correlation matrices, so dFC "
+            "state distributions are unavailable. Drop a time-series .npz "
+            "(shape T×N) alongside each subject and the service will "
+            "populate this endpoint automatically."
+        ),
     })

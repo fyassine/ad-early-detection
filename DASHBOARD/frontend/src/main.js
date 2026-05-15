@@ -10,6 +10,7 @@ import './styles/staging.css';
 import { init, applyRecent, deleteRecent } from './config.js';
 import { openPatient } from './modal.js';
 import { sortTable } from './table.js';
+import { initRouter, openPatientView } from './views/router.js';
 
 Chart.register(...registerables);
 Chart.defaults.color = '#7a7976';
@@ -19,8 +20,12 @@ Chart.defaults.font.size = 11;
 
 // Expose handlers used by inline onclick attributes in dynamic HTML.
 window.openPatient = openPatient;
+window.openPatientView = openPatientView;
 window.sortTable = sortTable;
 window.applyRecent = applyRecent;
 window.deleteRecent = deleteRecent;
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+    init();
+    initRouter();
+});

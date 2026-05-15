@@ -1,6 +1,7 @@
 import json
 import os
 import asyncio
+import re
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
@@ -15,8 +16,19 @@ from ..biomarkers import (
     SCHAEFER_200_DMN_INDICES,
 )
 from ..cohort_stats import get_cohort_stats, project_visits
+from ..services.gelstm import get_gelstm_service
 from ..services.utils import _safe_round_matrix, _safe_under_root
 from ..services.qc import _ensure_qc_reduce as _ensure_qc_mean
+
+
+_VISIT_MONTH_RE = re.compile(r"M(\d+)", re.IGNORECASE)
+
+
+def _visit_months(visit) -> int | None:
+    if visit is None:
+        return None
+    m = _VISIT_MONTH_RE.match(str(visit).strip())
+    return int(m.group(1)) if m else None
 
 router = APIRouter()
 
@@ -47,7 +59,7 @@ async def api_patient_trajectory(
 
 
 @router.get("/api/patient/{subject_id}/clinical")
-async def api_patient_clinical(
+def api_patient_clinical(
     subject_id: str,
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
 ):
@@ -74,7 +86,7 @@ async def api_patient_clinical(
 
 
 @router.get("/api/patient/{subject_id}/staging")
-async def api_patient_staging(
+def api_patient_staging(
     subject_id: str,
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
@@ -199,7 +211,7 @@ async def api_patient_staging(
 
 
 @router.get("/api/patient/{subject_id}/manifold")
-async def api_patient_manifold(
+def api_patient_manifold(
     subject_id: str,
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
@@ -263,7 +275,7 @@ async def api_patient_manifold(
 
 
 @router.get("/api/patient/{subject_id}/matrix")
-async def api_patient_matrix(
+def api_patient_matrix(
     subject_id: str,
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
     visit: str = Query(default=None, description="Visit code, e.g. 'M0'. Omit for baseline."),
@@ -307,7 +319,7 @@ async def api_patient_matrix(
 
 
 @router.get("/api/patient/{subject_id}/scan")
-async def api_patient_scan(
+def api_patient_scan(
     subject_id: str,
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
     visit: str = Query(default=None, description="Visit code, e.g. 'M0'."),
@@ -360,7 +372,7 @@ async def api_patient_scan(
 
 
 @router.get("/api/patient/{subject_id}/scans")
-async def api_patient_scans(
+def api_patient_scans(
     subject_id: str,
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
 ):
@@ -377,7 +389,7 @@ async def api_patient_scans(
 
 
 @router.get("/api/patient/{subject_id}/conversion-risk")
-async def api_patient_conversion_risk(
+def api_patient_conversion_risk(
     subject_id: str,
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
 ):
@@ -443,4 +455,214 @@ async def api_patient_conversion_risk(
         "risk_3yr": _risk_at(36),
         "risk_5yr": _risk_at(60),
         "note": "Derived from cohort KM curve — not a validated clinical prediction.",
+    })
+
+
+@router.get("/api/patient/{subject_id}/risk")
+def api_patient_risk(
+    subject_id: str,
+    csv_path: str = Query(..., description="Relative path to metadata CSV"),
+    scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
+):
+    """
+    GELSTM ensemble conversion-risk prediction for a single subject.
+
+    Returns ``available=False`` when no checkpoints are deployed at
+    ``$GELSTM_CHECKPOINT_DIR`` — the frontend renders a placeholder card.
+    """
+    import numpy as np
+
+    abs_csv = os.path.join(DATA_ROOT, csv_path)
+    if not os.path.exists(abs_csv):
+        return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
+
+    service = get_gelstm_service()
+    if not service.is_available():
+        return JSONResponse({
+            "available": False,
+            "subject_id": subject_id,
+            "note": "GELSTM ensemble not deployed (no checkpoints at $GELSTM_CHECKPOINT_DIR).",
+        })
+
+    folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
+    records = find_subject_npz_files(DATA_ROOT, folder_list, subject_id)
+    if not records:
+        return JSONResponse({
+            "available": True,
+            "subject_id": subject_id,
+            "prob": None,
+            "note": "No .npz scans found for this subject in the selected folders.",
+        })
+
+    ordered = sorted(
+        (r for r in records if _visit_months(r.get("visit")) is not None),
+        key=lambda r: _visit_months(r["visit"]),
+    )
+    if not ordered:
+        return JSONResponse({
+            "available": True,
+            "subject_id": subject_id,
+            "prob": None,
+            "note": "Subject visits have no M### code; sequence ordering failed.",
+        })
+
+    matrices: list = []
+    visits: list = []
+    for rec in ordered:
+        try:
+            m = load_correlation_matrix(rec["abs_path"])
+            matrices.append(np.asarray(m))
+            visits.append(rec["visit"])
+        except Exception as e:
+            print(f"[risk] failed to load {rec.get('abs_path')}: {e!r}")
+            continue
+    if not matrices:
+        return JSONResponse({
+            "available": True,
+            "subject_id": subject_id,
+            "prob": None,
+            "note": "All matrix loads failed.",
+        })
+
+    months = [_visit_months(v) for v in visits]
+    delta_t = [0.0]
+    for i in range(1, len(months)):
+        prev_m = months[i - 1] or 0
+        cur_m = months[i] or 0
+        delta_t.append((cur_m - prev_m) / 108.0)
+
+    df = load_metadata(abs_csv)
+    sex_val = None
+    age_val = None
+    if not df.empty:
+        rows = df[df["subject_id"].astype(str) == str(subject_id)]
+        if not rows.empty:
+            sex_raw = rows.iloc[0].get("sex") if "sex" in rows.columns else None
+            if sex_raw is not None:
+                first = str(sex_raw).strip().upper()[:1]
+                if first == "F":
+                    sex_val = 0.0
+                elif first == "M":
+                    sex_val = 1.0
+            if "age" in rows.columns:
+                try:
+                    age_val = float(rows.iloc[0]["age"])
+                except (TypeError, ValueError):
+                    age_val = None
+
+    pred = service.predict_subject(
+        subject_id=subject_id,
+        visit_matrices=matrices,
+        delta_t=delta_t,
+        sex=sex_val,
+        age=age_val,
+    )
+    pred["subject_id"] = subject_id
+    pred["n_visits_used"] = len(matrices)
+    pred["visits_used"] = visits
+    return JSONResponse(pred)
+
+
+@router.get("/api/patient/{subject_id}/graph-trajectory")
+def api_patient_graph_trajectory(
+    subject_id: str,
+    csv_path: str = Query(..., description="Relative path to metadata CSV"),
+    scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
+    density: float = Query(0.20, description="Edge density threshold"),
+):
+    """
+    Per-visit graph-theoretic metrics for a single subject.
+
+    Returns a list of ``{visit, small_worldness, clustering, path_length,
+    global_efficiency, domirank_top_k}`` ordered by visit month.
+    """
+    import numpy as np
+    abs_csv = os.path.join(DATA_ROOT, csv_path)
+    if not os.path.exists(abs_csv):
+        return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
+
+    from ..services.graph_metrics import subject_graph_metrics, _HAS_NX
+    if not _HAS_NX:
+        return JSONResponse({"available": False, "note": "networkx not installed"})
+
+    folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
+    records = find_subject_npz_files(DATA_ROOT, folder_list, subject_id)
+    if not records:
+        return JSONResponse({"available": True, "subject_id": subject_id, "visits": []})
+
+    ordered = sorted(
+        (r for r in records if _visit_months(r.get("visit")) is not None),
+        key=lambda r: _visit_months(r["visit"]),
+    )
+    visits_out: list[dict] = []
+    for rec in ordered:
+        try:
+            m = np.asarray(load_correlation_matrix(rec["abs_path"]))
+        except Exception:
+            continue
+        res = subject_graph_metrics(m, density=density, compute_hubs=True, k_hubs=10)
+        res["visit"] = rec.get("visit")
+        res["month"] = _visit_months(rec.get("visit"))
+        visits_out.append(res)
+
+    return JSONResponse({
+        "available": True,
+        "subject_id": subject_id,
+        "density": density,
+        "visits": visits_out,
+    })
+
+
+@router.get("/api/patient/{subject_id}/network-trajectory")
+def api_patient_network_trajectory(
+    subject_id: str,
+    csv_path: str = Query(..., description="Relative path to metadata CSV"),
+    scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
+):
+    """
+    Per-visit per-Schaefer-7-network FC trajectory for a single subject,
+    paired with each network's cohort-level normative band (mean ± std)
+    drawn from the active cohort's network_fc_stats.
+    """
+    import numpy as np
+    abs_csv = os.path.join(DATA_ROOT, csv_path)
+    if not os.path.exists(abs_csv):
+        return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
+    folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
+    stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
+
+    from ..services.networks import per_network_fc
+
+    records = find_subject_npz_files(DATA_ROOT, folder_list, subject_id)
+    if not records:
+        return JSONResponse({"available": True, "subject_id": subject_id, "visits": [],
+                             "normative": {}})
+
+    ordered = sorted(
+        (r for r in records if _visit_months(r.get("visit")) is not None),
+        key=lambda r: _visit_months(r["visit"]),
+    )
+    visits_out: list[dict] = []
+    for rec in ordered:
+        try:
+            m = np.asarray(load_correlation_matrix(rec["abs_path"]))
+        except Exception:
+            continue
+        nfc = per_network_fc(m, n_parcels=m.shape[0])
+        visits_out.append({
+            "visit": rec.get("visit"),
+            "month": _visit_months(rec.get("visit")),
+            "network_fc": nfc,
+        })
+
+    # Normative reference: prefer healthy CN; fall back to MCI non-converter.
+    ref = (stats.network_fc_stats or {}).get("healthy") or {}
+    if not ref:
+        ref = (stats.network_fc_stats or {}).get("mci") or {}
+
+    return JSONResponse({
+        "available": True,
+        "subject_id": subject_id,
+        "visits": visits_out,
+        "normative": ref,
     })

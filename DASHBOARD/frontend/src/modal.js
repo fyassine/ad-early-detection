@@ -6,10 +6,16 @@ import { renderManifoldTab, redrawManifold } from './tabs/manifold.js';
 import { renderConnectivityTab, renderConnectivityHeatmap } from './tabs/connectivity.js';
 import { renderQCViewerTab, loadQCViewerVolume, _prefetchQCVolume } from './tabs/qcviewer.js';
 import { renderBrainViewTab, renderBrainGraph } from './tabs/brainview.js';
+import { renderRiskTab } from './tabs/risk.js';
+import { renderNetworksTab } from './tabs/networks.js';
+import { renderTopologyTab } from './tabs/topology.js';
 
 export const TAB_DEFS = [
     { id: 'overview',     label: 'Overview' },
     { id: 'staging',      label: 'Staging' },
+    { id: 'risk',         label: 'Risk (GELSTM)' },
+    { id: 'networks',     label: 'Networks' },
+    { id: 'topology',     label: 'Topology' },
     { id: 'manifold',     label: 'Manifold' },
     { id: 'connectivity', label: 'Connectivity' },
     { id: 'qcviewer',     label: 'QC Viewer' },
@@ -89,7 +95,7 @@ export async function openPatient(sid) {
         cohortStats: null, allVisits: [], mergedVisits: [],
         selectedVisit: (patient.visits && patient.visits.length) ? patient.visits[patient.visits.length - 1] : null,
         activeTab: 'overview',
-        tabRendered: { overview: false, staging: false, manifold: false, connectivity: false, qcviewer: false, brainview: false },
+        tabRendered: { overview: false, staging: false, risk: false, networks: false, topology: false, manifold: false, connectivity: false, qcviewer: false, brainview: false },
         niiVue: null,
         scansList: [],
         _cortexVisible: true,
@@ -112,7 +118,7 @@ export async function openPatient(sid) {
     if (isConverter) {
         $('adScanToggle').addEventListener('change', e => {
             state.currentPatient.includeAD = e.target.checked;
-            state.currentPatient.tabRendered = { overview: false, staging: false, manifold: false, connectivity: false, qcviewer: false, brainview: false };
+            state.currentPatient.tabRendered = { overview: false, staging: false, risk: false, networks: false, topology: false, manifold: false, connectivity: false, qcviewer: false, brainview: false };
             loadPatientData();
         });
     }
@@ -136,6 +142,9 @@ function renderActiveTab() {
     const t = state.currentPatient.activeTab;
     if (t === 'overview')          renderOverviewTab();
     else if (t === 'staging')      renderStagingTab();
+    else if (t === 'risk')         renderRiskTab();
+    else if (t === 'networks')     renderNetworksTab();
+    else if (t === 'topology')     renderTopologyTab();
     else if (t === 'manifold')     renderManifoldTab();
     else if (t === 'connectivity') renderConnectivityTab();
     else if (t === 'qcviewer')     renderQCViewerTab();
@@ -352,7 +361,7 @@ export async function loadPatientData() {
             : null;
         _updateCurrentVisitBadge(state.currentPatient.selectedVisit);
         _renderGlobalVisitPills();
-        state.currentPatient.tabRendered = { overview: false, staging: false, manifold: false, connectivity: false, qcviewer: false, brainview: false };
+        state.currentPatient.tabRendered = { overview: false, staging: false, risk: false, networks: false, topology: false, manifold: false, connectivity: false, qcviewer: false, brainview: false };
         renderActiveTab();
     } catch (e) {
         if (e?.name === 'AbortError') return;

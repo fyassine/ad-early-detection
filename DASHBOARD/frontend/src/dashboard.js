@@ -3,6 +3,8 @@ import { $, diagColor, BAR_COLORS, showLoading, hideLoading, tooltipStyle } from
 import { state } from './state.js';
 import { renderTable, renderRows } from './table.js';
 import { getRecent, saveRecent } from './config.js';
+import { refreshActiveView } from './views/router.js';
+import { renderCohortPhase3 } from './cohort_phase3.js';
 
 // ── Analyze ───────────────────────────────────────────────────────────────────
 
@@ -34,6 +36,7 @@ export async function analyze() {
             if (!existing) saveRecent(csvPath, state.selectedScanFolders);
         }
         render(state.lastScan, state.globalMeta, state.filteredMeta);
+        refreshActiveView();
 
         if (csvPath && state.selectedScanFolders.length) {
             fetch(`/api/cohort/warmup?csv_path=${encodeURIComponent(csvPath)}` +
@@ -67,6 +70,7 @@ export function render(scan, global, filtered) {
     renderScans(scan, filtered);
     renderClinical(filtered);
     renderCohortAnalytics();
+    renderCohortPhase3();
     renderTable(filtered, scan);
 }
 

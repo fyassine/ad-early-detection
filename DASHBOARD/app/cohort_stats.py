@@ -98,6 +98,10 @@ class CohortStats:
     ebm: dict = field(default_factory=dict)
     # Time-shift model: services.time_shift.TimeShiftModel
     time_shift_model: object = field(default=None, repr=False)
+    # SHA1 fingerprint of the .npz index used to build this object.
+    # Exposed so route handlers can embed it in ETag headers without
+    # re-computing it from the index.
+    fingerprint: str = ""
 
 
 # --------------------------------------------------------------------------- #
@@ -116,6 +120,34 @@ def clear_cache() -> None:
     """Invalidate every cached CohortStats — useful for tests / data refresh."""
     with _LOCK:
         _CACHE.clear()
+
+
+def is_stats_cached(
+    data_root: str,
+    csv_path: str,
+    scan_folders: list[str],
+) -> bool:
+    """
+    Non-blocking check: return True if CohortStats for this dataset is
+    available in the memory cache or on disk, WITHOUT triggering any
+    computation.
+
+    Used by expensive endpoints (network-disruption, graph-topology) to
+    return ``available: false`` immediately when the precompute job hasn't
+    finished yet, instead of blocking the thread pool for 9+ minutes.
+    """
+    key = _cache_key(csv_path, scan_folders)
+    with _LOCK:
+        if key in _CACHE:
+            return True
+    # Disk check: the file just needs to exist and be non-empty.
+    # Full fingerprint validation happens inside get_cohort_stats(); here
+    # we only want to know if a warm result is likely on disk.
+    try:
+        disk_path = _disk_cache_path(data_root, csv_path, scan_folders)
+        return os.path.isfile(disk_path) and os.path.getsize(disk_path) > 0
+    except Exception:
+        return False
 
 
 # --------------------------------------------------------------------------- #
@@ -886,6 +918,15 @@ def _load_disk_cache(path: str, fingerprint: str) -> Optional[CohortStats]:
 
 
 def _save_disk_cache(path: str, fingerprint: str, stats: CohortStats) -> None:
+    # umap_mapper is excluded deliberately: the UMAP object contains
+    # numba-compiled internals that take ~8-9 s to pickle/unpickle while
+    # contributing ~4 MB to the cache file. All known subjects already have
+    # precomputed coordinates in patient_visit_coords, so the mapper is only
+    # needed as a fallback for truly unseen subjects. Loading it from the disk
+    # cache would block the FastAPI thread pool for 8 s on every server restart.
+    # The memory cache (_CACHE) always stores the live mapper, so Manifold tabs
+    # work normally after the first warm request; only a cold-restart projecting
+    # a brand-new unseen subject will fall back to an empty UMAP coordinate.
     payload = {
         "version": _DISK_CACHE_VERSION,
         "fingerprint": fingerprint,
@@ -895,7 +936,7 @@ def _save_disk_cache(path: str, fingerprint: str, stats: CohortStats) -> None:
         "conversion_axis": stats.conversion_axis,
         "cohort_means": stats.cohort_means,
         "patient_visit_coords": stats.patient_visit_coords,
-        "umap_mapper": stats.umap_mapper,
+        "umap_mapper": None,   # excluded from disk cache — see comment above
         "edge_dim": stats.edge_dim,
         "n_rois": stats.n_rois,
         "biomarker_percentiles": stats.biomarker_percentiles,
@@ -946,6 +987,7 @@ def get_cohort_stats(
     if not force_refresh:
         cached = _load_disk_cache(disk_path, fingerprint)
         if cached is not None:
+            cached.fingerprint = fingerprint  # ensure field is set on disk-loaded objects
             with _LOCK:
                 _CACHE[key] = cached
             return cached
@@ -1017,6 +1059,7 @@ def get_cohort_stats(
         brain_age_model=brain_age_model,
         ebm=ebm,
         time_shift_model=time_shift_model,
+        fingerprint=fingerprint,
     )
 
     with _LOCK:
