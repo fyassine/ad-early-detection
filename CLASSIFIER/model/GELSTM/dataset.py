@@ -1,18 +1,21 @@
 """
-GELSTM/dataset.py — LongitudinalSubjectDataset
+CLASSIFIER GELSTM/dataset.py — LongitudinalSubjectDataset.
 
-Each item is one subject's complete longitudinal sequence:
+v2 additions (vs CLASSIFIER/model/GELSTM/dataset.py):
+    * max_visits           — truncate each subject to its first N visits.
+    * require_full_window  — drop subjects with fewer than max_visits scans
+                              (enforces equal sequence length across subjects).
+
+Each item is one subject's longitudinal sequence:
     {
         'subject_id':    str,
         'label':         int,          # 1=converter, 0=stable_mci
-        'visit_months':  list[int],    # sorted, e.g. [0, 12, 24, 36]
+        'visit_months':  list[int],    # sorted, ascending
         'delta_t':       list[float],  # normalised inter-visit intervals; 0.0 for first visit
         'graphs':        list[Data],   # PyG Data per visit, sorted by month
         'sex':           int,          # 0=female, 1=male
         'age':           float,        # normalised age [0,1]
     }
-
-All available scans are used (no limit on max visits).
 """
 from __future__ import annotations
 
@@ -35,8 +38,7 @@ if str(_ROOT) not in sys.path:
 
 from model.GAAE.utils import knn_binary_adjacency_matrix_no_diag
 
-# Maximum visit interval for Δt normalisation (months).
-# Covers up to M108 which is the max observed visit.
+# Maximum visit interval for Δt normalisation (months); covers up to M108.
 MAX_INTERVAL_MONTHS: float = 108.0
 
 
@@ -58,6 +60,15 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
         k for kNN adjacency construction.
     file_variant : str
         'z_transformed' | 'raw'
+    max_visits : int | None
+        If set, keep only the first `max_visits` (earliest) visits per subject.
+        Δt is re-normalised over the kept window so the model never sees future
+        scans. Default None → use all available visits (legacy behaviour).
+    require_full_window : bool
+        Only meaningful with max_visits != None. If True, subjects with fewer
+        than `max_visits` scans are dropped entirely so every retained subject
+        has exactly `max_visits` visits — this neutralises "longer sequence =
+        more likely converter" leakage. Default False.
     """
 
     _VARIANT_SUFFIX: Dict[str, str] = {
@@ -72,30 +83,32 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
         cohorts_csv: str,
         adjacency_k: int = 8,
         file_variant: str = "z_transformed",
+        max_visits: Optional[int] = None,
+        require_full_window: bool = False,
     ):
-        self.matrices_dir  = matrices_dir
-        self.adjacency_k   = adjacency_k
-        self.file_variant  = file_variant
-        self.suffix        = self._VARIANT_SUFFIX.get(file_variant, self._VARIANT_SUFFIX["z_transformed"])
+        self.matrices_dir       = matrices_dir
+        self.adjacency_k        = adjacency_k
+        self.file_variant       = file_variant
+        self.max_visits         = max_visits
+        self.require_full_window = require_full_window
+        self.suffix             = self._VARIANT_SUFFIX.get(
+            file_variant, self._VARIANT_SUFFIX["z_transformed"]
+        )
 
-        # Subject-level metadata
+        if require_full_window and max_visits is None:
+            raise ValueError("require_full_window=True requires max_visits to be set")
+
         allowed = {"mci", "converter"}
         sub_df  = subject_df[subject_df["diagnosis"].isin(allowed)].copy()
         sub_df["Repseudonym"] = sub_df["Repseudonym"].astype(str)
 
-        # Build visit-month map from cohorts.csv
         cohorts = pd.read_csv(cohorts_csv)
-        # cohorts.csv uses 'Pseudonym' as the ID column
         id_col  = "Pseudonym" if "Pseudonym" in cohorts.columns else "Repseudonym"
         cohorts[id_col]    = cohorts[id_col].astype(str)
         cohorts["visit_m"] = cohorts["visit"].str.replace("M", "", regex=False).astype(float)
-        visit_map: Dict[str, List[int]] = (
-            cohorts.groupby(id_col)["visit_m"]
-            .apply(lambda s: sorted(int(v) for v in s.dropna()))
-            .to_dict()
-        )
 
         self.subjects: List[Dict] = []
+        n_dropped_full_window = 0
         for _, row in sub_df.iterrows():
             pid   = str(row["Repseudonym"])
             label = 1 if row["diagnosis"] == "converter" else 0
@@ -103,15 +116,20 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
             age_raw = row.get("age", 50.0)
             age   = float(min(max(float(age_raw) / 100.0, 0.0), 1.0))
 
-            # Find all matching .npz files from filesystem
             visit_files = self._find_visit_files(pid)
             if not visit_files:
-                continue   # subject has no matrix files
+                continue
+
+            # Truncate to the first N (earliest) visits BEFORE computing Δt.
+            if max_visits is not None:
+                if require_full_window and len(visit_files) < max_visits:
+                    n_dropped_full_window += 1
+                    continue
+                visit_files = visit_files[:max_visits]
 
             months  = [m for m, _ in visit_files]
             fpaths  = [f for _, f in visit_files]
 
-            # Δt: inter-visit intervals normalised by MAX_INTERVAL_MONTHS
             deltas  = [0.0]
             for i in range(1, len(months)):
                 deltas.append((months[i] - months[i - 1]) / MAX_INTERVAL_MONTHS)
@@ -127,18 +145,23 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
                 "n_scans":      len(months),
             })
 
+        n_pos = sum(s["label"] for s in self.subjects)
+        n_neg = len(self.subjects) - n_pos
         print(
-            f"LongitudinalSubjectDataset: {len(self.subjects)} subjects "
-            f"({sum(s['label'] for s in self.subjects)} converter, "
-            f"{sum(1-s['label'] for s in self.subjects)} stable MCI)"
+            f"LongitudinalSubjectDataset[v2]: {len(self.subjects)} subjects "
+            f"({n_pos} converter, {n_neg} stable MCI)"
         )
-        ns = [s["n_scans"] for s in self.subjects]
-        print(f"  Scans per subject: min={min(ns)}  max={max(ns)}  mean={np.mean(ns):.1f}")
-
-    # ── Internal helpers ──────────────────────────────────────────────────────
+        if max_visits is not None:
+            print(
+                f"  Window: first {max_visits} visit(s); "
+                f"require_full_window={require_full_window}; "
+                f"dropped (insufficient visits)={n_dropped_full_window}"
+            )
+        if self.subjects:
+            ns = [s["n_scans"] for s in self.subjects]
+            print(f"  Scans per subject: min={min(ns)}  max={max(ns)}  mean={np.mean(ns):.1f}")
 
     def _find_visit_files(self, pid: str) -> List[tuple]:
-        """Return sorted (visit_months, filepath) tuples from the filesystem."""
         pattern = os.path.join(self.matrices_dir, f"sub-{pid}_*{self.suffix}")
         files   = glob.glob(pattern)
         result  = []
@@ -150,7 +173,6 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
         return sorted(result, key=lambda x: x[0])
 
     def _load_graph(self, filepath: str) -> Data:
-        """Load one .npz file → PyG Data with kNN adjacency."""
         arr = np.load(filepath)["array"]
         arr = np.nan_to_num(arr, nan=0.0, posinf=0.0, neginf=0.0)
         feat = torch.tensor(arr, dtype=torch.float)
@@ -159,8 +181,6 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
             adj = torch.tensor(adj, dtype=torch.float32)
         ei, ew = dense_to_sparse(adj)
         return Data(x=feat, edge_index=ei, edge_attr=ew)
-
-    # ── Dataset interface ─────────────────────────────────────────────────────
 
     def __len__(self) -> int:
         return len(self.subjects)

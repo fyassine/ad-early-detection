@@ -1,7 +1,7 @@
 """
 gelstm.py — GELSTM inference service.
 
-Loads the CLASSIFIER_v2 GELSTM 5-fold ensemble (if checkpoints are
+Loads the CLASSIFIER GELSTM 5-fold ensemble (if checkpoints are
 deployed) and provides cohort-wide + per-subject conversion-risk
 predictions. The service degrades gracefully when checkpoints are
 missing: every method returns a payload with ``available=False`` so the
@@ -161,7 +161,7 @@ class GELSTMService:
             )
             return False
 
-        # Make CLASSIFIER_v2 importable. The GELSTM models.py already does
+        # Make CLASSIFIER importable. The GELSTM models.py already does
         # sys.path.insert internally, but we add the root here so other modules
         # (model.GAAE.models) resolve cleanly even when the dashboard process
         # was started from a different cwd.
@@ -186,7 +186,7 @@ class GELSTMService:
             except Exception:
                 norm = {}
 
-        # Best-effort default architecture matching CLASSIFIER_v2/train.py.
+        # Best-effort default architecture matching CLASSIFIER/train.py.
         # Real deployments should ship hyperparameters in model_card.json
         # alongside the checkpoints; we read them below if present.
         card_file = GELSTM_CHECKPOINT_DIR / _MODEL_CARD_JSON
@@ -313,7 +313,7 @@ class GELSTMService:
         cond_vec = self._build_cond_vector(sex, age)
 
         # Build per-visit graphs (kNN k=8 on absolute correlations, matching
-        # CLASSIFIER_v2/model/GELSTM/dataset.py).
+        # CLASSIFIER/model/GELSTM/dataset.py).
         graphs = [self._matrix_to_graph(m) for m in visit_matrices]
 
         fold_probs: list[float] = []

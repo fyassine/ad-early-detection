@@ -1,14 +1,15 @@
 """
-GELSTM/utils.py — Utilities for the GELSTM model.
+CLASSIFIER GELSTM/utils.py — Utilities for the GELSTM model.
 
-Key function:
-    encode_batch_sequences() — encodes a batch of subject dicts into a PackedSequence
-    ready for GELSTMClassifier.forward().
+v2 additions (vs CLASSIFIER/model/GELSTM/utils.py):
+    * shuffle_order kwarg in encode_batch_sequences — randomly permutes the
+      visit order (graphs + Δt) per subject. Used by SANITY_LSTM_CHECKS to test
+      whether the LSTM is exploiting temporal order or only the visit content.
+    * drop_time_delta is unchanged but documented as a Δt-ablation switch.
 """
 from __future__ import annotations
 
-import os
-import random
+from contextlib import contextmanager
 from typing import List, Dict, Tuple
 
 import numpy as np
@@ -16,14 +17,15 @@ import torch
 from torch.nn.utils.rnn import pack_padded_sequence, PackedSequence
 
 
-def set_seed(seed: int = 42) -> None:
-    random.seed(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+@contextmanager
+def eval_mode(module: "torch.nn.Module"):
+    """Temporarily set ``module`` to eval mode and restore the prior state on exit."""
+    was_training = module.training
+    module.eval()
+    try:
+        yield
+    finally:
+        module.train(was_training)
 
 
 def compute_class_weights(labels: List[int], device="cpu") -> torch.Tensor:
@@ -54,61 +56,79 @@ def compute_class_cost_weights(
     return w
 
 
-# ── Batch encoding ────────────────────────────────────────────────────────────
-
 def encode_batch_sequences(
     batch: List[Dict],
     encoder_model: "torch.nn.Module",
     device: torch.device,
     use_time_delta: bool = True,
+    zero_time_delta: bool = False,
     graph_pool: str = "mean",
     dim_filter: "np.ndarray | None" = None,
+    shuffle_order: bool = False,
+    shuffle_rng: "np.random.Generator | None" = None,
 ) -> Tuple[PackedSequence, torch.Tensor, torch.Tensor]:
     """
-    Encode a list of subject dicts (from LongitudinalSubjectDataset) into a
-    PackedSequence suitable for GELSTMClassifier.forward().
-
-    Steps per subject:
-        1. For each visit graph: run encoder → mean/max/sum pool → z_t ∈ R^d
-        2. Optionally concatenate normalised Δt: z_t' = [z_t ‖ Δt_t]
-        3. Stack into (T, d+1) tensor
-
-    Batch is sorted by sequence length (descending) as required by PyTorch's
-    pack_padded_sequence with enforce_sorted=True.
+    Encode a list of subject dicts into a PackedSequence for GELSTMClassifier.
 
     Parameters
     ----------
     batch : list of dicts from LongitudinalSubjectDataset.__getitem__
-    encoder_model : GELSTMClassifier or GraphAttentionAutoencoderConditioned
-        Must expose encode_visit(x, edge_index, edge_attr) → (F,)
-        OR encode(x, edge_index, edge_attr) → (N, F) with pooling applied here.
+    encoder_model : exposes encode_visit() or encode() returning node embeddings.
     device : torch.device
     use_time_delta : bool
+        If False and zero_time_delta is False, the Δt column is dropped entirely.
+        For models trained with use_time_delta=True this will cause a shape
+        mismatch — use zero_time_delta=True instead for a safe ablation.
+    zero_time_delta : bool
+        If True, append a zero in place of the real Δt. Keeps the LSTM input
+        shape identical to the use_time_delta=True case while removing the
+        actual signal. Use this for the "Δt removed" sanity check.
     graph_pool : 'mean' | 'max' | 'sum'
-    dim_filter : np.ndarray of int indices, or None
-        If provided, z_t is projected to z_t[dim_filter] *before* Δt concatenation.
-        This is the FDR-based dimension selection: pass top_dims[:TOP_K] from FDR
-        analysis to reduce LSTM input from gaae_latent → TOP_K dimensions.
-        Must be None (default) when using the standard GELSTM notebook.
+    dim_filter : np.ndarray of int indices or None
+        FDR-based latent-dimension selection.
+    shuffle_order : bool
+        If True, randomly permute (graphs, delta_t) per subject before encoding.
+        Used by SANITY_LSTM_CHECKS to test whether the LSTM relies on temporal
+        order. Δt is permuted alongside the visits so the per-step value follows
+        its original visit; this preserves Δt's marginal distribution while
+        destroying ordering. *Use only at evaluation time.*
+    shuffle_rng : np.random.Generator, optional
+        Pass to make the shuffle deterministic.
 
     Returns
     -------
     packed_seqs : PackedSequence
-    labels      : torch.Tensor  shape (B,)
-    lengths     : torch.Tensor  shape (B,) — original sequence lengths (sorted desc)
+    labels      : torch.Tensor (B,)
+    lengths     : torch.Tensor (B,)  — sorted descending
     """
-    # Sort batch by n_scans descending
+    rng = shuffle_rng if shuffle_rng is not None else np.random.default_rng()
+
+    # Optional visit-order shuffling per subject (sanity-check switch).
+    if shuffle_order:
+        shuffled = []
+        for item in batch:
+            T = len(item["graphs"])
+            perm = rng.permutation(T)
+            new_item = dict(item)
+            new_item["graphs"]  = [item["graphs"][i] for i in perm]
+            new_item["delta_t"] = [item["delta_t"][i] for i in perm]
+            new_item["visit_months"] = [item["visit_months"][i] for i in perm]
+            shuffled.append(new_item)
+        batch = shuffled
+
     batch = sorted(batch, key=lambda b: len(b["graphs"]), reverse=True)
 
-    seq_list: List[torch.Tensor] = []
-    labels_list: List[int]       = []
-    lengths_list: List[int]      = []
+    seq_list:    List[torch.Tensor] = []
+    labels_list: List[int]          = []
+    lengths_list: List[int]         = []
 
-    encoder_model.eval()
-    with torch.no_grad():
+    # Use a context manager so the caller's training mode is restored on exit.
+    # train_epoch can keep the model in .train() across the whole step without
+    # needing a defensive .train() after this call.
+    with eval_mode(encoder_model), torch.no_grad():
         for item in batch:
             graphs  = item["graphs"]
-            deltas  = item["delta_t"]   # list of floats, len == len(graphs)
+            deltas  = item["delta_t"]
             T       = len(graphs)
 
             step_embs = []
@@ -117,7 +137,6 @@ def encode_batch_sequences(
                 ei = g.edge_index.to(device)
                 ea = g.edge_attr.to(device) if g.edge_attr is not None else None
 
-                # Support both GELSTMClassifier and bare GAAE encoder
                 if hasattr(encoder_model, "encode_visit"):
                     z_t = encoder_model.encode_visit(x, ei, ea, pool=graph_pool)
                 else:
@@ -129,28 +148,24 @@ def encode_batch_sequences(
                     else:
                         z_t = z_nodes.sum(dim=0)
 
-                # FDR dimension filter: project to top-K discriminative dims
-                # Note: dim_filter may have negative strides (np.argsort()[::-1][:K]),
-                # so .copy() is called to ensure a contiguous C-order array before
-                # converting to tensor (PyTorch does not support negative-stride arrays).
                 if dim_filter is not None:
                     _idx = torch.tensor(
                         np.asarray(dim_filter).copy(), dtype=torch.long, device=device
                     )
-                    z_t  = z_t[_idx]   # (TOP_K,)
+                    z_t  = z_t[_idx]
 
-                if use_time_delta:
-                    dt  = torch.tensor([deltas[t]], dtype=torch.float, device=device)
+                if use_time_delta or zero_time_delta:
+                    dt_val = 0.0 if zero_time_delta else deltas[t]
+                    dt  = torch.tensor([dt_val], dtype=torch.float, device=device)
                     z_t = torch.cat([z_t, dt], dim=0)
 
                 step_embs.append(z_t)
 
-            seq_tensor = torch.stack(step_embs, dim=0)   # (T, d+1)
+            seq_tensor = torch.stack(step_embs, dim=0)
             seq_list.append(seq_tensor)
             labels_list.append(item["label"])
             lengths_list.append(T)
 
-    # Pad to max length
     max_T = max(lengths_list)
     feat_dim = seq_list[0].size(1)
     padded = torch.zeros(len(batch), max_T, feat_dim, device=device)

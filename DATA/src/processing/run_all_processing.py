@@ -6,16 +6,16 @@ optionally processes all follow-up fMRI visits for full longitudinal coverage.
 
 Usage (from repo root):
     # Schaefer-only subsets from existing __v3__ matrices:
-    python -m CLASSIFIER.src.processing.run_all_processing
+    python -m DATA.src.processing.run_all_processing
 
     # Also reprocess all follow-up visits from __v1__/fmri into __v3__:
-    python -m CLASSIFIER.src.processing.run_all_processing --reprocess-followups
+    python -m DATA.src.processing.run_all_processing --reprocess-followups
 
     # Full run including Tian-atlas experiments:
-    python -m CLASSIFIER.src.processing.run_all_processing \\
+    python -m DATA.src.processing.run_all_processing \\
         --reprocess-followups \\
-        --tian-atlas /path/to/Tian_Subcortex_S2_3T.nii.gz \\
-        --tian-labels /path/to/Tian_Subcortex_S2_3T_label.txt
+        --tian-atlas /mnt/e/fyassine/ad-early-detection/DATA/src/processing/atlas/Tian_Subcortex_S2_3T.nii.gz \\
+        --tian-labels /mnt/e/fyassine/ad-early-detection/DATA/src/processing/atlas/Tian_Subcortex_S2_3T_label.txt
 
 Experiment table:
     __v3__  Whole brain               (Schaefer 200, all visits after reprocessing)
@@ -100,7 +100,7 @@ def run_schaefer_job(job: dict) -> bool:
 
     cmd = [
         sys.executable, "-m",
-        "CLASSIFIER.src.processing.subset_schaefer_networks",
+        "DATA.src.processing.subset_schaefer_networks",
         "--networks", *networks,
         "--output-version", version,
         "--output-suffix", suffix,
@@ -123,8 +123,8 @@ def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None, n_job
         print(
             "\n  Tian atlas not provided — skipping __v5__, __v8__, __v10__, __v11__.\n"
             "  Download Tian Scale II atlas and re-run with:\n"
-            "    --tian-atlas /path/to/Tian_Subcortex_S2_3T.nii.gz\n"
-            "    --tian-labels /path/to/Tian_Subcortex_S2_3T_label.txt\n"
+            "    --tian-atlas /mnt/e/fyassine/ad-early-detection/DATA/src/processing/atlas/Tian_Subcortex_S2_3T.nii.gz\n"
+            "    --tian-labels /mnt/e/fyassine/ad-early-detection/DATA/src/processing/atlas/Tian_Subcortex_S2_3T_label.txt\n"
             "\n  Atlas download: https://github.com/yetianmed/subcortex\n"
             "  Or via templateflow: tpl-MNI152NLin6Asym_atlas-Tian_res-1_dseg.nii.gz"
         )
@@ -135,9 +135,9 @@ def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None, n_job
             extra = " ".join(job["extra_args"])
             print(
                 f"\n  # {version} — {job['description']}\n"
-                f"  python -m CLASSIFIER.src.processing.{script} \\\n"
-                f"      --atlas-path /path/to/Tian_Subcortex_S2_3T.nii.gz \\\n"
-                f"      --labels-path /path/to/Tian_Subcortex_S2_3T_label.txt"
+                f"  python -m DATA.src.processing.{script} \\\n"
+                f"      --atlas-path /mnt/e/fyassine/ad-early-detection/DATA/src/processing/atlas/Tian_Subcortex_S2_3T.nii.gz \\\n"
+                f"      --labels-path /mnt/e/fyassine/ad-early-detection/DATA/src/processing/atlas/Tian_Subcortex_S2_3T_label.txt"
                 + (f" \\\n      {extra}" if extra else "")
                 + (f" \\\n      --output-version {version}" if "output-version" not in extra else "")
             )
@@ -158,7 +158,7 @@ def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None, n_job
             output_root = REPO_ROOT / "DATA" / "DELCODE" / version
             cmd = [
                 sys.executable, "-m",
-                f"CLASSIFIER.src.processing.{script}",
+                f"DATA.src.processing.{script}",
                 "--atlas-path", str(tian_atlas),
                 "--output-root", str(output_root),
                 "--n-jobs", str(n_jobs),
@@ -170,7 +170,7 @@ def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None, n_job
             # process_combined_schaefer_tian uses --tian-atlas / --tian-labels / --output-version
             cmd = [
                 sys.executable, "-m",
-                f"CLASSIFIER.src.processing.{script}",
+                f"DATA.src.processing.{script}",
                 "--tian-atlas", str(tian_atlas),
                 "--output-version", version,
                 "--n-jobs", str(n_jobs),
@@ -193,7 +193,7 @@ def run_followup_reprocessing(fmri_root: Path) -> bool:
     output_dir = REPO_ROOT / "DATA" / "DELCODE" / "__v3__" / "matrices"
     cmd = [
         sys.executable, "-m",
-        "CLASSIFIER.src.processing.process_using_schaeffer_atlas",
+        "DATA.src.processing.process_using_schaeffer_atlas",
         "--fmri-root", str(fmri_root),
         "--output-dir", str(output_dir),
     ]

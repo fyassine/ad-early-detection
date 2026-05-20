@@ -4,15 +4,15 @@ from pathlib import Path
 DATA_ROOT = os.environ.get("DATA_ROOT", "/data")
 STATIC_DIR = Path(__file__).parent / "static"
 
-# Repo root — used to resolve sibling modules (CLASSIFIER_v2/...) at runtime.
+# Repo root — used to resolve sibling modules (CLASSIFIER/...) at runtime.
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-# CLASSIFIER_v2 root (env override for non-standard deployments). The
+# CLASSIFIER root (env override for non-standard deployments). The
 # GELSTM service imports model code from here and reads checkpoints from
 # GELSTM_CHECKPOINT_DIR.
 CLASSIFIER_ROOT = Path(os.environ.get(
     "CLASSIFIER_ROOT",
-    str(REPO_ROOT / "CLASSIFIER_v2"),
+    str(REPO_ROOT / "CLASSIFIER"),
 ))
 GELSTM_CHECKPOINT_DIR = Path(os.environ.get(
     "GELSTM_CHECKPOINT_DIR",

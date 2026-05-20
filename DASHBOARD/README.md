@@ -261,7 +261,7 @@ Output lands at `app/static/data/schaefer_200_coords.json`. Both reference files
 | `DATA_ROOT` | Root of CSV + scan files. **Required for non-Docker runs** — the default `/data` will not have your data. | `/data` |
 | `DASHBOARD_CACHE_ROOT` | Writable cache for warmup outputs, GELSTM predictions, dFC, timeseries, job status. | `DASHBOARD/.cache` |
 | `CACHE_ROOT` | Used by `cohort_stats.py` for the UMAP/EBM/brain-age pickle. Defaults to `${DATA_ROOT}/.cache`. | `${DATA_ROOT}/.cache` |
-| `CLASSIFIER_ROOT` | Where the GELSTM service finds model code. | `<repo>/CLASSIFIER_v2` |
+| `CLASSIFIER_ROOT` | Where the GELSTM service finds model code. | `<repo>/CLASSIFIER` |
 | `GELSTM_CHECKPOINT_DIR` | Where the GELSTM service finds `best_model_fold*.pth`, `gaae_encoder.pth`, `model_card.json`. | `${CLASSIFIER_ROOT}/model/GELSTM/checkpoints` |
 
 ## Running outside Docker (development)
@@ -283,7 +283,7 @@ For Docker, `docker-compose up` does the right thing — the bundled `docker-com
 The GELSTM service in `app/services/gelstm.py` expects this layout:
 
 ```
-CLASSIFIER_v2/model/GELSTM/checkpoints/
+CLASSIFIER/model/GELSTM/checkpoints/
 ├── best_model_fold1.pth
 ├── best_model_fold2.pth
 ├── best_model_fold3.pth
@@ -308,7 +308,7 @@ CLASSIFIER_v2/model/GELSTM/checkpoints/
 
 > Without `model_card.json`, the service uses hard-coded defaults (`gaae_heads=4`, `gaae_dropout=0.2`) which will **silently mismatch** notebook-trained checkpoints (heads=2, dropout=0.3) — `load_state_dict()` will fail with 86+ shape mismatches and the dashboard will say *"GELSTM ensemble not deployed"*.
 
-The training notebook `CLASSIFIER_v2/notebooks/GELSTM_DELCODE_WHOLE_BRAIN.ipynb` ends with a deployment cell that copies all the required files into this directory — re-run that cell after every training run.
+The training notebook `CLASSIFIER/notebooks/GELSTM_DELCODE_WHOLE_BRAIN.ipynb` ends with a deployment cell that copies all the required files into this directory — re-run that cell after every training run.
 
 ## Cohort warmup pipeline
 

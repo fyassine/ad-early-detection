@@ -1,6 +1,3 @@
-import os
-import random
-
 import numpy as np
 import torch
 from torch_geometric.utils import to_dense_adj
@@ -139,11 +136,4 @@ def create_mask(batch_mask):
     return mask
 
 
-def set_seed(seed: int = 42) -> None:
-    random.seed(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+from .seeding import set_seed  # noqa: F401  (re-exported for back-compat; prefer `from CLASSIFIER.common.seeding import set_seed`)

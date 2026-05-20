@@ -1,0 +1,85 @@
+# Experiment registry for CLASSIFIER.
+#
+# One entry per major run. Fields:
+#   id              — short slug, kebab-case
+#   mode            — baseline | longitudinal | static | sanity
+#   model           — GELSTM | GEC | GAAE | LogReg | MLP | …
+#   dataset         — e.g. DELCODE_WHOLE_BRAIN
+#   seed            — int (typically 42)
+#   notebook        — relative path under notebooks/
+#   checkpoint_path — relative path under outputs/ (omit for legacy runs)
+#   notes           — free-form
+
+experiments:
+  - id: gelstm-trajectory-whole-brain
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL_GELSTM_DELCODE_WHOLE_BRAIN.ipynb
+    notes: Full-trajectory GELSTM on GAAE latents.
+
+  - id: gelstm-trajectory-fdr
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE_WHOLE_BRAIN.ipynb
+    notes: Per-fold FDR latent-dim selection.
+
+  - id: gelstm-early-detection-first-n
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL_GELSTM_FIRST_N_DELCODE_WHOLE_BRAIN.ipynb
+    notes: First-N-visits ablation (early-detection task).
+
+  - id: gec-mlp-trajectory
+    mode: longitudinal
+    model: MLP
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL_GEC_MLP_DELCODE.ipynb
+    notes: Flattened-trajectory MLP over FDR-selected GAAE dims + Δt.
+
+  - id: gaae-logreg-static
+    mode: static
+    model: LogReg
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/STATIC_GAAE_LOGREG_DELCODE_WHOLE_BRAIN.ipynb
+    notes: Per-scan GAAE-embedding logistic regression with subject rollup.
+
+  - id: model-comparison
+    mode: baseline
+    model: multi
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/BASELINE_MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb
+    notes: Subject-level comparison table across trajectory, early-detection, and static models.
+
+  # Sanity floors
+  - id: sanity-split-hygiene
+    mode: sanity
+    model: n/a
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY_SPLIT_HYGIENE_DELCODE.ipynb
+    notes: Hard-fails if any subject crosses train/val/test.
+
+  - id: sanity-metadata-baseline
+    mode: sanity
+    model: LogReg
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY_BASELINE_METADATA_TIME.ipynb
+    notes: Metadata-only floor (age, sex, visit time).
+
+  - id: sanity-gelstm-ablations
+    mode: sanity
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY_LONGITUDINAL_GELSTM.ipynb
+    notes: Shuffled-order, no-Δt, fixed-N ablations.

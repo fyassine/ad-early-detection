@@ -5,6 +5,8 @@
 **/.venv/
 **/wandb/
 **/checkpoints/
+CLASSIFIER/outputs/*
+!CLASSIFIER/outputs/.gitkeep
 *.log
 **/*.pkl
 **/*.npz
@@ -29,5 +31,5 @@ coverage/
 **/*.pth
 DASHBOARD/app/static/dist/
 DASHBOARD/frontend/dist/
-
 logs/
+

@@ -1,7 +1,7 @@
 // Population view — multi-cohort aggregation, epidemiology overlay,
 // network-disruption atlas and GELSTM model card. Phase 1 fills in the
 // summary, epidemiology table and network heatmap. Phase 2 wires the
-// model card to the CLASSIFIER_v2 GELSTM ensemble.
+// model card to the CLASSIFIER GELSTM ensemble.
 import { Chart } from 'chart.js';
 import { $ } from '../utils.js';
 import { state } from '../state.js';
