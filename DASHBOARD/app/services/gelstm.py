@@ -326,8 +326,12 @@ class GELSTMService:
                         z_nodes = model.encoder.encode(
                             batch.x, batch.edge_index,
                             edge_attr=getattr(batch, "edge_attr", None),
-                            cond_vec=cond_vec,
                         )
+                        # FiLM-condition the latents with sex/age (matches GAAE forward()).
+                        batch_mask = batch.batch if hasattr(batch, "batch") else torch.zeros(
+                            z_nodes.shape[0], dtype=torch.long, device=z_nodes.device,
+                        )
+                        z_nodes = model.encoder.condition_latent(z_nodes, cond_vec, batch_mask)
                         z_pooled = z_nodes.mean(dim=0, keepdim=True)
                         z_seq.append(z_pooled)
                     z = torch.cat(z_seq, dim=0).unsqueeze(0)  # (1, T, d)

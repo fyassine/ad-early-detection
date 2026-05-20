@@ -144,6 +144,11 @@ def _stage_graph_metrics(
     gm_dir.mkdir(parents=True, exist_ok=True)
     cache_path = gm_dir / f"graph_metrics_{cache_key}_density{int(density*100):02d}.json"
 
+    if cache_path.exists():
+        _log(f"Stage 2 SKIPPED — graph metrics cache hit ({cache_path.name})")
+        _update_status(status_path, stage="graph_metrics_done", progress=0.55)
+        return
+
     abs_csv = os.path.join(data_root, csv_path)
     df = load_metadata(abs_csv)
     if "diagnosis" not in df.columns or "subject_id" not in df.columns:
@@ -370,6 +375,120 @@ def _stage_qc_volumes(
     _update_status(status_path, stage="qc_volumes_done", progress=0.95)
 
 
+def _stage_dfc(
+    data_root: str,
+    scan_folders: list[str],
+    csv_path: str,
+    cache_root: Path,
+    status_path: Path,
+    k: int = 4,
+    window: int = 30,
+    step: int = 3,
+    max_per_cohort: int = 20,
+) -> None:
+    """Stage 5 — Dynamic FC: parcellate BOLD .nii.gz, fit k-means states, cache."""
+    import hashlib
+    import json as _json
+    import numpy as np
+    from app.cohort_stats import COHORTS
+    from app.metadata_parser import load_metadata, _get_baseline
+    from app.biomarkers import find_subject_nifti_files
+    from app.services.dynamic_fc import (
+        load_or_extract_timeseries, compute_cohort_dfc, _HAS_SKLEARN,
+    )
+
+    if not _HAS_SKLEARN:
+        _log("Stage 5 SKIPPED — scikit-learn not installed")
+        _update_status(status_path, stage="dfc_skipped", progress=0.98)
+        return
+
+    _update_status(status_path, stage="dfc", progress=0.96)
+    _log(f"Stage 5: Dynamic FC (k={k}, window={window}, step={step})")
+
+    # Cache path keyed by (csv, sorted folders, k, window, step)
+    h = hashlib.sha1()
+    h.update(csv_path.encode())
+    for f in sorted(scan_folders):
+        h.update(b"\x00"); h.update(f.encode())
+    cache_key = h.hexdigest()[:20]
+    dfc_dir = cache_root / "dfc"
+    dfc_dir.mkdir(parents=True, exist_ok=True)
+    cache_path = dfc_dir / f"dfc_{cache_key}_k{k}_w{window}_s{step}.json"
+
+    if cache_path.exists():
+        _log(f"Stage 5 SKIPPED — dFC cache hit ({cache_path.name})")
+        _update_status(status_path, stage="dfc_done", progress=0.99)
+        return
+
+    abs_csv = os.path.join(data_root, csv_path)
+    df = load_metadata(abs_csv)
+    if "diagnosis" not in df.columns or "subject_id" not in df.columns:
+        _log("Stage 5 SKIPPED — metadata missing required columns")
+        _update_status(status_path, stage="dfc_skipped", progress=0.99)
+        return
+
+    baseline = _get_baseline(df)
+    cohort_subjects: dict[str, list[str]] = {}
+    for _, row in baseline.iterrows():
+        diag = str(row.get("diagnosis", "")).lower()
+        sid = str(row.get("subject_id", "")).strip()
+        if sid and sid != "nan":
+            cohort_subjects.setdefault(diag, []).append(sid)
+
+    # Plan parcellation budget upfront so progress reports show a real denominator.
+    rng = np.random.default_rng(42)
+    plan: list[tuple[str, str]] = []  # [(cohort, sid), ...]
+    for cohort in COHORTS:
+        ids = cohort_subjects.get(cohort, [])
+        if not ids:
+            continue
+        if len(ids) > max_per_cohort:
+            ids = list(rng.choice(ids, size=max_per_cohort, replace=False))
+        for sid in ids:
+            plan.append((cohort, str(sid)))
+    plan_total = max(len(plan), 1)
+
+    ts_by_cohort: dict[str, list] = {}
+    total_subjects = 0
+    subjects_done = 0
+    for cohort, sid in plan:
+        recs = find_subject_nifti_files(data_root, scan_folders, sid)
+        if recs:
+            rec = recs[0]
+            visit = rec.get("visit") or rec.get("visit_code") or "M0"
+            ts = load_or_extract_timeseries(rec["abs_path"], cache_root, sid, str(visit))
+            if ts is not None and ts.ndim == 2 and ts.shape[0] >= window + 1:
+                ts_by_cohort.setdefault(cohort, []).append(ts)
+                total_subjects += 1
+        subjects_done += 1
+        # 0.96 → 0.99 spans the parcellation loop; update at most every 5 subjects.
+        if subjects_done % 5 == 0 or subjects_done == plan_total:
+            _update_status(
+                status_path,
+                stage="dfc",
+                progress=0.96 + 0.03 * (subjects_done / plan_total),
+            )
+    for cohort, bucket in ts_by_cohort.items():
+        _log(f"  {cohort}: parcellated {len(bucket)} subjects")
+
+    if not ts_by_cohort:
+        payload = {
+            "available": False,
+            "note": "No BOLD .nii.gz files could be parcellated for any cohort. Confirm the fmri folder is selected.",
+        }
+    else:
+        _log(f"  fitting global k-means on windowed FC across {total_subjects} subjects…")
+        payload = compute_cohort_dfc(ts_by_cohort, k=k, window=window, step=step)
+
+    # Only cache successful results — caching `available=False` poisons future runs.
+    if payload.get("available"):
+        cache_path.write_text(_json.dumps(payload, indent=2))
+        _log(f"Stage 5 done — written to {cache_path}")
+    else:
+        _log(f"Stage 5 — {payload.get('note', 'unavailable')} (not cached; will retry next warmup)")
+    _update_status(status_path, stage="dfc_done", progress=0.99)
+
+
 # ──────────────────────────────────────────────────────────────────────────── #
 # Entry point                                                                 #
 # ──────────────────────────────────────────────────────────────────────────── #
@@ -422,6 +541,7 @@ def main() -> int:
                              args.csv_path, args.density, status_path)
         _stage_gelstm(args.data_root, scan_folders, args.csv_path, cache_root, status_path)
         _stage_qc_volumes(args.data_root, scan_folders, args.csv_path, status_path)
+        _stage_dfc(args.data_root, scan_folders, args.csv_path, cache_root, status_path)
 
         _update_status(status_path, status="done", stage="done",
                        progress=1.0, finished_at=_now(), error=None)

@@ -1,57 +1,47 @@
-// Patient view — full-screen single-subject dashboard. Phase 0 ships
-// only the empty-state and a sid-resolver hook. Subsequent phases
-// re-use the existing modal tab modules (overview, staging, manifold,
-// connectivity, brainview, qcviewer) plus the new ones (risk, networks,
-// dfc, topology) mounted inline instead of inside the modal.
+// Patient view — full-screen single-subject view.
+// When the user clicks the 👤 button in the modal, the entire modal node is
+// physically moved into #patientContent (see modal.js:embedModalInPatientView).
+// This view therefore renders nothing of its own when a modal is already
+// embedded — it just shows a placeholder otherwise.
 import { $ } from '../utils.js';
-import { state } from '../state.js';
-import { openPatient } from '../modal.js';
 
 export function renderPatientView(sid) {
-    const empty = $('patientEmpty');
+    const empty   = $('patientEmpty');
     const content = $('patientContent');
     if (!empty || !content) return;
 
     if (!sid) {
-        empty.style.display = '';
+        empty.style.display   = '';
         content.style.display = 'none';
-        content.innerHTML = '';
+        content.innerHTML     = '';
         return;
     }
 
-    // Phase 0: defer to the existing modal as the patient renderer. The
-    // modal already orchestrates all six tabs and the visit selector.
-    // Phase 4 will replace this with an inline full-screen mount.
-    empty.style.display = 'none';
+    // If the modal node is already embedded here (via 👤), do nothing — it renders itself.
+    if (content.querySelector('#patientModal')) {
+        empty.style.display   = 'none';
+        content.style.display = '';
+        return;
+    }
+
+    // Direct navigation (e.g. ?sid=… in URL with no modal open yet): show a hint.
+    empty.style.display   = 'none';
     content.style.display = '';
     content.innerHTML = `
-        <div class="placeholder-card">
-            <div class="placeholder-title">Patient ${escapeHtml(sid)}</div>
-            <div class="placeholder-body">
-                Opening detailed view in a modal. Phase 4 will inline the
-                six existing tabs (Overview, Staging, Manifold, Connectivity,
-                Brain View, QC Viewer) plus the new GELSTM Risk, Per-network,
-                Dynamic FC and Graph Metrics tabs directly into this panel.
-            </div>
-        </div>
-    `;
-
-    if (state.patientData && state.patientData.length) {
-        const row = state.patientData.find(r => String(r.subject_id) === String(sid));
-        if (row) openPatient(row.subject_id);
-    }
+        <div class="placeholder-card" style="margin:2rem auto;max-width:520px">
+            <div class="placeholder-title">👤 ${escapeHtml(sid)}</div>
+            <div class="placeholder-body">Open the Cohort view, click this patient in the directory, then use the 👤 button in the modal to bring the full view here.</div>
+        </div>`;
 }
 
 export function resetPatientView() {
     const content = $('patientContent');
-    const empty = $('patientEmpty');
-    if (content) content.innerHTML = '';
-    if (content) content.style.display = 'none';
-    if (empty) empty.style.display = '';
+    const empty   = $('patientEmpty');
+    if (content) { content.innerHTML = ''; content.style.display = 'none'; }
+    if (empty)   empty.style.display = '';
 }
 
 function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[c]));
+    return String(s).replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }

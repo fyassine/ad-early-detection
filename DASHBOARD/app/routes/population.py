@@ -44,12 +44,8 @@ def api_population_summary(
     if not os.path.exists(abs_csv):
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
 
-    folder_list = _parse_folders(scan_folders)
-    stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
     df = load_metadata(abs_csv)
-
-    return JSONResponse(cohort_demographic_summary(stats, df),
-                        headers=cache_headers(stats.fingerprint))
+    return JSONResponse(cohort_demographic_summary(df))
 
 
 @router.get("/api/population/epidemiology")
@@ -74,6 +70,11 @@ def api_population_network_atlas(
             {"error": "scan_folders is required for the network atlas"},
             status_code=400,
         )
+    if not is_stats_cached(DATA_ROOT, csv_path, folder_list):
+        return JSONResponse({
+            "available": False,
+            "note": "Cohort warmup is still running for this dataset.",
+        })
     stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
     return JSONResponse(network_disruption_atlas(stats),
                         headers=cache_headers(stats.fingerprint))

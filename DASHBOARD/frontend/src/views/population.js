@@ -308,10 +308,9 @@ function renderEpidemiologySection(epi, summary) {
 function renderNetworkAtlasSection(atlas) {
     const host = $('popNetworkAtlas');
     if (!host) return;
-    if (!atlas || !atlas.networks?.length) {
+    if (!atlas || atlas.available === false || !atlas.networks?.length) {
         host.innerHTML = `<div class="placeholder-card"><div class="placeholder-body">
-            Network atlas unavailable. Make sure scan folders are loaded and the cohort
-            warmup has finished computing per-network FC.
+            ${escapeHtml(atlas?.note || 'Network atlas unavailable. Make sure scan folders are loaded and the cohort warmup has finished computing per-network FC.')}
         </div></div>`;
         return;
     }
@@ -385,9 +384,11 @@ function renderModelCardSection(modelCard) {
     const host = $('popModelCard');
     if (!host) return;
     if (!modelCard || modelCard.available === false) {
+        const sec = document.getElementById('popModelSection');
+        if (sec) sec.classList.add('collapsed');
         host.innerHTML = `<div class="placeholder-card">
-            <div class="placeholder-title">GELSTM ensemble not deployed</div>
-            <div class="placeholder-body">${escapeHtml(modelCard?.note || modelCard?.message || 'No checkpoints found.')}</div>
+            <div class="placeholder-title" style="color:var(--text-2);font-size:.85rem">Model not yet configured</div>
+            <div class="placeholder-body">GELSTM fold checkpoints have not been placed in the expected directory. This section will populate once the ensemble is trained and deployed.</div>
         </div>`;
         return;
     }

@@ -6,6 +6,7 @@ import { $ } from '../utils.js';
 import { renderPopulation, resetPopulation } from './population.js';
 import { mountCohort } from './cohort.js';
 import { renderPatientView, resetPatientView } from './patient.js';
+import { restoreModalToBackdrop } from '../modal.js';
 
 const VALID_VIEWS = new Set(['population', 'cohort', 'patient']);
 const DEFAULT_VIEW = 'cohort';
@@ -30,6 +31,10 @@ export function initRouter() {
 
 export function setView(view, opts = {}) {
     if (!VALID_VIEWS.has(view)) view = DEFAULT_VIEW;
+    // If we're leaving the Patient tab and the modal was embedded there, put it back.
+    if (router.activeView === 'patient' && view !== 'patient') {
+        restoreModalToBackdrop();
+    }
     router.activeView = view;
 
     document.querySelectorAll('.top-tab').forEach(btn => {

@@ -49,7 +49,7 @@ export async function renderCohortPhase3() {
 
     renderNetworkPanel(netDis);
     renderGraphTopology(topo);
-    renderDfcStates(dfc);
+    renderDfcStates(dfc, { csv, folders });
     renderRiskDistribution(riskDist);
 }
 
@@ -70,8 +70,8 @@ function hideAllSections() {
 function renderNetworkPanel(atlas) {
     const host = $('networkPanelContent');
     if (!host) return;
-    if (!atlas || !atlas.networks?.length) {
-        host.innerHTML = placeholder('Network effect sizes unavailable. Make sure the cohort warmup has finished computing per-network FC.');
+    if (!atlas || atlas.available === false || !atlas.networks?.length) {
+        host.innerHTML = placeholder(atlas?.note || 'Network effect sizes unavailable. Make sure the cohort warmup has finished computing per-network FC.');
         return;
     }
     const { networks, cohorts, matrix, global_fc_by_network } = atlas;
@@ -228,10 +228,62 @@ function renderGraphTopology(topo) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Dynamic FC stub
 // ─────────────────────────────────────────────────────────────────────────────
-function renderDfcStates(dfc) {
+const _dfcPoll = { timer: null };
+
+function _renderDfcProgress(host, dfc, ctx) {
+    const job = dfc?.job;
+    const pct = Math.round(((job?.progress || 0)) * 100);
+    const stage = String(job?.stage || 'running').replace(/_/g, ' ');
+    host.innerHTML = `<div class="placeholder-card">
+        <div class="placeholder-body">
+            ${escapeHtml(dfc?.note || 'Dynamic FC is being computed.')}
+            <div style="margin-top:.6rem;font-size:.72rem;color:var(--text-2)">
+                Warmup stage: <em>${escapeHtml(stage)}</em>
+            </div>
+            <div style="margin-top:.4rem;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;height:14px">
+                <div id="dfcProgressFill" style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--indigo,#6366f1),var(--green,#22c55e));transition:width .35s ease"></div>
+            </div>
+            <div style="text-align:right;font-size:.72rem;color:var(--text-2);margin-top:.25rem">
+                <span id="dfcProgressPct">${pct}</span>%
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderDfcStates(dfc, ctx) {
     const host = $('dfcStatesContent');
     if (!host) return;
+    if (_dfcPoll.timer) { clearInterval(_dfcPoll.timer); _dfcPoll.timer = null; }
+
     if (!dfc || dfc.available === false) {
+        const job = dfc?.job;
+        const isRunning = job && (job.status === 'running' || job.status === 'starting');
+        if (isRunning && ctx?.csv) {
+            _renderDfcProgress(host, dfc, ctx);
+            const url = `/api/cohort/dfc-states?csv_path=${encodeURIComponent(ctx.csv)}&scan_folders=${encodeURIComponent(ctx.folders || '')}`;
+            _dfcPoll.timer = setInterval(async () => {
+                const r = await fetch(url).then(res => res.ok ? res.json() : null).catch(() => null);
+                if (!r) return;
+                if (r.available) {
+                    clearInterval(_dfcPoll.timer); _dfcPoll.timer = null;
+                    renderDfcStates(r, ctx);
+                    return;
+                }
+                const j = r.job;
+                if (!j || (j.status !== 'running' && j.status !== 'starting')) {
+                    // Warmup ended without producing dFC results — fall back to static placeholder.
+                    clearInterval(_dfcPoll.timer); _dfcPoll.timer = null;
+                    host.innerHTML = placeholder(r.note || 'Dynamic FC unavailable.');
+                    return;
+                }
+                const pct = Math.round((j.progress || 0) * 100);
+                const fill = document.getElementById('dfcProgressFill');
+                const txt  = document.getElementById('dfcProgressPct');
+                if (fill) fill.style.width = `${pct}%`;
+                if (txt)  txt.textContent = `${pct}`;
+            }, 2000);
+            return;
+        }
         host.innerHTML = placeholder(dfc?.note || 'Dynamic FC unavailable.');
         return;
     }

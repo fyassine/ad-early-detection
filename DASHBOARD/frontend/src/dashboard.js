@@ -136,6 +136,17 @@ export async function renderCohortAnalytics() {
 
     cont.innerHTML = `<div class="analytics-grid">${surveHtml}${efHtml}</div>${missHtml}`;
 
+    if (effectSizes?.available === false) {
+        const host = $('effectForestPlot');
+        if (host) {
+            host.innerHTML = '';
+            const msg = document.createElement('p');
+            msg.className = 'no-trajectory';
+            msg.textContent = effectSizes.note || 'Effect sizes are still computing.';
+            host.appendChild(msg);
+        }
+    }
+
     // ── Survival chart renderer (called on load and on stratification change) ──
     const _renderSurvival = (survData) => {
         if (state.activeCharts['survival']) { state.activeCharts['survival'].destroy(); delete state.activeCharts['survival']; }
@@ -171,7 +182,10 @@ export async function renderCohortAnalytics() {
                 },
             });
         } else {
-            const reason = survData?.reason || 'No at-risk subjects found with valid visit data.';
+            const reason = survData?.reason
+                || (survData === null
+                    ? 'Survival service unreachable (check server logs — likely a 500 from /api/cohort/survival).'
+                    : 'No at-risk subjects found with valid visit data.');
             chartWrap.innerHTML = `<p style="font-size:.72rem;color:var(--text-2);padding:1.5rem .5rem;line-height:1.55">
                 <strong style="display:block;margin-bottom:.35rem;color:var(--text-1)">Insufficient data for survival analysis</strong>${reason}</p>`;
         }

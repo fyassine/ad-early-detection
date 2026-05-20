@@ -12,13 +12,17 @@ Discovers:
 import os
 import re
 import numpy as np
+from copy import deepcopy
 from pathlib import Path
+from threading import Lock
 from typing import Optional
 
 
 # Pattern to extract subject ID (sub-XXXXXXXXX) from paths/filenames
 SUBJECT_PATTERN = re.compile(r"sub-([a-f0-9]+)", re.IGNORECASE)
 VISIT_PATTERN = re.compile(r"_(M\d+)_", re.IGNORECASE)
+_SCAN_CACHE: dict[tuple[str, tuple[str, ...]], dict] = {}
+_SCAN_CACHE_LOCK = Lock()
 
 
 def discover_csvs(data_root: str) -> list[dict]:
@@ -160,13 +164,20 @@ def scan_selected_folders(data_root: str, folder_paths: list[str]) -> dict:
     Scan the selected folders, aggregate all scans.
     Returns summary with per-subject scan counts, file type, totals, and format info.
     """
+    normalized_folders = [f.strip() for f in folder_paths if f and f.strip()]
+    cache_key = (os.path.abspath(data_root), tuple(sorted(normalized_folders)))
+    with _SCAN_CACHE_LOCK:
+        cached = _SCAN_CACHE.get(cache_key)
+    if cached is not None:
+        return deepcopy(cached)
+
     all_files = []
     subject_scan_counts: dict[str, int] = {}
     subject_visits: dict[str, set[str]] = {}
     detected_types = set()
     format_info = None
 
-    for folder_rel in folder_paths:
+    for folder_rel in normalized_folders:
         folder = os.path.join(data_root, folder_rel)
         if not os.path.isdir(folder):
             continue
@@ -219,7 +230,7 @@ def scan_selected_folders(data_root: str, folder_paths: list[str]) -> dict:
         k: sorted(v) for k, v in subject_visits.items() if len(v) > 1
     }
 
-    return {
+    result = {
         "total_scans": len(all_files),
         "total_subjects": len(subject_scan_counts),
         "file_type": file_type,
@@ -229,6 +240,9 @@ def scan_selected_folders(data_root: str, folder_paths: list[str]) -> dict:
         "longitudinal_subjects": len(multi_visit_subjects),
         "visit_distribution": _visit_distribution(all_files),
     }
+    with _SCAN_CACHE_LOCK:
+        _SCAN_CACHE[cache_key] = result
+    return deepcopy(result)
 
 
 def _visit_distribution(files: list[dict]) -> dict[str, int]:

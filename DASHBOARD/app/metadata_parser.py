@@ -30,6 +30,8 @@ COLUMN_ALIASES = {
     "prmdiag": "diagnosis_code",
     # Visit
     "visit": "visit",
+    "viscode": "visit",   # ADNI VISCODE / VISCODE2 alternate names
+    "viscode2": "visit",
     "visnam": "visit_name",
     "visdate": "visit_date",
     "visdat": "visit_date",
@@ -122,6 +124,16 @@ def load_metadata(file_path: str, cohort: Optional[str] = None) -> pd.DataFrame:
     # Normalize diagnosis labels
     if "diagnosis" in df.columns:
         df["diagnosis"] = df["diagnosis"].astype(str).str.strip().str.lower()
+
+    # If the diagnosis column contains only ADNI-style numeric codes (1/2/3), map them to
+    # text labels so the survival analysis and cohort stats work correctly.
+    # ADNI: 1=CN, 2=MCI, 3=AD  (DELCODE numeric codes are handled separately via prmdiag)
+    _ADNI_DX_MAP = {"1": "cn", "2": "mci", "3": "ad"}
+    if "diagnosis" in df.columns:
+        non_null = df["diagnosis"].dropna()
+        non_null = non_null[~non_null.isin(["nan", "", "none"])]
+        if len(non_null) > 0 and non_null.isin(_ADNI_DX_MAP).all():
+            df["diagnosis"] = df["diagnosis"].map(_ADNI_DX_MAP).fillna(df["diagnosis"])
 
     # Normalize sex
     if "sex" in df.columns:

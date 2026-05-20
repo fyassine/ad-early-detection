@@ -298,7 +298,7 @@ def _launch(
         "error": None,
     }, indent=2))
 
-    with open(log_file, "a") as lf:
+    with open(log_file, "w") as lf:
         proc = subprocess.Popen(
             cmd,
             cwd=str(dashboard_dir),

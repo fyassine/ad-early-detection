@@ -10,6 +10,35 @@ import { renderRiskTab } from './tabs/risk.js';
 import { renderNetworksTab } from './tabs/networks.js';
 import { renderTopologyTab } from './tabs/topology.js';
 
+// ── Patient-view embedding ────────────────────────────────────────────────────
+// When the user clicks the 👤 button, we physically move the modal node into
+// the Patient top-level view panel so the full modal UI (all 9 tabs) appears
+// inline. Restored to the backdrop on close or tab-away.
+let _modalOriginalParent = null;
+
+export function embedModalInPatientView() {
+    const modal    = document.getElementById('patientModal');
+    const dest     = document.getElementById('patientContent');
+    const backdrop = document.getElementById('modalBackdrop');
+    if (!modal || !dest) return;
+    if (!_modalOriginalParent) _modalOriginalParent = backdrop;
+    dest.appendChild(modal);
+    modal.classList.add('embedded');
+    if (backdrop) backdrop.classList.remove('open');
+    const empty = document.getElementById('patientEmpty');
+    if (empty) empty.style.display = 'none';
+    dest.style.display = '';
+}
+
+export function restoreModalToBackdrop() {
+    const modal = document.getElementById('patientModal');
+    if (!modal) return;
+    if (!_modalOriginalParent) return;
+    if (modal.parentNode === _modalOriginalParent) return;
+    _modalOriginalParent.appendChild(modal);
+    modal.classList.remove('embedded');
+}
+
 export const TAB_DEFS = [
     { id: 'overview',     label: 'Overview' },
     { id: 'staging',      label: 'Staging' },
@@ -438,8 +467,12 @@ export function setSelectedVisit(visit) {
 }
 
 export function closeModal() {
+    // If the modal was embedded in the Patient view, move it back to the backdrop first.
+    restoreModalToBackdrop();
     $('modalBackdrop').classList.remove('open');
-    $('patientModal').classList.remove('brainview-expanded');
+    $('patientModal').classList.remove('brainview-expanded', 'expanded');
+    const btnExp = document.getElementById('btnExpandModal');
+    if (btnExp) btnExp.textContent = '⛶';
     document.querySelectorAll('.data-table tbody tr.selected').forEach(tr => tr.classList.remove('selected'));
     ['trajFC', 'trajMod', 'trajCog', 'trajCSF', 'convScore'].forEach(k => {
         if (state.activeCharts[k]) { state.activeCharts[k].destroy(); delete state.activeCharts[k]; }

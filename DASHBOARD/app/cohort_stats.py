@@ -143,10 +143,10 @@ def is_stats_cached(
     # Disk check: the file just needs to exist and be non-empty.
     # Full fingerprint validation happens inside get_cohort_stats(); here
     # we only want to know if a warm result is likely on disk.
+    disk_path = _disk_cache_path(data_root, csv_path, scan_folders)
     try:
-        disk_path = _disk_cache_path(data_root, csv_path, scan_folders)
         return os.path.isfile(disk_path) and os.path.getsize(disk_path) > 0
-    except Exception:
+    except OSError:
         return False
 
 

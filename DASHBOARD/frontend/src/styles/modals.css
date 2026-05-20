@@ -12,6 +12,15 @@
     animation:slideUp .25s ease;
 }
 .patient-modal.brainview-expanded{max-width:min(1400px,96vw)}
+.patient-modal.expanded{max-width:min(1600px,96vw);max-height:96vh}
+/* Embedded mode: modal is mounted inside the Patient view panel (👤 button) */
+.patient-modal.embedded{
+    max-width:100%;max-height:none;height:auto;overflow:visible;
+    margin:0;border-radius:0;box-shadow:none;border:none;animation:none;
+}
+.patient-modal.embedded .modal-header{position:relative;top:auto}
+.patient-modal.embedded #btnOpenPatientView,
+.patient-modal.embedded #btnExpandModal{display:none}
 .modal-header{
     display:flex;justify-content:space-between;align-items:center;
     padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);

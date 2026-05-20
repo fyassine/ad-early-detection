@@ -86,7 +86,7 @@ class GraphAttentionAutoencoderConditioned(nn.Module):
             return edge_attr.unsqueeze(-1)
         return edge_attr
 
-    def encode(self, x, edge_index, edge_attr, return_attention=False):
+    def encode(self, x, edge_index, edge_attr, return_attention=False, cond_vec=None, batch_mask=None):
         edge_attr = self._normalize_edge_attr(edge_attr)
         attention_weights = []
 
@@ -117,9 +117,13 @@ class GraphAttentionAutoencoderConditioned(nn.Module):
                 x, edge_index, edge_attr=edge_attr, return_attention_weights=True
             )
             attention_weights.append(attn)
+            if cond_vec is not None and batch_mask is not None:
+                z = self.condition_latent(z, cond_vec, batch_mask)
             return z, attention_weights
 
         z = self.encoder_gat3(x, edge_index, edge_attr=edge_attr)
+        if cond_vec is not None and batch_mask is not None:
+            z = self.condition_latent(z, cond_vec, batch_mask)
         return z
 
     def condition_latent(self, z, cond_vec, batch_mask):

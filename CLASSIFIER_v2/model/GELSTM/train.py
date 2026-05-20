@@ -70,6 +70,7 @@ def evaluate(
     batch_list: List[List[dict]],
     device: torch.device,
     use_time_delta: bool = True,
+    zero_time_delta: bool = False,
     graph_pool: str = "mean",
     threshold: float = 0.5,
     shuffle_order: bool = False,
@@ -107,6 +108,7 @@ def evaluate(
         packed, labels, _ = encode_batch_sequences(
             batch, model, device,
             use_time_delta=use_time_delta,
+            zero_time_delta=zero_time_delta,
             graph_pool=graph_pool,
             dim_filter=dim_filter,
             shuffle_order=shuffle_order,

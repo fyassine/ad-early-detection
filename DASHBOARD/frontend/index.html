@@ -267,7 +267,11 @@
                     <h2 id="modalTitle">Patient</h2>
                     <div class="subhead" id="modalSubhead"></div>
                 </div>
-                <button class="btn-close" id="btnCloseModal">✕</button>
+                <div style="display:flex;gap:.4rem;align-items:center">
+                    <button class="btn-close" id="btnOpenPatientView" title="Open Individual Trajectory view">👤</button>
+                    <button class="btn-close" id="btnExpandModal" title="Expand / restore">⛶</button>
+                    <button class="btn-close" id="btnCloseModal">✕</button>
+                </div>
             </div>
             <div class="modal-body" id="modalBody"></div>
         </div>

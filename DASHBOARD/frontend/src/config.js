@@ -1,25 +1,85 @@
 import { $, showLoading, hideLoading } from './utils.js';
 import { state } from './state.js';
 import { analyze, applyFilter, filteredRows } from './dashboard.js';
-import { closeModal, setSelectedVisit, switchTab } from './modal.js';
+import { closeModal, setSelectedVisit, switchTab, embedModalInPatientView } from './modal.js';
 import { resetBrainView } from './tabs/brainview.js';
 import { renderRows } from './table.js';
+import { openPatientView } from './views/router.js';
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-export async function init() {
-    showLoading('Discovering data…');
+const _DISCOVERY_KEY = 'fmri_discovery_cache';
+const _DISCOVERY_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function _loadDiscoveryCache() {
     try {
-        const r = await fetch('/api/discover');
-        state.discoveryData = await r.json();
-        populateCSVs(state.discoveryData.csvs);
-        setupFolderDropdown(state.discoveryData.scan_folders);
-        $('statusText').textContent =
-            `${state.discoveryData.csvs.length} CSVs · ${state.discoveryData.scan_folders.length} scan folders`;
-    } catch {
-        $('statusText').textContent = 'Connection error';
+        const raw = localStorage.getItem(_DISCOVERY_KEY);
+        if (!raw) return null;
+        const { ts, data } = JSON.parse(raw);
+        if (Date.now() - ts < _DISCOVERY_TTL_MS) return data;
+    } catch {}
+    return null;
+}
+
+function _saveDiscoveryCache(data) {
+    try { localStorage.setItem(_DISCOVERY_KEY, JSON.stringify({ ts: Date.now(), data })); } catch {}
+}
+
+function _loadStaleDiscoveryCache() {
+    try {
+        const raw = localStorage.getItem(_DISCOVERY_KEY);
+        if (raw) return JSON.parse(raw).data;
+    } catch {}
+    return null;
+}
+
+async function _fetchWithTimeout(url, ms = 10000) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    try { return await fetch(url, { signal: ctrl.signal }); }
+    finally { clearTimeout(t); }
+}
+
+function _applyDiscovery(d) {
+    state.discoveryData = d;
+    populateCSVs(d.csvs);
+    setupFolderDropdown(d.scan_folders);
+    $('statusText').textContent =
+        `${d.csvs.length} CSVs · ${d.scan_folders.length} scan folders`;
+}
+
+export async function init() {
+    const cached = _loadDiscoveryCache();
+    if (cached) {
+        _applyDiscovery(cached);
+    } else {
+        showLoading('Discovering data…');
+        let data = null;
+        try {
+            const r = await _fetchWithTimeout('/api/discover', 10000);
+            if (r && r.ok) {
+                data = await r.json();
+                _saveDiscoveryCache(data);
+            }
+        } catch {
+            // timeout / network error — fall through to stale cache or error UI
+        }
+        if (!data) data = _loadStaleDiscoveryCache();
+        hideLoading();
+        if (data) {
+            _applyDiscovery(data);
+        } else {
+            const status = $('statusText');
+            if (status) {
+                status.innerHTML =
+                    'Could not reach the server. <button id="btnRetryDiscover" class="btn-link" style="background:none;border:none;color:var(--indigo);cursor:pointer;text-decoration:underline;padding:0;font:inherit">Retry</button>';
+                document.getElementById('btnRetryDiscover')?.addEventListener('click', () => {
+                    try { localStorage.removeItem(_DISCOVERY_KEY); } catch {}
+                    location.reload();
+                });
+            }
+        }
     }
-    hideLoading();
 
     renderRecentSearches();
     $('csvSelect').addEventListener('change', checkReady);
@@ -30,6 +90,19 @@ export async function init() {
         applyFilter();
     });
     $('btnCloseModal').addEventListener('click', closeModal);
+    $('btnExpandModal')?.addEventListener('click', () => {
+        const modal = $('patientModal');
+        const expanded = modal.classList.toggle('expanded');
+        $('btnExpandModal').textContent = expanded ? '⊡' : '⛶';
+    });
+    $('btnOpenPatientView')?.addEventListener('click', () => {
+        const sid = state.currentPatient?.sid;
+        if (!sid) return;
+        // Move the entire modal DOM into the Patient view panel; switch top-tab.
+        // Do NOT call closeModal — the modal needs to remain mounted so all 9 tabs work.
+        embedModalInPatientView();
+        openPatientView(sid);
+    });
     $('modalBackdrop').addEventListener('click', e => {
         if (e.target === $('modalBackdrop')) closeModal();
     });

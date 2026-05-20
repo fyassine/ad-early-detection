@@ -2,12 +2,11 @@
 main.py — FastAPI application factory for the fMRI Data Dashboard.
 """
 
-import asyncio
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import STATIC_DIR, DATA_ROOT, DASHBOARD_CACHE_ROOT
@@ -71,32 +70,6 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 for _router in [discovery, metadata, cohort, patient, atlas, health, population]:
     app.include_router(_router.router)
-
-
-@app.exception_handler(asyncio.CancelledError)
-async def _cancelled_error_handler(request: Request, exc: asyncio.CancelledError):
-    """
-    Suppress the ERROR-level traceback that uvicorn logs for every in-flight
-    request when the server receives Ctrl+C.
-
-    What happens on Ctrl+C:
-      1. uvicorn catches SIGINT and cancels all active asyncio tasks.
-      2. def (sync) route handlers run inside anyio's thread pool; FastAPI
-         awaits a Future for each one.  When the task is cancelled that Future
-         raises CancelledError.
-      3. Without this handler FastAPI re-raises the CancelledError, which
-         uvicorn logs as a 500 error with a full traceback — alarming but
-         completely harmless.
-
-    Returning a 503 here converts the log line from ERROR → INFO and
-    eliminates the traceback noise.
-    """
-    return JSONResponse(
-        {"detail": "Server is shutting down"},
-        status_code=503,
-        headers={"Connection": "close"},
-    )
-
 
 @app.get("/")
 async def index():

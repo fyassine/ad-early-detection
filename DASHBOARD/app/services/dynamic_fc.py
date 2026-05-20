@@ -120,6 +120,141 @@ def dwell_and_transitions(labels: list[int], k: int) -> dict:
     }
 
 
+# ──────────────────────────────────────────────────────────────────────────── #
+# Time-series extraction (cached per-scan T×N parcellation)                    #
+# ──────────────────────────────────────────────────────────────────────────── #
+
+_MASKER = None
+
+
+def _get_schaefer_masker():
+    """Lazily build (and cache) the NiftiLabelsMasker used by the processing pipeline."""
+    global _MASKER
+    if _MASKER is not None:
+        return _MASKER
+    from nilearn import datasets
+    from nilearn.maskers import NiftiLabelsMasker
+    schaefer = datasets.fetch_atlas_schaefer_2018(n_rois=200, yeo_networks=7)
+    _MASKER = NiftiLabelsMasker(labels_img=schaefer.maps, standardize="zscore_sample")
+    return _MASKER
+
+
+def extract_timeseries_from_nii(nii_path: str) -> np.ndarray:
+    """Parcellate a 4-D BOLD .nii.gz with the Schaefer-200 atlas → (T, N)."""
+    masker = _get_schaefer_masker()
+    ts = masker.fit_transform(nii_path)
+    return np.asarray(ts, dtype=np.float32)
+
+
+def load_or_extract_timeseries(
+    nii_path: str,
+    cache_root,
+    subject_id: str,
+    visit: str,
+) -> Optional[np.ndarray]:
+    """Return cached (T, N) array for a subject/visit; parcellate + cache on miss."""
+    from pathlib import Path
+    cache_dir = Path(cache_root) / "timeseries"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    safe_visit = str(visit).replace("/", "_")
+    cache_path = cache_dir / f"{subject_id}_{safe_visit}.npz"
+    if cache_path.exists():
+        try:
+            return np.load(cache_path)["ts"].astype(np.float32)
+        except Exception:
+            pass
+    try:
+        ts = extract_timeseries_from_nii(nii_path)
+    except Exception:
+        return None
+    try:
+        np.savez_compressed(cache_path, ts=ts)
+    except Exception:
+        pass
+    return ts
+
+
+# ──────────────────────────────────────────────────────────────────────────── #
+# Cohort-level aggregation                                                     #
+# ──────────────────────────────────────────────────────────────────────────── #
+
+def compute_cohort_dfc(
+    timeseries_by_cohort: dict[str, list[np.ndarray]],
+    k: int = 4,
+    window: int = 30,
+    step: int = 3,
+    seed: int = 42,
+) -> dict:
+    """Fit a single shared k-means on windowed FC across all subjects, then
+    return per-cohort dwell-time histograms.
+
+    Parameters
+    ----------
+    timeseries_by_cohort : dict cohort_name -> list of (T, N) arrays
+    """
+    if not _HAS_SKLEARN:
+        return {"available": False, "note": "scikit-learn not installed"}
+
+    # 1. Build windowed FC vectors per subject; remember per-subject window count for re-split.
+    per_subject_windows: list[tuple[str, np.ndarray]] = []
+    for cohort, ts_list in timeseries_by_cohort.items():
+        for ts in ts_list:
+            if ts is None or ts.ndim != 2 or ts.shape[0] < window + 1:
+                continue
+            w = sliding_window_corr(ts, window=window, step=step)
+            if w.size:
+                per_subject_windows.append((cohort, w))
+    if not per_subject_windows:
+        return {
+            "available": False,
+            "note": "No subjects have enough time-series data to fit dFC states yet. Run the cohort warmup to parcellate time-series.",
+        }
+
+    all_windows = np.concatenate([w for _, w in per_subject_windows], axis=0)
+    if all_windows.shape[0] < k:
+        return {"available": False, "note": f"Only {all_windows.shape[0]} windows total (need ≥ {k})."}
+
+    km = KMeans(n_clusters=k, n_init=10, random_state=seed)
+    global_labels = km.fit_predict(all_windows)
+
+    # 2. Per-subject dwell fractions; aggregate per cohort.
+    per_cohort: dict[str, dict] = {}
+    offset = 0
+    for cohort, w in per_subject_windows:
+        n = w.shape[0]
+        labels = global_labels[offset:offset + n].tolist()
+        offset += n
+        d = dwell_and_transitions(labels, k=k)
+        bucket = per_cohort.setdefault(cohort, {"dwell": [[] for _ in range(k)], "n": 0})
+        for i in range(k):
+            bucket["dwell"][i].append(d["dwell"][f"state_{i}"])
+        bucket["n"] += 1
+
+    cohorts_out: dict[str, dict] = {}
+    histograms: dict[str, dict] = {}
+    for cohort, b in per_cohort.items():
+        means = [float(np.mean(vals)) if vals else 0.0 for vals in b["dwell"]]
+        stds  = [float(np.std(vals, ddof=0)) if len(vals) > 1 else 0.0 for vals in b["dwell"]]
+        cohorts_out[cohort] = {"n": b["n"], "dwell_mean": means, "dwell_std": stds}
+        histograms[cohort] = {
+            "n": b["n"],
+            "counts": means,  # frontend expects counts; we expose mean dwell fraction
+        }
+
+    return {
+        "available": True,
+        "k": k,
+        "window": window,
+        "step": step,
+        "centroids": km.cluster_centers_.tolist(),
+        "n_windows_total": int(all_windows.shape[0]),
+        "cohorts": list(cohorts_out.keys()),
+        "per_cohort": cohorts_out,
+        "histograms": histograms,
+        "state_labels": [f"State {i + 1}" for i in range(k)],
+    }
+
+
 def subject_dynamic_fc(
     timeseries: Optional[np.ndarray],
     k: int = 4,

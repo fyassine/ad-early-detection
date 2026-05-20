@@ -9,10 +9,30 @@ from ..biomarkers import find_subject_nifti_files
 from ..cohort_stats import COHORTS, get_cohort_stats, is_stats_cached, project_visits
 from ..services.utils import _safe_round_matrix, cache_headers, check_not_modified
 from ..services.job_manager import (
-    start_job, get_status, list_jobs, cancel_job, register_workspace,
+    canonical_job_id, start_job, get_status, list_jobs, cancel_job, register_workspace,
 )
 
 router = APIRouter()
+
+
+def _stats_pending_response(csv_path: str, folder_list: list[str]) -> JSONResponse:
+    job = get_status(canonical_job_id(csv_path, folder_list), DASHBOARD_CACHE_ROOT)
+    status = str(job.get("status") or "").lower()
+    stage = str(job.get("stage") or "running").replace("_", " ")
+    progress = job.get("progress")
+    if status in {"starting", "running"}:
+        if isinstance(progress, (int, float)):
+            pct = max(0, min(100, int(round(float(progress) * 100.0))))
+            note = f"Cohort warmup is still running ({pct}% — {stage})."
+        else:
+            note = f"Cohort warmup is still running ({stage})."
+    else:
+        note = "Cohort warmup has not finished for this dataset yet."
+    return JSONResponse({
+        "available": False,
+        "note": note,
+        "job": job if status != "unknown" else None,
+    })
 
 
 @router.get("/api/cohort/warmup")
@@ -111,6 +131,8 @@ def api_cohort_effect_sizes(
     if not os.path.exists(abs_csv):
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
     folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
+    if not is_stats_cached(DATA_ROOT, csv_path, folder_list):
+        return _stats_pending_response(csv_path, folder_list)
     stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
 
     from ..services.effect_sizes import pairwise_effect_sizes
@@ -338,6 +360,8 @@ def api_cohort_graph_topology(
     if not os.path.exists(abs_csv):
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
     folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
+    if not is_stats_cached(DATA_ROOT, csv_path, folder_list):
+        return _stats_pending_response(csv_path, folder_list)
     stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
 
     from ..services.graph_metrics import (
@@ -536,6 +560,8 @@ def api_cohort_network_disruption(
     if not os.path.exists(abs_csv):
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
     folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
+    if not is_stats_cached(DATA_ROOT, csv_path, folder_list):
+        return _stats_pending_response(csv_path, folder_list)
     stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
     from ..services.population import network_disruption_atlas
     return JSONResponse(network_disruption_atlas(stats),
@@ -546,25 +572,47 @@ def api_cohort_network_disruption(
 def api_cohort_dfc_states(
     csv_path: str = Query(..., description="Relative path to metadata CSV"),
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
+    k: int = Query(default=4, description="Number of dFC states"),
+    window: int = Query(default=30, description="Sliding-window length (TRs)"),
+    step: int = Query(default=3, description="Sliding-window step (TRs)"),
 ):
     """
     Dynamic FC state distributions per cohort.
 
-    Currently returns ``available=False`` with a clear note: dFC requires
-    raw ROI time-series and the dashboard ingest stores only static
-    correlation matrices. Phase 3.x will add a time-series cache to
-    populate this endpoint.
+    Reads the cached payload produced by `precompute._stage_dfc()`. If the
+    warmup hasn't produced a cache yet, returns `available=False` with a
+    hint to run/await the warmup job.
     """
+    import hashlib
+    import json as _json
+
     abs_csv = os.path.join(DATA_ROOT, csv_path)
     if not os.path.exists(abs_csv):
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
+
+    folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
+    h = hashlib.sha1()
+    h.update(csv_path.encode())
+    for f in sorted(folder_list):
+        h.update(b"\x00"); h.update(f.encode())
+    cache_key = h.hexdigest()[:20]
+    cache_path = DASHBOARD_CACHE_ROOT / "dfc" / f"dfc_{cache_key}_k{k}_w{window}_s{step}.json"
+
+    if cache_path.exists():
+        try:
+            return JSONResponse(_json.loads(cache_path.read_text()))
+        except Exception as e:
+            return JSONResponse({"available": False, "note": f"dFC cache unreadable: {e}"})
+
+    # Surface the active warmup job (if any) so the frontend can render a progress bar.
+    job = get_status(canonical_job_id(csv_path, folder_list), DASHBOARD_CACHE_ROOT)
+    job_status = str(job.get("status") or "").lower()
     return JSONResponse({
         "available": False,
         "note": (
-            "Dynamic FC requires raw ROI time-series. The dashboard "
-            "currently caches only static correlation matrices, so dFC "
-            "state distributions are unavailable. Drop a time-series .npz "
-            "(shape T×N) alongside each subject and the service will "
-            "populate this endpoint automatically."
+            "Dynamic FC is not computed yet for this dataset. Trigger the cohort "
+            "warmup (or wait for it to finish) — Stage 5 parcellates BOLD .nii.gz "
+            "and fits state distributions automatically."
         ),
+        "job": job if job_status not in ("unknown", "") else None,
     })

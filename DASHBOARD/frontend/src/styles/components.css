@@ -91,6 +91,11 @@
 .view-panel{display:none;animation:fadeIn .3s ease-out}
 .view-panel.active{display:block}
 .view-header{margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+/* ── Patient full-screen trajectory view ── */
+.pv-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);margin-bottom:1rem}
+.pv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1rem;padding:0 1.5rem 1.5rem}
+.pv-card{background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:1rem}
+.pv-card h3{margin:0 0 .75rem;font-size:.78rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em}
 .view-header h2{font-size:1.1rem;font-weight:700;color:var(--text-0);margin-bottom:.25rem}
 .view-header .view-sub{font-size:.78rem;color:var(--text-2);max-width:780px;line-height:1.45}
 .view-header code{

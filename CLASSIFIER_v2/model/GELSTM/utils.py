@@ -61,6 +61,7 @@ def encode_batch_sequences(
     encoder_model: "torch.nn.Module",
     device: torch.device,
     use_time_delta: bool = True,
+    zero_time_delta: bool = False,
     graph_pool: str = "mean",
     dim_filter: "np.ndarray | None" = None,
     shuffle_order: bool = False,
@@ -75,8 +76,13 @@ def encode_batch_sequences(
     encoder_model : exposes encode_visit() or encode() returning node embeddings.
     device : torch.device
     use_time_delta : bool
-        If False, the [z_t ‖ Δt_t] concat step is skipped. Used for the
-        SANITY_LSTM_CHECKS "Δt removed" ablation.
+        If False and zero_time_delta is False, the Δt column is dropped entirely.
+        For models trained with use_time_delta=True this will cause a shape
+        mismatch — use zero_time_delta=True instead for a safe ablation.
+    zero_time_delta : bool
+        If True, append a zero in place of the real Δt. Keeps the LSTM input
+        shape identical to the use_time_delta=True case while removing the
+        actual signal. Use this for the "Δt removed" sanity check.
     graph_pool : 'mean' | 'max' | 'sum'
     dim_filter : np.ndarray of int indices or None
         FDR-based latent-dimension selection.
@@ -146,8 +152,9 @@ def encode_batch_sequences(
                     )
                     z_t  = z_t[_idx]
 
-                if use_time_delta:
-                    dt  = torch.tensor([deltas[t]], dtype=torch.float, device=device)
+                if use_time_delta or zero_time_delta:
+                    dt_val = 0.0 if zero_time_delta else deltas[t]
+                    dt  = torch.tensor([dt_val], dtype=torch.float, device=device)
                     z_t = torch.cat([z_t, dt], dim=0)
 
                 step_embs.append(z_t)

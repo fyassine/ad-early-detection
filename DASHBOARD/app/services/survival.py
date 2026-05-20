@@ -18,10 +18,18 @@ import pandas as pd
 
 
 def _visit_months(visit) -> Optional[int]:
-    """Parse ``"M12"`` -> 12; returns None for unrecognised codes."""
+    """Parse a visit code to months.
+
+    Handles:
+      DELCODE  M0, M12, M24 …
+      ADNI     bl/sc/screen → 0; m06 → 6; m12 → 12 (VISCODE2 lowercase-m style)
+    """
     if visit is None:
         return None
-    m = re.match(r"M(\d+)", str(visit).strip().upper())
+    s = str(visit).strip().upper()
+    if s in ("BL", "SC", "SCMRI", "SCREEN"):
+        return 0
+    m = re.match(r"^M0*(\d+)$", s)   # M0, M06, M12, M024 all match
     return int(m.group(1)) if m else None
 
 
@@ -107,7 +115,11 @@ def _attach_atn_stage(table: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
         grp2 = grp2.sort_values("_m", na_position="last").reset_index(drop=True)
         # Compute ATN for each visit, take the baseline stage
         for _, row in grp2.iterrows():
-            atn = classify_atn(row)
+            atn = classify_atn(
+                abeta42=row.get("abeta42"),
+                p_tau=row.get("p_tau"),
+                total_tau=row.get("total_tau"),
+            )
             if atn and atn.get("stage") is not None:
                 stage_map[str(sid)] = f"Stage {atn['stage']}"
                 break

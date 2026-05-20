@@ -14,9 +14,9 @@ Builds the data backing the Population top-tab:
                                     attention). Used to render the population
                                     network heatmap.
 
-All functions accept a CohortStats instance (already cached in memory) plus
-an optional metadata DataFrame. They never touch disk directly — they read
-the pre-computed fields populated by ``cohort_stats.get_cohort_stats``.
+`cohort_demographic_summary` runs from metadata only.
+`network_disruption_atlas` consumes a CohortStats instance that is already
+cached in memory. None of these helpers touch disk directly.
 """
 
 from __future__ import annotations
@@ -100,7 +100,7 @@ def _pct(numerator: int, denominator: int) -> Optional[float]:
     return float(numerator) / float(denominator)
 
 
-def cohort_demographic_summary(stats: CohortStats, df: pd.DataFrame) -> dict:
+def cohort_demographic_summary(df: pd.DataFrame) -> dict:
     """
     Population-level demographic and conversion summary.
 
