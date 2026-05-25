@@ -186,11 +186,11 @@ def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None, n_job
 
 
 def run_followup_reprocessing(fmri_root: Path) -> bool:
-    """Process all follow-up visits from fmri_root into __v3__/matrices/."""
+    """Process all follow-up visits from fmri_root into __fc_wholebrain_sch200_flat__/matrices/."""
     print(f"\n{'='*60}")
-    print(f"  __v3__ — Reprocess all visits from {fmri_root.name}")
+    print(f"  __fc_wholebrain_sch200_flat__ — Reprocess all visits from {fmri_root.name}")
     print(f"{'='*60}")
-    output_dir = REPO_ROOT / "DATA" / "DELCODE" / "__v3__" / "matrices"
+    output_dir = REPO_ROOT / "DATA" / "DELCODE" / "__fc_wholebrain_sch200_flat__" / "matrices"
     cmd = [
         sys.executable, "-m",
         "DATA.src.processing.process_using_schaeffer_atlas",
@@ -200,7 +200,7 @@ def run_followup_reprocessing(fmri_root: Path) -> bool:
     print(f"  Command: {' '.join(cmd[2:])}")
     result = subprocess.run(cmd, cwd=str(REPO_ROOT))
     if result.returncode != 0:
-        print(f"  ERROR: __v3__ reprocessing failed (code {result.returncode})")
+        print(f"  ERROR: __fc_wholebrain_sch200_flat__ reprocessing failed (code {result.returncode})")
         return False
     return True
 
