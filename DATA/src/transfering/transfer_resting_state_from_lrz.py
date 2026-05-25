@@ -29,10 +29,10 @@ RUNS_OF_INTEREST = {"T1_01", "T1_02"}
 
 DEFAULT_MANIFEST_CANDIDATES = [
     "/mnt/e/fyassine/ad-early-detection/DATA/_DELCODE/metadata/scan_dates/restingstate_scan_dates_M0_M60.xlsx",
-    "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__v2__/metadata/stratification/data/study_metadata/restingstate_scan_dates_M0_M60.xlsx",
+    "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__fmri_wholebrain_sch200_session__/metadata/stratification/data/study_metadata/restingstate_scan_dates_M0_M60.xlsx",
 ]
 
-DEFAULT_DEST_BASE = "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__all__"
+DEFAULT_DEST_BASE = "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__fmri_wholebrain_sch200_tp__"
 DEFAULT_LOG_FILE = "/mnt/e/fyassine/ad-early-detection/logs/transfer_resting_state.log"
 DEFAULT_LRZ_POSTPROCESSED_BASE = "/dss/dssfs03/pn72zi/pn72zi-dss-0001/di38jor/Projects/Delcode/data/Converter_newcriteria/postprocessed"
 DEFAULT_SELECTION_ROOT = "/dss/dssfs03/pn72zi/pn72zi-dss-0001/di38jor/Projects/Delcode/all_data/DELCODE_*"

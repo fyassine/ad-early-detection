@@ -11,7 +11,7 @@ Usage (from repo root):
         --atlas-path /path/to/Tian_Subcortex_S2_3T.nii.gz \\
         --labels-path /path/to/Tian_Subcortex_S2_3T_label.txt
 
-Output saved to DATA/DELCODE/__v5__/matrices/
+Output saved to DATA/DELCODE/__fc_hippo_tian2_flat__/matrices/
 """
 
 from __future__ import annotations
@@ -35,8 +35,8 @@ except ImportError:
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_FMRI_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__v1__" / "fmri"
-DEFAULT_OUTPUT_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__v5__"
+DEFAULT_FMRI_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__fmri_wholebrain_sch200_flat__" / "fmri"
+DEFAULT_OUTPUT_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__fc_hippo_tian2_flat__"
 SUBJECT_GLOB = "sub-*"
 OUTPUT_RAW_SUFFIX = "_hippocampus_correlation_matrix.npz"
 OUTPUT_Z_SUFFIX = "_hippocampus_correlation_matrix_z_transformed.npz"
@@ -212,7 +212,7 @@ def main(
 
     metadata_link = output_root / "metadata"
     if not metadata_link.exists():
-        v3_meta = REPO_ROOT / "DATA" / "DELCODE" / "__v3__" / "metadata"
+        v3_meta = REPO_ROOT / "DATA" / "DELCODE" / "__fc_wholebrain_sch200_flat__" / "metadata"
         if v3_meta.exists():
             metadata_link.symlink_to(v3_meta.resolve())
 
@@ -267,7 +267,7 @@ if __name__ == "__main__":
     parser.add_argument("--atlas-path", required=True, type=Path, help="Path to Tian atlas NIfTI file")
     parser.add_argument("--labels-path", type=Path, default=None, help="Path to Tian label text file (optional)")
     parser.add_argument("--fmri-root", type=Path, default=DEFAULT_FMRI_ROOT, help="Root fMRI directory (all visits)")
-    parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT, help="Output version root (e.g. __v5__)")
+    parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT, help="Output version root (e.g. __fc_hippo_tian2_flat__)")
     parser.add_argument("--n-jobs", type=int, default=16,
                         help="Parallel workers (default: 16). Lower if you hit OOM.")
     args = parser.parse_args()

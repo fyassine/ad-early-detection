@@ -2,9 +2,9 @@ from pathlib import Path
 import pandas as pd
 
 FILES = [
-    Path("DATA/DELCODE/__v1__/metadata/cohorts.csv"),
-    Path("DATA/DELCODE/__v3__/metadata/cohorts.csv"),
-    Path("DATA/DELCODE/__v4__/metadata/cohorts.csv"),
+    Path("DATA/DELCODE/__fmri_wholebrain_sch200_flat__/metadata/cohorts.csv"),
+    Path("DATA/DELCODE/__fc_wholebrain_sch200_flat__/metadata/cohorts.csv"),
+    Path("DATA/DELCODE/__fc_dmn_sch200_flat__/metadata/cohorts.csv"),
 ]
 
 

@@ -1,11 +1,11 @@
 """
 subset_schaefer_networks.py — Extract network-specific correlation submatrices
-from existing whole-brain __v3__ Schaefer 200 correlation matrices.
+from existing whole-brain __fc_wholebrain_sch200_flat__ Schaefer 200 correlation matrices.
 
 Usage (from repo root):
     python -m CLASSIFIER.src.processing.subset_schaefer_networks \\
         --networks Default Limbic \\
-        --output-version __v9__ \\
+        --output-version __fc_dmn-limbic_sch200_flat__ \\
         --output-suffix dmn_limbic
 
 Available networks (Schaefer 200, 7 Yeo):
@@ -30,7 +30,7 @@ except ImportError:
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 ATLAS_JSON = REPO_ROOT / "DASHBOARD" / "app" / "static" / "data" / "schaefer_200_coords.json"
-V3_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__v3__"
+V3_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__fc_wholebrain_sch200_flat__"
 DELCODE_ROOT = REPO_ROOT / "DATA" / "DELCODE"
 
 INPUT_RAW_SUFFIX = "_whole_brain_correlation_matrix.npz"
@@ -71,7 +71,7 @@ def process_file(
 def main(networks: list[str], output_version: str, output_suffix: str) -> None:
     matrices_in = V3_ROOT / "matrices"
     if not matrices_in.exists():
-        raise FileNotFoundError(f"__v3__ matrices dir not found: {matrices_in}")
+        raise FileNotFoundError(f"__fc_wholebrain_sch200_flat__ matrices dir not found: {matrices_in}")
 
     indices = load_network_indices(networks)
     if not indices:
@@ -82,7 +82,7 @@ def main(networks: list[str], output_version: str, output_suffix: str) -> None:
     matrices_out = out_root / "matrices"
     matrices_out.mkdir(parents=True, exist_ok=True)
 
-    # Symlink metadata from __v3__ (same subjects)
+    # Symlink metadata from __fc_wholebrain_sch200_flat__ (same subjects)
     metadata_link = out_root / "metadata"
     if not metadata_link.exists():
         metadata_link.symlink_to((V3_ROOT / "metadata").resolve())
@@ -153,7 +153,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--output-version", required=True,
-        help="DELCODE data version directory name (e.g. __v6__)"
+        help="DELCODE data version directory name (e.g. __fc_limbic_sch200_flat__)"
     )
     parser.add_argument(
         "--output-suffix", required=True,

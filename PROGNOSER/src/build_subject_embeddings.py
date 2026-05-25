@@ -32,18 +32,18 @@ from PROGNOSER.common.survival_table import build_survival_table
 
 REPO_ROOT = Path('/mnt/e/fyassine/ad-early-detection')
 CACHE_DIR = REPO_ROOT / 'PROGNOSER' / 'notebooks' / '_embeddings_cache_'
-COHORTS_CSV = REPO_ROOT / 'DATA' / 'DELCODE' / '__v3__' / 'metadata' / 'cohorts.csv'
-SPLITS_DIR = REPO_ROOT / 'DATA' / 'DELCODE' / '__v3__' / 'metadata' / 'splits_gec'
+COHORTS_CSV = REPO_ROOT / 'DATA' / 'DELCODE' / '__fc_wholebrain_sch200_flat__' / 'metadata' / 'cohorts.csv'
+SPLITS_DIR = REPO_ROOT / 'DATA' / 'DELCODE' / '__fc_wholebrain_sch200_flat__' / 'metadata' / 'splits_gec'
 
 COMBO_TABLE = {
-    "dmn":              ("__v4__",  "_dmn_correlation_matrix_z_transformed.npz"),
-    "hippo":            ("__v5__",  "_hippocampus_correlation_matrix_z_transformed.npz"),
-    "limbic":           ("__v6__",  "_limbic_correlation_matrix_z_transformed.npz"),
-    "dan":              ("__v7__",  "_dorsal_attention_correlation_matrix_z_transformed.npz"),
-    "dmn_hippo":        ("__v8__",  "_dmn_hippo_correlation_matrix_z_transformed.npz"),
-    "dmn_limbic":       ("__v9__",  "_dmn_limbic_correlation_matrix_z_transformed.npz"),
-    "dmn_limbic_hippo": ("__v10__", "_dmn_limbic_hippo_correlation_matrix_z_transformed.npz"),
-    "all_combined":     ("__v11__", "_all_combined_correlation_matrix_z_transformed.npz"),
+    "dmn":              ("__fc_dmn_sch200_flat__",                        "_dmn_correlation_matrix_z_transformed.npz"),
+    "hippo":            ("__fc_hippo_tian2_flat__",                       "_hippocampus_correlation_matrix_z_transformed.npz"),
+    "limbic":           ("__fc_limbic_sch200_flat__",                     "_limbic_correlation_matrix_z_transformed.npz"),
+    "dan":              ("__fc_dan_sch200_flat__",                        "_dorsal_attention_correlation_matrix_z_transformed.npz"),
+    "dmn_hippo":        ("__fc_dmn-hippo_sch200-tian2_flat__",            "_dmn_hippo_correlation_matrix_z_transformed.npz"),
+    "dmn_limbic":       ("__fc_dmn-limbic_sch200_flat__",                 "_dmn_limbic_correlation_matrix_z_transformed.npz"),
+    "dmn_limbic_hippo": ("__fc_dmn-hippo-limbic_sch200-tian2_flat__",    "_dmn_limbic_hippo_correlation_matrix_z_transformed.npz"),
+    "all_combined":     ("__fc_dmn-hippo-limbic-dan_sch200-tian2_flat__", "_all_combined_correlation_matrix_z_transformed.npz"),
 }
 
 

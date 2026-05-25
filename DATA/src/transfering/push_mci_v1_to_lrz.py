@@ -9,8 +9,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Set, Tuple
 
-SOURCE_DIR_DEFAULT = "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__v1__/fmri"
-COHORT_CSV_DEFAULT = "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__v1__/metadata/cohorts.csv"
+SOURCE_DIR_DEFAULT = "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__fmri_wholebrain_sch200_flat__/fmri"
+COHORT_CSV_DEFAULT = "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__fmri_wholebrain_sch200_flat__/metadata/cohorts.csv"
 DEST_ROOT_DEFAULT = "/dss/dsshome1/0A/di54lup/DELCODE/__mci_only__"
 LRZ_USER_DEFAULT = "di54lup"
 LRZ_HOST_DEFAULT = "cool.hpc.lrz.de"

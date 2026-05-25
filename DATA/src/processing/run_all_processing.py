@@ -37,7 +37,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
-# Schaefer-only experiments: no fMRI data needed, just slice __v3__ matrices.
+# Schaefer-only experiments: no fMRI data needed, just slice __fc_wholebrain_sch200_flat__ matrices.
 SCHAEFER_JOBS = [
     {
         "version": "__fc_limbic_sch200_flat__",
@@ -221,17 +221,17 @@ def main(
     print(f"  Tian jobs: {len(TIAN_JOBS)} ({'atlas provided' if tian_atlas else 'atlas missing — will print commands only'})")
     print(f"  Tian parallel workers: {n_jobs}")
 
-    # Step 0: Reprocess all follow-up visits from __v1__/fmri into __v3__/matrices
+    # Step 0: Reprocess all follow-up visits from __fmri_wholebrain_sch200_flat__/fmri into __fc_wholebrain_sch200_flat__/matrices
     if reprocess_followups:
-        fmri_root = REPO_ROOT / "DATA" / "DELCODE" / "__v1__" / "fmri"
+        fmri_root = REPO_ROOT / "DATA" / "DELCODE" / "__fmri_wholebrain_sch200_flat__" / "fmri"
         if not fmri_root.exists():
-            print(f"\nWARNING: __v1__/fmri not found at {fmri_root}, skipping reprocessing.")
+            print(f"\nWARNING: __fmri_wholebrain_sch200_flat__/fmri not found at {fmri_root}, skipping reprocessing.")
         else:
             print("\n\n── STEP 0: REPROCESS ALL VISITS ────────────────────────────")
             ok = run_followup_reprocessing(fmri_root)
             if ok:
-                print("  __v3__ matrices updated with all follow-up visits.")
-            # Re-run Schaefer subsets after __v3__ is updated so follow-ups are sliced too
+                print("  __fc_wholebrain_sch200_flat__ matrices updated with all follow-up visits.")
+            # Re-run Schaefer subsets after __fc_wholebrain_sch200_flat__ is updated so follow-ups are sliced too
             skip_schaefer = False
 
     # Step 1: Schaefer-only subsets
@@ -276,7 +276,7 @@ if __name__ == "__main__":
     parser.add_argument("--skip-schaefer", action="store_true",
                         help="Skip Schaefer-only subset jobs")
     parser.add_argument("--reprocess-followups", action="store_true",
-                        help="Reprocess all follow-up visits from __v1__/fmri into __v3__/matrices")
+                        help="Reprocess all follow-up visits from __fmri_wholebrain_sch200_flat__/fmri into __fc_wholebrain_sch200_flat__/matrices")
     parser.add_argument("--n-jobs", type=int, default=16,
                         help="Parallel workers for Tian atlas jobs (default: 16). Lower if you hit OOM.")
     args = parser.parse_args()

@@ -7,8 +7,8 @@ Invoke directly for one-off precompute runs:
     cd DASHBOARD/
     .venv/bin/python -m app.precompute \\
         --data-root /mnt/e/fyassine/ad-early-detection/DATA \\
-        --csv-path  DELCODE/__v4__/metadata/cohorts.csv \\
-        --scan-folders DELCODE/__v4__/dmn_only_schaefer \\
+        --csv-path  DELCODE/__fc_dmn_sch200_flat__/metadata/cohorts.csv \\
+        --scan-folders DELCODE/__fc_dmn_sch200_flat__/matrices \\
         --job-id manual \\
         --cache-root /mnt/e/fyassine/ad-early-detection/DASHBOARD/.cache
 

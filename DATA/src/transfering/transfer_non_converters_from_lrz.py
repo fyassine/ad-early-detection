@@ -22,7 +22,7 @@ except Exception:
 DEFAULT_LRZ_NONCONVERTER_BASE = (
     "/dss/dssfs03/pn72zi/pn72zi-dss-0001/di38jor/Projects/Delcode/data/non-converter/postprocessed"
 )
-DEFAULT_DEST_BASE = "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__v1__/fmri"
+DEFAULT_DEST_BASE = "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__fmri_wholebrain_sch200_flat__/fmri"
 DEFAULT_LOG_FILE = "/mnt/e/fyassine/ad-early-detection/logs/transfer_non_converter_resting_state.log"
 
 SSH_OPTS = [

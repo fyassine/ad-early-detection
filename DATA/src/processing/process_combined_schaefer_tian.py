@@ -6,26 +6,26 @@ Concatenates time series from both maskers before computing FC so that
 cross-region edges (e.g. DMN ↔ Hippocampus) are preserved.
 
 Usage (from repo root):
-    # DMN + Hippocampus → __v8__
+    # DMN + Hippocampus → __fc_dmn-hippo_sch200-tian2_flat__
     python -m CLASSIFIER.src.processing.process_combined_schaefer_tian \\
         --networks Default \\
-        --output-version __v8__ \\
+        --output-version __fc_dmn-hippo_sch200-tian2_flat__ \\
         --output-suffix dmn_hippo \\
         --tian-atlas /path/to/Tian_Subcortex_S2_3T.nii.gz \\
         --tian-labels /path/to/Tian_Subcortex_S2_3T_label.txt
 
-    # DMN + Limbic + Hippocampus → __v10__
+    # DMN + Limbic + Hippocampus → __fc_dmn-hippo-limbic_sch200-tian2_flat__
     python -m CLASSIFIER.src.processing.process_combined_schaefer_tian \\
         --networks Default Limbic \\
-        --output-version __v10__ \\
+        --output-version __fc_dmn-hippo-limbic_sch200-tian2_flat__ \\
         --output-suffix dmn_limbic_hippo \\
         --tian-atlas /path/to/Tian_Subcortex_S2_3T.nii.gz \\
         --tian-labels /path/to/Tian_Subcortex_S2_3T_label.txt
 
-    # DMN + Limbic + DorsAttn + Hippocampus → __v11__
+    # DMN + Limbic + DorsAttn + Hippocampus → __fc_dmn-hippo-limbic-dan_sch200-tian2_flat__
     python -m CLASSIFIER.src.processing.process_combined_schaefer_tian \\
         --networks Default Limbic DorsAttn \\
-        --output-version __v11__ \\
+        --output-version __fc_dmn-hippo-limbic-dan_sch200-tian2_flat__ \\
         --output-suffix all_combined \\
         --tian-atlas /path/to/Tian_Subcortex_S2_3T.nii.gz \\
         --tian-labels /path/to/Tian_Subcortex_S2_3T_label.txt
@@ -53,7 +53,7 @@ except ImportError:
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_FMRI_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__v1__" / "fmri"
+DEFAULT_FMRI_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__fmri_wholebrain_sch200_flat__" / "fmri"
 DELCODE_ROOT = REPO_ROOT / "DATA" / "DELCODE"
 ATLAS_JSON = REPO_ROOT / "DASHBOARD" / "app" / "static" / "data" / "schaefer_200_coords.json"
 SUBJECT_GLOB = "sub-*"
@@ -274,7 +274,7 @@ def main(
 
     metadata_link = out_root / "metadata"
     if not metadata_link.exists():
-        v3_meta = DELCODE_ROOT / "__v3__" / "metadata"
+        v3_meta = DELCODE_ROOT / "__fc_wholebrain_sch200_flat__" / "metadata"
         if v3_meta.exists():
             metadata_link.symlink_to(v3_meta.resolve())
 
@@ -358,12 +358,12 @@ def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--networks", nargs="+", required=True, help="Schaefer networks to include")
-    parser.add_argument("--output-version", required=True, help="DELCODE version dir (e.g. __v8__)")
+    parser.add_argument("--output-version", required=True, help="DELCODE version dir (e.g. __fc_dmn-hippo_sch200-tian2_flat__)")
     parser.add_argument("--output-suffix", required=True, help="File suffix (e.g. dmn_hippo)")
     parser.add_argument("--tian-atlas", required=True, type=Path, help="Tian atlas NIfTI")
     parser.add_argument("--tian-labels", type=Path, default=None, help="Tian label text file")
     parser.add_argument("--fmri-root", type=Path, default=DEFAULT_FMRI_ROOT,
-                        help="Root fMRI directory (all visits, default: __v1__/fmri)")
+                        help="Root fMRI directory (all visits, default: __fmri_wholebrain_sch200_flat__/fmri)")
     parser.add_argument("--n-jobs", type=int, default=16,
                         help="Parallel workers (default: 16). Lower if you hit OOM.")
     args = parser.parse_args()

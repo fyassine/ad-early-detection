@@ -5,10 +5,10 @@ Reads resting-state BOLD NIfTI files from a source directory, applies the
 Schaefer 2018 (200 ROI, 7 Yeo networks) atlas, and saves Pearson FC + Fisher
 z-transformed matrices to an output directory.
 
-Usage (process all visits from __v1__ into __v3__):
+Usage (process all visits from __fmri_wholebrain_sch200_flat__ into __fc_wholebrain_sch200_flat__):
     python -m CLASSIFIER.src.processing.process_using_schaeffer_atlas \\
-        --fmri-root DATA/DELCODE/__v1__/fmri \\
-        --output-dir DATA/DELCODE/__v3__/matrices
+        --fmri-root DATA/DELCODE/__fmri_wholebrain_sch200_flat__/fmri \\
+        --output-dir DATA/DELCODE/__fc_wholebrain_sch200_flat__/matrices
 """
 
 from __future__ import annotations
@@ -29,8 +29,8 @@ except ImportError:  # pragma: no cover
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_FMRI_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__v1__" / "fmri"
-DEFAULT_OUTPUT_DIR = REPO_ROOT / "DATA" / "DELCODE" / "__v3__" / "matrices"
+DEFAULT_FMRI_ROOT = REPO_ROOT / "DATA" / "DELCODE" / "__fmri_wholebrain_sch200_flat__" / "fmri"
+DEFAULT_OUTPUT_DIR = REPO_ROOT / "DATA" / "DELCODE" / "__fc_wholebrain_sch200_flat__" / "matrices"
 SUBJECT_GLOB = "sub-*"
 OUTPUT_RAW_SUFFIX = "_whole_brain_correlation_matrix.npz"
 OUTPUT_Z_SUFFIX = "_whole_brain_correlation_matrix_z_transformed.npz"
