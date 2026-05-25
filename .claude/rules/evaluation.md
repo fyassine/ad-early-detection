@@ -14,14 +14,15 @@ paths:
 
 ## Concrete contracts
 
-- `EvalConfig.threshold_mode` defaults to `"youden"`. Youden's J is computed on the data passed in — fine for validation, leakage on test. Always pair `threshold_mode="youden"` with `val_batches`, never `test_batches`.
+- `EvalConfig.threshold_mode` defaults to `"f1"`. Best-F1 threshold is computed on the data passed in — fine for validation, leakage on test. Always pair `threshold_mode="f1"` (or `"youden"`) with `val_batches`, never `test_batches`.
+- Prefer `"f1"` over `"youden"` as the default threshold strategy. Youden's J maximises sensitivity+specificity jointly; best-F1 maximises precision-recall balance and is better suited for the class-imbalanced DELCODE cohort.
 - `CLASSIFIER/model/GEC/train.py::evaluate_classifier(model, loader, device, *, threshold)` raises `ValueError` if `threshold is None`. This is intentional — see `errors.md`.
 - After training, read `checkpoint["best_threshold"]` and pass it into the test-set evaluation call.
 
 ## Pattern
 
 ```python
-# Training: Youden on val, stored in checkpoint
+# Training: best-F1 on val (default), stored in checkpoint
 ckpt, history = train_classifier(model, train_loader, val_loader, ..., cfg=cfg)
 val_thr = ckpt["best_threshold"]
 

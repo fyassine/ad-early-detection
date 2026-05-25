@@ -11,8 +11,7 @@
 
 **Legacy — read-only:**
 
-- `CLASSIFIER/` — prototype, empty `src/`.
-- `CLASSIFIER_v1/` — prior iteration; keep only for back-compat artifact loading.
+- `__CLASSIFIER__/` — prior iteration; keep only for back-compat artifact loading.
 - `ABI/` — artifact-based indices, notebooks only.
 - `DCI/` — disconnectivity index, notebooks only.
 

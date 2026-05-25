@@ -5,7 +5,7 @@ Research codebase for Alzheimer's disease early detection using longitudinal bra
 ## Active vs legacy directories
 
 - **Active** (write new code here): `CLASSIFIER/` (graph classifiers), `PROGNOSER/` (survival analysis, consumes GAAE embeddings), `DASHBOARD/` (FastAPI+Vite app), `DATA/src/processing/` (preprocessing pipeline)
-- **Legacy / read-only**: `CLASSIFIER/`, `CLASSIFIER_v1/`, `ABI/`, `DCI/`
+- **Legacy / read-only**: everything inside `__CLASSIFIER__/`, `ABI/`, `DCI/`
 
 ## Rule modules (loaded automatically)
 
@@ -29,5 +29,4 @@ Research codebase for Alzheimer's disease early detection using longitudinal bra
 
 ```bash
 pytest CLASSIFIER/tests/                       # 15 tests
-python CLASSIFIER/dev/patch_v2_notebooks.py    # idempotent: injects seeding + sanity cells
 ```

@@ -59,9 +59,25 @@ from CLASSIFIER.configs import GELSTMTrainConfig, EvalConfig
 from CLASSIFIER.model.GELSTM.train import train_model
 ```
 
+## Interactive prompts (mandatory in every notebook that uses these features)
+
+### 1 — GAAE checkpoint selection (every notebook that loads a GAAE encoder)
+
+Print the indexed list from `CHECKPOINT_SEARCH_DIRS`, prompt `int(input("Select GAAE checkpoint index: "))`. Sets `GAAE_RUN_NAME`, `GAAE_CKPT_PATH`, `GAAE_RUN_DIR`. Cell headed by `## Select GAAE Checkpoint`.
+
+### 2 — Train vs load existing checkpoint (every training notebook)
+
+After the config cell: scan `OUTPUT_DIR` for existing `run_summary.json` files, list them, prompt `[y=train (default), n=load existing]`. Sets `USE_EXISTING_CHECKPOINT` (bool) and `EXISTING_RUN_DIR`. If `True`, skip the training loop and go straight to test evaluation.
+
+### 3 — Threshold selection (every notebook that derives a classification threshold)
+
+Show both options with their OOF sens/spec/F1. **Best-F1 is option 1 / the default (Enter)**; Youden is option 2. Prompt: `[1=Best-F1 (default), 2=Youden]`. Sets `ACTIVE_THRESHOLD` and `THRESHOLD_METHOD` (`"oof_f1"` or `"oof_youden"`).
+
 ## Do not
 
 - Do not create a notebook without a prefix.
 - Do not inline `train_test_split` or `KFold` — use `common.splits` / `common.validation`.
 - Do not skip the sanity audit.
 - Do not put training loops inside notebook cells — call `train_model` / `train_classifier`.
+- Do not omit the GAAE checkpoint selection prompt in any notebook that loads a GAAE encoder.
+- Do not default the threshold selection to Youden — Best-F1 is the default (option 1 / Enter).

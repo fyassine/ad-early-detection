@@ -5,10 +5,10 @@ Runs the Schaefer-only subset experiments (no fMRI reprocessing needed) and
 optionally processes all follow-up fMRI visits for full longitudinal coverage.
 
 Usage (from repo root):
-    # Schaefer-only subsets from existing __v3__ matrices:
+    # Schaefer-only subsets from existing __fc_wholebrain_sch200_flat__ matrices:
     python -m DATA.src.processing.run_all_processing
 
-    # Also reprocess all follow-up visits from __v1__/fmri into __v3__:
+    # Also reprocess all follow-up visits from __fmri_wholebrain_sch200_flat__/fmri into __fc_wholebrain_sch200_flat__:
     python -m DATA.src.processing.run_all_processing --reprocess-followups
 
     # Full run including Tian-atlas experiments:
@@ -18,14 +18,14 @@ Usage (from repo root):
         --tian-labels /mnt/e/fyassine/ad-early-detection/DATA/src/processing/atlas/Tian_Subcortex_S2_3T_label.txt
 
 Experiment table:
-    __v3__  Whole brain               (Schaefer 200, all visits after reprocessing)
-    __v5__  Hippocampus only          (Tian Scale II, 4 ROIs)
-    __v6__  Limbic only               (Schaefer subset, 12 ROIs)
-    __v7__  Dorsal Attention only     (Schaefer subset, 26 ROIs)
-    __v8__  DMN + Hippocampus         (combined masker, 50 ROIs)
-    __v9__  DMN + Limbic              (Schaefer subset, 58 ROIs)
-    __v10__ DMN + Hippocampus + Limbic (combined masker, 62 ROIs)
-    __v11__ All combined              (combined masker, 88 ROIs)
+    __fc_wholebrain_sch200_flat__          Whole brain               (Schaefer 200, all visits after reprocessing)
+    __fc_hippo_tian2_flat__                Hippocampus only          (Tian Scale II, 4 ROIs)
+    __fc_limbic_sch200_flat__              Limbic only               (Schaefer subset, 12 ROIs)
+    __fc_dan_sch200_flat__                 Dorsal Attention only     (Schaefer subset, 26 ROIs)
+    __fc_dmn-hippo_sch200-tian2_flat__     DMN + Hippocampus         (combined masker, 50 ROIs)
+    __fc_dmn-limbic_sch200_flat__          DMN + Limbic              (Schaefer subset, 58 ROIs)
+    __fc_dmn-hippo-limbic_sch200-tian2_flat__  DMN + Hippocampus + Limbic (combined masker, 62 ROIs)
+    __fc_dmn-hippo-limbic-dan_sch200-tian2_flat__  All combined      (combined masker, 88 ROIs)
 """
 
 from __future__ import annotations
@@ -40,19 +40,19 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 # Schaefer-only experiments: no fMRI data needed, just slice __v3__ matrices.
 SCHAEFER_JOBS = [
     {
-        "version": "__v6__",
+        "version": "__fc_limbic_sch200_flat__",
         "networks": ["Limbic"],
         "suffix": "limbic",
         "description": "Limbic only (12 ROIs)",
     },
     {
-        "version": "__v7__",
+        "version": "__fc_dan_sch200_flat__",
         "networks": ["DorsAttn"],
         "suffix": "dorsal_attention",
         "description": "Dorsal Attention Network only (26 ROIs)",
     },
     {
-        "version": "__v9__",
+        "version": "__fc_dmn-limbic_sch200_flat__",
         "networks": ["Default", "Limbic"],
         "suffix": "dmn_limbic",
         "description": "DMN + Limbic (58 ROIs)",
@@ -62,25 +62,25 @@ SCHAEFER_JOBS = [
 # Tian-atlas experiments: require fMRI data + Tian NIfTI.
 TIAN_JOBS = [
     {
-        "version": "__v5__",
+        "version": "__fc_hippo_tian2_flat__",
         "description": "Hippocampus only (Tian Scale II, 4 ROIs)",
         "script": "process_using_tian_atlas",
         "extra_args": [],
     },
     {
-        "version": "__v8__",
+        "version": "__fc_dmn-hippo_sch200-tian2_flat__",
         "description": "DMN + Hippocampus (50 ROIs)",
         "script": "process_combined_schaefer_tian",
         "extra_args": ["--networks", "Default", "--output-suffix", "dmn_hippo"],
     },
     {
-        "version": "__v10__",
+        "version": "__fc_dmn-hippo-limbic_sch200-tian2_flat__",
         "description": "DMN + Limbic + Hippocampus (62 ROIs)",
         "script": "process_combined_schaefer_tian",
         "extra_args": ["--networks", "Default", "Limbic", "--output-suffix", "dmn_limbic_hippo"],
     },
     {
-        "version": "__v11__",
+        "version": "__fc_dmn-hippo-limbic-dan_sch200-tian2_flat__",
         "description": "All combined — DMN + Limbic + DAN + Hippocampus (88 ROIs)",
         "script": "process_combined_schaefer_tian",
         "extra_args": ["--networks", "Default", "Limbic", "DorsAttn", "--output-suffix", "all_combined"],
@@ -121,7 +121,7 @@ def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None, n_job
 
     if tian_atlas is None:
         print(
-            "\n  Tian atlas not provided — skipping __v5__, __v8__, __v10__, __v11__.\n"
+            "\n  Tian atlas not provided — skipping __fc_hippo_tian2_flat__, __fc_dmn-hippo_sch200-tian2_flat__, __fc_dmn-hippo-limbic_sch200-tian2_flat__, __fc_dmn-hippo-limbic-dan_sch200-tian2_flat__.\n"
             "  Download Tian Scale II atlas and re-run with:\n"
             "    --tian-atlas /mnt/e/fyassine/ad-early-detection/DATA/src/processing/atlas/Tian_Subcortex_S2_3T.nii.gz\n"
             "    --tian-labels /mnt/e/fyassine/ad-early-detection/DATA/src/processing/atlas/Tian_Subcortex_S2_3T_label.txt\n"

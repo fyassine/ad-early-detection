@@ -8,7 +8,7 @@
 
 ## Active vs legacy directories
 - **Active** (write new code here): `CLASSIFIER/`, `PROGNOSER/`, `DASHBOARD/`, `DATA/src/processing/`
-- **Legacy / read-only**: `CLASSIFIER/`, `CLASSIFIER_v1/`, `ABI/`, `DCI/`
+- **Legacy / read-only**: `everything inside __CLASSIFIER__/`, `ABI/`, `DCI/`
 
 ## Rule modules (load when relevant to the task)
 
@@ -17,9 +17,9 @@
 - [Errors](../.claude/rules/errors.md) — fail-loud policy, no silent fallbacks
 - [Seeding](../.claude/rules/seeding.md) — RNG injection contract (every non-deterministic function takes `rng=`)
 - [Configs](../.claude/rules/configs.md) — `@dataclass` hyperparameters, `field(default_factory=...)` for mutables, `GECBatch` is docs-only
-- [Evaluation](../.claude/rules/evaluation.md) — Youden's J on val only, never re-threshold on test
+- [Evaluation](../.claude/rules/evaluation.md) — best-F1 threshold (default) on val only, never re-threshold on test; use `threshold_mode="f1"` (preferred over `"youden"` for imbalanced data)
 - [Checkpoints](../.claude/rules/checkpoints.md) — full-state schema, `outputs/` vs legacy `checkpoints/`
-- [Notebooks](../.claude/rules/notebooks.md) — `BASELINE_` / `LONGITUDINAL_` / `STATIC_` / `SANITY_` prefix, splits via `common.splits`, sanity audit at head
+- [Notebooks](../.claude/rules/notebooks.md) — `BASELINE_` / `LONGITUDINAL_` / `STATIC_` / `SANITY_` prefix, splits via `common.splits`, sanity audit at head; three mandatory interactive prompts: (1) GAAE checkpoint index selection, (2) train vs load existing checkpoint, (3) threshold mode with Best-F1 as default (Youden as option 2)
 
 ## Reference docs
 
