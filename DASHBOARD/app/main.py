@@ -53,6 +53,22 @@ def _auto_warmup() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Kill any precompute that exceeded the wall-clock or stall budget while
+    # the server was down. Must run before _auto_warmup() so a zombie isn't
+    # treated as "already running".
+    try:
+        summary = job_manager.sweep_runaway_jobs(DASHBOARD_CACHE_ROOT)
+        if summary["killed_runaway"] or summary["killed_stale"] or summary["cleaned_stale_pid"]:
+            print(f"[startup] sweep: {summary}")
+    except Exception as e:
+        print(f"[startup] sweep error (ignored): {e}")
+
+    # Live watchdog: every WATCHDOG_INTERVAL_S, re-run the same checks.
+    try:
+        job_manager.start_watchdog(DASHBOARD_CACHE_ROOT)
+    except Exception as e:
+        print(f"[startup] watchdog start error (ignored): {e}")
+
     # On startup: relaunch precompute jobs for watched workspaces.
     try:
         _auto_warmup()

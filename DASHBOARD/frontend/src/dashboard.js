@@ -1,5 +1,5 @@
 import { Chart } from 'chart.js';
-import { $, diagColor, BAR_COLORS, showLoading, hideLoading, tooltipStyle } from './utils.js';
+import { $, C, diagColor, BAR_COLORS, showLoading, hideLoading, showError, tooltipStyle } from './utils.js';
 import { state } from './state.js';
 import { renderTable, renderRows } from './table.js';
 import { getRecent, saveRecent } from './config.js';
@@ -453,14 +453,30 @@ export function renderDiag(meta, scan) {
 export async function applyFilter() {
     renderDiagHighlight();
     if (state.activeFilter?.field === 'diagnosis') {
-        showLoading(`Filtering cohort to ${state.activeFilter.value}…`);
+        const cohortValue = state.activeFilter.value;
+        const cohortSelect = $('globalCohortSelect');
+        if (cohortSelect) cohortSelect.disabled = true;
+        showLoading(`Filtering cohort to ${cohortValue}…`);
+        const ctl = new AbortController();
+        const timeout = setTimeout(() => ctl.abort(), 30000);
         try {
-            const p = new URLSearchParams({ csv_path: $('csvSelect').value, cohort: state.activeFilter.value });
+            const p = new URLSearchParams({ csv_path: $('csvSelect').value, cohort: cohortValue });
             if (state.selectedScanFolders.length) p.set('scan_folders', state.selectedScanFolders.join(','));
-            const r = await fetch(`/api/metadata?${p}`);
+            const r = await fetch(`/api/metadata?${p}`, { signal: ctl.signal });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
             state.filteredMeta = await r.json();
-        } catch (e) { console.error('Filter failed', e); }
-        hideLoading();
+        } catch (e) {
+            console.error('Filter failed', e);
+            state.filteredMeta = state.globalMeta;
+            const msg = e.name === 'AbortError'
+                ? `Filter timed out after 30s — backend is slow (likely competing with a precompute job). Showing all patients.`
+                : `Filter failed (${e.message || 'network error'}) — showing all patients.`;
+            showError(msg);
+        } finally {
+            clearTimeout(timeout);
+            if (cohortSelect) cohortSelect.disabled = false;
+            hideLoading();
+        }
     } else {
         state.filteredMeta = state.globalMeta;
     }

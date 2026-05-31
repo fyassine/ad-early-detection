@@ -22,7 +22,7 @@ import hashlib
 import math
 import os
 import pickle
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from threading import Lock
 from typing import Optional
@@ -403,6 +403,57 @@ def _cohort_mean_matrices(
     return out
 
 
+_BIOMARKER_CACHE_VERSION = 1
+
+
+def _biomarker_cache_path() -> str:
+    cache_root = (
+        os.environ.get("DASHBOARD_CACHE_ROOT")
+        or os.environ.get("CACHE_ROOT")
+        or os.path.join(os.path.expanduser("~"), ".cache", "dashboard")
+    )
+    d = os.path.join(cache_root, "biomarker_cache")
+    os.makedirs(d, exist_ok=True)
+    return os.path.join(d, f"biomarkers_v{_BIOMARKER_CACHE_VERSION}.pkl")
+
+
+def _load_biomarker_cache() -> dict[bytes, dict]:
+    try:
+        with open(_biomarker_cache_path(), "rb") as f:
+            cache = pickle.load(f)
+        return cache if isinstance(cache, dict) else {}
+    except Exception:
+        return {}
+
+
+def _save_biomarker_cache(cache: dict[bytes, dict]) -> None:
+    try:
+        path = _biomarker_cache_path()
+        tmp = path + ".tmp"
+        with open(tmp, "wb") as f:
+            pickle.dump(cache, f, protocol=pickle.HIGHEST_PROTOCOL)
+        os.replace(tmp, path)
+    except Exception:
+        pass
+
+
+def _biomarkers_worker(args: tuple) -> dict:
+    """Module-level worker so ProcessPoolExecutor can pickle it.
+
+    Computing biomarkers calls networkx.greedy_modularity_communities, which is
+    pure-Python and GIL-bound (~550 ms / 200-ROI subject). ThreadPool gives no
+    speedup; ProcessPool does.
+    """
+    row, n_rois, iu_r, iu_c, is_dmn_only = args
+    try:
+        m = np.zeros((n_rois, n_rois), dtype=np.float32)
+        m[iu_r, iu_c] = row
+        m = m + m.T  # symmetrize
+        return compute_fmri_biomarkers(m, is_dmn_only=is_dmn_only)
+    except Exception:
+        return {}
+
+
 def _biomarker_stats_from_features(
     features: np.ndarray,
     cohorts: list[str],
@@ -428,19 +479,56 @@ def _biomarker_stats_from_features(
     iu = np.triu_indices(n_rois, k=1)
     is_dmn_only = n_rois <= 50
 
-    def _one(row):
-        m = np.zeros((n_rois, n_rois), dtype=np.float32)
-        m[iu] = row
-        m = m + m.T  # symmetrize
-        try:
-            return compute_fmri_biomarkers(m, is_dmn_only=is_dmn_only)
-        except Exception:
-            return {}
+    # Per-row biomarker cache keyed by sha1(row.bytes, is_dmn_only). Same FC
+    # vector always yields the same biomarkers, so this survives CSV-path
+    # changes, parcellation-name changes, and restarts. The dominant cost is
+    # _compute_modularity (~550 ms / subject on 200x200 networkx graphs);
+    # caching turns the second run on overlapping subjects into ~0 s.
+    cache = _load_biomarker_cache()
+    cache_hits = 0
+    flag_byte = b"\x01" if is_dmn_only else b"\x00"
 
-    if executor is not None:
-        per_subject: list[dict] = list(executor.map(_one, features))
-    else:
-        per_subject = [_one(row) for row in features]
+    def _key(row: np.ndarray) -> bytes:
+        h = hashlib.sha1()
+        h.update(flag_byte)
+        h.update(np.ascontiguousarray(row, dtype=np.float32).tobytes())
+        return h.digest()
+
+    keys = [_key(row) for row in features]
+
+    # Resolve cache hits up front; only miss-rows go to the worker pool.
+    per_subject: list[Optional[dict]] = [cache.get(k) for k in keys]
+    miss_indices = [i for i, v in enumerate(per_subject) if v is None]
+    iu_r, iu_c = iu  # avoid pickling the tuple of arrays as a unit
+
+    if miss_indices:
+        miss_args = [
+            (features[i], n_rois, iu_r, iu_c, is_dmn_only) for i in miss_indices
+        ]
+        n_workers = min(os.cpu_count() or 4, len(miss_args), 8)
+        # ProcessPool — networkx.greedy_modularity_communities is GIL-bound,
+        # so ThreadPool gives no speedup on the 838-subject pass.
+        with ProcessPoolExecutor(max_workers=n_workers) as pool:
+            results = list(pool.map(_biomarkers_worker, miss_args, chunksize=16))
+        for idx, result in zip(miss_indices, results):
+            per_subject[idx] = result
+    per_subject = [v if v is not None else {} for v in per_subject]
+
+    # Write any newly computed entries back to the cache.
+    dirty = False
+    for k, result in zip(keys, per_subject):
+        if k not in cache and result:
+            cache[k] = result
+            dirty = True
+        elif k in cache:
+            cache_hits += 1
+    if dirty:
+        _save_biomarker_cache(cache)
+    print(
+        f"[cohort_stats]   biomarker cache: {cache_hits}/{len(keys)} hits"
+        f" ({len(keys) - cache_hits} computed)",
+        flush=True,
+    )
 
     out_stats: dict = {}
     out_values: dict = {}
@@ -842,10 +930,12 @@ _DISK_CACHE_VERSION = 3
 
 
 def _disk_cache_dir(data_root: str) -> str:
-    return os.path.join(
-        os.environ.get("CACHE_ROOT", os.path.join(data_root, ".cache")),
-        "cohort_stats",
+    cache_root = (
+        os.environ.get("DASHBOARD_CACHE_ROOT")
+        or os.environ.get("CACHE_ROOT")
+        or os.path.join(data_root, ".cache")
     )
+    return os.path.join(cache_root, "cohort_stats")
 
 
 def _disk_cache_path(data_root: str, csv_path: str, scan_folders: list[str]) -> str:
@@ -979,9 +1069,21 @@ def get_cohort_stats(
         if not force_refresh and key in _CACHE:
             return _CACHE[key]
 
+    import time as _time
+    _stage_times: list[tuple[str, float]] = []
+    _t0 = _time.perf_counter()
+    def _tick(label: str) -> None:
+        nonlocal _t0
+        dt = _time.perf_counter() - _t0
+        _stage_times.append((label, dt))
+        print(f"[cohort_stats] {label}: {dt:.2f}s", flush=True)
+        _t0 = _time.perf_counter()
+
     # Build the .npz index once; reused for fingerprinting + collection.
     npz_index = index_npz_by_subject(data_root, scan_folders)
+    _tick("index_npz")
     fingerprint = _index_fingerprint(npz_index)
+    _tick("fingerprint")
     disk_path = _disk_cache_path(data_root, csv_path, scan_folders)
 
     if not force_refresh:
@@ -990,20 +1092,24 @@ def get_cohort_stats(
             cached.fingerprint = fingerprint  # ensure field is set on disk-loaded objects
             with _LOCK:
                 _CACHE[key] = cached
+            print(f"[cohort_stats] disk_cache_hit (skipping compute)", flush=True)
             return cached
 
     abs_csv = os.path.join(data_root, csv_path)
     df = load_metadata(abs_csv)
+    _tick("load_metadata")
 
     max_workers = min(8, (os.cpu_count() or 4))
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         features, cohorts, subject_ids, n_rois = _collect_baseline_fc_vectors(
             data_root, df, scan_folders, npz_index=npz_index, executor=executor
         )
+        _tick("baseline_fc_vectors")
         (biomarker_stats, biomarker_values, network_fc_stats,
          per_subject_biomarkers) = _biomarker_stats_from_features(
             features, cohorts, n_rois, executor=executor
         )
+        _tick("biomarker_stats")
         # Co-fit: include every converter's non-baseline visits in the UMAP
         # training set so per-visit coords come from the actual fit (not from
         # an unstable transform()).
@@ -1014,10 +1120,12 @@ def get_cohort_stats(
             n_rois_lock=n_rois,
             executor=executor,
         )
+        _tick("longitudinal_fc_vectors")
 
     mapper, points, centroids, embedding = _fit_manifold(
         features, cohorts, subject_ids, extra_features=long_features
     )
+    _tick("fit_manifold_umap")
     conversion_axis = _compute_disease_axes(centroids)
     cohort_means = _cohort_mean_matrices(features, cohorts, n_rois)
 
@@ -1033,15 +1141,20 @@ def get_cohort_stats(
         long_visits=long_visits,
         conversion_axis=conversion_axis,
     )
+    _tick("axes_cohort_means_visit_coords")
 
     # ── 2023+ analytics: percentiles, brain-age, EBM, time-shift ─────────────
     biomarker_percentiles = _compute_percentile_bands(biomarker_values)
+    _tick("percentile_bands")
     brain_age_model = _train_brain_age(features, cohorts, subject_ids, df)
+    _tick("train_brain_age")
     ebm = _build_ebm(biomarker_values, df, subject_ids)
+    _tick("build_ebm")
     time_shift_model = _build_time_shift_model(
         per_subject_biomarkers, cohorts, subject_ids,
         long_sids, long_visits, df,
     )
+    _tick("build_time_shift_model")
 
     stats = CohortStats(
         biomarker_stats=biomarker_stats,
@@ -1065,6 +1178,13 @@ def get_cohort_stats(
     with _LOCK:
         _CACHE[key] = stats
     _save_disk_cache(disk_path, fingerprint, stats)
+    _tick("save_disk_cache")
+
+    total = sum(dt for _, dt in _stage_times)
+    print(f"[cohort_stats] TOTAL: {total:.2f}s", flush=True)
+    for label, dt in sorted(_stage_times, key=lambda kv: -kv[1]):
+        pct = (dt / total * 100.0) if total > 0 else 0.0
+        print(f"[cohort_stats]   {label:<32s} {dt:>7.2f}s  ({pct:5.1f}%)", flush=True)
     return stats
 
 

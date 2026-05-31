@@ -16,7 +16,7 @@ experiments:
     model: GELSTM
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/LONGITUDINAL_GELSTM_DELCODE_WHOLE_BRAIN.ipynb
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb
     notes: Full-trajectory GELSTM on GAAE latents.
 
   - id: gelstm-trajectory-fdr
@@ -24,7 +24,7 @@ experiments:
     model: GELSTM
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE_WHOLE_BRAIN.ipynb
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE.ipynb
     notes: Per-fold FDR latent-dim selection.
 
   - id: gelstm-early-detection-first-n
@@ -32,31 +32,39 @@ experiments:
     model: GELSTM
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/LONGITUDINAL_GELSTM_FIRST_N_DELCODE_WHOLE_BRAIN.ipynb
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_FIRST_N_DELCODE.ipynb
     notes: First-N-visits ablation (early-detection task).
 
-  - id: gec-mlp-trajectory
+  - id: gec-trajectory
     mode: longitudinal
-    model: MLP
+    model: GEC
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/LONGITUDINAL_GEC_MLP_DELCODE.ipynb
-    notes: Flattened-trajectory MLP over FDR-selected GAAE dims + Δt.
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb
+    notes: Flattened-trajectory GEC over FDR-selected GAAE dims + Δt.
 
-  - id: gaae-logreg-static
+  - id: gaae-static
+    mode: static
+    model: GAAE
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/STATIC/STATIC_GAAE_DELCODE_WHOLE_BRAIN.ipynb
+    notes: Per-scan GAAE-embedding with subject rollup.
+
+  - id: logreg-static
     mode: static
     model: LogReg
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/STATIC_GAAE_LOGREG_DELCODE_WHOLE_BRAIN.ipynb
-    notes: Per-scan GAAE-embedding logistic regression with subject rollup.
+    notebook: notebooks/STATIC/STATIC_LOGREG_DELCODE_WHOLE_BRAIN.ipynb
+    notes: Per-scan logistic regression baseline.
 
   - id: model-comparison
     mode: baseline
     model: multi
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/BASELINE_MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb
+    notebook: notebooks/BASELINE/BASELINE_MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb
     notes: Subject-level comparison table across trajectory, early-detection, and static models.
 
   # Sanity floors
@@ -65,7 +73,7 @@ experiments:
     model: n/a
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/SANITY_SPLIT_HYGIENE_DELCODE.ipynb
+    notebook: notebooks/SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb
     notes: Hard-fails if any subject crosses train/val/test.
 
   - id: sanity-metadata-baseline
@@ -73,7 +81,7 @@ experiments:
     model: LogReg
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/SANITY_BASELINE_METADATA_TIME.ipynb
+    notebook: notebooks/SANITY/SANITY_BASELINE_METADATA_TIME.ipynb
     notes: Metadata-only floor (age, sex, visit time).
 
   - id: sanity-gelstm-ablations
@@ -81,5 +89,22 @@ experiments:
     model: GELSTM
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/SANITY_LONGITUDINAL_GELSTM.ipynb
+    notebook: notebooks/SANITY/SANITY_LONGITUDINAL_GELSTM.ipynb
     notes: Shuffled-order, no-Δt, fixed-N ablations.
+
+  # Cross-region comparisons
+  - id: comparison-cross-region-classifier
+    mode: comparison
+    model: multi
+    dataset: DELCODE_MULTI_REGION
+    seed: 42
+    notebook: notebooks/COMPARISON/COMPARISON_CROSS_REGION_CLASSIFIER.ipynb
+    notes: Aggregates saved classifier predictions across brain regions.
+
+  - id: comparison-cross-region-survival
+    mode: comparison
+    model: multi
+    dataset: DELCODE_MULTI_REGION
+    seed: 42
+    notebook: notebooks/COMPARISON/COMPARISON_CROSS_REGION_SURVIVAL.ipynb
+    notes: Aggregates saved survival predictions across brain regions.

@@ -6,15 +6,15 @@ import './styles/components.css';
 import './styles/modals.css';
 import './styles/brain.css';
 import './styles/staging.css';
+import './styles/theme-light.css';
 
 import { init, applyRecent, deleteRecent } from './config.js';
 import { openPatient } from './modal.js';
 import { sortTable } from './table.js';
 import { initRouter, openPatientView } from './views/router.js';
+import { initTheme, toggleTheme } from './theme.js';
 
 Chart.register(...registerables);
-Chart.defaults.color = '#7a7976';
-Chart.defaults.borderColor = 'rgba(255,255,255,0.08)';
 Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
 Chart.defaults.font.size = 11;
 
@@ -24,8 +24,10 @@ window.openPatientView = openPatientView;
 window.sortTable = sortTable;
 window.applyRecent = applyRecent;
 window.deleteRecent = deleteRecent;
+window.toggleTheme = toggleTheme;
 
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     init();
     initRouter();
 });

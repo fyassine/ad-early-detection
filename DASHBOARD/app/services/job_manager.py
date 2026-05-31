@@ -41,6 +41,79 @@ from ..config import DASHBOARD_CACHE_ROOT, DATA_ROOT
 
 
 # ──────────────────────────────────────────────────────────────────────────── #
+# Logs + lifecycle constants                                                  #
+# ──────────────────────────────────────────────────────────────────────────── #
+
+# DASHBOARD/ is two levels above app/services/job_manager.py
+DASHBOARD_DIR = Path(__file__).resolve().parents[2]
+LOGS_DIR = DASHBOARD_DIR / "logs"
+PRECOMPUTE_LOGS_DIR = LOGS_DIR / "precompute"
+JOBS_AUDIT_PATH = LOGS_DIR / "jobs.jsonl"
+LATEST_SYMLINK = PRECOMPUTE_LOGS_DIR / "latest.log"
+LOG_KEEP = 20
+
+MAX_JOB_AGE_S = int(os.environ.get("PRECOMPUTE_MAX_AGE_S", "1800"))      # 30 min
+STALL_THRESHOLD_S = int(os.environ.get("PRECOMPUTE_STALL_S", "300"))     # 5 min
+WATCHDOG_INTERVAL_S = int(os.environ.get("PRECOMPUTE_WATCHDOG_S", "60"))
+
+_AUDIT_LOCK = threading.Lock()
+_WATCHDOG_STARTED = False
+
+
+def _ensure_log_dirs() -> None:
+    PRECOMPUTE_LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _audit(event: str, job_id: str, **extra) -> None:
+    """Append one JSON-line lifecycle event to logs/jobs.jsonl."""
+    _ensure_log_dirs()
+    record = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "event": event,
+        "job_id": job_id,
+        **extra,
+    }
+    line = json.dumps(record, default=str) + "\n"
+    with _AUDIT_LOCK:
+        try:
+            with JOBS_AUDIT_PATH.open("a") as fh:
+                fh.write(line)
+        except OSError:
+            pass  # never let logging crash the caller
+
+
+def _new_precompute_log_path(job_id: str) -> Path:
+    _ensure_log_dirs()
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return PRECOMPUTE_LOGS_DIR / f"{ts}_{job_id}.log"
+
+
+def _update_latest_symlink(target: Path) -> None:
+    try:
+        if LATEST_SYMLINK.is_symlink() or LATEST_SYMLINK.exists():
+            LATEST_SYMLINK.unlink()
+        LATEST_SYMLINK.symlink_to(target.name)  # relative within precompute/
+    except OSError:
+        pass
+
+
+def _rotate_precompute_logs(keep: int = LOG_KEEP) -> None:
+    """Delete the oldest precompute logs, keeping only the most recent ``keep``."""
+    if not PRECOMPUTE_LOGS_DIR.exists():
+        return
+    files = [
+        p for p in PRECOMPUTE_LOGS_DIR.iterdir()
+        if p.is_file() and not p.is_symlink() and p.name != "latest.log"
+    ]
+    files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    for old in files[keep:]:
+        try:
+            old.unlink()
+        except OSError:
+            pass
+
+
+# ──────────────────────────────────────────────────────────────────────────── #
 # Helpers                                                                     #
 # ──────────────────────────────────────────────────────────────────────────── #
 
@@ -69,6 +142,21 @@ def _pid_path(job_id: str, cache_root: Optional[Path] = None) -> Path:
 
 
 def _log_path(job_id: str, cache_root: Optional[Path] = None) -> Path:
+    """
+    Resolve the active log path for ``job_id``. Reads ``log_path`` from the
+    status JSON if present (set by ``_launch`` to a fresh timestamped file in
+    ``logs/precompute/``). Falls back to the legacy location under
+    ``.cache/jobs/<id>.log`` for in-flight jobs predating the change.
+    """
+    sp = _status_path(job_id, cache_root)
+    if sp.exists():
+        try:
+            data = json.loads(sp.read_text())
+            recorded = data.get("log_path")
+            if recorded:
+                return Path(recorded)
+        except Exception:
+            pass
     return _jobs_dir(cache_root) / f"{job_id}.log"
 
 
@@ -178,9 +266,127 @@ def cancel_job(job_id: str, cache_root: Optional[Path] = None) -> bool:
     try:
         pid = int(pid_file.read_text().strip())
         os.kill(pid, signal.SIGTERM)
+        _audit("cancelled", job_id, pid=pid, reason="user SIGTERM")
         return True
     except (ValueError, ProcessLookupError, PermissionError, OSError):
         return False
+
+
+# ──────────────────────────────────────────────────────────────────────────── #
+# Runaway/stall enforcement                                                   #
+# ──────────────────────────────────────────────────────────────────────────── #
+
+def _kill_pid(pid: int, grace_s: float = 5.0) -> str:
+    """SIGTERM, wait up to grace_s, escalate to SIGKILL. Returns final state."""
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except (ProcessLookupError, PermissionError, OSError):
+        return "gone"
+    deadline = time.monotonic() + grace_s
+    while time.monotonic() < deadline:
+        if not _is_pid_alive(pid):
+            return "terminated"
+        time.sleep(0.2)
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError, OSError):
+        return "terminated"
+    return "killed"
+
+
+def _parse_iso(ts: Optional[str]) -> Optional[datetime]:
+    if not ts:
+        return None
+    try:
+        return datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return None
+
+
+def sweep_runaway_jobs(cache_root: Optional[Path] = None) -> dict:
+    """
+    Scan all .pid files and kill anything that exceeds MAX_JOB_AGE_S or has
+    not updated its status JSON in STALL_THRESHOLD_S. Returns a summary dict.
+    Safe to call repeatedly (idempotent).
+    """
+    jd = _jobs_dir(cache_root)
+    summary = {"checked": 0, "killed_runaway": 0, "killed_stale": 0, "cleaned_stale_pid": 0}
+    now = datetime.now(timezone.utc)
+    for pid_file in jd.glob("*.pid"):
+        summary["checked"] += 1
+        job_id = pid_file.stem
+        try:
+            pid = int(pid_file.read_text().strip())
+        except (ValueError, OSError):
+            pid_file.unlink(missing_ok=True)
+            summary["cleaned_stale_pid"] += 1
+            continue
+        if not _is_pid_alive(pid):
+            pid_file.unlink(missing_ok=True)
+            summary["cleaned_stale_pid"] += 1
+            _audit("cleaned_stale_pid", job_id, pid=pid, reason="pid file orphaned (process already gone)")
+            continue
+
+        sp = _status_path(job_id, cache_root)
+        if not sp.exists():
+            continue
+        try:
+            data = json.loads(sp.read_text())
+        except Exception:
+            continue
+        if str(data.get("status", "")).lower() not in {"starting", "running"}:
+            continue
+
+        started = _parse_iso(data.get("started_at"))
+        age_s = (now - started).total_seconds() if started else None
+        try:
+            stall_s = time.time() - sp.stat().st_mtime
+        except OSError:
+            stall_s = None
+
+        if age_s is not None and age_s > MAX_JOB_AGE_S:
+            outcome = _kill_pid(pid)
+            pid_file.unlink(missing_ok=True)
+            _audit("killed_runaway", job_id, pid=pid, age_s=int(age_s),
+                   stage=data.get("stage"), outcome=outcome,
+                   reason=f"exceeded MAX_JOB_AGE_S={MAX_JOB_AGE_S}")
+            summary["killed_runaway"] += 1
+            continue
+
+        if stall_s is not None and stall_s > STALL_THRESHOLD_S:
+            outcome = _kill_pid(pid)
+            pid_file.unlink(missing_ok=True)
+            _audit("killed_stale", job_id, pid=pid, stall_s=int(stall_s),
+                   stage=data.get("stage"), outcome=outcome,
+                   reason=f"status JSON unchanged for {int(stall_s)}s "
+                          f"(>STALL_THRESHOLD_S={STALL_THRESHOLD_S})")
+            summary["killed_stale"] += 1
+    return summary
+
+
+def _watchdog_loop(cache_root: Path) -> None:
+    while True:
+        try:
+            sweep_runaway_jobs(cache_root)
+        except Exception as e:
+            print(f"[watchdog] sweep error: {e}", flush=True)
+        time.sleep(WATCHDOG_INTERVAL_S)
+
+
+def start_watchdog(cache_root: Optional[Path] = None) -> None:
+    """Spawn the watchdog daemon thread (idempotent — only one per process)."""
+    global _WATCHDOG_STARTED
+    if _WATCHDOG_STARTED:
+        return
+    _WATCHDOG_STARTED = True
+    cr = cache_root or DASHBOARD_CACHE_ROOT
+    t = threading.Thread(
+        target=_watchdog_loop, args=(cr,),
+        daemon=True, name="precompute-watchdog",
+    )
+    t.start()
+    print(f"[watchdog] started (interval={WATCHDOG_INTERVAL_S}s, "
+          f"max_age={MAX_JOB_AGE_S}s, stall={STALL_THRESHOLD_S}s)", flush=True)
 
 
 # ──────────────────────────────────────────────────────────────────────────── #
@@ -235,6 +441,8 @@ def _tail_log_worker(
 
         if status in _TERMINAL_STATUSES:
             _drain()  # final drain before exiting
+            event = "finished" if status == "done" else status
+            _audit(event, job_id, status=status)
             print(f"{prefix} ── job {status.upper()} ──", flush=True)
             break
 
@@ -265,11 +473,8 @@ def _launch(
     density: float,
 ) -> None:
     """Launch app.precompute as a detached subprocess."""
-    # Resolve the DASHBOARD/ directory (parent of this file's app/ package).
-    dashboard_dir = Path(__file__).resolve().parents[2]
-
-    log_file = _log_path(job_id, cache_root)
-    log_file.parent.mkdir(parents=True, exist_ok=True)
+    log_file = _new_precompute_log_path(job_id)
+    _rotate_precompute_logs()
 
     cmd = [
         sys.executable, "-m", "app.precompute",
@@ -282,7 +487,8 @@ def _launch(
     ]
 
     # Write the initial status file BEFORE launching so callers can poll
-    # immediately after start_job() returns.
+    # immediately after start_job() returns. ``log_path`` lets re-attach
+    # callers find the active log without searching.
     sp = _status_path(job_id, cache_root)
     sp.write_text(json.dumps({
         "job_id": job_id,
@@ -296,12 +502,13 @@ def _launch(
         "started_at": datetime.now(timezone.utc).isoformat(),
         "finished_at": None,
         "error": None,
+        "log_path": str(log_file),
     }, indent=2))
 
     with open(log_file, "w") as lf:
         proc = subprocess.Popen(
             cmd,
-            cwd=str(dashboard_dir),
+            cwd=str(DASHBOARD_DIR),
             stdin=subprocess.DEVNULL,
             stdout=lf,
             stderr=subprocess.STDOUT,
@@ -312,6 +519,10 @@ def _launch(
     # Write PID file (precompute.py will also write this, but we write it
     # immediately so is_running() works before the subprocess starts Python).
     _pid_path(job_id, cache_root).write_text(str(proc.pid))
+
+    _update_latest_symlink(log_file)
+    _audit("started", job_id, pid=proc.pid, log_path=str(log_file),
+           csv_path=csv_path, scan_folders=scan_folders)
 
     print(f"[precompute] ── job {job_id[:12]}… started (pid={proc.pid})")
     print(f"[precompute]    csv   : {csv_path}")

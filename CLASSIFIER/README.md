@@ -35,6 +35,7 @@ Every notebook in `notebooks/` MUST start with exactly one of these prefixes:
 | `LONGITUDINAL_` | Multi-visit / full-trajectory experiments                    |
 | `STATIC_`       | Per-scan / cross-sectional (each scan an independent sample) |
 | `SANITY_`       | Sanity checks and ablations                                  |
+| `COMPARISON_`   | Cross-model or cross-region aggregation of saved predictions (no training) |
 
 Mirror this in run names and config tags.
 
@@ -132,17 +133,22 @@ accept both new full-state checkpoints and old weights-only files in
 
 ## Notebook index
 
-| Notebook                                                          | Task              |
-| ----------------------------------------------------------------- | ----------------- |
-| `BASELINE_MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb`             | Model comparison  |
-| `LONGITUDINAL_GELSTM_DELCODE_WHOLE_BRAIN.ipynb`                   | Trajectory        |
-| `LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE_WHOLE_BRAIN.ipynb`      | Trajectory + FDR  |
-| `LONGITUDINAL_GELSTM_FIRST_N_DELCODE_WHOLE_BRAIN.ipynb`           | Early detection   |
-| `LONGITUDINAL_GEC_MLP_DELCODE.ipynb`                              | Trajectory (MLP)  |
-| `STATIC_GAAE_LOGREG_DELCODE_WHOLE_BRAIN.ipynb`                    | Static per-scan   |
-| `SANITY_SPLIT_HYGIENE_DELCODE.ipynb`                              | Split audit       |
-| `SANITY_BASELINE_METADATA_TIME.ipynb`                             | Metadata floor    |
-| `SANITY_LONGITUDINAL_GELSTM.ipynb`                                | LSTM ablations    |
+Notebooks live under `notebooks/<PREFIX>/`.
+
+| Notebook                                                                              | Task                          |
+| ------------------------------------------------------------------------------------- | ----------------------------- |
+| `BASELINE/BASELINE_MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb`                        | Model comparison              |
+| `LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb`                                      | Trajectory                    |
+| `LONGITUDINAL/LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE.ipynb`                         | Trajectory + FDR              |
+| `LONGITUDINAL/LONGITUDINAL_GELSTM_FIRST_N_DELCODE.ipynb`                              | Early detection               |
+| `LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb`                                         | Trajectory (GEC)              |
+| `STATIC/STATIC_GAAE_DELCODE_WHOLE_BRAIN.ipynb`                                        | Static per-scan (GAAE)        |
+| `STATIC/STATIC_LOGREG_DELCODE_WHOLE_BRAIN.ipynb`                                      | Static per-scan (LogReg)      |
+| `SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb`                                           | Split audit                   |
+| `SANITY/SANITY_BASELINE_METADATA_TIME.ipynb`                                          | Metadata floor                |
+| `SANITY/SANITY_LONGITUDINAL_GELSTM.ipynb`                                             | LSTM ablations                |
+| `COMPARISON/COMPARISON_CROSS_REGION_CLASSIFIER.ipynb`                                 | Cross-region classifier       |
+| `COMPARISON/COMPARISON_CROSS_REGION_SURVIVAL.ipynb`                                   | Cross-region survival         |
 
 ## How to run
 

@@ -82,19 +82,14 @@ def _stage_cohort_stats(
     _log(f"  csv    : {csv_path}")
     _log(f"  folders: {scan_folders}")
 
-    # Heartbeat so the log isn't silent during the 50-70 s UMAP computation.
+    # Liveness ping only — real per-stage timings come from inside
+    # get_cohort_stats (look for "[cohort_stats] <stage>: Xs" lines).
     _done = threading.Event()
     def _heartbeat():
-        stages = ["loading matrices", "computing biomarkers", "fitting UMAP",
-                  "building EBM", "building brain-age model", "building time-shift model"]
-        idx = 0
         elapsed = 0
-        while not _done.is_set():
-            time.sleep(8)
-            elapsed += 8
-            label = stages[min(idx, len(stages) - 1)]
-            _log(f"  … {label} ({elapsed}s elapsed)")
-            idx += 1
+        while not _done.wait(30):
+            elapsed += 30
+            _log(f"  … still running ({elapsed}s elapsed)")
     hb = threading.Thread(target=_heartbeat, daemon=True)
     hb.start()
 
@@ -119,6 +114,8 @@ def _stage_graph_metrics(
 ) -> None:
     """Stage 2 — Compute graph metrics per cohort + write disk cache."""
     import hashlib
+    import signal
+    import time
     import numpy as np
     from app.cohort_stats import COHORTS
     from app.biomarkers import find_subject_npz_files, load_correlation_matrix
@@ -164,49 +161,73 @@ def _stage_graph_metrics(
         if sid and sid != "nan":
             cohort_subjects.setdefault(diag, []).append(sid)
 
-    MAX_PER_COHORT = 40
+    MAX_PER_COHORT = 20
+    PER_SUBJECT_TIMEOUT_S = 60
+
+    def _alarm_handler(signum, frame):
+        raise TimeoutError("per-subject graph_metrics timeout")
+
+    prev_handler = signal.signal(signal.SIGALRM, _alarm_handler)
+
     rng = np.random.default_rng(42)
     result: dict = {}
-    for cohort in COHORTS:
-        ids = cohort_subjects.get(cohort, [])
-        if not ids:
-            result[cohort] = {"n": 0, "metrics": {}}
-            continue
-        if len(ids) > MAX_PER_COHORT:
-            ids = list(rng.choice(ids, size=MAX_PER_COHORT, replace=False))
-        buckets: dict[str, list[float]] = {
-            k: [] for k in ("small_worldness", "clustering", "path_length", "global_efficiency")
-        }
-        used = 0
-        for sid in ids:
-            recs = find_subject_npz_files(data_root, scan_folders, sid)
-            if not recs:
+    try:
+        for cohort in COHORTS:
+            ids = cohort_subjects.get(cohort, [])
+            if not ids:
+                result[cohort] = {"n": 0, "metrics": {}}
                 continue
-            try:
-                m = np.asarray(load_correlation_matrix(recs[0]["abs_path"]))
-            except Exception:
-                continue
-            res = subject_graph_metrics(m, density=density, compute_hubs=False)
-            for k in buckets:
-                v = res.get(k)
-                if v is not None:
-                    buckets[k].append(float(v))
-            used += 1
-
-        metric_summary: dict = {}
-        for k, vals in buckets.items():
-            if not vals:
-                metric_summary[k] = None
-                continue
-            arr = np.asarray(vals, dtype=np.float64)
-            metric_summary[k] = {
-                "mean": float(arr.mean()), "std": float(arr.std(ddof=0)) if arr.size > 1 else 0.0,
-                "p5":  float(np.quantile(arr, 0.05)), "p25": float(np.quantile(arr, 0.25)),
-                "p50": float(np.quantile(arr, 0.50)), "p75": float(np.quantile(arr, 0.75)),
-                "p95": float(np.quantile(arr, 0.95)), "n": int(arr.size),
+            if len(ids) > MAX_PER_COHORT:
+                ids = list(rng.choice(ids, size=MAX_PER_COHORT, replace=False))
+            buckets: dict[str, list[float]] = {
+                k: [] for k in ("small_worldness", "clustering", "path_length", "global_efficiency")
             }
-        result[cohort] = {"n": used, "n_sampled": len(ids), "metrics": metric_summary}
-        _log(f"  {cohort}: {used}/{len(ids)} subjects computed")
+            used = 0
+            timed_out = 0
+            for i, sid in enumerate(ids, start=1):
+                recs = find_subject_npz_files(data_root, scan_folders, sid)
+                if not recs:
+                    continue
+                try:
+                    m = np.asarray(load_correlation_matrix(recs[0]["abs_path"]))
+                except Exception:
+                    continue
+                t0 = time.monotonic()
+                signal.alarm(PER_SUBJECT_TIMEOUT_S)
+                try:
+                    res = subject_graph_metrics(m, density=density, compute_hubs=False)
+                except TimeoutError:
+                    signal.alarm(0)
+                    timed_out += 1
+                    _log(f"  {cohort} [{i}/{len(ids)}] {sid}: TIMEOUT after {PER_SUBJECT_TIMEOUT_S}s — skipped")
+                    continue
+                finally:
+                    signal.alarm(0)
+                dt = time.monotonic() - t0
+                for k in buckets:
+                    v = res.get(k)
+                    if v is not None:
+                        buckets[k].append(float(v))
+                used += 1
+                _log(f"  {cohort} [{i}/{len(ids)}] {sid}: {dt:.2f}s")
+
+            metric_summary: dict = {}
+            for k, vals in buckets.items():
+                if not vals:
+                    metric_summary[k] = None
+                    continue
+                arr = np.asarray(vals, dtype=np.float64)
+                metric_summary[k] = {
+                    "mean": float(arr.mean()), "std": float(arr.std(ddof=0)) if arr.size > 1 else 0.0,
+                    "p5":  float(np.quantile(arr, 0.05)), "p25": float(np.quantile(arr, 0.25)),
+                    "p50": float(np.quantile(arr, 0.50)), "p75": float(np.quantile(arr, 0.75)),
+                    "p95": float(np.quantile(arr, 0.95)), "n": int(arr.size),
+                }
+            result[cohort] = {"n": used, "n_sampled": len(ids), "metrics": metric_summary}
+            _log(f"  {cohort}: {used}/{len(ids)} subjects computed ({timed_out} timed out)")
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, prev_handler)
 
     payload = {
         "density": density,

@@ -81,6 +81,9 @@
     letter-spacing: .08em;
 }
 
+/* Right-side header group (toggle + status) */
+.header-end { display: flex; align-items: center; gap: .6rem; }
+
 /* Status indicator */
 .header-status {
     display: flex;

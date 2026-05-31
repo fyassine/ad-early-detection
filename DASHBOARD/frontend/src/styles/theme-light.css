@@ -1,0 +1,122 @@
+/* ══════════════════════════════════════════════════════════
+   LIGHT THEME OVERRIDES
+   Patches hardcoded rgba values that can't be handled by
+   CSS variable substitution alone.
+   All rules scoped to [data-theme="light"] on <html>.
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Header & nav ── */
+[data-theme="light"] .header {
+    background: rgba(247,246,243,.92);
+}
+[data-theme="light"] .header::after {
+    background: linear-gradient(90deg, transparent, rgba(58,136,149,.22), transparent);
+}
+[data-theme="light"] .top-tabs {
+    background: rgba(247,246,243,.92);
+}
+[data-theme="light"] .top-tab:hover {
+    background: rgba(0,0,0,.05);
+}
+[data-theme="light"] .top-tab.active {
+    box-shadow: 0 0 20px rgba(58,136,149,.12), inset 0 0 20px rgba(58,136,149,.04);
+}
+
+/* ── Sections ── */
+[data-theme="light"] .dash-section:hover {
+    border-color: rgba(0,0,0,.13);
+}
+[data-theme="light"] .section-header:hover {
+    background: rgba(0,0,0,.03);
+}
+[data-theme="light"] .view-empty {
+    border-color: rgba(0,0,0,.13);
+}
+
+/* ── Tokens / pills ── */
+[data-theme="light"] .folder-token {
+    border-color: rgba(0,0,0,.12);
+}
+
+/* ── Population & atlas tables ── */
+[data-theme="light"] .population-table tbody td {
+    border-bottom-color: rgba(0,0,0,.07);
+}
+[data-theme="light"] .atlas-table th,
+[data-theme="light"] .atlas-table td {
+    border-color: rgba(0,0,0,.07);
+}
+
+/* ── Summary cards ── */
+[data-theme="light"] .summary-card::after {
+    background: linear-gradient(105deg, transparent 40%, rgba(0,0,0,.03) 50%, transparent 60%);
+}
+[data-theme="light"] .summary-card:hover {
+    box-shadow: 0 8px 28px rgba(58,136,149,.14);
+}
+
+/* ── Chart cards ── */
+[data-theme="light"] .chart-card:hover {
+    border-color: rgba(0,0,0,.15);
+    box-shadow: 0 4px 20px rgba(0,0,0,.10);
+}
+
+/* ── Data table ── */
+[data-theme="light"] .data-table td {
+    border-bottom-color: rgba(0,0,0,.07);
+}
+
+/* ── Risk cards ── */
+[data-theme="light"] .risk-summary-row {
+    border-bottom-color: rgba(0,0,0,.08);
+}
+[data-theme="light"] .fold-dot {
+    background: linear-gradient(180deg,
+        rgba(208,92,92,.55) 0%,
+        rgba(208,92,92,.55) var(--p, 0%),
+        rgba(0,0,0,.06)    var(--p, 0%),
+        rgba(0,0,0,.06)    100%);
+}
+[data-theme="light"] .risk-note {
+    background: rgba(201,148,32,.07);
+    border-color: rgba(201,148,32,.30);
+}
+
+/* ── Confusion matrix ── */
+[data-theme="light"] .cm-table th,
+[data-theme="light"] .cm-table td {
+    border-color: rgba(0,0,0,.08);
+}
+
+/* ── Patient modal ── */
+[data-theme="light"] .patient-modal {
+    box-shadow: 0 20px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.10);
+}
+[data-theme="light"] .modal-backdrop {
+    background: rgba(0,0,0,.35);
+}
+[data-theme="light"] .session-table td {
+    border-bottom-color: rgba(0,0,0,.06);
+}
+[data-theme="light"] .session-table tr:hover td {
+    background: rgba(0,0,0,.04);
+}
+
+/* ── Staging: time-shift bar ── */
+[data-theme="light"] .tau-marker {
+    box-shadow: 0 0 6px rgba(0,0,0,.30);
+}
+[data-theme="light"] .tau-zero {
+    background: rgba(0,0,0,.22);
+}
+
+/* ── Staging: forest plot ── */
+[data-theme="light"] .forest-axis {
+    background: rgba(0,0,0,.10);
+}
+[data-theme="light"] .forest-zero {
+    background: rgba(0,0,0,.22);
+}
+[data-theme="light"] .forest-point {
+    border-color: var(--bg-3);
+}

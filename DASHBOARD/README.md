@@ -1,8 +1,52 @@
-# fMRI Dashboard — Quick Start Guide
+# fMRI Dashboard
 
-## Launching the Dashboard
+## Normal startup (SSH tunnel workflow)
 
-### Build the frontend (one time, or after editing JS/CSS)
+This is the correct way to run the dashboard — a single FastAPI process on port 8050, with your SSH tunnel forwarding that port to your laptop. `npm run dev` is **not** part of this workflow.
+
+**On your laptop** — open (and keep open) the SSH tunnel:
+```bash
+ssh -L 8050:localhost:8050 wunderlich@138.245.113.6
+```
+
+**On the remote** — start (or restart) FastAPI in the background:
+```bash
+/mnt/e/fyassine/ad-early-detection/DASHBOARD/restart.sh --bg
+```
+
+`restart.sh` already defaults `DATA_ROOT=<repo>/DATA` and `DASHBOARD_CACHE_ROOT=DASHBOARD/.cache`, so no env vars are needed for the standard layout. `--bg` detaches uvicorn (closing the SSH session won't kill it) and writes logs to `DASHBOARD/logs/server/server_<ts>.log` (+ `latest.log` symlink).
+
+**Stop it later with:**
+```bash
+/mnt/e/fyassine/ad-early-detection/DASHBOARD/restart.sh --no-start
+```
+
+Add `--rebuild` when you change frontend JS/CSS, `--clean-gelstm` if you changed GELSTM code or checkpoints, or `--full` for all of the above. Plain `restart.sh --bg` already picks up Python changes — no flags needed for backend-only edits.
+
+**In your laptop browser**: `http://localhost:8050/`
+
+> **Why not `npm run dev`?** Vite's dev server runs on port **5173** (not 8050), so your SSH tunnel doesn't reach it. The `/static/dist/` you see in the Vite dev URL is just the production `base` path baked into `vite.config.js` — it is not where the dev server mounts. Use `npm run dev` only if you add a second tunnel (`-L 5173:localhost:5173`) and are iterating on JS/CSS with hot-reload.
+
+---
+
+## Table of Contents
+
+1. [Quick Start](#quick-start)
+2. [Configuration](#configuration)
+3. [Docker (optional)](#docker-optional)
+4. [Using the Dashboard](#using-the-dashboard)
+5. [API Reference](#api-reference)
+6. [GELSTM Ensemble Deployment](#gelstm-ensemble-deployment)
+7. [Cohort Warmup Pipeline](#cohort-warmup-pipeline)
+8. [Cache Layout](#cache-layout)
+9. [Operations](#operations)
+10. [Troubleshooting](#troubleshooting)
+
+---
+
+## Quick Start
+
+### Step 1 — Build the frontend (one time, or after editing JS/CSS)
 
 The dashboard frontend is a Vite project under `frontend/`. Build it before
 starting uvicorn — the FastAPI server serves the bundled output from
@@ -14,140 +58,7 @@ npm install
 npm run build
 ```
 
-### On the Remote Server
-
-```bash
-cd /mnt/e/fyassine/ad-early-detection/DASHBOARD
-
-DATA_ROOT=/mnt/e/fyassine/ad-early-detection/DATA \
-  /usr/bin/python3.10 -m uvicorn app.main:app --host 0.0.0.0 --port 8050
-```
-
-The server will print:
-```
-INFO: Uvicorn running on http://0.0.0.0:8050 (Press CTRL+C to quit)
-```
-
----
-
-## Accessing from Your Local Machine (SSH Port Forwarding)
-
-Since the server has no public web access, you access it through an **SSH tunnel**.
-
-### Step 1 — Open the tunnel (run this on YOUR local machine, not the server)
-
-```bash
-ssh -L 8050:localhost:8050 wunderlich@138.245.113.6
-```
-
-Keep this terminal open while using the dashboard.
-
-> **What this does:** Forwards port `8050` on your local machine to port `8050` on the remote host through SSH. Traffic is encrypted.
-
-### Step 2 — Open the dashboard
-
-Open your browser and go to:
-
-```
-http://localhost:8050
-```
-
-### Step 3 — Use the dashboard
-
-1. **Select a Metadata CSV** from the dropdown (e.g. `DELCODE / __v3__ / metadata / cohorts.csv`)
-2. **Check scan folders** — choose `.npz` or `.nii.gz` folders (not both)
-3. Click **Analyze**
-4. Click any **diagnosis bar** to cross-filter the entire dashboard
-5. Click any **patient row** to open their longitudinal trajectory
-
----
-
-## Running with Docker (optional)
-
-```bash
-cd /mnt/e/fyassine/ad-early-detection/DASHBOARD
-
-docker-compose up --build
-```
-
-Then follow Steps 1–3 above. The `docker-compose.yml` mounts `../DATA` as a read-only volume.
-
----
-
-## Stopping the Server
-
-Press `Ctrl+C` in the terminal running uvicorn — that's the clean path when uvicorn is running in the foreground. See the **Restart workflow** section below for the full procedure when uvicorn is detached / backgrounded / hung.
-
----
-
-## Restart workflow (kill old → rebuild → run)
-
-Use this whenever you change Python code, JS/CSS, or environment variables.
-The dashboard caches things aggressively, both server-side (Python module imports, `_load_failed` flags) and client-side (localStorage discovery cache), so a clean restart is the most reliable way to pick up changes.
-
-### Step 1 — Find any running uvicorn processes
-
-```bash
-# Show all uvicorn workers + their command lines + ports
-ps -fC python3 -fC python3.10 2>/dev/null | grep -E "uvicorn|app\.main" | grep -v grep
-# Or specifically find what's bound to port 8050
-ss -tlnp 2>/dev/null | grep 8050 || lsof -i :8050 2>/dev/null
-```
-
-You should see one (or more) lines like:
-```
-wunderl+ 1808555 ... /usr/bin/python3.10 -m uvicorn app.main:app --host 0.0.0.0 --port 8050
-```
-
-### Step 2 — Kill the old server cleanly
-
-```bash
-# Polite SIGTERM (lets in-flight requests finish + flushes job-status JSON on disk)
-kill 1808555
-
-# If it's been more than ~10 s and the process is still alive, force it
-kill -9 1808555
-
-# Nuke everything matching "uvicorn app.main" in one shot (use with care)
-pkill -f "uvicorn.*app.main"
-```
-
-Confirm nothing is left holding the port:
-```bash
-ss -tlnp 2>/dev/null | grep 8050   # should print nothing
-```
-
-Detached `bash -c` wrappers (e.g. PID 515427-style copilot launchers) sometimes stay even after their child uvicorn dies — kill them by their PIDs too if `ps -ef | grep uvicorn` still shows them.
-
-### Step 3 — Clear stale Python caches (if you've been editing code)
-
-The interpreter reads `.pyc` bytecode in `__pycache__/` first; stale files from a different Python version (e.g. 3.10 vs 3.12) can mask edits to `.py` sources. After major refactors:
-
-```bash
-find /mnt/e/fyassine/ad-early-detection/DASHBOARD/app -name "__pycache__" -type d -exec rm -rf {} +  2>/dev/null
-find /mnt/e/fyassine/ad-early-detection/DASHBOARD/app -name "*.pyc" -delete 2>/dev/null
-```
-
-### Step 3b — Clear GELSTM predictions cache (if GELSTM code or checkpoints changed)
-
-If you changed GELSTM inference code or fixed `cond_vec`-related errors, delete the cached predictions so Stage 3 recomputes with the updated model:
-
-```bash
-rm -f /mnt/e/fyassine/ad-early-detection/DASHBOARD/.cache/gelstm/predictions_*.pkl
-```
-
-### Step 4 — Rebuild the frontend (only if you changed JS/CSS/HTML)
-
-```bash
-cd /mnt/e/fyassine/ad-early-detection/DASHBOARD/frontend
-npm run build           # emits to ../app/static/dist
-```
-
-Backend-only changes don't need this — but if the dashboard UI still looks unchanged after a server restart, the build is what you missed.
-
-> Tip — during JS development, `npm run dev` (Vite HMR) is faster than rebuilding every save, but for "production" sessions where the user only hits the FastAPI server, the build artefact is what's served.
-
-### Step 5 — Start the server with the correct environment
+### Step 2 — Start the server
 
 The project-root venv (`/mnt/e/fyassine/ad-early-detection/.venv`) has `torch`, `torch_geometric`, `nilearn`, and everything the dashboard imports. `DASHBOARD/.venv` does **not** — picking the wrong interpreter is the most common cause of `ModuleNotFoundError: No module named 'torch'` at startup.
 
@@ -172,10 +83,24 @@ nohup env DATA_ROOT=/mnt/e/fyassine/ad-early-detection/DATA \
 echo "started pid $! → tail -f /tmp/dashboard.log"
 ```
 
-### Step 6 — Verify the server is alive and configured correctly
+### Step 3 — Open an SSH tunnel (run this on your local machine)
+
+Since the server has no public web access, you access it through an SSH tunnel:
 
 ```bash
-# Healthcheck — should print the absolute DATA path + a non-zero CSV count
+ssh -L 8050:localhost:8050 wunderlich@138.245.113.6
+```
+
+Keep this terminal open while using the dashboard. This forwards port `8050` on your local machine to port `8050` on the remote host through SSH (traffic is encrypted).
+
+### Step 4 — Open the dashboard
+
+Open your browser and go to `http://localhost:8050`.
+
+### Step 5 — Verify the server is configured correctly
+
+```bash
+# Should print the absolute DATA path + a non-zero CSV count
 curl -s http://localhost:8050/api/discover \
   | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('data_root'), len(d['csvs']),'CSVs')"
 ```
@@ -187,21 +112,42 @@ A correct response looks like:
 
 If you get `/data 0 CSVs`, `DATA_ROOT` wasn't set — kill the process and restart with the env var.
 
-### Step 7 — Clear the browser-side cache (only if the page still looks wrong)
+---
 
-Our frontend caches `/api/discover` in `localStorage` for 5 minutes (so reloads don't show "Discovering data…" every time). If a hard reload (Cmd+Shift+R / Ctrl+Shift+R) still shows stale data:
+## Configuration
 
-```js
-// In the browser DevTools console:
-localStorage.removeItem('fmri_discovery_cache');
-location.reload();
-```
-
-Or click the **Retry** button that appears on the connection-error banner — it does the same thing.
+| Var | Purpose | Default |
+|-----|---------|---------|
+| `DATA_ROOT` | Root of CSV + scan files. **Required for non-Docker runs** — the default `/data` will not have your data. | `/data` |
+| `DASHBOARD_CACHE_ROOT` | Writable cache for warmup outputs, GELSTM predictions, dFC, timeseries, job status. | `DASHBOARD/.cache` |
+| `CACHE_ROOT` | Used by `cohort_stats.py` for the UMAP/EBM/brain-age pickle. Defaults to `${DATA_ROOT}/.cache`. | `${DATA_ROOT}/.cache` |
+| `CLASSIFIER_ROOT` | Where the GELSTM service finds model code. | `<repo>/CLASSIFIER` |
+| `GELSTM_CHECKPOINT_DIR` | Where the GELSTM service finds `best_model_fold*.pth`, `gaae_encoder.pth`, `model_card.json`. | `${CLASSIFIER_ROOT}/model/GELSTM/checkpoints` |
 
 ---
 
-## Notes
+## Docker (optional)
+
+```bash
+cd /mnt/e/fyassine/ad-early-detection/DASHBOARD
+docker-compose up --build
+```
+
+The `docker-compose.yml` mounts `../DATA` as a read-only volume and already sets `DATA_ROOT=/data`. Then follow Steps 3–5 from Quick Start above.
+
+---
+
+## Using the Dashboard
+
+### Workflow
+
+1. **Select a Metadata CSV** from the dropdown (e.g. `DELCODE / __v3__ / metadata / cohorts.csv`)
+2. **Check scan folders** — choose `.npz` or `.nii.gz` folders (not both)
+3. Click **Analyze**
+4. Click any **diagnosis bar** to cross-filter the entire dashboard
+5. Click any **patient row** to open their longitudinal trajectory
+
+### Notes
 
 | Item | Detail |
 |------|--------|
@@ -211,9 +157,7 @@ Or click the **Retry** button that appears on the connection-error banner — it
 | Trajectory | Requires `.npz` scan folder — computes Global FC, DMN FC, Modularity per visit |
 | Port | Default `8050` — change in `docker-compose.yml` or uvicorn command if needed |
 
----
-
-## Patient view — tabs
+### Patient view — tabs
 
 Click any patient row to open the modal. Five tabs share a single
 *selected visit* — clicking M36 anywhere updates every tab.
@@ -224,9 +168,13 @@ Click any patient row to open the modal. Five tabs share a single
 | Manifold | 2-D UMAP scatter of every baseline subject (CN / SCD / MCI / Converter / AD), patient visits projected into the same fixed space and connected chronologically with an arrow on the final segment. Click a visit dot → all tabs sync. |
 | Connectivity | Visit-aware ROI × ROI heatmap of the raw correlation matrix, with a "group by Schaefer network" toggle that pulls the DMN block into the top-left corner. |
 | QC Viewer | Embedded NiiVue volume viewer (axial / coronal / sagittal). Visible only when the selected scan folders contain `.nii.gz`. |
-| Brain View | Glass-brain SVG (axial + sagittal) showing the strongest edges of the selected visit. Threshold slider + per-network filters. Requires the Schaefer-coords JSON below. |
+| Brain View | Glass-brain SVG (axial + sagittal) showing the strongest edges of the selected visit. Threshold slider + per-network filters. Requires the Schaefer-coords JSON (see [API Reference](#api-reference)). |
 
-## New API endpoints
+---
+
+## API Reference
+
+### Endpoints
 
 ```
 GET /api/cohort/stats?csv_path=…&scan_folders=…
@@ -239,7 +187,7 @@ GET /api/atlas/schaefer/coords?n_parcels=200
 
 Cohort statistics are cached in process memory keyed by `(csv_path, sorted scan_folders)` — first request fits UMAP (~few seconds for hundreds of subjects), subsequent requests are instant. Restart the server to invalidate the cache.
 
-## Generating the Schaefer atlas coordinates (one time)
+### Generating Schaefer atlas coordinates (one time)
 
 The Brain View tab needs ROI MNI centroids. Run this once:
 
@@ -254,31 +202,7 @@ Output lands at `app/static/data/schaefer_200_coords.json`. Both reference files
 
 ---
 
-## Environment variables
-
-| Var | Purpose | Default |
-|-----|---------|---------|
-| `DATA_ROOT` | Root of CSV + scan files. **Required for non-Docker runs** — the default `/data` will not have your data. | `/data` |
-| `DASHBOARD_CACHE_ROOT` | Writable cache for warmup outputs, GELSTM predictions, dFC, timeseries, job status. | `DASHBOARD/.cache` |
-| `CACHE_ROOT` | Used by `cohort_stats.py` for the UMAP/EBM/brain-age pickle. Defaults to `${DATA_ROOT}/.cache`. | `${DATA_ROOT}/.cache` |
-| `CLASSIFIER_ROOT` | Where the GELSTM service finds model code. | `<repo>/CLASSIFIER` |
-| `GELSTM_CHECKPOINT_DIR` | Where the GELSTM service finds `best_model_fold*.pth`, `gaae_encoder.pth`, `model_card.json`. | `${CLASSIFIER_ROOT}/model/GELSTM/checkpoints` |
-
-## Running outside Docker (development)
-
-The project-root venv (`<repo>/.venv`) has `torch`, `nilearn`, `torch_geometric`. **`DASHBOARD/.venv` does NOT** — use the project venv:
-
-```bash
-cd /mnt/e/fyassine/ad-early-detection/DASHBOARD
-DATA_ROOT=/mnt/e/fyassine/ad-early-detection/DATA \
-DASHBOARD_CACHE_ROOT=$PWD/.cache \
-/mnt/e/fyassine/ad-early-detection/.venv/bin/python \
-  -m uvicorn app.main:app --host 0.0.0.0 --port 8050 --reload
-```
-
-For Docker, `docker-compose up` does the right thing — the bundled `docker-compose.yml` already sets `DATA_ROOT=/data` and mounts `../DATA:/data:ro`.
-
-## GELSTM ensemble deployment
+## GELSTM Ensemble Deployment
 
 The GELSTM service in `app/services/gelstm.py` expects this layout:
 
@@ -310,7 +234,9 @@ CLASSIFIER/model/GELSTM/checkpoints/
 
 The training notebook `CLASSIFIER/notebooks/GELSTM_DELCODE_WHOLE_BRAIN.ipynb` ends with a deployment cell that copies all the required files into this directory — re-run that cell after every training run.
 
-## Cohort warmup pipeline
+---
+
+## Cohort Warmup Pipeline
 
 When you click **Analyze Data**, the backend kicks off a precompute subprocess (`app/precompute.py`) with 5 stages:
 
@@ -326,7 +252,9 @@ Stage 5 needs the raw **BOLD `.nii.gz`** folder selected (e.g. `__v1__/fmri`). P
 
 Progress for stages is exposed via `GET /api/cohort/jobs/{job_id}` with fields `{status, stage, progress (0..1), error, started_at, finished_at}`. The Dynamic FC panel polls this and renders an in-place progress bar while Stage 5 runs.
 
-## Cache layout
+---
+
+## Cache Layout
 
 ```
 ${DASHBOARD_CACHE_ROOT}/
@@ -339,6 +267,191 @@ ${DASHBOARD_CACHE_ROOT}/
 ```
 
 Invalidate a stage by deleting its directory (or just the relevant key file). The warmup will rebuild it on next trigger. **Never** keep negative-result caches around — dFC explicitly does NOT cache `available=false` payloads to avoid this pitfall (see `_stage_dfc` in `app/precompute.py`).
+
+---
+
+## Operations
+
+### restart.sh — one-command restart
+
+`restart.sh` defaults `DATA_ROOT` and `DASHBOARD_CACHE_ROOT` for the standard repo layout — override the env vars only if you have a non-standard data mount.
+
+**Daily restart (background, picks up Python changes):**
+```bash
+/mnt/e/fyassine/ad-early-detection/DASHBOARD/restart.sh --bg
+```
+
+**Full clean rebuild (frontend + Python caches + GELSTM cache):**
+```bash
+/mnt/e/fyassine/ad-early-detection/DASHBOARD/restart.sh --full --bg
+```
+Use this when JS/CSS changed, or when you want to force-regenerate GELSTM predictions.
+
+**Stop the server** (free port 8050 without starting a new one):
+```bash
+/mnt/e/fyassine/ad-early-detection/DASHBOARD/restart.sh --no-start
+```
+
+**Foreground (no background, no `nohup`):** drop `--bg`. Logs go to the terminal instead of `DASHBOARD/logs/server/`.
+
+| Flag | Effect |
+|------|--------|
+| `--clean-py` | Delete `app/**/__pycache__` and `*.pyc` |
+| `--clean-gelstm` | Delete `.cache/gelstm/predictions_*.pkl` |
+| `--rebuild` | `npm run build` in `frontend/` |
+| `--full` | All three of the above |
+| `--bg` | Start server in background with `nohup`; tails the log |
+| `--no-start` | Kill the old server only |
+
+---
+
+### Inspecting jobs and logs
+
+Precompute jobs (cohort warmup) run as detached subprocesses. Their logs and lifecycle events live under `DASHBOARD/logs/`:
+
+```
+DASHBOARD/logs/
+├── precompute/
+│   ├── 20260527_124900_e6fd10ec1753b003386c.log   ← per-run, timestamped
+│   ├── 20260527_133015_….log
+│   └── latest.log -> 20260527_133015_….log        ← always points to the latest run
+├── server/
+│   ├── server_20260527_143000.log                 ← only when restart.sh --bg
+│   └── latest.log
+└── jobs.jsonl                                      ← append-only audit (started/finished/killed_*)
+```
+
+Common operations:
+
+```bash
+# Watch the current precompute live
+tail -f DASHBOARD/logs/precompute/latest.log
+
+# Watch the backgrounded uvicorn live
+tail -f DASHBOARD/logs/server/latest.log
+
+# Last 20 lifecycle events across all jobs
+jq -r '"\(.ts) \(.event) \(.job_id) \(.reason // "")"' DASHBOARD/logs/jobs.jsonl | tail -20
+
+# Live status of every known job (running + done)
+curl -s localhost:8050/api/cohort/jobs | jq
+
+# Per-job status
+curl -s localhost:8050/api/cohort/jobs/<job_id> | jq
+```
+
+**Bounded lifetimes (no runaway jobs).** The server runs a watchdog every 60 s and a one-shot sweep at startup. Any precompute that exceeds **30 min wall-clock** or whose status JSON hasn't updated in **5 min** is SIGTERM'd (SIGKILL after 5 s grace) and a `killed_runaway` or `killed_stale` event is appended to `jobs.jsonl`. The thresholds can be overridden via env vars: `PRECOMPUTE_MAX_AGE_S` (default 1800), `PRECOMPUTE_STALL_S` (default 300), `PRECOMPUTE_WATCHDOG_S` (default 60). Logs rotate at 20 files per directory.
+
+### Stopping the Server
+
+**Foreground (started without `--bg`):** `Ctrl+C` in the uvicorn terminal.
+
+**Backgrounded (started with `restart.sh --bg`):** the parent shell is gone, so `Ctrl+C` won't help — use the script:
+
+```bash
+/mnt/e/fyassine/ad-early-detection/DASHBOARD/restart.sh --no-start
+```
+
+That sends SIGTERM to whatever owns port 8050, waits up to 10 s, then escalates to SIGKILL if needed. Exits without starting a new server. Any in-flight precompute keeps running (it was spawned with `start_new_session=True` precisely so server restarts don't kill it) — `restart.sh --no-start` only stops uvicorn.
+
+**To stop both uvicorn and a runaway precompute:**
+
+```bash
+# 1. Stop uvicorn (this also stops the watchdog thread)
+/mnt/e/fyassine/ad-early-detection/DASHBOARD/restart.sh --no-start
+
+# 2. Find and kill the precompute (job_id from `ls DASHBOARD/.cache/jobs/*.pid`)
+cat DASHBOARD/.cache/jobs/<job_id>.pid | xargs kill -TERM
+```
+
+Or call the API endpoint while uvicorn is still up: `curl -X DELETE localhost:8050/api/cohort/jobs/<job_id>`.
+
+**Manual fallback** if the script can't free the port for any reason — see **Restart workflow** below for `ps` / `pkill` recipes.
+
+### Restart workflow (kill old → rebuild → run)
+
+Use this whenever you change Python code, JS/CSS, or environment variables.
+The dashboard caches things aggressively, both server-side (Python module imports, `_load_failed` flags) and client-side (localStorage discovery cache), so a clean restart is the most reliable way to pick up changes.
+
+**Step 1 — Find any running uvicorn processes**
+
+```bash
+# Show all uvicorn workers + their command lines + ports
+ps -fC python3 -fC python3.10 2>/dev/null | grep -E "uvicorn|app\.main" | grep -v grep
+# Or specifically find what's bound to port 8050
+ss -tlnp 2>/dev/null | grep 8050 || lsof -i :8050 2>/dev/null
+```
+
+You should see one (or more) lines like:
+```
+wunderl+ 1808555 ... /usr/bin/python3.10 -m uvicorn app.main:app --host 0.0.0.0 --port 8050
+```
+
+**Step 2 — Kill the old server cleanly**
+
+```bash
+# Polite SIGTERM (lets in-flight requests finish + flushes job-status JSON on disk)
+kill 1808555
+
+# If it's been more than ~10 s and the process is still alive, force it
+kill -9 1808555
+
+# Nuke everything matching "uvicorn app.main" in one shot (use with care)
+pkill -f "uvicorn.*app.main"
+```
+
+Confirm nothing is left holding the port:
+```bash
+ss -tlnp 2>/dev/null | grep 8050   # should print nothing
+```
+
+Detached `bash -c` wrappers (e.g. PID 515427-style copilot launchers) sometimes stay even after their child uvicorn dies — kill them by their PIDs too if `ps -ef | grep uvicorn` still shows them.
+
+**Step 3 — Clear stale Python caches (if you've been editing code)**
+
+The interpreter reads `.pyc` bytecode in `__pycache__/` first; stale files from a different Python version (e.g. 3.10 vs 3.12) can mask edits to `.py` sources. After major refactors:
+
+```bash
+find /mnt/e/fyassine/ad-early-detection/DASHBOARD/app -name "__pycache__" -type d -exec rm -rf {} +  2>/dev/null
+find /mnt/e/fyassine/ad-early-detection/DASHBOARD/app -name "*.pyc" -delete 2>/dev/null
+```
+
+**Step 3b — Clear GELSTM predictions cache (if GELSTM code or checkpoints changed)**
+
+If you changed GELSTM inference code or fixed `cond_vec`-related errors, delete the cached predictions so Stage 3 recomputes with the updated model:
+
+```bash
+rm -f /mnt/e/fyassine/ad-early-detection/DASHBOARD/.cache/gelstm/predictions_*.pkl
+```
+
+**Step 4 — Rebuild the frontend (only if you changed JS/CSS/HTML)**
+
+```bash
+cd /mnt/e/fyassine/ad-early-detection/DASHBOARD/frontend
+npm run build           # emits to ../app/static/dist
+```
+
+Backend-only changes don't need this — but if the dashboard UI still looks unchanged after a server restart, the build is what you missed.
+
+> Tip — during JS development, `npm run dev` (Vite HMR) is faster than rebuilding every save, but for "production" sessions where the user only hits the FastAPI server, the build artefact is what's served.
+
+**Step 5 — Start the server**
+
+See [Quick Start → Step 2](#step-2--start-the-server).
+
+**Step 6 — Clear the browser-side cache (only if the page still looks wrong)**
+
+Our frontend caches `/api/discover` in `localStorage` for 5 minutes (so reloads don't show "Discovering data…" every time). If a hard reload (Cmd+Shift+R / Ctrl+Shift+R) still shows stale data:
+
+```js
+// In the browser DevTools console:
+localStorage.removeItem('fmri_discovery_cache');
+location.reload();
+```
+
+Or click the **Retry** button that appears on the connection-error banner — it does the same thing.
+
+---
 
 ## Troubleshooting
 

@@ -50,3 +50,27 @@ export function showLoading(text) {
 export function hideLoading() {
     $('loadingOverlay').classList.remove('active');
 }
+
+let _toastTimer = null;
+export function showError(msg) {
+    let el = $('errorToast');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'errorToast';
+        el.style.cssText = [
+            'position:fixed', 'right:20px', 'bottom:20px', 'z-index:10000',
+            'max-width:380px', 'padding:12px 16px',
+            'background:rgba(22,22,20,0.96)', 'color:#e2e0dd',
+            'border:1px solid rgba(224,128,64,0.5)', 'border-radius:8px',
+            'font-size:.85rem', 'line-height:1.4',
+            'box-shadow:0 6px 24px rgba(0,0,0,0.4)',
+            'opacity:0', 'transition:opacity .2s ease-out',
+            'pointer-events:none',
+        ].join(';');
+        document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    requestAnimationFrame(() => { el.style.opacity = '1'; });
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 5000);
+}
