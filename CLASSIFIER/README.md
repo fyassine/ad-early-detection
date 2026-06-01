@@ -11,7 +11,7 @@ CLASSIFIER/
     splits.py         # make_splits — central train/val/test partitioning
     utils.py          # generic utils (set_seed re-exported for back-compat)
     sanity.py         # run_full_audit (split-hygiene check)
-    dataset.py, validation.py
+    dataset.py
   configs/
     gelstm.py         # GELSTMTrainConfig, EvalConfig
     gec.py            # GECTrainConfig, GECBatch (attribute contract)
