@@ -257,9 +257,15 @@ sequence diagrams.
   `PROGNOSER/model/` share a `SurvivalModel` ABC (`base.py`): `kaplan_meier.py`, `cox.py`,
   `cox_time_varying.py`, `rsf.py`, `lstm_surv.py`, `deepsurv.py` (optional). Metrics
   (C-index, IBS, time-dependent AUC) in `PROGNOSER/common/metrics.py`.
-- **Interactions.** Consumes GAAE embeddings cached by
-  `PROGNOSER/src/build_subject_embeddings.py`; notebooks: `PROGNOSER_RUNNER.ipynb` (main sweep),
-  `KAPLAN_MEIER_BASELINE.ipynb`, `CROSS_NETWORK_COMPARISON.ipynb`.
+- **Interactions.** Consumes GAAE embeddings precomputed/cached by
+  `PROGNOSER/src/build_subject_embeddings.py` (its predecessor `build_baseline_embeddings.py` is
+  deprecated). The embedding strategy keys are exactly `baseline | last | mean | slope | all_aggs |
+  sequence` (verified: `EmbeddingStrategy` Literal in `PROGNOSER/common/embeddings.py`; `all_aggs`
+  = concat of `[baseline, last, mean, slope]` → 4×latent_dim, `sequence` is the ordered series for
+  LSTM-Surv). Notebooks (verified present under `PROGNOSER/notebooks/`):
+  `PROGNOSER_RUNNER.ipynb` (main sweep), `KAPLAN_MEIER_BASELINE.ipynb`,
+  `CROSS_NETWORK_COMPARISON.ipynb`. Survival-table API:
+  `build_survival_table(...)`, `filter_to_split(table, splits_dir, split)`, `make_xte(...)`.
 - **Gotcha.** **Look-ahead leakage**: *all* longitudinal features must be computed strictly inside
   the at-risk window. This is the whole reason the window is symmetric. See
   [`assets/prognoser-survival.md`](assets/prognoser-survival.md).
@@ -353,12 +359,12 @@ flowchart LR
 
 10. **Legacy dirs are read-only.** `__CLASSIFIER__/`, `ABI/`, `DCI/` — kept only for back-compat /
     history. Don't import from them or mirror their patterns. (Note: the git status at session start
-    shows many files under `__CLASSIFIER__/` being deleted — the consolidation to a single classifier
-    dir is in progress; commit `9b9e76a refactor: keep only one classifier dir`.)
+    shows many files under `__CLASSIFIER__/` staged for deletion — a consolidation to a single
+    classifier dir appears to be in progress.)
 
-11. **`main.py` router registration has duplicate lines.** `DASHBOARD/app/main.py` includes
-    `prediction.router` many times in a row (lines ~37–50). This is a harmless copy-paste artifact
-    (FastAPI dedupes routes), but worth cleaning up if you touch that file.
+11. **Root `README.md` is stale.** It still describes the old layout (e.g. `/DCI: source code for
+    ABI`, a top-level `MODEL_COMPARISON_*.ipynb`) and predates the active/legacy split. Trust
+    `.claude/CLAUDE.md` + `.claude/rules/` and this document over the root README.
 
 ---
 
@@ -366,44 +372,61 @@ flowchart LR
 
 ## 5.1 Experiment registry (`CLASSIFIER/experiments.yaml`)
 
-The single source of truth for "what experiments exist." **Exactly 9 experiments.** Defaults:
-`seed: 42`, `device: cuda`, metadata `…/__v3__/metadata/cohorts.csv`, splits `…/splits_gec`.
+The single source of truth for "what experiments exist." **12 entries** (verified against the
+file). Each entry has fields `id` (kebab-case slug), `mode`, `model`, `dataset`, `seed` (all 42),
+`notebook` (relative to `CLASSIFIER/notebooks/`), optional `checkpoint_path`, and `notes`.
 
-| id | family | model | notebook | notes |
+| id | mode | model | notebook | notes |
 |---|---|---|---|---|
-| `gaae_pretrain_whole_brain` | static | GAAE | `STATIC/STATIC_GAAE_DELCODE_WHOLE_BRAIN.ipynb` | Pretrains encoder → `model/GELSTM/checkpoints/gaae_encoder.pth`. |
-| `logreg_static_whole_brain` | static | LogReg | `STATIC/STATIC_LOGREG_DELCODE_WHOLE_BRAIN.ipynb` | sklearn floor on GAAE embeddings. |
-| `gelstm_trajectory_whole_brain` | longitudinal | GELSTM | `LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb` | Primary model; `lstm_hidden=128`, `use_time_delta`, `threshold_mode: youden`. |
-| `gelstm_fdr_filtered_whole_brain` | longitudinal | GELSTM | `LONGITUDINAL/LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE.ipynb` | `fdr_top_k: 32`. |
-| `gec_trajectory_whole_brain` | longitudinal | GEC | `LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb` | Flattened-trajectory baseline; `pooling: mean`. |
-| `sanity_split_hygiene` | sanity | n/a | `SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb` | Hard-fail on subject leakage. |
-| `sanity_metadata_baseline` | sanity | LogReg | `SANITY/SANITY_BASELINE_METADATA_TIME.ipynb` | Metadata-only floor. |
-| `sanity_gelstm_ablations` | sanity | GELSTM | `SANITY/SANITY_LONGITUDINAL_GELSTM.ipynb` | `shuffle_order`, `zero_time_delta`. |
-| `comparison_cross_region` | comparison | multi | `COMPARISON/COMPARISON_CROSS_REGION_CLASSIFIER.ipynb` | Paired DeLong/Holm/McNemar over 9 regions, `alpha=0.05`. |
+| `gelstm-trajectory-whole-brain` | longitudinal | GELSTM | `LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb` | Full-trajectory GELSTM on GAAE latents (primary model). |
+| `gelstm-trajectory-fdr` | longitudinal | GELSTM | `LONGITUDINAL/LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE.ipynb` | Per-fold FDR latent-dim selection. |
+| `gelstm-early-detection-first-n` | longitudinal | GELSTM | `LONGITUDINAL/LONGITUDINAL_GELSTM_FIRST_N_DELCODE.ipynb` | First-N-visits ablation (early detection). |
+| `gec-trajectory` | longitudinal | GEC | `LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb` | Flattened-trajectory GEC over FDR-selected GAAE dims + Δt. |
+| `gaae-static` | static | GAAE | `STATIC/STATIC_GAAE_DELCODE_WHOLE_BRAIN.ipynb` | Per-scan GAAE embedding with subject rollup. |
+| `logreg-static` | static | LogReg | `STATIC/STATIC_LOGREG_DELCODE_WHOLE_BRAIN.ipynb` | Per-scan logistic-regression baseline. |
+| `model-comparison` | baseline | multi | `BASELINE/BASELINE_MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb` | Subject-level comparison table across models. |
+| `sanity-split-hygiene` | sanity | n/a | `SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb` | Hard-fails if any subject crosses train/val/test. |
+| `sanity-metadata-baseline` | sanity | LogReg | `SANITY/SANITY_BASELINE_METADATA_TIME.ipynb` | Metadata-only floor (age, sex, visit time). |
+| `sanity-gelstm-ablations` | sanity | GELSTM | `SANITY/SANITY_LONGITUDINAL_GELSTM.ipynb` | Shuffled-order, no-Δt, fixed-N ablations. |
+| `comparison-cross-region-classifier` | comparison | multi | `COMPARISON/COMPARISON_CROSS_REGION_CLASSIFIER.ipynb` | Aggregates saved classifier predictions across regions. |
+| `comparison-cross-region-survival` | comparison | multi | `COMPARISON/COMPARISON_CROSS_REGION_SURVIVAL.ipynb` | Aggregates saved survival predictions across regions. |
 
-> All notebook paths are under `CLASSIFIER/notebooks/`.
+> `mode` values are `baseline | longitudinal | static | sanity | comparison`. The two
+> `comparison-*` entries use `dataset: DELCODE_MULTI_REGION`; all others use `DELCODE_WHOLE_BRAIN`.
+> Comparison notebooks only aggregate *saved* predictions (no training) — they apply the paired
+> statistics from `common/comparison.py`.
 
-## 5.2 Config dataclasses (verified against source)
+## 5.2 Config dataclasses (verified verbatim against source)
+
+> These are the **actual** fields and defaults. Model-architecture hyperparameters
+> (e.g. `lstm_hidden`, `gaae_latent`) are *not* in these training configs — they are passed at model
+> construction in the notebooks / read from a `model_card.json` on the DASHBOARD side.
 
 **`CLASSIFIER/configs/gelstm.py`**
 
-- `GELSTMTrainConfig` — `epochs=100, lr=1e-3, weight_decay=1e-5, batch_size=16, grad_clip=1.0,
-  use_scheduler=True, scheduler_factor=0.5, scheduler_patience=5, early_stopping_patience=20,
-  early_stopping_metric="auc", gaae_latent=64, lstm_hidden=128, lstm_layers=2, lstm_dropout=0.3,
-  classifier_hidden=64, classifier_dropout=0.3, seed=42`. Validates: positive epochs, `lstm_layers>=1`,
-  `0<=lstm_dropout<1`.
-- `EvalConfig` — `threshold_mode="youden" ("youden"|"best_f1"|"fixed"), fixed_threshold=None,
-  use_time_delta=True, zero_time_delta=False, graph_pool="mean" ("mean"|"max"), dim_filter=None,
-  shuffle_order=False, shuffle_rng=None`. Validates threshold/pool modes; `fixed` requires
-  `fixed_threshold`.
-- `FirstNConfig` — `n_visits=2` (early-detection ablation; `n_visits>=1`).
+- `GELSTMTrainConfig` — `epochs=100, lr=1e-3, batch_size=16, grad_clip=1.0,
+  early_stopping_patience=20, use_scheduler=True, seed=42, threshold_mode="youden",
+  fixed_threshold=0.5`.
+- `EvalConfig` — `use_time_delta=True, zero_time_delta=False, graph_pool="mean", dim_filter=None,
+  shuffle_order=False, shuffle_rng=None (repr=False), threshold_mode="youden",
+  fixed_threshold=0.5`. Groups the kwargs formerly threaded through `evaluate` and
+  `encode_batch_sequences`. `shuffle_rng` is excluded from serialization via `_eval_cfg_to_dict`
+  in `model/GELSTM/train.py` (it holds a live RNG, not JSON-friendly).
 
 **`CLASSIFIER/configs/gec.py`**
 
-- `GECTrainConfig` — like GELSTM's training config (`batch_size=32`), plus
-  `threshold_mode/ fixed_threshold` directly on it; `gaae_latent=64, classifier_hidden=64,
-  classifier_dropout=0.3`.
-- `GECBatch` — documentation-only dataclass of the required PyG batch attributes (see §3.2).
+- `GECTrainConfig` — `epochs=100, lr=1e-3, batch_size=32, grad_clip=1.0,
+  early_stopping_patience=20, use_scheduler=True, seed=42, wandb_project="gec-classification",
+  wandb_enabled=False, threshold_mode="youden", fixed_threshold=0.5`.
+- `GECBatch` — documentation-only dataclass of the required PyG batch attributes
+  (`x, edge_index, batch, is_converter, patient_age, patient_sex`); never instantiated at runtime
+  (see §3.2).
+
+> **Threshold-mode caveat.** The dataclass *default* is `threshold_mode="youden"`, but
+> [`.claude/rules/evaluation.md`](../.claude/rules/evaluation.md) and the notebook contract
+> ([`.claude/rules/notebooks.md`](../.claude/rules/notebooks.md)) prefer **Best-F1** for the
+> class-imbalanced DELCODE cohort (it is the interactive default / Enter). Treat the code default
+> and the documented preference as two separate facts; notebooks override to F1.
 
 ## 5.3 Key modules & functions
 
@@ -421,45 +444,55 @@ The single source of truth for "what experiments exist." **Exactly 9 experiments
 training code: `model/GEC/train.py`, `model/GELSTM/train.py`.
 
 **PROGNOSER/** — `common/survival_table.py`, `common/embeddings.py`, `common/longitudinal.py`,
-`common/metrics.py`; `model/{base,kaplan_meier,cox,cox_time_varying,rsf,lstm_surv,deepsurv}.py`;
-`src/build_subject_embeddings.py` (CLI; `build_baseline_embeddings.py` is the deprecated predecessor).
+`common/metrics.py`; `model/{base,kaplan_meier,cox,cox_time_varying,rsf,lstm_surv,deepsurv}.py` (all verified present);
+`src/build_subject_embeddings.py` (CLI; `build_baseline_embeddings.py` is the deprecated predecessor);
+`notebooks/{PROGNOSER_RUNNER,KAPLAN_MEIER_BASELINE,CROSS_NETWORK_COMPARISON}.ipynb`.
 
-## 5.4 DASHBOARD API reference (authoritative — from route decorators)
+## 5.4 DASHBOARD API reference (authoritative — grepped from route decorators)
 
-Routers registered in `DASHBOARD/app/main.py`: `discovery, metadata, cohort, patient, atlas, health,
-population, graph, qc, prediction`. Endpoints (all `GET`):
+`DASHBOARD/app/main.py` includes routers in a loop (`for _router in (...): app.include_router(...)`),
+mounts `/static`, and serves the SPA at `/`. The complete endpoint surface, per route module:
 
-| Route file | Endpoint |
-|---|---|
-| `atlas.py` | `/api/atlas/schaefer-coords` |
-| `cohort.py` | `/api/cohort/summary`, `/effect-sizes`, `/survival`, `/manifold`, `/biomarker-distributions`, `/staging`, `/brain-age`, `/normative` |
-| `discovery.py` | `/api/discovery/scan` |
-| `graph.py` | `/api/graph/cohort-summary`, `/api/graph/patient/{subject_id}` |
-| `health.py` | `/api/health` |
-| `metadata.py` | `/api/metadata/load` |
-| `patient.py` | `/api/patient/{subject_id}/trajectory`, `/clinical`, `/matrix`, `/manifold` |
-| `population.py` | `/api/population/summary` |
-| `prediction.py` | `/api/prediction/cohort`, `/api/prediction/patient/{subject_id}` |
-| `qc.py` | `/api/prediction/patient/{subject_id}/qc` |
+**`routes/discovery.py`** — `GET /api/discover`, `GET /api/scan`
+**`routes/metadata.py`** — `GET /api/metadata`
+**`routes/health.py`** — `GET /api/health`
+**`routes/atlas.py`** — `GET /api/atlas/schaefer/coords`
 
-> Cohort job-management endpoints (warmup / job status) may be registered in `cohort.py` beyond the
-> static decorators above; treat this table as the verified `GET` surface and confirm POST/DELETE in
-> `cohort.py` if you depend on them.
+**`routes/cohort.py`** (jobs + cohort analytics):
+- `GET /api/cohort/warmup` — launch detached precompute job
+- `GET /api/cohort/jobs`, `GET /api/cohort/jobs/{job_id}`, `DELETE /api/cohort/jobs/{job_id}`
+- `GET /api/cohort/stats`, `/effect-sizes`, `/survival`, `/ebm`, `/brain-age`, `/network-stats`,
+  `/reference`, `/missingness`, `/graph-topology`, `/risk-distribution`, `/network-disruption`,
+  `/dfc-states`
+
+**`routes/patient.py`** (all `GET /api/patient/{subject_id}/...`):
+- `/trajectory`, `/clinical`, `/staging`, `/manifold`, `/matrix`, `/scan`, `/scans`,
+  `/conversion-risk`, `/risk`, `/graph-trajectory`, `/network-trajectory`
+
+**`routes/population.py`** — `GET /api/population/summary`, `/epidemiology`, `/network-atlas`,
+`/model-card`
+
+> The only non-`GET` verb is `DELETE /api/cohort/jobs/{job_id}` (job cancel). All others are `GET`.
 
 ## 5.5 DASHBOARD configuration (`DASHBOARD/app/config.py`)
 
-| Name | Default | Meaning |
-|---|---|---|
-| `REPO_ROOT` | `parents[2]` of config.py | Repo root (derived). |
-| `DATA_ROOT` (env) | `REPO_ROOT/DATA` | Cohort CSV + scan files. |
-| `DASHBOARD_CACHE_ROOT` (env → `CACHE_ROOT`) | `REPO_ROOT/DASHBOARD/.cache` | Runtime cache. |
-| `CLASSIFIER_ROOT` | `REPO_ROOT/CLASSIFIER` | Model code (derived, not env). |
-| `GELSTM_CHECKPOINT_DIR` (env) | `CLASSIFIER_ROOT/model/GELSTM/checkpoints` | Fold + GAAE checkpoints. |
-| `MAX_JOB_AGE_S` (`PRECOMPUTE_MAX_AGE_S`) | 1800 | Runaway-job kill age. |
-| `STALL_THRESHOLD_S` (`PRECOMPUTE_STALL_S`) | 300 | Stale-status kill threshold. |
-| `WATCHDOG_INTERVAL_S` (`PRECOMPUTE_WATCHDOG_S`) | 60 | Watchdog poll interval. |
-| `SCHAEFER_N_ROIS` / `SCHAEFER_YEO_NETWORKS` | 200 / 7 | Atlas constants. |
-| `NILEARN_DATA_DIR` (env) | `REPO_ROOT/DATA/.nilearn` | nilearn fetch cache. |
+These are the constants actually defined in `config.py` (verified):
+
+| Name | Env override? | Default | Meaning |
+|---|---|---|---|
+| `DATA_ROOT` | `DATA_ROOT` | `/data` | Root of cohort CSV + scan files. |
+| `STATIC_DIR` | no (derived) | `app/static` | Served static assets / SPA build. |
+| `REPO_ROOT` | no (derived) | `parents[2]` of config.py | Repo root, for resolving sibling modules. |
+| `CLASSIFIER_ROOT` | `CLASSIFIER_ROOT` | `REPO_ROOT/CLASSIFIER` | GELSTM model code import root. |
+| `GELSTM_CHECKPOINT_DIR` | `GELSTM_CHECKPOINT_DIR` | `CLASSIFIER_ROOT/model/GELSTM/checkpoints` | Fold + GAAE checkpoints. |
+| `DASHBOARD_CACHE_ROOT` | `DASHBOARD_CACHE_ROOT` | `DASHBOARD/.cache` (created on import) | Disk cache for predictions/aggregates. |
+
+> **Note:** `DATA_ROOT` defaults to the absolute `/data` (a container path), *not* a repo-relative
+> path — set it explicitly for local runs.
+>
+> The precompute watchdog timing constants (runaway-age, stall-threshold, poll-interval) referenced
+> in §3.9 / Part 4 live in the job-management code (`app/services/job_manager.py` / `app/main.py`),
+> **not** in `config.py`. Confirm their exact names/env overrides there before relying on them.
 
 ## 5.6 Tests & commands
 
@@ -515,21 +548,23 @@ threshold selection, FDR selection, contrasts immutability, and the comparison s
 
 | Assumption | Confidence | Basis |
 |---|---|---|
-| `experiments.yaml` contains exactly 9 experiments | **High** | Read the file; it ends "9 experiments total". |
-| Config dataclass fields as listed in §5.2 | **High** | Read `configs/gelstm.py` and `configs/gec.py` directly. |
-| DASHBOARD `GET` route list in §5.4 | **High** | Grepped `@router.get` decorators in `app/routes/`. |
+| `experiments.yaml` contains 12 entries with kebab-case ids | **High** | Read the file end-to-end. |
+| Config dataclass fields/defaults as listed in §5.2 | **High** | Read `configs/gelstm.py` and `configs/gec.py` verbatim. |
+| DASHBOARD route list in §5.4 | **High** | Grepped `@router.{get,delete}` decorators across `app/routes/`. |
+| `config.py` constants in §5.5 | **High** | Read `DASHBOARD/app/config.py` verbatim. |
 | Checkpoint schema & seeding/eval contracts | **High** | Read `.claude/rules/{checkpoints,seeding,evaluation,configs}.md`. |
 | Symmetric at-risk window semantics | **High** | Read `PROGNOSER/common/survival_table.py` docstring. |
-| Detailed DASHBOARD service internals (precompute 5 stages, dFC k-means params, GELSTM service method names) | **Medium** | From agent secondary reading, not all line-verified. |
+| Detailed DASHBOARD service internals (precompute 5 stages, dFC k-means params, GELSTM service method names, watchdog constant names) | **Medium** | From agent secondary reading, not all line-verified. |
 | Per-version (`__v4__`–`__v11__`) ROI counts / atlas mapping | **Medium** | From agent summary; confirm in `DATA/src/processing/` scripts. |
 | GAAE/GEC/GELSTM exact `models.py` class signatures | **Medium** | Summarized; spot-check before relying on exact arg lists. |
 
 ## 6.2 Open questions
-- Are POST/DELETE cohort job-management endpoints present in `cohort.py` (warmup/cancel)? Confirm if
-  you build against the job API.
-- Is `prediction.router` duplication in `main.py` intentional or leftover? (Appears to be leftover.)
-- The session-start git status shows `__CLASSIFIER__/` being removed — is the single-classifier-dir
-  consolidation complete, or are there still references to the old tree?
+- Exact names + env overrides of the precompute watchdog constants (runaway-age / stall / poll) —
+  confirm in `app/services/job_manager.py` and `app/main.py` if you build against the job API.
+- Per-version ROI counts for `__v4__`–`__v11__` — read the `DATA/src/processing/` scripts to confirm
+  the atlas/network mapping before depending on specific dimensions.
+- Is the `__CLASSIFIER__/` → single-classifier-dir consolidation complete, or do live references to
+  the old tree remain?
 
 ## 6.3 Next steps for a contributor
 1. Read the reference docs on demand: `CLASSIFIER/README.md`, `PROGNOSER/README.md`,

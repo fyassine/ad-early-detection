@@ -271,7 +271,7 @@ def train_model(
 
     scheduler = (
         torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode="max", factor=0.5, patience=5, min_lr=1e-6
+            optimizer, mode="max", factor=cfg.lr_factor, patience=cfg.lr_patience, min_lr=cfg.lr_min
         )
         if cfg.use_scheduler
         else None

@@ -432,15 +432,18 @@ def get_patient_clinical_trajectory(df: pd.DataFrame, subject_id: str) -> dict:
     if patient_df.empty:
         return {}
     
-    # Sort by visit logically (M0, M12, M24...)
+    # Sort by visit logically (M0, M12, M24...). Returns a (priority, value)
+    # tuple so visits that don't match the "M<n>" pattern sort *after* parsed
+    # ones while keeping a stable secondary order, instead of all collapsing
+    # onto a single sentinel.
     def visit_sort_key(v):
         v = str(v).upper()
         if v.startswith('M'):
             try:
-                return int(v[1:])
-            except:
+                return (0, int(v[1:]))
+            except ValueError:
                 pass
-        return 9999
+        return (1, v)
         
     if "visit" in patient_df.columns:
         patient_df["sort_key"] = patient_df["visit"].apply(visit_sort_key)

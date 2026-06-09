@@ -1,11 +1,39 @@
+"""GAAE model: Graph Attention Autoencoder with FiLM conditioning.
+
+Used as a pretrained feature extractor by GEC and GELSTM; its training loop
+(train.py) runs once and is intentionally un-refactored per architecture.md.
+"""
+from __future__ import annotations
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import BatchNorm, GATv2Conv, InnerProductDecoder
 
+
 class GraphAttentionAutoencoderConditioned(nn.Module):
-    def __init__(self, in_features, hidden_dim, out_features, cond_dim, num_heads=1, dropout=0.0):
-        super(GraphAttentionAutoencoderConditioned, self).__init__()
+    """Conditional GAT autoencoder: encode → FiLM-condition → decode features + adjacency.
+
+    Parameters
+    ----------
+    in_features : int   Input node-feature dimension (number of ROIs).
+    hidden_dim  : int   Hidden dim shared by encoder and decoder GAT layers.
+    out_features: int   Latent embedding dimension.
+    cond_dim    : int   Conditioning vector size (e.g. 2 for [age, sex]).
+    num_heads   : int   GAT attention heads (features are averaged at final layer).
+    dropout     : float Dropout probability.
+    """
+
+    def __init__(
+        self,
+        in_features: int,
+        hidden_dim: int,
+        out_features: int,
+        cond_dim: int,
+        num_heads: int = 1,
+        dropout: float = 0.0,
+    ) -> None:
+        super().__init__()
         self.dropout = dropout
         self.edge_dim = 1
         self.adj_decoder = InnerProductDecoder()

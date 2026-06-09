@@ -1,0 +1,42 @@
+[tool.ruff]
+# Active code only — legacy trees and generated/data dirs are excluded.
+target-version = "py310"
+line-length = 100
+extend-exclude = [
+    "__CLASSIFIER__",
+    "ABI",
+    "DCI",
+    "DATA/DELCODE",
+    ".venv",
+    "**/wandb",
+    "**/_embeddings_cache_",
+    "DASHBOARD/app/static/dist",
+    "DASHBOARD/frontend/dist",
+    "*.ipynb",
+]
+
+[tool.ruff.lint]
+# Start conservative: pyflakes (F), import sorting (I), a subset of pycodestyle (E/W),
+# and the most useful bugbear checks (B). Expand over time.
+select = ["E", "F", "W", "I", "B"]
+ignore = [
+    "E501",  # line length — enforced by the formatter, not the linter
+    "E741",  # ambiguous variable names (l, I) — common in math code here
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]  # re-exports
+"**/tests/**" = ["F811", "F401"]
+
+[tool.black]
+target-version = ["py310"]
+line-length = 100
+extend-exclude = '''
+/(
+    __CLASSIFIER__
+  | ABI
+  | DCI
+  | \.venv
+  | DATA/DELCODE
+)/
+'''

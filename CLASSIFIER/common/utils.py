@@ -1,9 +1,19 @@
+from __future__ import annotations
+
+import warnings
+from pathlib import Path
+
 import numpy as np
 import torch
+import torch.nn as nn
 from torch_geometric.utils import to_dense_adj
 
 
-def load_frozen_encoder_from_gaae(gec_model, gaae_checkpoint_path, device='cpu'):
+def load_frozen_encoder_from_gaae(
+    gec_model: nn.Module,
+    gaae_checkpoint_path: str | Path,
+    device: str | torch.device = "cpu",
+) -> nn.Module:
     checkpoint = torch.load(gaae_checkpoint_path, map_location=device, weights_only=False)
     
     if 'model_state_dict' in checkpoint:
@@ -57,30 +67,53 @@ def load_frozen_encoder_from_gaae(gec_model, gaae_checkpoint_path, device='cpu')
     return gec_model
 
 
-def compute_class_weights(labels, device='cpu'):
+def compute_class_weights(
+    labels: np.ndarray | list,
+    device: str | torch.device = "cpu",
+) -> torch.Tensor:
     labels = np.array(labels)
     n_samples = len(labels)
     n_positive = labels.sum()
     n_negative = n_samples - n_positive
     
     if n_positive == 0 or n_negative == 0:
+        warnings.warn(
+            f"compute_class_weights: degenerate label set "
+            f"(n_positive={int(n_positive)}, n_negative={int(n_negative)}); "
+            f"falling back to pos_weight=1.0. The loss will not be class-balanced "
+            f"for this batch/fold — verify the split is not single-class.",
+            stacklevel=2,
+        )
         return torch.tensor(1.0, device=device)
-    
+
     pos_weight = n_negative / n_positive
     
     return torch.tensor(pos_weight, dtype=torch.float, device=device)
 
 
-def compute_class_cost_weights(labels, device='cpu', normalize=True):
+def compute_class_cost_weights(
+    labels: np.ndarray | list,
+    device: str | torch.device = "cpu",
+    normalize: bool = True,
+) -> torch.Tensor:
     labels = np.array(labels).astype(int)
     n_samples = len(labels)
     n_positive = int(labels.sum())
     n_negative = int(n_samples - n_positive)
 
     if n_samples == 0:
-        return torch.tensor([1.0, 1.0], dtype=torch.float, device=device)
+        raise ValueError(
+            "compute_class_cost_weights received an empty label set. "
+            "Class-cost weights are undefined with zero samples."
+        )
 
     if n_positive == 0 or n_negative == 0:
+        warnings.warn(
+            f"compute_class_cost_weights: degenerate label set "
+            f"(n_positive={n_positive}, n_negative={n_negative}); "
+            f"falling back to uniform [1.0, 1.0]. Verify the split is not single-class.",
+            stacklevel=2,
+        )
         return torch.tensor([1.0, 1.0], dtype=torch.float, device=device)
 
     w0 = n_samples / (2.0 * n_negative)

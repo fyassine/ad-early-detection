@@ -22,6 +22,9 @@ class GELSTMTrainConfig:
     seed: int = 42
     threshold_mode: str = "youden"
     fixed_threshold: float = 0.5
+    lr_factor: float = 0.5
+    lr_patience: int = 5
+    lr_min: float = 1e-6
 
 
 @dataclass

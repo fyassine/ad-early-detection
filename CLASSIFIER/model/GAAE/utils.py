@@ -1,10 +1,15 @@
 import json
 import os
 from datetime import datetime
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
 from torch_geometric.utils import to_dense_adj
+
+if TYPE_CHECKING:
+    from CLASSIFIER.model.GAAE.models import GraphAttentionAutoencoderConditioned
 
 def knn_binary_adjacency_matrix_no_diag(corr_matrix, k):
     """
@@ -89,4 +94,44 @@ def save_run_config(run_name, timestamp, dataset_info, model_config, training_co
         json.dump(config_to_save, f, indent=4, default=json_serial)
     print(f"Saved run configuration to {config_file}")
 
+
+def load_gaae_for_inference(
+    ckpt_path: Path | str,
+    in_features: int,
+    config: dict,
+    device: torch.device | str = "cpu",
+) -> "GraphAttentionAutoencoderConditioned":
+    """
+    Instantiate and load a frozen GAAE model for notebook inference.
+
+    config keys used: latent_dim, num_heads, cond_dim, dropout.
+    in_features must be probed by the caller from a dataset sample so this
+    function has no dataset dependency.
+    """
+    from CLASSIFIER.model.GAAE.models import GraphAttentionAutoencoderConditioned
+
+    model = GraphAttentionAutoencoderConditioned(
+        in_features=in_features,
+        hidden_dim=in_features,
+        out_features=config.get("latent_dim", 64),
+        cond_dim=config.get("cond_dim", 2),
+        num_heads=config.get("num_heads", 2),
+        dropout=config.get("dropout", 0.3),
+    )
+    ckpt_obj = torch.load(ckpt_path, map_location=device, weights_only=False)
+    if isinstance(ckpt_obj, torch.nn.Module):
+        model = ckpt_obj
+    elif isinstance(ckpt_obj, dict):
+        state = ckpt_obj.get("model_state_dict", ckpt_obj)
+        model.load_state_dict(state)
+    else:
+        raise TypeError(
+            f"Unsupported checkpoint type: {type(ckpt_obj)}. "
+            "Expected torch.nn.Module or state_dict."
+        )
+    model = model.to(device)
+    model.eval()
+    for p in model.parameters():
+        p.requires_grad_(False)
+    return model
 

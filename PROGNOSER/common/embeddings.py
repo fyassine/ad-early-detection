@@ -17,6 +17,7 @@ This applies the same logic to both groups.
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import Literal
@@ -28,7 +29,9 @@ from torch_geometric.data import Data
 from torch_geometric.utils import dense_to_sparse
 
 
-REPO_ROOT_DEFAULT = Path('/mnt/e/fyassine/ad-early-detection')
+# Repo root resolves from this file (PROGNOSER/common/embeddings.py -> repo root),
+# overridable via the AD_REPO_ROOT env var for non-standard checkouts.
+REPO_ROOT_DEFAULT = Path(os.environ.get("AD_REPO_ROOT", Path(__file__).resolve().parents[2]))
 
 EmbeddingStrategy = Literal['baseline', 'last', 'mean', 'slope', 'all_aggs', 'sequence']
 

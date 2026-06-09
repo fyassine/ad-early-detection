@@ -166,6 +166,13 @@ def encode_batch_sequences(
             labels_list.append(item["label"])
             lengths_list.append(T)
 
+    if not seq_list:
+        raise ValueError(
+            "encode_batch_sequences received an empty batch (no sequences to encode). "
+            "This usually means an upstream collate/filter dropped every item; "
+            "check the DataLoader and batch construction."
+        )
+
     max_T = max(lengths_list)
     feat_dim = seq_list[0].size(1)
     padded = torch.zeros(len(batch), max_T, feat_dim, device=device)

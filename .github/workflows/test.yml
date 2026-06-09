@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    name: Ruff lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install ruff
+      - run: ruff check .
+
+  test:
+    name: CLASSIFIER tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      # CPU-only wheels: CI does not have CUDA. Test code already guards on
+      # torch.cuda.is_available() per .claude/rules/environment.md.
+      - name: Install CPU torch + PyG + test deps
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install torch_geometric==2.7.0
+          pip install numpy==1.26.4 pandas==2.2.0 scikit-learn==1.7.2 pytest
+      - name: Run tests
+        run: pytest CLASSIFIER/tests/ -q

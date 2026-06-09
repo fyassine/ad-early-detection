@@ -24,13 +24,16 @@ Strategies:
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 from PROGNOSER.common.embeddings import extract_subject_embeddings, cache_embeddings
 from PROGNOSER.common.survival_table import build_survival_table
 
 
-REPO_ROOT = Path('/mnt/e/fyassine/ad-early-detection')
+# Repo root resolves from this file (PROGNOSER/src/... -> repo root),
+# overridable via the AD_REPO_ROOT env var for non-standard checkouts.
+REPO_ROOT = Path(os.environ.get("AD_REPO_ROOT", Path(__file__).resolve().parents[2]))
 CACHE_DIR = REPO_ROOT / 'PROGNOSER' / 'notebooks' / '_embeddings_cache_'
 COHORTS_CSV = REPO_ROOT / 'DATA' / 'DELCODE' / '__fc_wholebrain_sch200_flat__' / 'metadata' / 'cohorts.csv'
 SPLITS_DIR = REPO_ROOT / 'DATA' / 'DELCODE' / '__fc_wholebrain_sch200_flat__' / 'metadata' / 'splits_gec'

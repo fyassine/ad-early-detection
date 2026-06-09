@@ -28,5 +28,5 @@ Research codebase for Alzheimer's disease early detection using longitudinal bra
 ## Tests and commands
 
 ```bash
-pytest CLASSIFIER/tests/                       # 15 tests
+pytest CLASSIFIER/tests/ PROGNOSER/tests/      # 129 tests
 ```
