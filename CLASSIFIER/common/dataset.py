@@ -31,32 +31,32 @@ class ClassificationDataset(InMemoryDataset):
             if not os.path.exists(self.filter_csv_path):
                 raise FileNotFoundError(f"Filter CSV not found at {self.filter_csv_path}")
             filter_df = pd.read_csv(self.filter_csv_path, sep=self.separator)
-            if "Repseudonym" not in filter_df.columns:
+            if "Pseudonym" not in filter_df.columns:
                 raise ValueError(
-                    f"Filter CSV must contain 'Repseudonym' column. Found: {list(filter_df.columns)}"
+                    f"Filter CSV must contain 'Pseudonym' column. Found: {list(filter_df.columns)}"
                 )
-            self.allowed_ids.update(filter_df["Repseudonym"].astype(str))
-        
+            self.allowed_ids.update(filter_df["Pseudonym"].astype(str))
+
         if patient_info_path:
             self.patient_info = pd.read_csv(patient_info_path, sep=self.separator)
             id_col = None
-            for candidate in ["Repseudonym", "Pseudonym", "ID"]:
+            for candidate in ["Pseudonym", "ID"]:
                 if candidate in self.patient_info.columns:
                     id_col = candidate
                     break
             if id_col is None:
                 raise ValueError(
-                    "Patient info CSV must contain one of: Repseudonym, Pseudonym, ID. "
+                    "Patient info CSV must contain one of: Pseudonym, ID. "
                     f"Found: {list(self.patient_info.columns)}"
                 )
             self.patient_info.set_index(id_col, inplace=True)
-        
+
         if converter_list_path and os.path.exists(converter_list_path):
             converter_df = pd.read_csv(converter_list_path)
             if 'ID' in converter_df.columns:
                 self.converter_ids = set(converter_df['ID'].astype(str))
-            elif 'Repseudonym' in converter_df.columns:
-                self.converter_ids = set(converter_df['Repseudonym'].astype(str))
+            elif 'Pseudonym' in converter_df.columns:
+                self.converter_ids = set(converter_df['Pseudonym'].astype(str))
         
         super().__init__(root, transform, pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)

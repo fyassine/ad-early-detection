@@ -175,7 +175,7 @@ def to_long_format(
         <feature_cols>
     """
     cohorts_df = cohorts_df.copy()
-    id_col_actual = next((c for c in (id_col, "Pseudonym", "Repseudonym", "subject_id")
+    id_col_actual = next((c for c in (id_col, "Pseudonym", "subject_id")
                           if c in cohorts_df.columns), None)
     if id_col_actual is None:
         raise ValueError(f"No subject ID column found in cohorts_df: {list(cohorts_df.columns)}")
@@ -256,7 +256,7 @@ def to_sequence_tensors(
         subject_ids : list of subject IDs in the same order
     """
     cohorts_df = cohorts_df.copy()
-    id_col_actual = next((c for c in (id_col, "Pseudonym", "Repseudonym", "subject_id")
+    id_col_actual = next((c for c in (id_col, "Pseudonym", "subject_id")
                           if c in cohorts_df.columns), None)
     if id_col_actual is None:
         raise ValueError(f"No subject ID column found in cohorts_df: {list(cohorts_df.columns)}")

@@ -41,14 +41,16 @@ For cross-validation loops, use `CLASSIFIER.common.validation.run_kfold_cv`. Do 
 
 ```python
 from CLASSIFIER.common.sanity import run_full_audit
-run_full_audit({
-    "train": str(METADATA_DIR / "splits_gaae" / "train.csv"),
-    "val":   str(METADATA_DIR / "splits_gaae" / "val.csv"),
-    "test":  str(METADATA_DIR / "splits_gaae" / "test.csv"),
-})
+from DATA.src.splitting.load_splits import split_csv_paths
+run_full_audit(split_csv_paths("downstream"))
 ```
 
 Hard-fails if any subject crosses splits. Run at the head of every training notebook.
+
+`split_csv_paths` takes one of two keys:
+
+- `"pretrain"` — all-cohort split (healthy/ad/mci/converter). Used **only** by the GAAE-pretraining notebook.
+- `"downstream"` — mci/converter-only split. Used by every other notebook (GEC, GELSTM, Long-GEC-MLP, LogReg, FDR analysis, sanity/baseline comparators, PROGNOSER).
 
 ## Imports
 

@@ -110,30 +110,28 @@ def _insert_framing(nb, framing_text):
     nb["cells"].insert(0, cell)
 
 
-def _insert_sanity_call(nb, split_dir_subpath):
+def _insert_sanity_call(nb, model):
     if _has_tag(nb, SANITY_CELL_TAG):
         return
+    # Self-contained audit cell: split locations come from the single source of
+    # truth in DATA/src/splitting/load_splits.py (no hardcoded split paths).
     src = [
         "# v2 split-hygiene audit — hard-fails if any subject crosses splits.\n",
         "import sys\n",
         "from pathlib import Path\n",
-        "_V2_ROOT = Path('/mnt/e/fyassine/ad-early-detection/CLASSIFIER')\n",
+        "_REPO_ROOT = Path('/mnt/e/fyassine/ad-early-detection')\n",
+        "if str(_REPO_ROOT) not in sys.path:\n",
+        "    sys.path.insert(0, str(_REPO_ROOT))\n",
+        "_V2_ROOT = _REPO_ROOT / 'CLASSIFIER'\n",
         "if str(_V2_ROOT) not in sys.path:\n",
         "    sys.path.insert(0, str(_V2_ROOT))\n",
         "from common.sanity import run_full_audit\n",
-        "if 'METADATA_DIR' in globals():\n",
-        f"    _splits_dir = Path(METADATA_DIR) / '{split_dir_subpath}'\n",
-        "    _ = run_full_audit({\n",
-        "        'train': str(_splits_dir / 'train.csv'),\n",
-        "        'val':   str(_splits_dir / 'val.csv'),\n",
-        "        'test':  str(_splits_dir / 'test.csv'),\n",
-        "    })\n",
-        "else:\n",
-        "    print('[SANITY] METADATA_DIR not defined in this notebook — skipping split audit')\n",
+        "from DATA.src.splitting.load_splits import split_csv_paths\n",
+        f"_ = run_full_audit(split_csv_paths('{model}'))\n",
     ]
     cell = _make_code_cell(src, tag=SANITY_CELL_TAG)
-    # Prefer to insert after the cell that defines METADATA_DIR — that's where
-    # the audit can actually run. Fall back to right after the sys.path cell.
+    # Insert after the cell that defines METADATA_DIR (so the audit sits near the
+    # path config), falling back to right after the CLASSIFIER sys.path cell.
     insert_idx = None
     for i, c in enumerate(nb["cells"]):
         if c.get("cell_type") != "code":
@@ -252,15 +250,15 @@ FRAMING = {
     ],
 }
 
-# Per-notebook: which splits dir to point at, and whether to append a
-# subject-level rollup at the end.
+# Per-notebook: which split model to audit ('pretrain' | 'downstream', resolved via
+# load_splits.split_csv_paths), and whether to append a subject-level rollup.
 TARGETS = {
-    "LONGITUDINAL_GELSTM_DELCODE_WHOLE_BRAIN.ipynb":              ("splits_gaae", False),
-    "LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE_WHOLE_BRAIN.ipynb": ("splits_gaae", False),
-    "LONGITUDINAL_GEC_MLP_DELCODE.ipynb":                         ("splits_gaae", False),
-    "STATIC_GAAE_LOGREG_DELCODE_WHOLE_BRAIN.ipynb":               ("splits_gaae", True),
-    "BASELINE_MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb":        ("splits_gaae", False),
-    "LONGITUDINAL_GELSTM_FIRST_N_DELCODE_WHOLE_BRAIN.ipynb":      ("splits_gaae", False),
+    "LONGITUDINAL_GELSTM_DELCODE_WHOLE_BRAIN.ipynb":              ("downstream", False),
+    "LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE_WHOLE_BRAIN.ipynb": ("downstream", False),
+    "LONGITUDINAL_GEC_MLP_DELCODE.ipynb":                         ("downstream", False),
+    "STATIC_GAAE_LOGREG_DELCODE_WHOLE_BRAIN.ipynb":               ("downstream", True),
+    "BASELINE_MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb":        ("downstream", False),
+    "LONGITUDINAL_GELSTM_FIRST_N_DELCODE_WHOLE_BRAIN.ipynb":      ("downstream", False),
 }
 
 
@@ -327,8 +325,8 @@ def patch_one(path: Path):
     framing = FRAMING.get(path.name)
     if framing:
         _insert_framing(nb, framing)
-    split_subpath, append_rollup = TARGETS[path.name]
-    _insert_sanity_call(nb, split_subpath)
+    split_model, append_rollup = TARGETS[path.name]
+    _insert_sanity_call(nb, split_model)
     _insert_seeding(nb)
     if append_rollup:
         _append_subject_rollup(nb)

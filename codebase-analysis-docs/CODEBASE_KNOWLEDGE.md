@@ -278,7 +278,11 @@ sequence diagrams.
   script. Output: `.npz` correlation matrices (Fisher z-transformed) under versioned dirs.
 - **Data versions.** `__v3__` = whole-brain Schaefer-200 (baseline for everything); `__v4__`–`__v11__`
   = network subsets/combinations (DMN, hippocampus, limbic, DAN, and combinations). Metadata:
-  `DATA/DELCODE/__v3__/metadata/cohorts.csv`; precomputed split CSVs in `.../metadata/splits_gec`.
+  `DATA/DELCODE/__v3__/metadata/cohorts.csv`; canonical split CSVs (single source of truth, via
+  `DATA/src/splitting/load_splits.py::splits_dir`) live under `DATA/DELCODE/SPLITS/pretrain` (all
+  cohorts, 241/115/116 — used only to pretrain the GAAE encoder) and `DATA/DELCODE/SPLITS/downstream`
+  (mci/converter only, 99/34/34 — used by every model built on the frozen GAAE encoder: GEC, GELSTM,
+  Long-GEC-MLP, LogReg, PROGNOSER).
   *(Exact per-version ROI counts come from secondary reading — verify in the processing scripts
   before depending on them.)*
 
@@ -510,7 +514,7 @@ threshold selection, FDR selection, contrasts immutability, and the comparison s
 - **AD** — Alzheimer's Dementia (clinical endpoint).
 - **Converter** — MCI subject who progressed to AD during follow-up (event = 1).
 - **Censored / non-converter** — no AD event observed; only last MCI visit known (event = 0).
-- **Repseudonym** — subject ID column in `cohorts.csv`.
+- **Pseudonym** — subject ID column in `cohorts.csv`.
 - **Visit (M0, M12, …)** — months since baseline.
 - **MMSE / CDR / ApoE4** — cognitive score / dementia rating / genetic risk allele.
 

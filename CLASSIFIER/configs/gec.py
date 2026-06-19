@@ -21,8 +21,8 @@ class GECTrainConfig:
     early_stopping_patience: int = 20
     use_scheduler: bool = True
     seed: int = 42
-    wandb_project: str = "gec-classification"
-    wandb_enabled: bool = False
+    wandb_project: str = "ad-early-detection"
+    wandb_enabled: bool = True
     threshold_mode: str = "youden"
     fixed_threshold: float = 0.5
     lr_factor: float = 0.5

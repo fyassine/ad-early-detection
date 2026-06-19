@@ -104,7 +104,7 @@ def load_gaae_for_inference(
     """
     Instantiate and load a frozen GAAE model for notebook inference.
 
-    config keys used: latent_dim, num_heads, cond_dim, dropout.
+    config keys used: latent_dim, hidden_dim, num_heads, cond_dim, dropout.
     in_features must be probed by the caller from a dataset sample so this
     function has no dataset dependency.
     """
@@ -112,7 +112,7 @@ def load_gaae_for_inference(
 
     model = GraphAttentionAutoencoderConditioned(
         in_features=in_features,
-        hidden_dim=in_features,
+        hidden_dim=config.get("hidden_dim", in_features),
         out_features=config.get("latent_dim", 64),
         cond_dim=config.get("cond_dim", 2),
         num_heads=config.get("num_heads", 2),

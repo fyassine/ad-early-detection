@@ -1,29 +1,24 @@
 import logging
 import copy
 import torch
-import wandb
 from tqdm.notebook import tqdm
 
 from torch_geometric.utils import to_dense_adj
 from .utils import create_mask
 from .losses import total_loss_fn
 
-def train_model_with_val_notebook_train_loss(model, train_loader, val_loader, optimizer, device, 
-                batch_size, learning_rate, model_config, adj_loss_weight=1.0, 
+def train_model_with_val_notebook_train_loss(model, train_loader, val_loader, optimizer, device,
+                batch_size, learning_rate, model_config, adj_loss_weight=1.0,
                 epochs=100, early_stopping_patience=50,
-                dataset_info=None, project_name="graph-autoencoder-training"):
-    
-    wandb.init(project=project_name, config={
-        "batch_size": batch_size,
-        "learning_rate": learning_rate,
-        "optimizer": optimizer.__class__.__name__,
-        "model_config": model_config,
-        "adj_loss_weight": adj_loss_weight,
-        "epochs": epochs,
-        "early_stopping_patience": early_stopping_patience,
-        "dataset_info": dataset_info
-    })
+                dataset_info=None, project_name="graph-autoencoder-training",
+                *, wandb_run=None):
+    """Train the GAAE with validation-based early stopping.
 
+    W&B logging now uses an injected ``wandb_run`` (mirroring GEC/GELSTM) instead
+    of a hardcoded ``wandb.init`` inside the loop, so the run name/group/tags come
+    from ``common.tracking.init_run`` and headless runs never block on login. Pass
+    ``wandb_run=None`` (the default) to disable logging.
+    """
     model.train()
     best_val_loss = float("inf")
     best_model = copy.deepcopy(model.state_dict())
@@ -128,7 +123,8 @@ def train_model_with_val_notebook_train_loss(model, train_loader, val_loader, op
         outer_bar.set_description(f"Epoch {epoch}")
 
         logging.info(f"Epoch {epoch}: Train Loss={avg_train_loss:.6f}, Val Loss={avg_val_loss:.6f}")
-        wandb.log({"Train Loss": avg_train_loss, "Val Loss": avg_val_loss})
+        if wandb_run is not None:
+            wandb_run.log({"train_loss": avg_train_loss, "val_loss": avg_val_loss, "epoch": epoch})
 
         history['train_loss'].append(avg_train_loss)
         history['val_loss'].append(avg_val_loss)
@@ -145,5 +141,5 @@ def train_model_with_val_notebook_train_loss(model, train_loader, val_loader, op
             logging.info("Early stopping triggered. Training stopped.")
             break
 
-    # wandb.finish()
+    # The caller owns the wandb_run lifecycle (tracking.finish_run).
     return best_model, history

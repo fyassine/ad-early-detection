@@ -29,6 +29,7 @@ from pathlib import Path
 
 from PROGNOSER.common.embeddings import extract_subject_embeddings, cache_embeddings
 from PROGNOSER.common.survival_table import build_survival_table
+from DATA.src.splitting.load_splits import splits_dir
 
 
 # Repo root resolves from this file (PROGNOSER/src/... -> repo root),
@@ -36,7 +37,7 @@ from PROGNOSER.common.survival_table import build_survival_table
 REPO_ROOT = Path(os.environ.get("AD_REPO_ROOT", Path(__file__).resolve().parents[2]))
 CACHE_DIR = REPO_ROOT / 'PROGNOSER' / 'notebooks' / '_embeddings_cache_'
 COHORTS_CSV = REPO_ROOT / 'DATA' / 'DELCODE' / '__fc_wholebrain_sch200_flat__' / 'metadata' / 'cohorts.csv'
-SPLITS_DIR = REPO_ROOT / 'DATA' / 'DELCODE' / '__fc_wholebrain_sch200_flat__' / 'metadata' / 'splits_gec'
+SPLITS_DIR = splits_dir('downstream')
 
 COMBO_TABLE = {
     "dmn":              ("__fc_dmn_sch200_flat__",                        "_dmn_correlation_matrix_z_transformed.npz"),

@@ -98,7 +98,7 @@ def build_survival_table(
     cohorts_csv = Path(cohorts_csv)
     df = pd.read_csv(cohorts_csv, low_memory=False)
 
-    id_col = next((c for c in ("Pseudonym", "Repseudonym", "subject_id") if c in df.columns), None)
+    id_col = next((c for c in ("Pseudonym", "subject_id") if c in df.columns), None)
     if id_col is None:
         raise ValueError(f"No subject ID column found in {cohorts_csv}")
     if "diagnosis" not in df.columns or "visit" not in df.columns:
@@ -115,7 +115,7 @@ def build_survival_table(
         if not split_csv.exists():
             raise FileNotFoundError(f"Split CSV not found: {split_csv}")
         sdf = pd.read_csv(split_csv)
-        sid_col = next((c for c in ("Repseudonym", "Pseudonym", "subject_id") if c in sdf.columns), None)
+        sid_col = next((c for c in ("Pseudonym", "subject_id") if c in sdf.columns), None)
         if sid_col is None:
             raise ValueError(f"Split CSV {split_csv} missing subject ID column")
         allowed_subjects = set(sdf[sid_col].astype(str))
@@ -230,7 +230,7 @@ def filter_to_split(table: pd.DataFrame, splits_dir: str | Path, split: str) -> 
     """Filter an already-built survival table to subjects in a split CSV."""
     split_csv = Path(splits_dir) / f"{split}.csv"
     sdf = pd.read_csv(split_csv)
-    sid_col = next((c for c in ("Repseudonym", "Pseudonym", "subject_id") if c in sdf.columns), None)
+    sid_col = next((c for c in ("Pseudonym", "subject_id") if c in sdf.columns), None)
     allowed = set(sdf[sid_col].astype(str))
     return table[table["subject_id"].astype(str).isin(allowed)].reset_index(drop=True)
 

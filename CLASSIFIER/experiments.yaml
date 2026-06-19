@@ -1,13 +1,24 @@
 # Experiment registry for CLASSIFIER.
 #
-# One entry per major run. Fields:
-#   id              — short slug, kebab-case
-#   mode            — baseline | longitudinal | static | sanity
-#   model           — GELSTM | GEC | GAAE | LogReg | MLP | …
+# Drives run_experiment.py (papermill-based notebook runner). One entry per run.
+#
+# Required fields:
+#   id              — short slug, kebab-case (must be unique)
+#   mode            — baseline | longitudinal | static | sanity | comparison
+#   model           — GELSTM | GEC | GAAE | LogReg | multi | n/a | …
 #   dataset         — e.g. DELCODE_WHOLE_BRAIN
 #   seed            — int (typically 42)
 #   notebook        — relative path under notebooks/
-#   checkpoint_path — relative path under outputs/ (omit for legacy runs)
+#
+# Optional runner fields (consumed by run_experiment.py):
+#   config_path     — JSON hyperparameter file under configs/ (merged over dataclass defaults)
+#   hyperparams     — inline overrides merged on top of config_path + dataclass defaults
+#   eval_config     — EvalConfig overrides (ablations: zero_time_delta, shuffle_order, …)
+#   checkpoint_path — GAAE encoder to load, relative to CLASSIFIER/ (omit → interactive pick)
+#   threshold_mode  — youden | best-f1 | fixed   (omit → interactive prompt in Jupyter)
+#   fixed_threshold — float, required iff threshold_mode=fixed
+#   output_dir      — defaults to outputs/<id>/
+#   wandb           — bool, default true (W&B logging is ON for every model; set false to silence)
 #   notes           — free-form
 
 experiments:
@@ -17,6 +28,9 @@ experiments:
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
     notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb
+    config_path: configs/gelstm_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
     notes: Full-trajectory GELSTM on GAAE latents.
 
   - id: gelstm-trajectory-fdr
@@ -25,6 +39,9 @@ experiments:
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
     notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE.ipynb
+    config_path: configs/gelstm_fdr_filtered_delcode.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
     notes: Per-fold FDR latent-dim selection.
 
   - id: gelstm-early-detection-first-n
@@ -33,6 +50,8 @@ experiments:
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
     notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_FIRST_N_DELCODE.ipynb
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
     notes: First-N-visits ablation (early-detection task).
 
   - id: gec-trajectory
@@ -41,6 +60,9 @@ experiments:
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
     notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb
+    config_path: configs/long_gec_mlp_delcode.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
     notes: Flattened-trajectory GEC over FDR-selected GAAE dims + Δt.
 
   - id: gaae-static
@@ -49,6 +71,8 @@ experiments:
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
     notebook: notebooks/STATIC/STATIC_GAAE_DELCODE_WHOLE_BRAIN.ipynb
+    config_path: configs/gaae_delcode_whole_brain.json
+    threshold_mode: best-f1
     notes: Per-scan GAAE-embedding with subject rollup.
 
   - id: logreg-static
@@ -57,6 +81,8 @@ experiments:
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
     notebook: notebooks/STATIC/STATIC_LOGREG_DELCODE_WHOLE_BRAIN.ipynb
+    config_path: configs/gaae_logreg_delcode.json
+    threshold_mode: best-f1
     notes: Per-scan logistic regression baseline.
 
   - id: model-comparison

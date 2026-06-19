@@ -5,10 +5,19 @@ from pathlib import Path
 
 def select_gaae_checkpoint(
     search_dirs: list[str | Path],
+    *,
+    checkpoint_path: str | Path | None = None,
 ) -> tuple[str, Path, Path]:
     """
-    List GAAE checkpoints under search_dirs and prompt for selection.
-    Returns (run_name, ckpt_path, run_dir).
+    List GAAE checkpoints under search_dirs and return (run_name, ckpt_path, run_dir).
+
+    Interactive by default (prompts for an index). For non-interactive / headless
+    execution (papermill, run_experiment.py), pass ``checkpoint_path`` to bypass the
+    prompt — the matching candidate is resolved by path and returned without any
+    ``input()`` call. Passing a checkpoint that is not among the discovered
+    candidates raises ``FileNotFoundError`` (fail loudly rather than silently using
+    the wrong encoder).
+
     Raises FileNotFoundError if no checkpoints exist in any search dir.
     """
     candidates: list[tuple[str, Path, Path]] = sorted(
@@ -27,6 +36,19 @@ def select_gaae_checkpoint(
         raise FileNotFoundError(
             f"No GAAE checkpoints found in: {[str(d) for d in search_dirs]}"
         )
+
+    if checkpoint_path is not None:
+        target = Path(checkpoint_path).resolve()
+        for run_name, ckpt_path, run_dir in candidates:
+            if ckpt_path.resolve() == target:
+                print(f"Selected (non-interactive): {run_name}")
+                return run_name, ckpt_path, run_dir
+        available = [str(c[1]) for c in candidates]
+        raise FileNotFoundError(
+            f"checkpoint_path={checkpoint_path!r} not among discovered GAAE "
+            f"checkpoints: {available}"
+        )
+
     print("Available GAAE checkpoints:")
     for i, (name, _, rdir) in enumerate(candidates):
         print(f"  {i}: {name}  ({rdir})")

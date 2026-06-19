@@ -37,7 +37,7 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
         self.file_suffix = file_suffix  # overrides variant lookup when set
         if patient_info_path:
             self.patient_info = pd.read_csv(patient_info_path, sep=self.separator)
-            self.patient_info.set_index("Repseudonym", inplace=True)
+            self.patient_info.set_index("Pseudonym", inplace=True)
         
         super().__init__(root, transform, pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)
@@ -123,9 +123,9 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
         if not os.path.exists(self.filter_csv_path):
             raise FileNotFoundError(f"Filter CSV not found at {self.filter_csv_path}")
         filter_df = pd.read_csv(self.filter_csv_path, sep=self.separator)
-        if 'Repseudonym' not in filter_df.columns:
-            raise ValueError(f"Filter CSV must contain 'Repseudonym' column. Found: {filter_df.columns}")
-        allowed_ids = set(filter_df['Repseudonym'].astype(str))
+        if 'Pseudonym' not in filter_df.columns:
+            raise ValueError(f"Filter CSV must contain 'Pseudonym' column. Found: {filter_df.columns}")
+        allowed_ids = set(filter_df['Pseudonym'].astype(str))
 
         return [f for f in all_files if f.split('_')[0].replace('sub-', '') in allowed_ids]
 
@@ -136,7 +136,9 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
         fn_name = getattr(self.adjacency_function, "__name__", "adj")
         args_str = json.dumps(self.adjacency_args, sort_keys=True)
         graph_tag = hashlib.md5(f"{fn_name}_{args_str}".encode()).hexdigest()[:8]
-        return [f"data_filtered_{variant_tag}_{split_tag}_graph{graph_tag}.pt"]
+        with open(self.filter_csv_path, "rb") as _f:
+            csv_hash = hashlib.md5(_f.read()).hexdigest()[:8]
+        return [f"data_filtered_{variant_tag}_{split_tag}_{csv_hash}_graph{graph_tag}.pt"]
 
 
 class GraphDMNDatasetInMemoryFiltered(GraphDatasetInMemoryFiltered):
@@ -166,8 +168,8 @@ class GraphDMNDatasetInMemoryFiltered(GraphDatasetInMemoryFiltered):
         if not os.path.exists(self.filter_csv_path):
             raise FileNotFoundError(f"Filter CSV not found at {self.filter_csv_path}")
         filter_df = pd.read_csv(self.filter_csv_path, sep=self.separator)
-        if 'Repseudonym' not in filter_df.columns:
-            raise ValueError(f"Filter CSV must contain 'Repseudonym' column. Found: {filter_df.columns}")
-        allowed_ids = set(filter_df['Repseudonym'].astype(str))
+        if 'Pseudonym' not in filter_df.columns:
+            raise ValueError(f"Filter CSV must contain 'Pseudonym' column. Found: {filter_df.columns}")
+        allowed_ids = set(filter_df['Pseudonym'].astype(str))
 
         return [f for f in all_files if f.split('_')[0].replace('sub-', '') in allowed_ids]

@@ -24,6 +24,8 @@ Do not pattern-match against legacy code when writing new code.
 - `CLASSIFIER/notebooks/**` — orchestration only: load data, instantiate config, call into `model/`, log/save results. Training loops do not live in notebooks.
 - `CLASSIFIER/common/**` — shared utilities with no model-specific imports. Seeding, splits, sanity audits, validation hooks.
 
-## GAAE intentionally un-refactored
+## GAAE partially un-refactored
 
-`CLASSIFIER/model/GAAE/train.py` still has hardcoded `wandb.init` at lines 15–22 and uses loose kwargs rather than a dataclass config. This is deliberate (the GAAE encoder is a pretrained feature extractor consumed by GEC and GELSTM — its training loop runs once, not per experiment). Do not copy this pattern into new training code. Use `model/GEC/train.py` and `model/GELSTM/train.py` as the reference.
+`CLASSIFIER/model/GAAE/train.py` still uses loose kwargs rather than a dataclass config. This is deliberate (the GAAE encoder is a pretrained feature extractor consumed by GEC and GELSTM — its training loop runs once, not per experiment). Do not copy the loose-kwargs pattern into new training code; use `model/GEC/train.py` and `model/GELSTM/train.py` as the reference.
+
+W&B logging in GAAE was migrated to the shared convention: its hardcoded `wandb.init` is gone — it now accepts an injected `wandb_run=` (like GEC) created by `common/tracking.init_run`. All models route W&B through `common/tracking.py`; logging is on by default. See `run_experiment.py` and the experiment-runner setup.

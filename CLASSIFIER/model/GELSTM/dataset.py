@@ -48,9 +48,9 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
     ----------
     matrices_dir : str
         Directory containing per-visit .npz FC matrix files.
-        Filename pattern: sub-{Repseudonym}_ses-XX_{visit}_..._z_transformed.npz
+        Filename pattern: sub-{Pseudonym}_ses-XX_{visit}_..._z_transformed.npz
     subject_df : pd.DataFrame
-        Must contain columns: Repseudonym, diagnosis, sex, age.
+        Must contain columns: Pseudonym, diagnosis, sex, age.
         Each row is one subject (not one visit).
         Only rows with diagnosis in {'mci', 'converter'} are used.
     cohorts_csv : str
@@ -100,17 +100,17 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
 
         allowed = {"mci", "converter"}
         sub_df  = subject_df[subject_df["diagnosis"].isin(allowed)].copy()
-        sub_df["Repseudonym"] = sub_df["Repseudonym"].astype(str)
+        sub_df["Pseudonym"] = sub_df["Pseudonym"].astype(str)
 
         cohorts = pd.read_csv(cohorts_csv)
-        id_col  = "Pseudonym" if "Pseudonym" in cohorts.columns else "Repseudonym"
+        id_col  = "Pseudonym"
         cohorts[id_col]    = cohorts[id_col].astype(str)
         cohorts["visit_m"] = cohorts["visit"].str.replace("M", "", regex=False).astype(float)
 
         self.subjects: List[Dict] = []
         n_dropped_full_window = 0
         for _, row in sub_df.iterrows():
-            pid   = str(row["Repseudonym"])
+            pid   = str(row["Pseudonym"])
             label = 1 if row["diagnosis"] == "converter" else 0
             sex   = 1 if str(row.get("sex", "f")).lower() == "m" else 0
             age_raw = row.get("age", 50.0)

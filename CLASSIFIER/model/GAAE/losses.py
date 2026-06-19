@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import torch
 import torch.nn.functional as F
 import numpy as np
@@ -70,6 +72,40 @@ def total_loss_fn(x, x_reconstructed, adj_original, adj_reconstructed, mask, adj
     total_loss = feature_loss + adj_loss_weight * adjacency_loss
     
     return total_loss, feature_loss, adjacency_loss
+
+def compute_sample_reconstruction_error(
+    data,
+    model,
+    device,
+    adj_loss_weight: float,
+) -> tuple[float, float, float]:
+    """
+    Run one graph through a GAAE and return (x_err, adj_err, total_err).
+
+    Caller is responsible for setting model.eval() before a sweep.
+    No grad is computed here.
+    """
+    data = data.to(device)
+    x, edge_index = data.x, data.edge_index
+    edge_attr = getattr(data, "edge_attr", None)
+    age = float(data.patient_age.item()) if torch.is_tensor(data.patient_age) else float(data.patient_age)
+    sex = float(data.patient_sex.item()) if torch.is_tensor(data.patient_sex) else float(data.patient_sex)
+    cond_vec = torch.tensor([[age, sex]], dtype=torch.float32, device=device)
+    batch_mask = torch.zeros(x.size(0), dtype=torch.long, device=device)
+
+    with torch.no_grad():
+        _, x_reconstructed, adj_reconstructed, _ = model(
+            x, edge_index, edge_attr, cond_vec, batch_mask
+        )
+
+    x_error = F.mse_loss(x_reconstructed, x).item()
+    try:
+        adj_true = calculate_dense_adjacency(data).to(device)
+        adj_error = F.binary_cross_entropy(adj_reconstructed, adj_true).item()
+    except Exception:
+        adj_error = 0.0
+    return float(x_error), float(adj_error), float(x_error + adj_loss_weight * adj_error)
+
 
 def evaluate_reconstruction_errors_with_ids(dataset, model, device, adj_loss_weight=1.0):
     """

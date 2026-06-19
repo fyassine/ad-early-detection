@@ -42,7 +42,7 @@ def _load_subject_ids(csv_path: str, id_col: str) -> set:
 
 def assert_splits_clean(
     split_csvs: Dict[str, str],
-    id_col: str = "Repseudonym",
+    id_col: str = "Pseudonym",
     raise_on_overlap: bool = True,
 ) -> Dict[str, object]:
     """
@@ -53,7 +53,7 @@ def assert_splits_clean(
     split_csvs : dict {split_name: csv_path}
         e.g. {"train": ".../train.csv", "val": ".../val.csv", "test": ".../test.csv"}
     id_col : str
-        Column holding the subject identifier. Default 'Repseudonym'.
+        Column holding the subject identifier. Default 'Pseudonym'.
     raise_on_overlap : bool
         If True (default), raise AssertionError when any pair overlaps.
         If False, return the report without raising.
@@ -235,7 +235,7 @@ def assert_cohort_policy(
 
 def run_full_audit(
     split_csvs: Dict[str, str],
-    id_col: str = "Repseudonym",
+    id_col: str = "Pseudonym",
     verbose: bool = True,
 ) -> Dict[str, object]:
     """One-shot helper used at the head of every production notebook."""
