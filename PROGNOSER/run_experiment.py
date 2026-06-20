@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
 """
-Experiment runner: execute notebooks from the experiments.yaml registry.
+PROGNOSER experiment runner: execute survival experiments from experiments.yaml.
 
-Run from the CLASSIFIER/ directory. Each experiment is executed with papermill,
-its parameters injected from the registry, and its artifacts written to a
-run directory under ``outputs/<id>/runs/<display_name>-<git>-<timestamp>/``.
+Mirror of ``CLASSIFIER/run_experiment.py`` for the survival pipeline. Every
+registry entry is executed with papermill against the single parameterized
+notebook ``notebooks/PROGNOSER_RUNNER.ipynb``, with its ``EXPERIMENT`` dict
+injected, and its artifacts written to ``outputs/<id>/runs/<display_name>-<git>-<timestamp>/``.
+
+Run from the PROGNOSER/ directory.
 
 Examples
 --------
-    python run_experiment.py --id gelstm-trajectory-whole-brain
-    python run_experiment.py --id sanity-split-hygiene --background
+    python run_experiment.py --id km-baseline
+    python run_experiment.py --id cox-combined-dmn-hippo-last --background
     python run_experiment.py --all
-    python run_experiment.py --mode longitudinal
+    python run_experiment.py --method cox_clinical
     python run_experiment.py --id <id> --dry-run
     python run_experiment.py --status
     python run_experiment.py --collect
 
-W&B is on by default (see common/tracking.py). Use --no-wandb to disable, or set
-WANDB_MODE=offline in the environment. Credentials are read from the repo-root
-.env (loaded automatically) or ~/.netrc.
+W&B is on by default (see CLASSIFIER/common/tracking.py). Survival runs log to the
+``ad-early-detection-prognosis`` project. Use --no-wandb to disable. Credentials are
+read from the repo-root .env (loaded automatically) or ~/.netrc.
 """
 from __future__ import annotations
 
@@ -32,14 +35,14 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
-# Allow `python run_experiment.py` from CLASSIFIER/ to import the CLASSIFIER package.
-_CLASSIFIER_ROOT = Path(__file__).resolve().parent
-_REPO_ROOT = _CLASSIFIER_ROOT.parent
+# Allow `python run_experiment.py` from PROGNOSER/ to import the project packages.
+_PROGNOSER_ROOT = Path(__file__).resolve().parent
+_REPO_ROOT = _PROGNOSER_ROOT.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from CLASSIFIER.common.experiment_utils import (  # noqa: E402
-    build_config,
+from PROGNOSER.common.experiment_utils import (  # noqa: E402
+    build_experiment,
     build_parameter_dict,
     collect_results,
     load_experiment,
@@ -51,25 +54,30 @@ from CLASSIFIER.common.run_naming import generate_run_name  # noqa: E402
 from CLASSIFIER.common.runner_io import (  # noqa: E402
     Heartbeat,
     color,
-    format_cv_summary,
     format_elapsed,
     format_metric_summary,
 )
 
-_REGISTRY = _CLASSIFIER_ROOT / "experiments.yaml"
-_OUTPUTS = _CLASSIFIER_ROOT / "outputs"
+_REGISTRY = _PROGNOSER_ROOT / "experiments.yaml"
+_OUTPUTS = _PROGNOSER_ROOT / "outputs"
+_EMBEDDINGS_CACHE = _PROGNOSER_ROOT / "notebooks" / "_embeddings_cache_"
+_DEFAULT_WANDB_PROJECT = "ad-early-detection-prognosis"
 
 # Source trees snapshotted into each run's source/ so a past run can be read back
-# with the exact code that produced it. Text-only; data/checkpoints are excluded.
+# with the exact code that produced it. CLASSIFIER/common is included because the
+# survival notebook imports tracking/provenance and reads GAAE checkpoints.
 _SOURCE_ROOTS = [
-    "CLASSIFIER/model",
-    "CLASSIFIER/configs",
+    "PROGNOSER/model",
+    "PROGNOSER/common",
+    "PROGNOSER/src",
+    "PROGNOSER/run_experiment.py",
+    "PROGNOSER/experiments.yaml",
     "CLASSIFIER/common",
-    "CLASSIFIER/run_experiment.py",
-    "CLASSIFIER/experiments.yaml",
     "DATA/src/splitting",
-    "DATA/src/processing",
 ]
+
+# Embedding-consuming methods that need a precomputed cache before launch.
+_EMBEDDING_METHODS = {"cox_embedding", "cox_combined", "rsf", "deepsurv", "lstm_surv"}
 
 
 # --------------------------------------------------------------------------- #
@@ -110,18 +118,28 @@ def _now() -> str:
 # --------------------------------------------------------------------------- #
 # Single run
 # --------------------------------------------------------------------------- #
+def _embedding_strategy(exp: dict) -> str | None:
+    return build_experiment(exp).get("embedding_strategy")
+
+
 def _preflight(exp: dict, require_clean: bool) -> dict:
     """Validate everything cheap before spending GPU time. Returns git info."""
-    notebook = _CLASSIFIER_ROOT / exp["notebook"]
+    notebook = _PROGNOSER_ROOT / exp["notebook"]
     if not notebook.is_file():
         raise FileNotFoundError(f"Experiment {exp['id']!r}: notebook {notebook} not found.")
 
-    ckpt = exp.get("checkpoint_path")
-    if ckpt and not (_CLASSIFIER_ROOT / ckpt).exists():
-        raise FileNotFoundError(
-            f"Experiment {exp['id']!r}: checkpoint_path {ckpt} does not exist "
-            f"(resolved to {_CLASSIFIER_ROOT / ckpt})."
-        )
+    # Embedding-based methods need the cache built first — fail loud with the fix.
+    if exp["method"] in _EMBEDDING_METHODS:
+        combo = exp["network_combo"]
+        strategy = _embedding_strategy(exp)
+        cache_file = _EMBEDDINGS_CACHE / f"{combo}_{strategy}_embeddings.parquet"
+        if not cache_file.is_file():
+            raise FileNotFoundError(
+                f"Experiment {exp['id']!r}: method={exp['method']!r} needs the GAAE "
+                f"embedding cache {cache_file} which does not exist. Build it first:\n"
+                f"    python -m PROGNOSER.src.build_subject_embeddings "
+                f"--combo {combo} --strategy {strategy}"
+            )
 
     git = capture_git_provenance()
     if git.get("dirty"):
@@ -134,7 +152,7 @@ def _preflight(exp: dict, require_clean: bool) -> dict:
 
 def run_one(exp: dict, *, no_wandb: bool, require_clean: bool) -> bool:
     """Execute one experiment notebook. Returns True on success."""
-    print(f"\n=== Running experiment: {exp['id']} ({exp['model']} / {exp['mode']}) ===")
+    print(f"\n=== Running experiment: {exp['id']} ({exp['method']} / {exp['network_combo']}) ===")
     git = _preflight(exp, require_clean)
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -144,18 +162,18 @@ def run_one(exp: dict, *, no_wandb: bool, require_clean: bool) -> bool:
     run_dir = _OUTPUTS / exp["id"] / "runs" / run_name
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    # Persist the resolved hyperparameter config alongside the run.
-    resolved_config = build_config(exp, _CLASSIFIER_ROOT)
-    (run_dir / "resolved_config.json").write_text(json.dumps(resolved_config, indent=2))
+    # Persist the resolved EXPERIMENT config alongside the run.
+    resolved_experiment = build_experiment(exp)
+    (run_dir / "resolved_config.json").write_text(json.dumps(resolved_experiment, indent=2))
 
     # Save the exact source that produced this run (code snapshot).
     snapshot_source_dirs(run_dir, _SOURCE_ROOTS, repo_root=_REPO_ROOT)
 
-    params = build_parameter_dict(exp, _CLASSIFIER_ROOT)
+    params = build_parameter_dict(exp)
     params["RUN_DIR"] = str(run_dir)
     params["RUN_NAME"] = run_name
 
-    input_nb = _CLASSIFIER_ROOT / exp["notebook"]
+    input_nb = _PROGNOSER_ROOT / exp["notebook"]
     output_nb = run_dir / f"{input_nb.stem}_run.ipynb"
     log_path = run_dir / "run.log"
 
@@ -168,20 +186,15 @@ def run_one(exp: dict, *, no_wandb: bool, require_clean: bool) -> bool:
         started_at=_now(),
         git_commit=git.get("short_commit"),
         git_dirty=git.get("dirty"),
-        notebook=str(input_nb.relative_to(_CLASSIFIER_ROOT)),
+        method=exp["method"],
+        network_combo=exp["network_combo"],
+        notebook=str(input_nb.relative_to(_PROGNOSER_ROOT)),
     )
 
-    env_for_run = dict(os.environ)
     if no_wandb:
-        env_for_run["WANDB_MODE"] = "disabled"
-    env_for_run.setdefault("WANDB_PROJECT", os.environ.get("WANDB_PROJECT", "ad-early-detection"))
-    # Silence wandb's console banner under the runner: it writes straight to the
-    # TTY and collides with the Heartbeat spinner (producing "elapsed 01:14wandb:"
-    # glued lines). The spinner then owns the terminal cleanly. The run id/URL is
-    # still recorded in the wandb run dir and the run_summary, so nothing is lost.
-    # Interactive Jupyter use is unaffected (it never sets this).
-    env_for_run.setdefault("WANDB_SILENT", "true")
-    os.environ.update(env_for_run)  # papermill runs in-process kernel; propagate env
+        os.environ["WANDB_MODE"] = "disabled"
+    # WANDB_PROJECT is fixed by main() (prognosis project, or a genuine shell
+    # override) — never the classifier default that .env injects.
 
     try:
         import papermill as pm
@@ -191,9 +204,9 @@ def run_one(exp: dict, *, no_wandb: bool, require_clean: bool) -> bool:
                       error=f"papermill not installed: {exc}")
         raise
 
-    print(f"  notebook : {input_nb.relative_to(_CLASSIFIER_ROOT)}")
-    print(f"  run_dir  : {run_dir.relative_to(_CLASSIFIER_ROOT)}")
-    print(f"  log      : {log_path.relative_to(_CLASSIFIER_ROOT)}")
+    print(f"  notebook : {input_nb.relative_to(_PROGNOSER_ROOT)}")
+    print(f"  run_dir  : {run_dir.relative_to(_PROGNOSER_ROOT)}")
+    print(f"  log      : {log_path.relative_to(_PROGNOSER_ROOT)}")
     t0 = time.monotonic()
     try:
         with open(log_path, "w") as logf, Heartbeat(run_name):
@@ -201,7 +214,7 @@ def run_one(exp: dict, *, no_wandb: bool, require_clean: bool) -> bool:
                 str(input_nb),
                 str(output_nb),
                 parameters=params,
-                cwd=str(_CLASSIFIER_ROOT),
+                cwd=str(_PROGNOSER_ROOT),
                 kernel_name="python3",
                 progress_bar=False,
                 stdout_file=logf,
@@ -220,7 +233,6 @@ def run_one(exp: dict, *, no_wandb: bool, require_clean: bool) -> bool:
         print(color(f"  ✗ FAILED  ({format_elapsed(elapsed)}) — notebook error in cell In [{exc.exec_count}]:", "red"), file=sys.stderr)
         print(f"  {'-' * 70}", file=sys.stderr)
         if nb_tb:
-            # Strip ANSI color codes for clean terminal output.
             from papermill.exceptions import strip_color
             print(f"  {strip_color(nb_tb)}", file=sys.stderr)
         else:
@@ -244,14 +256,11 @@ def run_one(exp: dict, *, no_wandb: bool, require_clean: bool) -> bool:
                   duration_seconds=round(elapsed, 1))
     rows = collect_results(_OUTPUTS)
     row = next((r for r in rows if r.get("run_dir", "").endswith(run_dir.name)), {})
-    cv_summary = {k[len("cv."):]: v for k, v in row.items() if k.startswith("cv.")}
     metric_summary = {k[len("metric."):]: v for k, v in row.items() if k.startswith("metric.")}
     print(color(f"  ✓ DONE  ({format_elapsed(elapsed)})", "green"))
-    cv_line = format_cv_summary(cv_summary)
-    if cv_line:
-        print(color(f"     CV:   {cv_line}", "green"))
     if metric_summary:
-        print(color(f"     test: {format_metric_summary(metric_summary)}", "green"))
+        # train/val/test c-index, IBS, time-AUC — survival has no k-fold CV block.
+        print(f"     metrics: {format_metric_summary(metric_summary)}")
     return True
 
 
@@ -278,7 +287,7 @@ def launch_background(argv: list[str]) -> None:
     with open(launch_log, "a") as logf:
         proc = subprocess.Popen(
             cmd,
-            cwd=str(_CLASSIFIER_ROOT),
+            cwd=str(_PROGNOSER_ROOT),
             stdout=logf,
             stderr=logf,
             stdin=subprocess.DEVNULL,
@@ -323,7 +332,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     sel = p.add_mutually_exclusive_group()
     sel.add_argument("--id", help="Run the single experiment with this id.")
     sel.add_argument("--all", action="store_true", help="Run every experiment sequentially.")
-    sel.add_argument("--mode", help="Run every experiment with this mode (e.g. longitudinal).")
+    sel.add_argument("--method", help="Run every experiment with this survival method (e.g. cox_clinical).")
     p.add_argument("--dry-run", action="store_true", help="Print merged parameters and exit.")
     p.add_argument("--background", action="store_true", help="Detach and run in the background.")
     p.add_argument("--status", action="store_true", help="Print a table of all runs and exit.")
@@ -337,17 +346,21 @@ def resolve_targets(args: argparse.Namespace) -> list[dict]:
     if args.id:
         return [load_experiment(_REGISTRY, args.id)]
     registry = load_registry(_REGISTRY)
-    if args.mode:
-        targets = [e for e in registry if e.get("mode") == args.mode]
+    if args.method:
+        targets = [e for e in registry if e.get("method") == args.method]
         if not targets:
-            raise ValueError(f"No experiments with mode={args.mode!r}.")
+            raise ValueError(f"No experiments with method={args.method!r}.")
         return targets
     return registry  # --all
 
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    # Capture a genuine shell override before .env (which carries the classifier
+    # default) is loaded; PROGNOSER otherwise owns its own W&B project.
+    shell_project = os.environ.get("WANDB_PROJECT")
     load_dotenv()
+    os.environ["WANDB_PROJECT"] = shell_project or _DEFAULT_WANDB_PROJECT
     args = parse_args(argv)
 
     if args.status:
@@ -357,15 +370,15 @@ def main(argv: list[str] | None = None) -> int:
         cmd_collect()
         return 0
 
-    if not (args.id or args.all or args.mode):
-        print("Nothing to do: pass --id, --all, --mode, --status, or --collect.", file=sys.stderr)
+    if not (args.id or args.all or args.method):
+        print("Nothing to do: pass --id, --all, --method, --status, or --collect.", file=sys.stderr)
         return 2
 
     targets = resolve_targets(args)
 
     if args.dry_run:
         for exp in targets:
-            params = build_parameter_dict(exp, _CLASSIFIER_ROOT)
+            params = build_parameter_dict(exp)
             print(f"\n# {exp['id']}")
             print(json.dumps(params, indent=2, default=str))
         return 0

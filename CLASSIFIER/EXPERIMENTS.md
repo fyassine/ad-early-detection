@@ -44,19 +44,30 @@ python run_experiment.py --id <id> --require-clean                # hard-fail on
 CLASSIFIER/outputs/
   <experiment-id>/
     runs/
-      <timestamp>/
+      <run_name>/              # e.g. ethereal-planet-5-349c3823d-2026-06-19_19-31-24
         <notebook>_run.ipynb   # papermill-executed notebook
         run.log                # stdout/stderr
         status.json            # {state, started_at, finished_at, pid, exit_code, error}
         run_summary.json        # git + env + params + metrics
         resolved_config.json    # final merged hyperparameters for this run
-    latest -> runs/<timestamp>/
+        source/                 # snapshot of the code that produced this run
+          manifest.json         #   (model/, configs/, common/, DATA/src/splitting/ …)
+        git_commit.txt          # commit / branch / dirty at run time
+    latest -> runs/<run_name>/
   RESULTS.csv
   RESULTS.jsonl
 ```
 
-Each run maps 1:1 to a W&B run named `<id>-<short_git>-<timestamp>`, in project
+Each run maps 1:1 to a W&B run whose display name matches the directory's random
+name (e.g. `ethereal-planet-5`). The git commit lives in the run config, the
+timestamp in the local `run_dir`. In project
 `ad-early-detection`, grouped by experiment id, `job_type=<model>`.
+
+The terminal shows a live `⏱ elapsed` counter while a run executes, then a green
+`✓ DONE (MM:SS)` on success or a red `✗ FAILED (MM:SS)` with the failing cell's
+traceback. Color is gated on a TTY (`NO_COLOR` honored), so `run.log` and piped
+output stay plain. `source/` holds a text-only snapshot of the exact code that
+produced the run, so a past run is fully reconstructable from its own directory.
 
 ### W&B, on by default for every model
 

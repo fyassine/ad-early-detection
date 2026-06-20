@@ -13,6 +13,7 @@ from common.provenance import (
     capture_git_provenance,
     capture_env,
     snapshot_source,
+    snapshot_source_dirs,
     write_run_summary,
     patch_run_summary,
     save_full_checkpoint,
@@ -141,3 +142,41 @@ def test_save_full_checkpoint_roundtrip(tmp_path):
     # The state dict reloads into a freshly built model — flawless rerun.
     fresh = torch.nn.Linear(4, 1)
     fresh.load_state_dict(ckpt["model_state_dict"])
+
+
+def test_snapshot_source_dirs(tmp_path):
+    """Walks roots, copies only matching suffixes, skips excluded dirs, records missing."""
+    repo = tmp_path / "repo"
+    pkg = repo / "pkg"
+    (pkg / "sub").mkdir(parents=True)
+    (pkg / "keep.py").write_text("x = 1\n")
+    (pkg / "cfg.yaml").write_text("a: 1\n")
+    (pkg / "data.npz").write_bytes(b"\x00\x01")          # excluded by suffix
+    (pkg / "sub" / "deep.py").write_text("y = 2\n")
+    cache = pkg / "__pycache__"
+    cache.mkdir()
+    (cache / "junk.py").write_text("garbage\n")           # excluded dir
+    (repo / "lone.py").write_text("z = 3\n")              # a file root
+
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    manifest = snapshot_source_dirs(
+        run_dir,
+        ["pkg", "lone.py", "does_not_exist"],
+        repo_root=repo,
+    )
+
+    copied = set(manifest["copied"])
+    assert "pkg/keep.py" in copied
+    assert "pkg/cfg.yaml" in copied
+    assert "pkg/sub/deep.py" in copied
+    assert "lone.py" in copied
+    assert not any("data.npz" in c for c in copied)       # wrong suffix skipped
+    assert not any("__pycache__" in c for c in copied)    # excluded dir skipped
+    assert "does_not_exist" in manifest["missing"]
+
+    # Files actually land under run_dir/source/ preserving repo-relative paths.
+    assert (run_dir / "source" / "pkg" / "keep.py").is_file()
+    assert (run_dir / "source" / "lone.py").is_file()
+    assert (run_dir / "source" / "manifest.json").is_file()
+    assert (run_dir / "git_commit.txt").is_file()

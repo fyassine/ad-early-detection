@@ -150,6 +150,7 @@ class LSTMSurvWrapper(SurvivalModel):
         T: np.ndarray,
         E: np.ndarray,
         val_data: tuple | None = None,
+        epoch_callback: "Callable[[int, float, float], None] | None" = None,
     ) -> "LSTMSurvWrapper":
         """
         Train on padded sequence tensors.
@@ -159,6 +160,9 @@ class LSTMSurvWrapper(SurvivalModel):
         T         : (n_subjects,) durations
         E         : (n_subjects,) event flags
         val_data  : optional tuple (sequences_val, lengths_val, T_val, E_val)
+        epoch_callback : optional ``fn(epoch, train_loss, val_loss)`` invoked once
+            per epoch. Pure hook for external logging (e.g. W&B) — this module
+            never imports the logger itself (keeps the model layer I/O-free).
         """
         torch.manual_seed(self.random_state)
         np.random.seed(self.random_state)
@@ -230,6 +234,9 @@ class LSTMSurvWrapper(SurvivalModel):
                 val_loss = self._compute_loss(seq_v, len_v, T_v, E_v, bin_edges_t)
 
             scheduler.step(val_loss)
+
+            if epoch_callback is not None:
+                epoch_callback(epoch, avg_train, val_loss)
 
             if val_loss < best_val_loss - 1e-6:
                 best_val_loss = val_loss

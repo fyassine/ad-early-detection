@@ -7,6 +7,8 @@
 **/checkpoints/
 CLASSIFIER/outputs/*
 !CLASSIFIER/outputs/.gitkeep
+PROGNOSER/outputs/*
+!PROGNOSER/outputs/.gitkeep
 *.log
 **/*.pkl
 **/*.npz

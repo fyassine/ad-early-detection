@@ -151,6 +151,53 @@ def capture_env() -> Dict[str, Optional[str]]:
     }
 
 
+_DEFAULT_SOURCE_PATTERNS = (".py", ".yaml", ".yml", ".json", ".txt", ".cfg", ".toml")
+_DEFAULT_EXCLUDE_DIRS = frozenset(
+    {"__pycache__", ".ipynb_checkpoints", "outputs", "wandb", ".git", "node_modules"}
+)
+
+
+def _copy_into_source(
+    source_root: Path,
+    files: Sequence[str | os.PathLike],
+    repo_root: str | os.PathLike,
+) -> tuple[list[str], list[str]]:
+    """Copy ``files`` under ``source_root`` preserving repo-relative paths.
+
+    Returns ``(copied, missing)`` as lists of repo-relative / original strings.
+    """
+    copied: list[str] = []
+    missing: list[str] = []
+    for f in files:
+        src = Path(f)
+        if not src.is_file():
+            missing.append(str(src))
+            continue
+        try:
+            rel = src.resolve().relative_to(Path(repo_root).resolve())
+        except ValueError:
+            rel = Path(src.name)
+        dest = source_root / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest)
+        copied.append(str(rel))
+    return copied, missing
+
+
+def _write_git_commit_txt(run_dir: Path, git: Dict[str, Any]) -> None:
+    (run_dir / "git_commit.txt").write_text(
+        "\n".join(
+            [
+                f"commit: {git.get('commit')}",
+                f"branch: {git.get('branch')}",
+                f"dirty:  {git.get('dirty')}",
+                f"captured_at: {datetime.now().isoformat(timespec='seconds')}",
+            ]
+        )
+        + "\n"
+    )
+
+
 def snapshot_source(
     run_dir: str | os.PathLike,
     source_files: Sequence[str | os.PathLike],
@@ -168,36 +215,70 @@ def snapshot_source(
     source_root = run_dir / "source"
     source_root.mkdir(parents=True, exist_ok=True)
 
-    copied: list[str] = []
-    missing: list[str] = []
-    for f in source_files:
-        src = Path(f)
-        if not src.is_file():
-            missing.append(str(src))
-            continue
-        try:
-            rel = src.resolve().relative_to(Path(repo_root).resolve())
-        except ValueError:
-            rel = Path(src.name)
-        dest = source_root / rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dest)
-        copied.append(str(rel))
+    copied, missing = _copy_into_source(source_root, source_files, repo_root)
 
     git = capture_git_provenance(repo_root)
-    (run_dir / "git_commit.txt").write_text(
-        "\n".join(
-            [
-                f"commit: {git.get('commit')}",
-                f"branch: {git.get('branch')}",
-                f"dirty:  {git.get('dirty')}",
-                f"captured_at: {datetime.now().isoformat(timespec='seconds')}",
-            ]
-        )
-        + "\n"
-    )
+    _write_git_commit_txt(run_dir, git)
 
     manifest = {"copied": copied, "missing": missing, "git": git}
+    (source_root / "manifest.json").write_text(json.dumps(manifest, indent=2))
+    return manifest
+
+
+def snapshot_source_dirs(
+    run_dir: str | os.PathLike,
+    roots: Sequence[str | os.PathLike],
+    *,
+    repo_root: str | os.PathLike = _REPO_ROOT,
+    patterns: Sequence[str] = _DEFAULT_SOURCE_PATTERNS,
+    exclude_dirs: frozenset[str] = _DEFAULT_EXCLUDE_DIRS,
+) -> Dict[str, Any]:
+    """Snapshot whole source trees into ``run_dir/source/`` ("save code").
+
+    ``roots`` may mix directories and individual files (paths relative to
+    ``repo_root`` or absolute). Each directory is walked for files whose suffix
+    is in ``patterns``, skipping any path component in ``exclude_dirs`` (caches,
+    ``outputs/``, ``wandb/`` …) so a snapshot is text-only and stays small. The
+    actual copying + ``git_commit.txt`` + ``manifest.json`` reuse the same logic
+    as :func:`snapshot_source`. Missing roots are recorded, never fatal.
+    """
+    run_dir = Path(run_dir)
+    repo_root = Path(repo_root)
+    source_root = run_dir / "source"
+    source_root.mkdir(parents=True, exist_ok=True)
+
+    suffixes = tuple(patterns)
+    files: list[Path] = []
+    missing_roots: list[str] = []
+    for root in roots:
+        p = Path(root)
+        if not p.is_absolute():
+            p = repo_root / p
+        if p.is_file():
+            files.append(p)
+        elif p.is_dir():
+            for f in sorted(p.rglob("*")):
+                if not f.is_file() or f.suffix not in suffixes:
+                    continue
+                if exclude_dirs.intersection(f.relative_to(p).parts[:-1]):
+                    continue
+                files.append(f)
+        else:
+            missing_roots.append(str(root))
+
+    copied, missing = _copy_into_source(source_root, files, repo_root)
+    missing.extend(missing_roots)
+
+    git = capture_git_provenance(repo_root)
+    _write_git_commit_txt(run_dir, git)
+
+    manifest = {
+        "copied": copied,
+        "missing": missing,
+        "roots": [str(r) for r in roots],
+        "patterns": list(suffixes),
+        "git": git,
+    }
     (source_root / "manifest.json").write_text(json.dumps(manifest, indent=2))
     return manifest
 

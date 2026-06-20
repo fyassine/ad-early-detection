@@ -136,3 +136,46 @@ def test_collect_results_writes_ledger(tmp_path):
     assert rows[0]["metric.test_auc"] == 0.81
     assert (tmp_path / "RESULTS.csv").is_file()
     assert (tmp_path / "RESULTS.jsonl").is_file()
+
+
+def test_collect_results_includes_cv_summary(tmp_path):
+    """cv_results per-fold lists become cv.* mean/std columns in the ledger."""
+    run_dir = tmp_path / "gelstm-test" / "runs" / "leafy-oasis-7"
+    run_dir.mkdir(parents=True)
+    summary = {
+        "experiment_id": "gelstm-test",
+        "git": {"short_commit": "abc1234", "dirty": False},
+        "metrics": {"test_auc": 0.53, "test_f1": 0.65},
+        "cv_results": {
+            "val_auc": [0.98, 0.97, 0.96, 0.99, 0.98],
+            "val_f1": [0.95, 0.90, 0.90, 0.95, 0.95],
+            "best_threshold": [0.6, 0.28, 0.33, 0.76, 0.37],
+        },
+        "best_fold": 4,
+        "best_val_auc": 0.99,
+    }
+    (run_dir / "run_summary.json").write_text(json.dumps(summary))
+
+    rows = eu.collect_results(tmp_path)
+    row = next(r for r in rows if r["experiment_id"] == "gelstm-test")
+    assert row["cv.n_folds"] == 5
+    assert row["cv.best_fold"] == 4
+    assert row["cv.best_val_auc"] == 0.99
+    assert row["cv.val_auc_mean"] == pytest.approx(0.976, abs=1e-3)
+    assert row["cv.val_auc_std"] > 0
+    assert "cv.val_f1_mean" in row
+    # best_threshold is not a val_* metric -> not summarised as mean/std.
+    assert "cv.best_threshold_mean" not in row
+    # test metrics still present.
+    assert row["metric.test_auc"] == 0.53
+
+
+def test_collect_results_no_cv_block(tmp_path):
+    """Runs without cv_results get no cv.* columns (sanity/comparison notebooks)."""
+    run_dir = tmp_path / "sanity" / "runs" / "calm-lake-1"
+    run_dir.mkdir(parents=True)
+    (run_dir / "run_summary.json").write_text(json.dumps(
+        {"experiment_id": "sanity", "metrics": {"test_auc": 0.7}}))
+    rows = eu.collect_results(tmp_path)
+    row = next(r for r in rows if r["experiment_id"] == "sanity")
+    assert not any(k.startswith("cv.") for k in row)

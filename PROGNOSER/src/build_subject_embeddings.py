@@ -28,6 +28,7 @@ import os
 from pathlib import Path
 
 from PROGNOSER.common.embeddings import extract_subject_embeddings, cache_embeddings
+from PROGNOSER.common.experiment_utils import COMBO_TABLE
 from PROGNOSER.common.survival_table import build_survival_table
 from DATA.src.splitting.load_splits import splits_dir
 
@@ -39,16 +40,9 @@ CACHE_DIR = REPO_ROOT / 'PROGNOSER' / 'notebooks' / '_embeddings_cache_'
 COHORTS_CSV = REPO_ROOT / 'DATA' / 'DELCODE' / '__fc_wholebrain_sch200_flat__' / 'metadata' / 'cohorts.csv'
 SPLITS_DIR = splits_dir('downstream')
 
-COMBO_TABLE = {
-    "dmn":              ("__fc_dmn_sch200_flat__",                        "_dmn_correlation_matrix_z_transformed.npz"),
-    "hippo":            ("__fc_hippo_tian2_flat__",                       "_hippocampus_correlation_matrix_z_transformed.npz"),
-    "limbic":           ("__fc_limbic_sch200_flat__",                     "_limbic_correlation_matrix_z_transformed.npz"),
-    "dan":              ("__fc_dan_sch200_flat__",                        "_dorsal_attention_correlation_matrix_z_transformed.npz"),
-    "dmn_hippo":        ("__fc_dmn-hippo_sch200-tian2_flat__",            "_dmn_hippo_correlation_matrix_z_transformed.npz"),
-    "dmn_limbic":       ("__fc_dmn-limbic_sch200_flat__",                 "_dmn_limbic_correlation_matrix_z_transformed.npz"),
-    "dmn_limbic_hippo": ("__fc_dmn-hippo-limbic_sch200-tian2_flat__",    "_dmn_limbic_hippo_correlation_matrix_z_transformed.npz"),
-    "all_combined":     ("__fc_dmn-hippo-limbic-dan_sch200-tian2_flat__", "_all_combined_correlation_matrix_z_transformed.npz"),
-}
+# COMBO_TABLE (combo -> data_version, file_suffix) is the single source of truth
+# in PROGNOSER.common.experiment_utils; imported above so the runner registry and
+# this CLI cannot drift apart.
 
 
 def _build_at_risk_windows() -> dict[str, int]:

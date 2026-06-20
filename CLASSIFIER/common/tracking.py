@@ -31,8 +31,8 @@ Mode resolution (env ``WANDB_MODE`` wins, then experiment, then default):
 from __future__ import annotations
 
 import os
+import sys
 import warnings
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -108,10 +108,13 @@ def _region_tag(exp: Dict[str, Any], params: Dict[str, Any]) -> Optional[str]:
 def _build_init_kwargs(exp: Dict[str, Any], params: Dict[str, Any], fold: Optional[int]) -> Dict[str, Any]:
     """Assemble the wandb.init kwargs implementing the naming convention."""
     git = capture_git_provenance()
-    short_git = git.get("short_commit") or "nogit"
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    base_name = params.get("RUN_NAME") or f"{exp['id']}-{short_git}-{timestamp}"
+    # W&B run name = the experiment id (the human-readable name given in the
+    # registry), so runs are easy to tell apart in the UI. The commit lives in
+    # the run config and the timestamp in the local run_dir; W&B shows its own
+    # created-at column. Folds get a ``-fold{k}`` suffix so they stay distinct
+    # within the experiment's group.
+    base_name = exp.get("id") or params.get("RUN_NAME") or "run"
     name = f"{base_name}-fold{fold}" if fold is not None else base_name
 
     region = _region_tag(exp, params)
@@ -175,6 +178,11 @@ def init_run(exp: Dict[str, Any], params: Dict[str, Any], *, fold: Optional[int]
         mode = "offline"
 
     init_kwargs = _build_init_kwargs(exp, params, fold)
+    # wandb writes its startup banner to stderr the instant init() runs. Without
+    # this newline it glues onto whatever was last on the line — typically a tqdm
+    # progress bar or a print() without a trailing newline. Emit one blank line on
+    # the same stream so the banner always starts fresh.
+    print(file=sys.stderr, flush=True)
     try:
         return wandb.init(mode=mode, reinit=True, **init_kwargs)
     except Exception as exc:

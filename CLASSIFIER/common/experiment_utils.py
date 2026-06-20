@@ -143,6 +143,38 @@ def _iter_run_summaries(outputs_root: Path):
     yield from outputs_root.glob("*/runs/*/run_summary.json")
 
 
+def _cv_summary(summary: Dict[str, Any]) -> Dict[str, Any]:
+    """Summarise k-fold CV into ``cv.*`` columns (mean ± std across folds).
+
+    Reads the per-fold lists the training notebooks write under ``cv_results``
+    (``val_auc``, ``val_f1``, ``val_sensitivity``, ``val_specificity``, …) plus
+    the top-level ``best_fold`` / ``best_val_auc``. Returns ``{}`` for runs
+    without cross-validation (e.g. sanity/comparison notebooks).
+    """
+    import statistics
+
+    out: Dict[str, Any] = {}
+    cv = summary.get("cv_results")
+    n_folds = 0
+    if isinstance(cv, dict):
+        for key, vals in cv.items():
+            if not key.startswith("val_") or not isinstance(vals, list):
+                continue
+            nums = [v for v in vals if isinstance(v, (int, float)) and not isinstance(v, bool)]
+            if not nums:
+                continue
+            n_folds = max(n_folds, len(nums))
+            out[f"cv.{key}_mean"] = statistics.fmean(nums)
+            out[f"cv.{key}_std"] = statistics.stdev(nums) if len(nums) > 1 else 0.0
+    if n_folds:
+        out["cv.n_folds"] = n_folds
+    for src, dst in (("best_fold", "cv.best_fold"), ("best_val_auc", "cv.best_val_auc")):
+        v = summary.get(src)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            out[dst] = v
+    return out
+
+
 def collect_results(outputs_root: str | Path) -> List[Dict[str, Any]]:
     """Flatten every ``run_summary.json`` into rows and write RESULTS.{csv,jsonl}."""
     outputs_root = Path(outputs_root)
@@ -172,6 +204,8 @@ def collect_results(outputs_root: str | Path) -> List[Dict[str, Any]]:
             }
         for k, v in metrics.items():
             row[f"metric.{k}"] = v
+        # Cross-validation summary (mean ± std across folds), when present.
+        row.update(_cv_summary(summary))
         rows.append(row)
 
     if rows:
