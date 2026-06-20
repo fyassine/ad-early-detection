@@ -22,6 +22,28 @@
 #   notes           — free-form
 
 experiments:
+  - id: gec-trajectory-whole-brain
+    mode: longitudinal
+    model: GEC
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb
+    config_path: configs/long_gec_mlp_full_delcode.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: Flattened-trajectory GEC over the FULL GAAE latent space (no FDR) + Δt.
+
+  - id: gec-trajectory-whole-brain-fdr
+    mode: longitudinal
+    model: GEC
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GEC_FDR_DELCODE.ipynb
+    config_path: configs/long_gec_mlp_delcode.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: Flattened-trajectory GEC over FDR-selected GAAE dims + Δt.
+
   - id: gelstm-trajectory-whole-brain
     mode: longitudinal
     model: GELSTM
@@ -31,9 +53,20 @@ experiments:
     config_path: configs/gelstm_delcode_whole_brain.json
     checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
     threshold_mode: best-f1
-    notes: Full-trajectory GELSTM on GAAE latents.
+    notes: Full-trajectory LSTM (h32, 1 layer) on GAAE latents + per-fold StandardScaler + weight_decay=1e-4.
 
-  - id: gelstm-trajectory-fdr
+  - id: gegru-trajectory-whole-brain
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb
+    config_path: configs/gegru_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: Full-trajectory GRU (h32, 1 layer ~10k params) on GAAE latents + per-fold StandardScaler + weight_decay=1e-4. Size-matched to the LSTM entry (cell type is the only difference).
+
+  - id: gelstm-trajectory-whole-brain-fdr
     mode: longitudinal
     model: GELSTM
     dataset: DELCODE_WHOLE_BRAIN
@@ -53,17 +86,6 @@ experiments:
     checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
     threshold_mode: best-f1
     notes: First-N-visits ablation (early-detection task).
-
-  - id: gec-trajectory
-    mode: longitudinal
-    model: GEC
-    dataset: DELCODE_WHOLE_BRAIN
-    seed: 42
-    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb
-    config_path: configs/long_gec_mlp_delcode.json
-    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
-    threshold_mode: best-f1
-    notes: Flattened-trajectory GEC over FDR-selected GAAE dims + Δt.
 
   - id: gaae-static
     mode: static

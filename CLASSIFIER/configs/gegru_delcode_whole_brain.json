@@ -1,5 +1,5 @@
 {
-    "rnn_type": "lstm",
+    "rnn_type": "gru",
     "lstm_hidden": 32,
     "lstm_layers": 1,
     "lstm_dropout": 0.3,

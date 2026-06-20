@@ -55,6 +55,9 @@ class GELSTMClassifier(nn.Module):
         Whether to concatenate normalised Δt to z_t before LSTM input.
     classifier_hidden : int
         Size of optional hidden layer before final linear classifier (0 = direct).
+    rnn_type : str
+        Recurrent cell type: 'lstm' (default) or 'gru'. A GRU has 3 gates vs the
+        LSTM's 4, so ~25% fewer recurrent parameters at the same hidden size.
     """
 
     def __init__(
@@ -70,10 +73,23 @@ class GELSTMClassifier(nn.Module):
         lstm_dropout: float,
         use_time_delta: bool = True,
         classifier_hidden: int = 64,
+        rnn_type: str = "lstm",
     ):
         super().__init__()
         self.gaae_latent    = gaae_latent
         self.use_time_delta = use_time_delta
+        self.rnn_type       = rnn_type.lower()
+        if self.rnn_type not in ("lstm", "gru"):
+            raise ValueError(f"rnn_type must be 'lstm' or 'gru', got {rnn_type!r}")
+
+        # ── Per-visit embedding standardisation (z-score) ───────────────────
+        # Fitted on the *training fold's* pooled GAAE embeddings via
+        # ``set_feature_norm`` and applied inside ``encode_visit``. Persistent
+        # buffers so the fitted statistics round-trip through the checkpoint.
+        # Defaults are the identity transform (mean=0, std=1), so a model that
+        # never calls ``set_feature_norm`` behaves exactly as before.
+        self.register_buffer("feat_mean", torch.zeros(gaae_latent))
+        self.register_buffer("feat_std",  torch.ones(gaae_latent))
 
         # ── Shared GAAE encoder (applied per-visit) ─────────────────────────
         self.encoder = GraphAttentionAutoencoderConditioned(
@@ -85,9 +101,13 @@ class GELSTMClassifier(nn.Module):
             dropout=gaae_dropout,
         )
 
-        # ── LSTM ─────────────────────────────────────────────────────────────
+        # ── Recurrent core (LSTM or GRU) ─────────────────────────────────────
+        # The attribute stays named ``self.lstm`` so checkpoint state-dict keys
+        # ("lstm.*") and downstream code are unchanged; only the cell type
+        # switches with ``rnn_type``.
         self.lstm_input_dim = gaae_latent + (1 if use_time_delta else 0)
-        self.lstm = nn.LSTM(
+        rnn_cls = nn.GRU if self.rnn_type == "gru" else nn.LSTM
+        self.lstm = rnn_cls(
             input_size=self.lstm_input_dim,
             hidden_size=lstm_hidden,
             num_layers=lstm_layers,
@@ -127,11 +147,32 @@ class GELSTMClassifier(nn.Module):
         """
         z = self.encoder.encode(x, edge_index, edge_attr)  # (N_nodes, latent)
         if pool == "mean":
-            return z.mean(dim=0)
+            z = z.mean(dim=0)
         elif pool == "max":
-            return z.max(dim=0).values
+            z = z.max(dim=0).values
         else:
-            return z.sum(dim=0)
+            z = z.sum(dim=0)
+        # Standardise with the fitted (or identity, by default) statistics.
+        return (z - self.feat_mean) / self.feat_std
+
+    def set_feature_norm(self, mean, std, *, eps: float = 1e-8) -> None:
+        """Set the per-visit embedding standardisation statistics.
+
+        ``mean`` / ``std`` are length-``gaae_latent`` arrays (e.g. a fitted
+        ``sklearn.preprocessing.StandardScaler``'s ``mean_`` / ``scale_``).
+        Fit on the training fold only and call once per fold *before* training
+        so test/val embeddings are standardised with train-fold statistics —
+        the GELSTM analogue of the per-fold StandardScaler in the GEC-MLP.
+        """
+        mean_t = torch.as_tensor(mean, dtype=self.feat_mean.dtype, device=self.feat_mean.device)
+        std_t  = torch.as_tensor(std,  dtype=self.feat_std.dtype,  device=self.feat_std.device)
+        if mean_t.shape != self.feat_mean.shape or std_t.shape != self.feat_std.shape:
+            raise ValueError(
+                f"feature-norm shapes {tuple(mean_t.shape)}/{tuple(std_t.shape)} "
+                f"do not match latent dim {tuple(self.feat_mean.shape)}"
+            )
+        self.feat_mean.copy_(mean_t)
+        self.feat_std.copy_(std_t.clamp_min(eps))
 
     # ── Forward ──────────────────────────────────────────────────────────────
 
@@ -149,7 +190,10 @@ class GELSTMClassifier(nn.Module):
         -------
         logits : (B,)  — one scalar per subject
         """
-        _, (h_n, _) = self.lstm(packed_seqs)
+        if self.rnn_type == "gru":
+            _, h_n = self.lstm(packed_seqs)        # GRU returns (output, h_n)
+        else:
+            _, (h_n, _) = self.lstm(packed_seqs)   # LSTM returns (output, (h_n, c_n))
         # h_n : (num_layers, B, hidden)
         h_last = h_n[-1]           # (B, hidden) — last layer hidden state
         logits = self.classifier(h_last).squeeze(-1)   # (B,)

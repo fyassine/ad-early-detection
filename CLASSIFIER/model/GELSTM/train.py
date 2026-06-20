@@ -265,7 +265,9 @@ def train_model(
     written to ``save_path``.
     """
     if optimizer is None:
-        optimizer = torch.optim.Adam(model.get_trainable_params(), lr=cfg.lr)
+        optimizer = torch.optim.Adam(
+            model.get_trainable_params(), lr=cfg.lr, weight_decay=cfg.weight_decay
+        )
     if criterion is None:
         criterion = torch.nn.BCEWithLogitsLoss()
 

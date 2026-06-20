@@ -15,6 +15,8 @@ from typing import Any, Optional
 class GELSTMTrainConfig:
     epochs: int = 100
     lr: float = 1e-3
+    weight_decay: float = 0.0
+    rnn_type: str = "lstm"
     batch_size: int = 16
     grad_clip: float = 1.0
     early_stopping_patience: int = 20

@@ -138,10 +138,11 @@ Notebooks live under `notebooks/<PREFIX>/`.
 | Notebook                                                                              | Task                          |
 | ------------------------------------------------------------------------------------- | ----------------------------- |
 | `BASELINE/BASELINE_MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb`                        | Model comparison              |
-| `LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb`                                      | Trajectory                    |
+| `LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb`                                      | Trajectory (StandardScaler + weight decay) |
 | `LONGITUDINAL/LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE.ipynb`                         | Trajectory + FDR              |
 | `LONGITUDINAL/LONGITUDINAL_GELSTM_FIRST_N_DELCODE.ipynb`                              | Early detection               |
-| `LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb`                                         | Trajectory (GEC)              |
+| `LONGITUDINAL/LONGITUDINAL_GEC_FDR_DELCODE.ipynb`                                     | Trajectory (GEC, FDR dims)    |
+| `LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb`                                         | Trajectory (GEC, full latent) |
 | `STATIC/STATIC_GAAE_DELCODE_WHOLE_BRAIN.ipynb`                                        | Static per-scan (GAAE)        |
 | `STATIC/STATIC_LOGREG_DELCODE_WHOLE_BRAIN.ipynb`                                      | Static per-scan (LogReg)      |
 | `SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb`                                           | Split audit                   |
