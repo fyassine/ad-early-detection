@@ -126,6 +126,27 @@ def test_make_xte_missing_column_raises(cohort_csv):
         make_xte(tbl, feature_cols=["nonexistent_col"])
 
 
+def test_make_xte_empty_feature_cols_keeps_full_cohort(cohort_csv):
+    """KM uses feature_set='none' (no feature columns) so make_xte must NOT drop
+    rows on feature NaNs — the population baseline is evaluated on the full split.
+    A feature column that is entirely NaN (mimicking single-visit longitudinal
+    aggregates) would otherwise wipe the cohort."""
+    tbl = build_survival_table(cohort_csv)
+    tbl = tbl.copy()
+    tbl["all_nan_feature"] = np.nan  # e.g. mmstot_slope for single-visit subjects
+    n = len(tbl)
+
+    # Empty feature set: every row with valid duration/event is retained.
+    X, T, E, used = make_xte(tbl, feature_cols=[])
+    assert len(used) == n
+    assert X.shape == (n, 0)
+    assert T.shape == (n,) and E.shape == (n,)
+
+    # Sanity: including the all-NaN column would drop the entire cohort.
+    X2, _, _, used2 = make_xte(tbl, feature_cols=["all_nan_feature"])
+    assert len(used2) == 0
+
+
 # ── filter_to_split ───────────────────────────────────────────────────────────
 
 def test_filter_to_split(cohort_csv, tmp_path):

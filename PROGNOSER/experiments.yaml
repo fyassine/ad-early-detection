@@ -33,6 +33,8 @@ experiments:
     network_combo: dmn_hippo
     seed: 42
     notebook: notebooks/PROGNOSER_RUNNER.ipynb
+    experiment:
+      feature_set: none
     notes: Population Kaplan-Meier baseline (no features, no embeddings).
 
   - id: cox-clinical-dmn-hippo

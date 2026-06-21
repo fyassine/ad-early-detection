@@ -42,7 +42,9 @@ def integrated_brier_score(
     `survival_test` shape: (n_test, n_eval_times) — survival probabilities.
     """
     times = np.asarray(list(eval_times), dtype=float)
-    times = times[(times > T_test.min()) & (times < T_test.max())]
+    # Inclusive on the lower endpoint; sksurv requires t < max follow-up (half-open
+    # interval [min, max)), so the upper bound stays strict.
+    times = times[(times >= T_test.min()) & (times < T_test.max())]
     if len(times) == 0:
         return float("nan")
 
@@ -66,7 +68,9 @@ def time_dependent_auc(
     y_test = to_struct_array(T_test, E_test)
     times_arr = np.asarray(list(times), dtype=float)
 
-    valid_mask = (times_arr > T_test.min()) & (times_arr < T_test.max())
+    # Inclusive on the lower endpoint so a horizon equal to T_test.min() is
+    # evaluated; sksurv requires t < max follow-up, so the upper bound stays strict.
+    valid_mask = (times_arr >= T_test.min()) & (times_arr < T_test.max())
     out: dict[int, float] = {int(t): float("nan") for t in times_arr}
     if not valid_mask.any():
         return out

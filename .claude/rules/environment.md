@@ -17,6 +17,7 @@ This is the venv used by `CLASSIFIER/`, `PROGNOSER/`, and DASHBOARD's model-infe
 
 - `PROGNOSER/requirements.txt` — lifelines, scikit-survival, joblib. Install on top of the root venv.
 - `DASHBOARD/requirements.txt` — fastapi, uvicorn, pandas, scipy, networkx, umap-learn, openpyxl. Install on top of the root venv; do not duplicate torch/PyG entries here.
+- `CLASSIFIER/requirements-explain.txt` — captum, nilearn (for the EXPLAIN notebook / `adapters/explain.py`). Install on top of the root venv; do not pin torch/PyG here.
 
 ## Do not
 

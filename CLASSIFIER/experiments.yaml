@@ -4,7 +4,7 @@
 #
 # Required fields:
 #   id              — short slug, kebab-case (must be unique)
-#   mode            — baseline | longitudinal | static | sanity | comparison
+#   mode            — baseline | longitudinal | static | sanity | comparison | explain
 #   model           — GELSTM | GEC | GAAE | LogReg | multi | n/a | …
 #   dataset         — e.g. DELCODE_WHOLE_BRAIN
 #   seed            — int (typically 42)
@@ -19,7 +19,27 @@
 #   fixed_threshold — float, required iff threshold_mode=fixed
 #   output_dir      — defaults to outputs/<id>/
 #   wandb           — bool, default true (W&B logging is ON for every model; set false to silence)
+#   adapter         — registry key for a shared adapter-driven notebook
+#                     (gelstm | gec for LONGITUDINAL_COMMON; gaae | gec | gelstm | gegru
+#                     for EXPLAIN_COMMON via get_explain_adapter). Omit → defaults to MODEL.
+#                     See CLASSIFIER/adapters/.
+#   source_experiment — id of a prior experiment whose latest/ run an analysis-only
+#                     notebook reloads (no retraining). Used by the visit-count
+#                     confound sanity notebook and the EXPLAIN_COMMON notebook;
+#                     injected as SOURCE_EXPERIMENT.
 #   notes           — free-form
+#
+# Longitudinal trajectory experiments share one notebook
+# (notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb): the per-model logic
+# lives in an adapter selected by 'adapter:'. FDR / GRU are config flags
+# (hyperparams: {use_fdr: true} ; rnn_type in the config json), not separate notebooks.
+#
+# Explainability/diagnostics share ONE notebook
+# (notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb, mode: explain): the per-model logic
+# lives in an explain adapter selected by 'adapter:' (gaae | gec | gelstm | gegru, via
+# CLASSIFIER/adapters/explain.py:get_explain_adapter). Classifiers reload a trained run
+# via 'source_experiment:'; GAAE loads its encoder via 'checkpoint_path:'. Needs the
+# extra deps in CLASSIFIER/requirements-explain.txt (captum, nilearn).
 
 experiments:
   - id: gec-trajectory-whole-brain
@@ -27,7 +47,8 @@ experiments:
     model: GEC
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gec
     config_path: configs/long_gec_mlp_full_delcode.json
     checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
     threshold_mode: best-f1
@@ -38,18 +59,34 @@ experiments:
     model: GEC
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GEC_FDR_DELCODE.ipynb
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gec
     config_path: configs/long_gec_mlp_delcode.json
+    hyperparams:
+      use_fdr: true
     checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
     threshold_mode: best-f1
-    notes: Flattened-trajectory GEC over FDR-selected GAAE dims + Δt.
+    notes: Flattened-trajectory GEC over per-fold FDR-selected GAAE dims (top_k) + Δt.
+
+  - id: gep-trajectory-whole-brain
+    mode: longitudinal
+    model: GEP
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gep
+    config_path: configs/gep_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: Simplest downstream model — small MLP on the mean-pooled GAAE 64-d graph embedding (no trajectory flattening). encoder_arch=gaae.
 
   - id: gelstm-trajectory-whole-brain
     mode: longitudinal
     model: GELSTM
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
     config_path: configs/gelstm_delcode_whole_brain.json
     checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
     threshold_mode: best-f1
@@ -60,22 +97,38 @@ experiments:
     model: GELSTM
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
     config_path: configs/gegru_delcode_whole_brain.json
     checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
     threshold_mode: best-f1
     notes: Full-trajectory GRU (h32, 1 layer ~10k params) on GAAE latents + per-fold StandardScaler + weight_decay=1e-4. Size-matched to the LSTM entry (cell type is the only difference).
+
+  - id: gelstm-whole-brain-wide-lnorm
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_whole_brain_wide_lnorm.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: GELSTM with a wider LayerNorm head (h64, classifier_hidden64, dropout 0.15) to widen the narrow probability spread. See common/VISIT_COUNT_CONFOUND.md.
 
   - id: gelstm-trajectory-whole-brain-fdr
     mode: longitudinal
     model: GELSTM
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE.ipynb
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
     config_path: configs/gelstm_fdr_filtered_delcode.json
+    hyperparams:
+      use_fdr: true
     checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
     threshold_mode: best-f1
-    notes: Per-fold FDR latent-dim selection.
+    notes: Per-fold FDR latent-dim selection (top_k), recurrent core patched to TOP_K input.
 
   - id: gelstm-early-detection-first-n
     mode: longitudinal
@@ -96,6 +149,28 @@ experiments:
     config_path: configs/gaae_delcode_whole_brain.json
     threshold_mode: best-f1
     notes: Per-scan GAAE-embedding with subject rollup.
+
+  # VGAE encoders — pre-trained on reconstruction only (masked adjacency BCE + β·KL),
+  # like the GAAE. Two variants share one notebook via conv_type. The trained
+  # encoder is consumed downstream by setting encoder_arch=vgae + checkpoint_path on
+  # a gep/gec/gelstm entry (see the commented templates near the bottom).
+  - id: vgae-gcn-static
+    mode: static
+    model: VGAE
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/STATIC/STATIC_VGAE_DELCODE_WHOLE_BRAIN.ipynb
+    config_path: configs/vgae_gcn_delcode_whole_brain.json
+    notes: VGAE pre-training (canonical GCN encoder, InnerProduct adjacency decoder).
+
+  - id: vgae-gat-static
+    mode: static
+    model: VGAE
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/STATIC/STATIC_VGAE_DELCODE_WHOLE_BRAIN.ipynb
+    config_path: configs/vgae_gat_delcode_whole_brain.json
+    notes: VGAE pre-training (variational-GAT encoder, InnerProduct adjacency decoder).
 
   - id: logreg-static
     mode: static
@@ -140,6 +215,48 @@ experiments:
     notebook: notebooks/SANITY/SANITY_LONGITUDINAL_GELSTM.ipynb
     notes: Shuffled-order, no-Δt, fixed-N ablations.
 
+  # Visit-count confound diagnostics — reload each model's latest trajectory run
+  # (no retraining) and quantify the converters-have-fewer-visits confound.
+  - id: sanity-visit-confound-gec
+    mode: sanity
+    model: GEC
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb
+    adapter: gec
+    source_experiment: gec-trajectory-whole-brain
+    notes: Visit-count confound diagnostics on the latest GEC trajectory model.
+
+  - id: sanity-visit-confound-gelstm
+    mode: sanity
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb
+    adapter: gelstm
+    source_experiment: gelstm-trajectory-whole-brain
+    notes: Visit-count confound diagnostics on the latest GELSTM trajectory model.
+
+  - id: sanity-visit-confound-gegru
+    mode: sanity
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb
+    adapter: gelstm
+    source_experiment: gegru-trajectory-whole-brain
+    notes: Visit-count confound diagnostics on the latest GEGRU (GRU) trajectory model.
+
+  - id: sanity-visit-confound-gelstm-wide-lnorm
+    mode: sanity
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb
+    adapter: gelstm
+    source_experiment: gelstm-whole-brain-wide-lnorm
+    notes: Confound + spread diagnostics on the wider-LayerNorm GELSTM variant.
+
   # Cross-region comparisons
   - id: comparison-cross-region-classifier
     mode: comparison
@@ -156,3 +273,86 @@ experiments:
     seed: 42
     notebook: notebooks/COMPARISON/COMPARISON_CROSS_REGION_SURVIVAL.ipynb
     notes: Aggregates saved survival predictions across brain regions.
+
+  # Explainability / diagnostics — one adapter-driven notebook, no retraining.
+  # Needs CLASSIFIER/requirements-explain.txt (captum, nilearn).
+  - id: explain-gaae
+    mode: explain
+    model: GAAE
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: gaae
+    config_path: configs/gaae_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    notes: GAAE encoder explainability — latent space, GAT attention, reconstruction, latent-dim IG / GNNExplainer.
+
+  - id: explain-gec
+    mode: explain
+    model: GEC
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: gec
+    source_experiment: gec-trajectory-whole-brain
+    notes: Diagnose + explain the latest GEC trajectory run (reload, no retraining).
+
+  - id: explain-gelstm
+    mode: explain
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    source_experiment: gelstm-trajectory-whole-brain
+    notes: Diagnose + explain the latest GELSTM trajectory run (hidden states, occlusion, ablations).
+
+  - id: explain-gegru
+    mode: explain
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: gegru
+    source_experiment: gegru-trajectory-whole-brain
+    notes: Diagnose + explain the latest GEGRU (GRU) trajectory run.
+
+  - id: explain-gep
+    mode: explain
+    model: GEP
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: gep
+    source_experiment: gep-trajectory-whole-brain
+    notes: Diagnose + explain the latest pooled-embedding MLP run (reload, no retraining).
+
+  # VGAE encoder explainability (latent space, adjacency reconstruction, GAT attention).
+  # Uncomment and set checkpoint_path to the model_*.pth produced by vgae-gcn-static /
+  # vgae-gat-static, and config_path to the matching arch json.
+  # - id: explain-vgae-gcn
+  #   mode: explain
+  #   model: VGAE
+  #   dataset: DELCODE_WHOLE_BRAIN
+  #   seed: 42
+  #   notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+  #   adapter: vgae
+  #   config_path: configs/vgae_gcn_delcode_whole_brain.json
+  #   checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/<run>/model_<run>.pth
+  #   notes: VGAE (GCN) encoder explainability.
+
+  # Downstream classification on a VGAE encoder (the converter target for VGAE):
+  # the simplest GEP head on the pooled VGAE embedding. Set checkpoint_path to the
+  # VGAE model_*.pth and add `encoder_arch: vgae` + the VGAE arch via hyperparams.
+  # - id: gep-vgae-gcn-trajectory-whole-brain
+  #   mode: longitudinal
+  #   model: GEP
+  #   dataset: DELCODE_WHOLE_BRAIN
+  #   seed: 42
+  #   notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+  #   adapter: gep
+  #   config_path: configs/gep_delcode_whole_brain.json
+  #   hyperparams: {encoder_arch: vgae, conv_type: gcn, hidden_dim: 128, latent_dim: 64, adjacency_k: 16}
+  #   checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/<run>/model_<run>.pth
+  #   threshold_mode: best-f1
+  #   notes: GEP head on the pooled VGAE(GCN) embedding — VGAE→converter classification.

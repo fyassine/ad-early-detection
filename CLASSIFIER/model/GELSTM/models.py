@@ -23,6 +23,25 @@ if str(_ROOT) not in sys.path:
 from model.GAAE.models import GraphAttentionAutoencoderConditioned
 
 
+def build_classifier_head(
+    lstm_hidden: int, classifier_hidden: int, dropout: float, classifier_norm: str = "none"
+) -> nn.Module:
+    """RNN-head: ``Linear→[LayerNorm]→ReLU→Dropout→Linear(1)`` (or a direct Linear).
+
+    ``classifier_norm="layernorm"`` inserts a ``LayerNorm`` after the first linear —
+    LayerNorm (not BatchNorm) so it is safe for variable-length RNN eval and batch
+    size 1. Shared by the constructor and the FDR recurrent-core patch so both heads
+    stay identical. ``classifier_hidden <= 0`` gives a direct ``Linear(lstm_hidden, 1)``.
+    """
+    if classifier_hidden <= 0:
+        return nn.Linear(lstm_hidden, 1)
+    layers: list[nn.Module] = [nn.Linear(lstm_hidden, classifier_hidden)]
+    if str(classifier_norm).lower() == "layernorm":
+        layers.append(nn.LayerNorm(classifier_hidden))
+    layers += [nn.ReLU(), nn.Dropout(dropout), nn.Linear(classifier_hidden, 1)]
+    return nn.Sequential(*layers)
+
+
 class GELSTMClassifier(nn.Module):
     """
     GNN Encoder + LSTM Classifier for longitudinal MCI → AD conversion prediction.
@@ -74,6 +93,7 @@ class GELSTMClassifier(nn.Module):
         use_time_delta: bool = True,
         classifier_hidden: int = 64,
         rnn_type: str = "lstm",
+        classifier_norm: str = "none",
     ):
         super().__init__()
         self.gaae_latent    = gaae_latent
@@ -81,6 +101,11 @@ class GELSTMClassifier(nn.Module):
         self.rnn_type       = rnn_type.lower()
         if self.rnn_type not in ("lstm", "gru"):
             raise ValueError(f"rnn_type must be 'lstm' or 'gru', got {rnn_type!r}")
+        self.classifier_norm = str(classifier_norm).lower()
+        if self.classifier_norm not in ("none", "layernorm"):
+            raise ValueError(
+                f"classifier_norm must be 'none' or 'layernorm', got {classifier_norm!r}"
+            )
 
         # ── Per-visit embedding standardisation (z-score) ───────────────────
         # Fitted on the *training fold's* pooled GAAE embeddings via
@@ -116,15 +141,9 @@ class GELSTMClassifier(nn.Module):
         )
 
         # ── Classifier head ─────────────────────────────────────────────────
-        if classifier_hidden > 0:
-            self.classifier = nn.Sequential(
-                nn.Linear(lstm_hidden, classifier_hidden),
-                nn.ReLU(),
-                nn.Dropout(lstm_dropout),
-                nn.Linear(classifier_hidden, 1),
-            )
-        else:
-            self.classifier = nn.Linear(lstm_hidden, 1)
+        self.classifier = build_classifier_head(
+            lstm_hidden, classifier_hidden, lstm_dropout, self.classifier_norm
+        )
 
     # ── Encoder helpers ──────────────────────────────────────────────────────
 

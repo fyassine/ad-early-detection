@@ -63,6 +63,7 @@ _OUTPUTS = _CLASSIFIER_ROOT / "outputs"
 # with the exact code that produced it. Text-only; data/checkpoints are excluded.
 _SOURCE_ROOTS = [
     "CLASSIFIER/model",
+    "CLASSIFIER/adapters",
     "CLASSIFIER/configs",
     "CLASSIFIER/common",
     "CLASSIFIER/run_experiment.py",
@@ -156,7 +157,7 @@ def run_one(exp: dict, *, no_wandb: bool, require_clean: bool) -> bool:
     params["RUN_NAME"] = run_name
 
     input_nb = _CLASSIFIER_ROOT / exp["notebook"]
-    output_nb = run_dir / f"{input_nb.stem}_run.ipynb"
+    output_nb = run_dir / f"{run_name}.ipynb"
     log_path = run_dir / "run.log"
 
     _write_status(

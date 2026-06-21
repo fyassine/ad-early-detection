@@ -16,6 +16,7 @@ Every notebook filename in `CLASSIFIER/notebooks/` MUST start with exactly one o
 | `STATIC_`       | Per-scan / cross-sectional                       |
 | `SANITY_`       | Sanity checks and ablations                      |
 | `COMPARISON_`   | Cross-model or cross-region aggregation of saved predictions (no training) |
+| `EXPLAIN_`      | Explainability / diagnostics on a reloaded model (no training) |
 
 Never create a notebook without one of these prefixes.
 

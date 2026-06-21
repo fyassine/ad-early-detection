@@ -1,0 +1,9 @@
+# Extra dependencies for the EXPLAIN notebooks (notebooks/EXPLAIN/) and
+# CLASSIFIER/adapters/explain.py. Install ON TOP of the project-root .venv:
+#
+#     pip install -r CLASSIFIER/requirements-explain.txt
+#
+# Do NOT pin torch / torch_geometric here — they come from the root .venv
+# (see .claude/rules/environment.md). nilearn pulls in nibabel.
+captum>=0.7.0
+nilearn>=0.11.0

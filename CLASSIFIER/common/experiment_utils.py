@@ -121,9 +121,15 @@ def build_parameter_dict(exp: Dict[str, Any], classifier_root: str | Path) -> Di
         "EXPERIMENT_ID": exp["id"],
         "MODE": exp["mode"],
         "MODEL": exp["model"],
+        # Adapter registry key for the shared LONGITUDINAL_COMMON notebook; defaults
+        # to MODEL when 'adapter:' is omitted (see CLASSIFIER/adapters/__init__.py).
+        "ADAPTER": exp.get("adapter") or exp["model"],
         "DATASET": exp["dataset"],
         "SEED": exp["seed"],
         "GAAE_CHECKPOINT_PATH": exp.get("checkpoint_path"),
+        # Source run to reload for analysis-only notebooks (e.g. the visit-count
+        # confound sanity notebook): the notebook reads outputs/<id>/latest/.
+        "SOURCE_EXPERIMENT": exp.get("source_experiment"),
         "THRESHOLD_MODE": exp.get("threshold_mode"),
         "FIXED_THRESHOLD": exp.get("fixed_threshold"),
         "WANDB_ENABLED": exp.get("wandb", True),

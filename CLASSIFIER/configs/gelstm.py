@@ -27,6 +27,10 @@ class GELSTMTrainConfig:
     lr_factor: float = 0.5
     lr_patience: int = 5
     lr_min: float = 1e-6
+    # Classifier-head normalisation: "none" (default, back-compat) or "layernorm".
+    # LayerNorm sharpens the head's logits to widen the (otherwise narrow) RNN
+    # probability spread. See common/VISIT_COUNT_CONFOUND.md.
+    classifier_norm: str = "none"
 
 
 @dataclass

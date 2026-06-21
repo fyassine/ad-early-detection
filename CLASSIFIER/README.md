@@ -36,6 +36,7 @@ Every notebook in `notebooks/` MUST start with exactly one of these prefixes:
 | `STATIC_`       | Per-scan / cross-sectional (each scan an independent sample) |
 | `SANITY_`       | Sanity checks and ablations                                  |
 | `COMPARISON_`   | Cross-model or cross-region aggregation of saved predictions (no training) |
+| `EXPLAIN_`      | Explainability / diagnostics on a reloaded model (no training) |
 
 Mirror this in run names and config tags.
 
@@ -148,8 +149,29 @@ Notebooks live under `notebooks/<PREFIX>/`.
 | `SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb`                                           | Split audit                   |
 | `SANITY/SANITY_BASELINE_METADATA_TIME.ipynb`                                          | Metadata floor                |
 | `SANITY/SANITY_LONGITUDINAL_GELSTM.ipynb`                                             | LSTM ablations                |
+| `SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb`                                            | Visit-count confound ([doc](common/VISIT_COUNT_CONFOUND.md)) |
 | `COMPARISON/COMPARISON_CROSS_REGION_CLASSIFIER.ipynb`                                 | Cross-region classifier       |
 | `COMPARISON/COMPARISON_CROSS_REGION_SURVIVAL.ipynb`                                   | Cross-region survival         |
+| `EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb`                                                | Explain GAAE / GEC / GELSTM / GRU (adapter-driven; [deps](requirements-explain.txt)) |
+
+## Explainability notebook
+
+`EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb` is one adapter-driven notebook that diagnoses
+and explains a trained model — latent space, calibration/ROC/confusion, a one-subject
+"raw scan → probability" data journey, brain-region importance, and model-specific
+extras (GAAE attention/reconstruction/GNNExplainer; GEC/GELSTM per-visit trajectories,
+early detection, latent/visit attribution; GELSTM/GRU hidden-state trajectory, visit
+occlusion, Δt/order ablations). It **reloads** a trained run (no retraining): classifiers
+via `source_experiment:`, GAAE via `checkpoint_path:`. The per-model logic lives in
+`adapters/explain.py::get_explain_adapter` (`gaae | gec | gelstm | gegru`).
+
+Needs extra deps on top of the root `.venv`:
+
+```bash
+pip install -r CLASSIFIER/requirements-explain.txt   # captum, nilearn
+python run_experiment.py --mode explain              # run all explain entries
+python run_experiment.py --id explain-gelstm         # or one model
+```
 
 ## How to run
 
