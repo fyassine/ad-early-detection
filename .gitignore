@@ -46,4 +46,5 @@ DATA/src/processing/subcortex/**/*.png
 DATA/src/processing/subcortex/**/*.pptx
 DATA/src/processing/subcortex/**/*.xlsx
 DATA/src/processing/subcortex/**/*.pdf
+DATA/src/processing/subcortex/**/license.txt
 
