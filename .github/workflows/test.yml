@@ -18,7 +18,7 @@ jobs:
       - run: ruff check .
 
   test:
-    name: CLASSIFIER tests
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,5 +32,7 @@ jobs:
           pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
           pip install torch_geometric==2.7.0
           pip install numpy==1.26.4 pandas==2.2.0 scikit-learn==1.7.2 pytest
+          pip install PyYAML matplotlib
+          pip install -r PROGNOSER/requirements.txt
       - name: Run tests
-        run: pytest CLASSIFIER/tests/ -q
+        run: pytest CLASSIFIER/tests/ PROGNOSER/tests/ DATA/src/splitting/tests/ -q
