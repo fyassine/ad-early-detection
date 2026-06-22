@@ -1,0 +1,6 @@
+# Experiment-runner dependencies for PROGNOSER (install on top of the root .venv).
+# Shared with CLASSIFIER's runner — keep versions aligned, do not pin torch/PyG here.
+papermill>=2.5
+ipykernel>=6.29
+wandb>=0.17
+PyYAML>=6.0

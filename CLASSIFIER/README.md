@@ -1,0 +1,204 @@
+# CLASSIFIER
+
+Research package for AD early-detection classifiers (GAAE, GEC, GELSTM).
+
+## Layout
+
+```
+CLASSIFIER/
+  common/
+    seeding.py        # set_seed, make_rng, make_torch_generator, seed_worker
+    splits.py         # make_splits — central train/val/test partitioning
+    utils.py          # generic utils (set_seed re-exported for back-compat)
+    sanity.py         # run_full_audit (split-hygiene check)
+    dataset.py
+  configs/
+    gelstm.py         # GELSTMTrainConfig, EvalConfig
+    gec.py            # GECTrainConfig, GECBatch (attribute contract)
+  model/
+    GAAE/ GEC/ GELSTM/ utils/   # model families + their train/eval modules
+  notebooks/          # experiments — prefix-tagged (see below)
+  outputs/            # all new run artifacts (gitignored, .gitkeep tracked)
+  checkpoints/        # legacy artifacts (back-compat only — do not write here)
+  dev/                # one-off migration tools (e.g. patch_v2_notebooks.py)
+  tests/              # pytest suite
+  experiments.yaml    # registry of major runs
+```
+
+## Naming convention
+
+Every notebook in `notebooks/` MUST start with exactly one of these prefixes:
+
+| Prefix          | Meaning                                                      |
+| --------------- | ------------------------------------------------------------ |
+| `BASELINE_`     | Baseline only (first visit, no follow-up)                    |
+| `LONGITUDINAL_` | Multi-visit / full-trajectory experiments                    |
+| `STATIC_`       | Per-scan / cross-sectional (each scan an independent sample) |
+| `SANITY_`       | Sanity checks and ablations                                  |
+| `COMPARISON_`   | Cross-model or cross-region aggregation of saved predictions (no training) |
+| `EXPLAIN_`      | Explainability / diagnostics on a reloaded model (no training) |
+
+Mirror this in run names and config tags.
+
+## Reproducibility
+
+All training notebooks start with the seeding cell:
+
+```python
+from CLASSIFIER.common.seeding import (
+    set_seed, make_rng, make_torch_generator, seed_worker,
+)
+SEED = 42
+set_seed(SEED)
+rng = make_rng(SEED)
+torch_gen = make_torch_generator(SEED)
+```
+
+**RNG injection contract** — pass an explicit RNG into anything that shuffles:
+
+- `make_batches(items, batch_size, shuffle=True, rng=rng)`
+- `DataLoader(..., generator=torch_gen, worker_init_fn=seed_worker)`
+  (or use `model.GEC.train.build_loader(...)` which wires both).
+
+Calling `make_batches` with `shuffle=True` and no `rng` emits a
+`DeprecationWarning` and falls back to global `np.random` — acceptable only
+for transitional use.
+
+### Note on legacy seeds
+
+The new `make_rng` uses `np.random.default_rng` (PCG64), which produces a
+different shuffle sequence than legacy `np.random.permutation` for the same
+seed. Reproducibility is preserved going forward but historical seed values
+will not reproduce pre-cleanup runs byte-for-byte.
+
+## Configs
+
+Training hyperparameters are dataclasses (see `configs/`):
+
+```python
+from CLASSIFIER.configs import GELSTMTrainConfig, EvalConfig, GECTrainConfig
+
+cfg = GELSTMTrainConfig(epochs=100, lr=1e-3, batch_size=16, seed=SEED)
+eval_cfg = EvalConfig(use_time_delta=True, graph_pool="mean", threshold_mode="youden")
+```
+
+## Splits
+
+All notebooks should call `make_splits` from `common.splits` for any
+train/val/test partitioning so partitions are consistent and reproducible:
+
+```python
+from CLASSIFIER.common import make_splits
+idx = make_splits(subject_ids, labels, seed=SEED, val_frac=0.15, test_frac=0.15)
+# idx['train'], idx['val'], idx['test']
+```
+
+## Training entrypoints
+
+### GELSTM
+- `model.GELSTM.train.train_model(model, train_batches, val_batches, cfg, eval_cfg, device, *, rng, save_path)`
+- Lower-level: `train_epoch`, `evaluate`, `make_batches` (back-compat with legacy positional kwargs)
+
+### GEC
+- `model.GEC.train.train_classifier(model, train_loader, val_loader, optimizer, device, pos_weight, cfg, *, wandb_run=None, rng=None, model_save_path=None)`
+- `evaluate_classifier(..., threshold=val_best_threshold)` — explicit threshold required to prevent leakage.
+- `build_loader(dataset, batch_size, shuffle, seed, ...)` — DataLoader with seeded generator + worker init.
+
+## Checkpoint schema
+
+New runs save a full-state checkpoint:
+
+```python
+{
+    "model_state_dict":      ...,
+    "optimizer_state_dict":  ...,
+    "scheduler_state_dict":  ... or None,
+    "epoch":                 int,
+    "val_auc":               float,
+    "best_threshold":        float,
+    "rng_state":             ... or None,
+    "torch_rng_state":       torch.ByteTensor,
+    "config":                asdict(GELSTMTrainConfig | GECTrainConfig),
+    "eval_config":           dict (GELSTM only),
+}
+```
+
+Loaders use the legacy pattern `ckpt.get("model_state_dict", ckpt)` so they
+accept both new full-state checkpoints and old weights-only files in
+`checkpoints/`.
+
+## Outputs vs checkpoints/
+
+- **`outputs/`** — write all new run artifacts here (`outputs/<experiment_id>/...`). Gitignored.
+- **`checkpoints/`** — kept for back-compat with pre-cleanup artifacts. Do not write new runs here.
+
+## Notebook index
+
+Notebooks live under `notebooks/<PREFIX>/`.
+
+| Notebook                                                                              | Task                          |
+| ------------------------------------------------------------------------------------- | ----------------------------- |
+| `BASELINE/BASELINE_MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb`                        | Model comparison              |
+| `LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb`                                      | Trajectory (StandardScaler + weight decay) |
+| `LONGITUDINAL/LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE.ipynb`                         | Trajectory + FDR              |
+| `LONGITUDINAL/LONGITUDINAL_GELSTM_FIRST_N_DELCODE.ipynb`                              | Early detection               |
+| `LONGITUDINAL/LONGITUDINAL_GEC_FDR_DELCODE.ipynb`                                     | Trajectory (GEC, FDR dims)    |
+| `LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb`                                         | Trajectory (GEC, full latent) |
+| `STATIC/STATIC_GAAE_DELCODE_WHOLE_BRAIN.ipynb`                                        | Static per-scan (GAAE)        |
+| `STATIC/STATIC_LOGREG_DELCODE_WHOLE_BRAIN.ipynb`                                      | Static per-scan (LogReg)      |
+| `SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb`                                           | Split audit                   |
+| `SANITY/SANITY_BASELINE_METADATA_TIME.ipynb`                                          | Metadata floor                |
+| `SANITY/SANITY_LONGITUDINAL_GELSTM.ipynb`                                             | LSTM ablations                |
+| `SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb`                                            | Visit-count confound ([doc](common/VISIT_COUNT_CONFOUND.md)) |
+| `COMPARISON/COMPARISON_CROSS_REGION_CLASSIFIER.ipynb`                                 | Cross-region classifier       |
+| `COMPARISON/COMPARISON_CROSS_REGION_SURVIVAL.ipynb`                                   | Cross-region survival         |
+| `EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb`                                                | Explain GAAE / GEC / GELSTM / GRU (adapter-driven; [deps](requirements-explain.txt)) |
+
+## Explainability notebook
+
+`EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb` is one adapter-driven notebook that diagnoses
+and explains a trained model — latent space, calibration/ROC/confusion, a one-subject
+"raw scan → probability" data journey, brain-region importance, and model-specific
+extras (GAAE attention/reconstruction/GNNExplainer; GEC/GELSTM per-visit trajectories,
+early detection, latent/visit attribution; GELSTM/GRU hidden-state trajectory, visit
+occlusion, Δt/order ablations). It **reloads** a trained run (no retraining): classifiers
+via `source_experiment:`, GAAE via `checkpoint_path:`. The per-model logic lives in
+`adapters/explain.py::get_explain_adapter` (`gaae | gec | gelstm | gegru`).
+
+Needs extra deps on top of the root `.venv`:
+
+```bash
+pip install -r CLASSIFIER/requirements-explain.txt   # captum, nilearn
+python run_experiment.py --mode explain              # run all explain entries
+python run_experiment.py --id explain-gelstm         # or one model
+```
+
+## How to run
+
+```bash
+# Tests
+pytest CLASSIFIER/tests/
+
+# Apply notebook patcher (idempotent — injects seeding/sanity/framing cells)
+python CLASSIFIER/dev/patch_v2_notebooks.py
+```
+
+## W&B logging (opt-in)
+
+`train_classifier` no longer calls `wandb.init` internally. Pass a run:
+
+```python
+import wandb
+run = wandb.init(project=cfg.wandb_project, config=asdict(cfg)) if cfg.wandb_enabled else None
+train_classifier(..., cfg=cfg, wandb_run=run)
+```
+
+## Import convention
+
+Prefer fully-qualified imports from notebooks so behavior is invariant to
+working directory:
+
+```python
+from CLASSIFIER.common.seeding import set_seed, make_rng
+from CLASSIFIER.configs import GELSTMTrainConfig, EvalConfig
+```

@@ -1,0 +1,14 @@
+services:
+  dashboard:
+    build: .
+    container_name: fmri-dashboard
+    ports:
+      - "8050:8050"
+    volumes:
+      - ../DATA:/data:ro           # read-only data (correlation matrices, CSVs)
+      - ./.cache:/app/cache        # writable cache (cohort stats pickle, job files, GELSTM predictions)
+    environment:
+      - DATA_ROOT=/data
+      - CACHE_ROOT=/app/cache/cohort_stats        # used by cohort_stats.py disk-cache
+      - DASHBOARD_CACHE_ROOT=/app/cache           # used by job_manager, graph_metrics, GELSTM
+    restart: unless-stopped

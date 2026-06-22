@@ -1,0 +1,86 @@
+# PROGNOSER experiment registry — run via `python run_experiment.py --id <id>`.
+#
+# Every entry is executed against the single parameterized notebook
+# notebooks/PROGNOSER_RUNNER.ipynb (papermill injects the EXPERIMENT dict).
+#
+# Required fields per entry:
+#   id            unique slug; names the W&B run + outputs/<id>/ directory
+#   method        km | cox_clinical | cox_embedding | cox_combined |
+#                 cox_clinical_longitudinal | cox_time_varying | rsf |
+#                 deepsurv | lstm_surv
+#   network_combo one of the COMBO_TABLE keys (drives data_version + file_suffix):
+#                 dmn | hippo | limbic | dan | dmn_hippo | dmn_limbic |
+#                 dmn_limbic_hippo | all_combined
+#   seed          int; injected as EXPERIMENT['random_state']
+#   notebook      path to the runner notebook (relative to PROGNOSER/)
+#
+# Optional fields:
+#   experiment    mapping of any EXPERIMENT key to override the defaults in
+#                 common/experiment_utils.DEFAULT_EXPERIMENT (e.g. feature_set,
+#                 embedding_strategy, eval_times, penalizer, rsf_n_estimators, ...)
+#   wandb         set `false` to silence W&B for one run (on by default)
+#   output_dir    override the outputs/<id> location
+#   notes         free-text; logged as the W&B run note
+#
+# Embedding-based methods (cox_embedding/cox_combined/rsf/deepsurv/lstm_surv)
+# require a precomputed cache; the runner preflight fails loud with the exact
+#   python -m PROGNOSER.src.build_subject_embeddings --combo <c> --strategy <s>
+# command if it is missing.
+
+experiments:
+  - id: km-baseline
+    method: km
+    network_combo: dmn_hippo
+    seed: 42
+    notebook: notebooks/PROGNOSER_RUNNER.ipynb
+    experiment:
+      feature_set: none
+    notes: Population Kaplan-Meier baseline (no features, no embeddings).
+
+  - id: cox-clinical-dmn-hippo
+    method: cox_clinical
+    network_combo: dmn_hippo
+    seed: 42
+    notebook: notebooks/PROGNOSER_RUNNER.ipynb
+    experiment:
+      feature_set: clinical
+    notes: Cox PH on baseline clinical covariates only.
+
+  - id: cox-clinical-longitudinal-dmn-hippo
+    method: cox_clinical_longitudinal
+    network_combo: dmn_hippo
+    seed: 42
+    notebook: notebooks/PROGNOSER_RUNNER.ipynb
+    experiment:
+      feature_set: clinical_longitudinal
+    notes: Cox PH on clinical baseline + MMSE/CDR longitudinal aggregates.
+
+  - id: cox-combined-dmn-hippo-last
+    method: cox_combined
+    network_combo: dmn_hippo
+    seed: 42
+    notebook: notebooks/PROGNOSER_RUNNER.ipynb
+    experiment:
+      feature_set: clinical+embedding
+      embedding_strategy: last
+    notes: Cox PH on clinical + last-visit GAAE embedding.
+
+  - id: rsf-dmn-hippo-allaggs
+    method: rsf
+    network_combo: dmn_hippo
+    seed: 42
+    notebook: notebooks/PROGNOSER_RUNNER.ipynb
+    experiment:
+      feature_set: clinical_longitudinal+embedding
+      embedding_strategy: all_aggs
+    notes: Random Survival Forest on clinical-longitudinal + concatenated GAAE aggregates.
+
+  - id: lstm-surv-dmn-hippo-sequence
+    method: lstm_surv
+    network_combo: dmn_hippo
+    seed: 42
+    notebook: notebooks/PROGNOSER_RUNNER.ipynb
+    experiment:
+      feature_set: sequence
+      embedding_strategy: sequence
+    notes: LSTM discrete-time hazard model on the GAAE visit sequence.

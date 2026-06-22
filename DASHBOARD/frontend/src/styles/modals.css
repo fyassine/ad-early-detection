@@ -1,0 +1,163 @@
+/* ── Patient Modal ── */
+.modal-backdrop{
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,.6);backdrop-filter:blur(6px);
+    z-index:200;align-items:center;justify-content:center;padding:1.5rem;
+}
+.modal-backdrop.open{display:flex;animation:fadeIn .2s ease}
+.patient-modal{
+    background:var(--bg-1);border:1px solid var(--border);border-radius:14px;
+    width:100%;max-width:980px;max-height:92vh;overflow-y:auto;
+    box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);
+    animation:slideUp .25s ease;
+}
+.patient-modal.brainview-expanded{max-width:min(1400px,96vw)}
+.patient-modal.expanded{max-width:min(1600px,96vw);max-height:96vh}
+/* Embedded mode: modal is mounted inside the Patient view panel (👤 button) */
+.patient-modal.embedded{
+    max-width:100%;max-height:none;height:auto;overflow:visible;
+    margin:0;border-radius:0;box-shadow:none;border:none;animation:none;
+}
+.patient-modal.embedded .modal-header{position:relative;top:auto}
+.patient-modal.embedded #btnOpenPatientView,
+.patient-modal.embedded #btnExpandModal{display:none}
+.modal-header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);
+    position:sticky;top:0;background:var(--bg-1);z-index:10;
+}
+.modal-header h2{font-size:1.05rem;font-weight:600;color:var(--text-0)}
+.modal-header .subhead{font-size:.8rem;color:var(--text-2);margin-top:.15rem}
+.btn-close{background:none;border:1px solid var(--border);color:var(--text-2);width:32px;height:32px;border-radius:6px;cursor:pointer;display:grid;place-items:center;font-size:1rem;transition:all var(--transition)}
+.btn-close:hover{border-color:var(--rose);color:var(--rose)}
+.modal-body{padding:1.25rem 1.5rem}
+
+.patient-meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.5rem;margin-bottom:1.25rem}
+.meta-item{background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:.6rem .8rem}
+.meta-item .meta-label{font-size:.65rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em}
+.meta-item .meta-value{font-size:1rem;font-weight:600;color:var(--text-0);margin-top:.15rem}
+
+.trajectory-section h3{font-size:.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.75rem}
+.trajectory-chart-wrap{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1rem}
+.trajectory-chart-wrap .chart-container{height:200px}
+.no-trajectory{text-align:center;padding:2rem 1rem;color:var(--text-2);font-size:.85rem}
+
+.switch{display:inline-flex;align-items:center;gap:.6rem;font-size:.75rem;color:var(--text-1);cursor:pointer;user-select:none}
+.switch-input{position:absolute;opacity:0;pointer-events:none}
+.switch-track{width:46px;height:26px;border-radius:999px;background:var(--bg-3);border:1px solid var(--border);position:relative;transition:background var(--transition),border-color var(--transition);display:inline-flex;align-items:center;padding:2px}
+.switch-thumb{width:20px;height:20px;border-radius:50%;background:var(--text-0);box-shadow:0 2px 6px rgba(0,0,0,.45);transform:translateX(0);transition:transform var(--transition),background var(--transition)}
+.switch-label{letter-spacing:.02em}
+.switch-input:checked + .switch-track{background:rgba(109,170,69,.3);border-color:rgba(109,170,69,.6)}
+.switch-input:checked + .switch-track .switch-thumb{transform:translateX(18px);background:var(--green)}
+.switch-input:focus-visible + .switch-track{box-shadow:0 0 0 2px rgba(109,170,69,.35)}
+
+/* Session table inside modal */
+.session-table-wrap{overflow-x:auto;margin-top:.75rem}
+.session-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.session-table th{background:var(--bg-3);color:var(--text-2);font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:.45rem .7rem;text-align:left;border-bottom:1px solid var(--border)}
+.session-table td{padding:.45rem .7rem;border-bottom:1px solid rgba(255,255,255,.025);color:var(--text-1)}
+.session-table tr.selected td{background:rgba(79,152,163,0.12)}
+.session-table tr{cursor:pointer}
+.session-table tr:hover td{background:rgba(255,255,255,0.025)}
+
+/* ── Patient modal: tab bar ── */
+.modal-tabs{
+    display:flex;gap:.25rem;margin-bottom:1.25rem;
+    border-bottom:1px solid var(--border);
+    overflow-x:auto;
+}
+.modal-tab{
+    background:transparent;border:none;color:var(--text-2);
+    padding:.6rem 1rem;font-size:.78rem;font-weight:500;
+    cursor:pointer;border-bottom:2px solid transparent;
+    transition:color var(--transition),border-color var(--transition);
+    white-space:nowrap;letter-spacing:.02em;
+}
+.modal-tab:hover{color:var(--text-1)}
+.modal-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-panel{display:none}
+.tab-panel.active{display:block;animation:fadeIn .15s ease}
+
+/* Visit selector */
+.visit-selector{display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+.visit-selector label{font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.visit-pill{
+    background:var(--bg-2);border:1px solid var(--border);color:var(--text-1);
+    padding:.3rem .7rem;border-radius:14px;font-size:.75rem;cursor:pointer;
+    transition:all var(--transition);
+}
+.visit-pill:hover{border-color:var(--border-active);color:var(--text-0)}
+.visit-pill.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+
+/* Deviation strip — Overview */
+.deviation-strip{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));
+    gap:.5rem;margin-bottom:1rem;
+}
+.dev-card{
+    background:var(--bg-2);border:1px solid var(--border);border-radius:8px;
+    padding:.6rem .75rem;
+}
+.dev-card .dev-label{font-size:.65rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em}
+.dev-card .dev-value{font-size:1.1rem;font-weight:600;margin-top:.15rem}
+.dev-card .dev-sub{font-size:.7rem;color:var(--text-2);margin-top:.1rem}
+.dev-card.below .dev-value{color:var(--rose)}
+.dev-card.above .dev-value{color:var(--green)}
+.dev-card.normal .dev-value{color:var(--text-0)}
+
+/* Conversion-score row (sparkline) */
+.conv-score-row{
+    display:flex;align-items:center;gap:1rem;
+    background:var(--bg-2);border:1px solid var(--border);border-radius:8px;
+    padding:.75rem 1rem;margin-bottom:1rem;
+}
+.conv-score-row .conv-label{font-size:.7rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em}
+.conv-score-row .conv-vals{display:flex;gap:.75rem;flex-wrap:wrap;font-size:.78rem;color:var(--text-1)}
+.conv-score-row .conv-vals .v{font-weight:600;color:var(--text-0)}
+.conv-score-row canvas{flex:1;min-width:120px;max-height:42px}
+
+/* Sticky patient summary */
+.patient-summary-bar{
+    position:sticky;top:0;z-index:9;
+    background:var(--bg-1);
+    padding:0 0 .9rem 0;margin:-.4rem 0 0 0;
+    border-bottom:1px solid var(--border);
+}
+.patient-summary-bar .meta-row{
+    display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;
+}
+.patient-summary-bar .meta-tile{
+    display:flex;flex-direction:column;font-size:.72rem;
+}
+.patient-summary-bar .meta-tile .meta-label{
+    color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;font-size:.6rem;
+}
+.patient-summary-bar .meta-tile .meta-value{font-size:.95rem;font-weight:600;color:var(--text-0)}
+.patient-summary-bar .visit-tags{display:flex;gap:.25rem;flex-wrap:wrap}
+
+/* Global visit bar (shared across all tabs) */
+.visit-bar-row{
+    display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-top:.6rem;
+}
+.vbr-label{font-size:.65rem;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.vbr-pills{display:flex;gap:.3rem;flex-wrap:wrap}
+.vbr-pills .visit-pill{
+    background:var(--bg-2);border:1px solid var(--border);color:var(--text-1);
+    padding:.32rem .8rem;border-radius:14px;font-size:.78rem;font-weight:500;cursor:pointer;
+    transition:all var(--transition);
+}
+.vbr-pills .visit-pill:hover{border-color:var(--border-active);color:var(--text-0)}
+.vbr-pills .visit-pill.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);font-weight:600}
+.vbr-empty{font-size:.7rem;color:var(--text-3);font-style:italic}
+.vbr-spacer{flex:1}
+.vbr-csv{display:inline-flex;align-items:center;gap:.4rem}
+.vbr-csv-label{font-size:.6rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em}
+
+/* Current-visit badge in modal header */
+.current-visit-badge{
+    display:inline-flex;align-items:center;gap:.4rem;
+    background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);
+    padding:.15rem .55rem;border-radius:12px;font-size:.7rem;font-weight:600;
+    margin-left:.6rem;
+}
+.current-visit-badge .label{color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;font-size:.6rem;font-weight:500}

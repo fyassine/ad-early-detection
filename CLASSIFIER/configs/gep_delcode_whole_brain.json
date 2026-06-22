@@ -1,0 +1,13 @@
+{
+    "encoder_arch": "gaae",
+    "mlp_hidden_layers": [32],
+    "mlp_dropout": 0.3,
+    "graph_pool": "mean",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "epochs": 80,
+    "early_stopping_patience": 20,
+    "batch_size": 32,
+    "grad_clip": 1.0,
+    "n_folds": 5
+}

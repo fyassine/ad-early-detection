@@ -1,0 +1,6 @@
+lifelines>=0.27
+scikit-survival>=0.22
+joblib>=1.3
+# stretch (deep survival):
+# pycox>=0.2.3
+# torchtuples>=0.2

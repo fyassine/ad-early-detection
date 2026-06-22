@@ -1,0 +1,15 @@
+# Run `pip install pre-commit && pre-commit install` once per clone to activate.
+# Strips notebook outputs/execution counts before commit so large rendered
+# outputs (plots, widget state) never get tracked again.
+repos:
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.7.1
+    hooks:
+      - id: nbstripout
+        files: \.ipynb$
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]

@@ -1,0 +1,17 @@
+{
+    "top_k": 15,
+    "lstm_hidden": 128,
+    "lstm_layers": 2,
+    "lstm_dropout": 0.3,
+    "classifier_hidden": 64,
+    "use_time_delta": true,
+    "graph_pool": "mean",
+    "freeze_encoder": true,
+    "learning_rate": 0.001,
+    "epochs": 50,
+    "early_stopping_patience": 15,
+    "batch_size": 16,
+    "use_class_cost_weights": true,
+    "grad_clip": 1.0,
+    "n_folds": 5
+}

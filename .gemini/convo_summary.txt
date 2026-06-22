@@ -1,0 +1,563 @@
+=== USER ===
+<ide_opened_file>The user opened the file /mnt/e/fyassine/ad-early-detection/DATA/ADNI/src/test_adni_login_download.py in the IDE. This may or may not be related to the current task.</ide_opened_file>
+under DATA/ADNI/src 
+I need to create a script using a webscraper to download ADNI data from the terminal here
+the data should be saved under @/mnt/e/fyassine/ad-early-detection/DATA/ADNI/__fmri_wholebrain_sch200_flat__
+ask me where to save the login data in a local encrypted .env file or similar
+login to https://ida.loni.usc.edu/explore/jsp/search_v2/search.jsp?project=ADNI
+attached image is a view of the website dashboard 
+you can enter in the search cohorts a list of the ADNI images ids basically this: /mnt/e/fyassine/ad-early-detection/DATA/ADNI/__metadata__/image_ids.txt 
+go step by step try the login and then try a single image download
+I already have scripts under: /mnt/e/fyassine/ad-early-detection/DATA/ADNI/src
+with screenshots and so on
+
+=== ASSISTANT ===
+Let me first explore what's already in the ADNI src directory and check the image IDs file.
+
+=== ASSISTANT ===
+Good — there's already a solid `download_adni_fmri.py` and a test script. Let me check screenshots and any existing .env to understand where testing stopped.
+
+=== ASSISTANT ===
+The `.env` file already exists. Let me view the screenshots to understand where the login broke, then ask you one question.
+
+=== ASSISTANT ===
+The `.env` file already exists at `DATA/ADNI/src/.env` with credentials filled in. The cookie modal screenshot confirms the login flow broke at the username field — the script accepted cookies but the login form selectors didn't match the actual DOM.
+
+Before I fix the script, one question:
+
+=== ASSISTANT ===
+Good. Now let me look at all the screenshots to understand exactly where the login flow broke, then fix the test script.
+
+=== ASSISTANT ===
+The screenshots show the cookies were accepted but the login nav-click didn't reveal the form fields the script expected. Let me check if Playwright is installed and inspect what packages are available, then rewrite the test script to be more diagnostic.
+
+=== ASSISTANT ===
+Playwright is ready. The screenshots confirm the issue: after cookie acceptance the "Log In" nav button click worked but the form selectors didn't match the actual DOM. I'll rewrite the test script to dump the full HTML at each step so we can see the real structure, then run it.
+
+=== ASSISTANT ===
+Now run it — this will dump full HTML after each step so we can see the exact DOM structure:
+
+=== ASSISTANT ===
+Small JS type error — `className` on SVG elements isn't a string. Let me fix that and look at the HTML dump simultaneously to understand the login form structure.
+
+=== ASSISTANT ===
+The cookie was accepted via the wrong element (it clicked a privacy-policy `<a>` inside the cookie div, not the `Accept` div itself). The login button then stayed disabled. I can see the exact class structure now. Let me fix the script:
+
+=== ASSISTANT ===
+Now fix the cookie acceptance and add waiting for the login button to become enabled:
+
+=== ASSISTANT ===
+Also need to fix the login nav-click to look for the enabled login button and then dump what form appears:
+
+=== ASSISTANT ===
+The cookie modal is being clicked via the wrong parent div — the JS fallback found the outer container div first (whose trimmed text is "Accept"). The primary Playwright `is_visible()` check isn't working because the modal renders after page JS runs. Let me use a direct JS click on the exact element, then wait for the login button to become enabled:
+
+=== ASSISTANT ===
+Also fix the login nav click to use JS click (same reason — it's a div with a SPA handler):
+
+=== ASSISTANT ===
+The form IS there (`input[name='userEmail']`, `input[name='userPassword']`) but Playwright's `is_visible()` is stricter than our JS check — the inputs are inside a closed nav dropdown. I need to click the login nav button first to open it, then fill. Let me restructure the flow:
+
+=== ASSISTANT ===
+Also update `_fill_and_submit` to wait for the inputs to actually become interactable (not just in DOM):
+
+=== ASSISTANT ===
+Also update the submit step to use JS click (same reason — the submit button may be inside the dropdown):
+
+=== ASSISTANT ===
+**Login works!** Redirected to `projectPage.jsp` after login. The `imageDetail.jsp` returns 404 — the URL changed in the LONI IDA portal. Let me look at the logged-in home page and figure out the correct download URL:
+
+=== ASSISTANT ===
+**Login is fully working!** The `imageDetail.jsp` URL is 404 because LONI IDA migrated to a new interface. The logged-in nav shows "Search & Download" — that's the new entry point. Let me update the test to navigate properly:
+
+=== ASSISTANT ===
+Excellent progress! The search page is loaded as "ARC Builder" with 4 visible inputs including `file-prefix` and `study-input`. Let me inspect the search page HTML to understand the image ID search flow:
+
+=== ASSISTANT ===
+The dropdown shows exactly what we need: **Simple Image Search** and **Advanced Image Search**. Let me find their URLs in the HTML dump:
+
+=== ASSISTANT ===
+Found the correct URLs. Simple Image Search is at `search.jsp?project=ADNI&tab=simpleSearch`. Let me update the test to navigate there and explore the image ID search:
+
+=== ASSISTANT ===
+Now replace the exploration steps with a focused simple-search flow:
+
+=== ASSISTANT ===
+Excellent findings! The image ID field is `input[id='imageIdText'][name='imgId']` but it's hidden on the simple search tab (it belongs to Advanced Search). And I can see `simple-download-button` and `niftiButton` for NIfTI format download. Let me update the test to use the Advanced Search tab to search by image ID, then download:
+
+=== ASSISTANT ===
+Now I can see the full interface: **Search** | **Advanced Search** | **Data Collections** tabs. The `imageIdText` field is in Advanced Search. Let me navigate there and test the download:
+
+=== ASSISTANT ===
+The background task is still running. Let me wait for the completion notification.
+
+=== USER ===
+<ide_opened_file>The user opened the file /mnt/e/fyassine/ad-early-detection/DATA/ADNI/src/test_adni_login_download.py in the IDE. This may or may not be related to the current task.</ide_opened_file>
+continue
+
+=== ASSISTANT ===
+The background output file is empty — the process likely ended. Let me re-run it in the foreground to capture the output directly:
+
+=== ASSISTANT ===
+The search found 155 rows and the download button was clicked, but the browser download event never fired — LONI likely uses a server-side "prepare" step then opens a new page. Let me check the screenshots to see the actual download dialog:
+
+=== ASSISTANT ===
+The search for image ID 181505 returned **"No Results"** — and the download spinner fired with 0 images. I need to verify the image IDs against the metadata CSV and try a different approach. Let me check the CSV format and try a broader search first:
+
+=== ASSISTANT ===
+The IDs are valid in the metadata. The "No Results" likely means this image ID isn't returned in the current search scope. Let me check the HTML dump to see the exact state of the search form when submitted, and also try the simple search to verify general access works:
+
+=== ASSISTANT ===
+Key insight in the JS: `window.downloaderExecutable = "/files/client/IdaDownloader_15May2026.zip"` — LONI IDA uses a **desktop client app** for downloads. The `.download` files in `__metadata__/` are download descriptors for that client. Let me inspect them:
+
+=== ASSISTANT ===
+There's already a **2.2 GB zip file** partially downloaded! Let me check what's inside it and what still needs downloading:
+
+=== ASSISTANT ===
+The zip uses path `ADNI/031_S_2018/Resting_State_fMRI/...` — that's the actual image data, organized by subject. Part 2 is 0 bytes (incomplete). The `Info.plist` is a macOS download descriptor that likely contains the original download URL:
+
+=== ASSISTANT ===
+The download URL was `https://ida.loni.usc.edu/download/files/ida1/{uuid}/...` — a UUID-based pre-packaged zip. Part 1 (2.2 GB) is already downloaded with real NIfTI paths like `ADNI/031_S_2018/Resting_State_fMRI/...`. Part 2 is 0 bytes (failed download). Let me first check if Part 1 is extractable and how much of the data we already have:
+
+=== ASSISTANT ===
+Part 1 has no EOCD record — it's a multi-part ZIP (central directory lives in Part 2, which was never downloaded). We can still recover files from Part 1 by scanning its local file headers. Let me check tooling and then write an extractor:
+
+=== ASSISTANT ===
+Let me check for the Part 1 download metadata and try `zip --fix` on the partial archive, then pivot to understand the correct add-to-collection flow:
+
+=== ASSISTANT ===
+The root `1070...zip` is just an HTTP 400 error response — not a real file. The real data is the 2.2 GB one inside the `.download` dir. Let me try `zip -FF` to reconstruct the central directory from Part 1's local headers, then write a targeted extractor:
+
+=== ASSISTANT ===
+The zip IS a split archive — `zip -FF` scans for `.z01` parts. The real question is: what does it contain? I have `dcm2niix` at `/usr/local/fsl/bin/dcm2niix`. Let me write a proper recovery extractor that scans local file headers and streams deflate data, then organize into the flat output directory:
+
+=== USER ===
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Summary:
+1. Primary Request and Intent:
+   The user wants a terminal-based web scraper to download ADNI fMRI data from the LONI IDA portal (https://ida.loni.usc.edu). Specific requirements:
+   - Save downloads to `/mnt/e/fyassine/ad-early-detection/DATA/ADNI/__fmri_wholebrain_sch200_flat__/`
+   - Login credentials stored in `DATA/ADNI/src/.env` (plain text, chmod 600 — user explicitly chose "Keep .env as-is" when asked)
+   - Use image IDs from `DATA/ADNI/__metadata__/image_ids.txt` (comma-separated single-line file with 1000+ IDs)
+   - Go step by step: first get login working, then single image download
+   - Existing scripts in `DATA/ADNI/src/` should be built upon
+
+   **Security constraint (verbatim):** Credentials stored in plain text `.env` file at `DATA/ADNI/src/.env` with `chmod 600`. File is gitignored and must never be committed
+
+=== ASSISTANT ===
+The test found 155 result rows and successfully got to the NIfTI dialog — the problem is that the final download click isn't triggering a browser download event. LONI IDA likely generates the zip server-side and opens a new URL. I need to intercept that network response instead of waiting for a Playwright download event.
+
+Let me read the current test script to see what the download step looks like:
+
+=== ASSISTANT ===
+I can see it clearly from the screenshot: the **"Image" section checkbox** in the left sidebar must be checked (enabling image-based filtering), and the **fMRI modality** must be checked. That's what enables the Image ID field to be submitted as a filter. The current script fills `#imageIdText` but never checks the "Image" section or `fMRI` — those require separate clicks.
+
+Let me grep the HTML dump to find the exact selector IDs, then rewrite the search setup:
+
+=== ASSISTANT ===
+Now I have everything I need. The "Image" section checkbox is `#imageModalityOption`, and fMRI is `input[name="imgModality_checkBox"][value="2"]`. The script never checks these — that's why the image ID filter is submitted but not acted on (and any results are just default, not filtered by image ID).
+
+Now let me also check what the download dialog actually does — does it open a popup or navigate?
+
+=== ASSISTANT ===
+Found it: `window.open('search/preparingDownload.jsp', '')` — the download opens in a **popup window**, not the current page. That's why `page.expect_download()` on the main page always times out. I need to catch the popup with `page.expect_popup()`.
+
+Let me also check what preparingDownload.jsp does:
+
+=== ASSISTANT ===
+Now I have the complete picture. The flow is:
+1. `#simple-download-button` → AJAX for download key → shows `#simple-download-modal` with `#simple-download-link`
+2. That link's `href` = `https://ida.loni.usc.edu/download/image?key={key}&count=1&zip={filename}.zip`
+3. **You click `#simple-download-link`** to trigger the actual browser download
+
+The current script clicks `#simple-download-button` and wraps it in `page.expect_download()` — but the download event fires only when `#simple-download-link` is clicked. Also, the search form never checks `#imageModalityOption` (Image section) or fMRI modality. Both issues, fixed now:
+
+=== ASSISTANT ===
+The test is running. While it processes, let me write the split-zip extractor to recover files from the already-downloaded 2.2 GB Part 1:
+
+=== ASSISTANT ===
+While the test runs, let me write the split-zip extractor for the 2.2 GB Part 1:
+
+=== ASSISTANT ===
+The test is still running. Let me check it again in a moment and use the wait time to also test the zip extractor quickly on a small subset:
+
+=== ASSISTANT ===
+Only 1 file extracted — the data descriptor seek-back is off. Let me debug:
+
+=== ASSISTANT ===
+The search is working (found image 181505 with 160 rows — likely multiple modalities), but the download modal spinner is still showing at 60s. That means the AJAX call to `/pages/ajax/download/downloadKey` is either still pending or failed. I need to intercept the AJAX response to see what's happening. Let me also check the modal HTML dump:
+
+=== ASSISTANT ===
+The `document.forms.collection` has no image IDs in it — we're trying to use the "Data Collections" download flow, but the images aren't in a collection yet. I need to look at the search results tab to find the correct "Add to Collection" flow, or use the direct download from search results:
+
+=== ASSISTANT ===
+The spinner never hides, meaning the AJAX callback `simpleDownloadKeyCallback` was never triggered — the POST to `/pages/ajax/download/downloadKey` is stuck (the collection is empty). The correct flow is: **select items from search results → Add to Collection → then download from collection**.
+
+I need to:
+1. After search results, click `#advResultAddCollectId` (Add to Collection)
+2. Handle the dialog to name the collection
+3. Then download from the collection
+
+Let me look at the Add to Collection dialog structure to know how to interact with it:
+
+=== ASSISTANT ===
+Found the select-all: `#advResultSelectAll`. Now I have all the pieces. Let me implement the full 3-step flow: Search → Select All → Add to Collection → Download from Collection:
+
+=== ASSISTANT ===
+While the test runs, let me fix the `zlib` extractor bug — the issue was that `decompress(chunk, BIG_LIMIT)` with a very large `max_length` doesn't populate `unconsumed_tail` because the entire output fits:
+
+=== ASSISTANT ===
+The problem is clear: `zlib.decompress(chunk, large_max_length)` silently discards bytes after stream end — `unconsumed_tail` is only populated when `max_length < actual_output`. The fix: after `d.eof=True`, CRC-match to locate the data descriptor in the last-read chunk:
+
+=== ASSISTANT ===
+Now test the extractor again with both files:
+
+=== ASSISTANT ===
+Both files extracted correctly. Let me also check the test script progress:
+
+=== ASSISTANT ===
+Login failed — the JS fallback for `.login-btn` submit was removed in the refactor. Let me fix `do_login` to restore it:
+
+=== ASSISTANT ===
+While that runs, let me also check the test result from the background run and look at the interim output:
+
+=== ASSISTANT ===
+The test is still initializing. Let me use the time to work on the main downloader that will process all 1000+ image IDs. Let me read the existing `download_adni_fmri.py` first:
+
+=== ASSISTANT ===
+Let me check the test progress:
+
+=== ASSISTANT ===
+The test is still processing. Let me check the screenshots to understand progress:
+
+=== ASSISTANT ===
+Good progress! Three issues to fix:
+1. `addBtn='buttonDisabled'` — the SPA's `ADV_RESULT_CHECKBOX_MANAGER` wasn't triggered properly  
+2. Dialog submit buttons not found — need to check the actual YAHOO dialog button HTML
+3. Syntax error in the `confirm` JS: `'\n'` inside Python triple-quoted string becomes a literal newline in JS
+
+Let me examine the dialog HTML and fix all three:
+
+=== USER ===
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Summary:
+1. Primary Request and Intent:
+   The user wants a terminal-based web scraper to download ADNI fMRI data from the LONI IDA portal (https://ida.loni.usc.edu). Specific requirements:
+   - Save downloads to `/mnt/e/fyassine/ad-early-detection/DATA/ADNI/__fmri_wholebrain_sch200_flat__/`
+   - Login credentials stored in `DATA/ADNI/src/.env` (plain text, chmod 600 — **SECURITY CONSTRAINT: never commit to git, file-permission protected only, no encryption**)
+   - Use image IDs from `DATA/ADNI/__metadata__/image_ids.txt` (comma-separated single-line file with 1000+ IDs)
+   - The user confirmed: **"Keep .env as-is"** — plain text `.env` with `chmod 600`
+   - Go step by step: first get login working, then single image download
+
+   Most recent user message: The user showed a screenshot of the LONI IDA Advanced Search page showing that th
+
+=== ASSISTANT ===
+Let me read the relevant section of the dialog HTML to find the actual button structure:
+
+=== ASSISTANT ===
+Now I have all the info I need. Key findings:
+1. The YAHOO dialog buttons ("OK" and "Cancel") are **not in the HTML dump** because the `.ft` section isn't rendered yet when the dump was taken
+2. The "OK" button click calls `_submitParentForm()` which reads from `document.regroup` form, sets values on `document.advResultTable` form, and submits it
+3. The `'\n'` issue: Python `'\n'` in triple-quoted string is a literal newline, making JavaScript see an unterminated string literal
+
+Let me look at the `advResultTable` form structure to craft a direct submit:
+
+=== ASSISTANT ===
+The screenshots tell me everything I need. The real flow is:
+1. The "Add To Collection" button is in the results **table header** (not a separate button)
+2. The dialog shows existing "mci" collection in the dropdown — just select it
+3. "OK" is a plain `button` inside the dialog
+4. For download: go to Data Collections → mci → 1-CLICK DOWNLOAD
+
+Key fix: search ONE image at a time (1 result → auto-selected → button enabled), and select existing "mci" from the dropdown instead of creating new.
+
+Let me read the current test script and rewrite the broken sections:
+
+=== ASSISTANT ===
+Now I have everything I need. Key findings from the user's screenshots:
+
+1. **The "Add To Collection" dialog** has an existing "mci" collection in the dropdown — select it by name
+2. **"OK" and "Cancel"** are plain `<button>` elements rendered by YAHOO UI — find by text "OK"
+3. **Root cause of disabled button**: "Advanced Search Results" tab wasn't clicked after search — the DataTable wasn't active so selection manager never fired
+4. **Download flow**: Data Collections tab → click "mci" tree node → check "All" → "1-CLICK DOWNLOAD"
+
+Let me rewrite the broken sections:
+
+=== ASSISTANT ===
+Now replace `run_search` to click the "Advanced Search Results" tab after submitting:
+
+=== ASSISTANT ===
+Now replace `add_results_to_collection` entirely — fix selection, fix button, fix dialog:
+
+=== ASSISTANT ===
+Now replace `download_from_collection` — remove NIfTI selection, fix collection tree click, fix "All" checkbox:
+
+=== ASSISTANT ===
+Now fix the `run_test()` main to use the `COLLECTION_NAME` constant instead of a random name, and use a known-good image ID:
+
+=== ASSISTANT ===
+Also update the image ID to use the one confirmed working from the user's screenshot, and verify the step numbering after our changes:
+
+=== ASSISTANT ===
+Let me do a quick sanity check to make sure there are no remaining `'\n'` syntax errors in JS strings:
+
+=== ASSISTANT ===
+Good. Now let me run the script:
+
+=== ASSISTANT ===
+The login is failing because `div.ida-menu-option.login:not(.disabled)` never appears (wait timed out silently). This was working before with more sleep time. Let me fix the login timing:
+
+=== ASSISTANT ===
+Good progress! Several things are now clear:
+
+1. **Login ✓**, **Search form ✓**, **Dialog opens ✓** — "OK" was clicked
+2. But `collections: ['496304']` — the dropdown had an ID value, not "mci" as text. We need to match by **text** not value
+3. `dt-rows=0` — the DataTable is still empty when we inspect it, meaning we clicked the "Advanced Search Results" tab BEFORE the AJAX search completed (premature tab click cancels/clears the DataTable)
+4. "mci" not found in collections tree — tree shows nav items, not collection names
+
+Fixes needed:
+1. Don't click the results tab manually — wait for the SPA's AJAX to populate the DataTable
+2. Match collection by option TEXT not value
+3. Fix the collection tree navigation (look for the correct DOM section)
+
+=== ASSISTANT ===
+Let me check what the search results HTML actually contains for the DataTable:
+
+=== ASSISTANT ===
+The search DID find 1 result (I can see "Displaying Result 1 of 1" in the dump). The issue is that our `.yui-dt-data tr` selector was wrong. Let me check the actual row/checkbox structure and find why the button stays disabled:
+
+=== ASSISTANT ===
+Key discoveries from the HTML dump:
+1. Search DID return "Displaying Result 1 of 1" — results ARE in the DOM
+2. Result checkboxes have IDs like `adv_subject_12792_check` (NOT `.yui-dt-data`)
+3. Clicking these checkboxes triggers `handleSubjectCheck` → `_addHiddenTag` → enables "Add" button
+4. Dialog option matching was by VALUE (`496304`) not TEXT (`mci`) — need text match
+
+Let me fix all three issues at once:
+
+=== ASSISTANT ===
+Now fix `add_results_to_collection` — click actual subject checkboxes and fix option text matching:
+
+=== ASSISTANT ===
+Now fix the dialog option matching to use TEXT not VALUE:
+
+=== ASSISTANT ===
+Now fix the collection tree navigation in `download_from_collection` — expand "My Collections" node first:
+
+=== ASSISTANT ===
+**Full end-to-end test PASSED!** The script successfully:
+1. Logged in
+2. Searched for image_id=249536, found 1 result  
+3. Clicked the subject checkbox → dialog opened → selected existing "mci" collection → OK
+4. Navigated to Data Collections → expanded "My Collections" → clicked "mci (1)"
+5. Selected item → 1-CLICK DOWNLOAD → 54.48 MB zip with 6720 DICOM files downloaded
+
+Now let me wire this into `download_adni_fmri.py` as the production bulk downloader:
+
+=== ASSISTANT ===
+The test confirmed the complete flow works. Now let me rewrite `download_adni_fmri.py` with the working LONI IDA flow — replacing the broken `imageDetail.jsp` approach:
+
+=== ASSISTANT ===
+Now replace `loni_login()` with the working version and add helper functions before `download_single_image()`:
+
+=== USER ===
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Summary:
+1. Primary Request and Intent:
+   The user wants a terminal-based web scraper (using Playwright) to download ADNI resting-state fMRI data from the LONI IDA portal (https://ida.loni.usc.edu). Files save to `/mnt/e/fyassine/ad-early-detection/DATA/ADNI/__fmri_wholebrain_sch200_flat__/`. Credentials in `DATA/ADNI/src/.env` (plain text, chmod 600). Image IDs come from `DATA/ADNI/__metadata__/image_ids.txt` (comma-separated, 1000+ IDs). The user confirmed: "Keep .env as-is" — plain text `.env` with `chmod 600`. **SECURITY CONSTRAINT: `.env` file must NEVER be committed to git. File-permission protected (chmod 600) only. No encryption.**
+
+   The user provided screenshots clarifying the correct flow:
+   - Search for ONE image by ID → get 1 result → click checkboxes → click "Add To Collection"
+   - In the dialog: select existing "mci"
+
+=== ASSISTANT ===
+Now let me read the current state of `download_adni_fmri.py` to see what still needs updating.
+
+=== ASSISTANT ===
+Now I'll replace `download_single_image()` with the new 3-step flow, and add `image_ids.txt` support as a fallback when the CSV isn't present.
+
+=== ASSISTANT ===
+Now add `image_ids.txt` loading support to `load_image_entries()`:
+
+=== ASSISTANT ===
+Now update `load_image_entries()` to fall back to `image_ids.txt` when the CSV is absent, and update `main()` to expose an `--image-ids` flag:
+
+=== ASSISTANT ===
+Now update the `parse_args()` to expose `--image-ids` and update the `main()` entrypoint to pass it:
+
+=== ASSISTANT ===
+Now wire `--image-ids` into the `load_image_entries` call in `main()`:
+
+=== ASSISTANT ===
+Also update the `--metadata-csv` help and add it to the epilog:
+
+=== ASSISTANT ===
+Now do a quick syntax check:
+
+=== ASSISTANT ===
+Good. Let me also verify the `download_single_image` no longer references the deleted `LONI_IMAGE_DETAIL_URL`:
+
+=== ASSISTANT ===
+Clean. The production downloader is now fully updated. Here's a summary of what changed in `download_adni_fmri.py`:
+
+**`loni_login()`** — replaced the old form-based login with the SPA nav-dropdown approach proven in the test script (cookie accept → poll for nav button enable → JS click → fill credentials via JS → `.login-btn` submit).
+
+**New helpers** — `_search_for_image()`, `_add_to_collection()`, `_download_from_collection_not_downloaded()` lifted from the test script, handling the full 3-step LONI IDA SPA flow.
+
+**`download_single_image()`** — replaced the old `imageDetail.jsp` approach with the 3-step flow: Search by image_id → Add to "mci" collection → 1-CLICK DOWNLOAD from collection → extract NIfTI via `extract_nifti_from_zip()`.
+
+**`load_image_entries()`** — now falls back to `image_ids.txt` (comma-separated) when the CSV is absent. Added `load_image_entries_from_txt()` helper.
+
+**CLI** — added `--image-ids` flag pointing to `DATA/ADNI/__metadata__/image_ids.txt` by default.
+
+
+=== USER ===
+run script for all image ids in the background a keep a log file where to see the progress
+
+=== ASSISTANT ===
+Process launched with PID **3049000**. Give it 10-15 seconds to initialize, then monitor with:
+
+```bash
+tail -f /mnt/e/fyassine/ad-early-detection/logs/adni_download_stdout.log
+```
+
+To check it's still alive:
+```bash
+pgrep -af download_adni_fmri
+```
+
+To stop:
+```bash
+kill 3049000
+```
+
+It's resume-safe — if it gets interrupted, just re-run the same `nohup` command and it will skip files already downloaded.
+
+=== USER ===
+<ide_opened_file>The user opened the file /mnt/e/fyassine/ad-early-detection/logs/adni_download_stdout.log in the IDE. This may or may not be related to the current task.</ide_opened_file>
+download failed figure out why
+
+=== ASSISTANT ===
+Two distinct bugs. Let me read the relevant functions before writing the plan.
+
+=== ASSISTANT ===
+Clear picture. Two bugs from the log:
+
+1. **"Download link never populated after 90s"** (all 3 images) — the "Not Downloaded" subtree click navigates the content panel; the 2s sleep isn't enough for items to load, so 0 checkboxes are selected when we click the download button → AJAX never fires. The working test script never clicked "Not Downloaded" — it clicked the collection directly.
+
+2. **"Execution context was destroyed"** (image 4, crash) — the search form `advSearchQuery` click triggers a SPA navigation; the polling `page.evaluate()` in `_search_for_image()` executes mid-navigation and the JS context is gone.
+
+=== ASSISTANT ===
+First, kill the current failing background process, then apply both fixes.
+
+=== ASSISTANT ===
+Good, process already exited (it crashed on image 4). Now apply the two fixes:
+
+=== ASSISTANT ===
+Now run a 3-image smoke test with visible browser to verify both fixes work before launching the full background run:
+
+=== ASSISTANT ===
+No X server available — need to run headless. Let me use `xvfb-run` to provide a virtual display:
+
+=== USER ===
+[Request interrupted by user for tool use]
+
+=== USER ===
+<ide_opened_file>The user opened the file /mnt/e/fyassine/ad-early-detection/DATA/ADNI/src/download_adni_fmri.py in the IDE. This may or may not be related to the current task.</ide_opened_file>
+failed
+
+=== USER ===
+[Request interrupted by user for tool use]
+
+=== USER ===
+<ide_opened_file>The user opened the file /mnt/e/fyassine/ad-early-detection/logs/adni_download_stdout.log in the IDE. This may or may not be related to the current task.</ide_opened_file>
+.venv/bin/python DATA/ADNI/src/download_adni_fmri.py --max-files 3 --headless true --log-file logs/adni_smoke.log 2>&1 | tee -a logs/adni_smoke.log fails use another cpmmand
+
+=== ASSISTANT ===
+The `tee` into the same file as `--log-file` creates a write conflict. Run it with separate stdout capture:
+
+=== USER ===
+[Request interrupted by user for tool use]
+
+=== USER ===
+<ide_opened_file>The user opened the file /mnt/e/fyassine/ad-early-detection/logs/adni_smoke_stdout.log in the IDE. This may or may not be related to the current task.</ide_opened_file>
+adni smoke performed the best
+but adni smoke stdout is loading forever
+
+=== ASSISTANT ===
+The process is still running — let me check how it's doing so far.
+
+=== USER ===
+[Request interrupted by user]
+
+=== USER ===
+<ide_opened_file>The user opened the file /mnt/e/fyassine/ad-early-detection/logs/adni_smoke.log in the IDE. This may or may not be related to the current task.</ide_opened_file>
+stop all running processes and run again to check
+
+=== ASSISTANT ===
+Clear now: **"collection table: 28 checkbox(es) visible"** — the "mci" collection has accumulated 28 items from previous test runs. Selecting all 28 and clicking download makes the server package ~1.4 GB, which times out. We need to select **only the single newly added image**, not all 28.
+
+Fix: pass `image_id` into `_download_from_collection_not_downloaded()` and find that specific row in the table by its image ID text, checking only that one checkbox.
+
+=== ASSISTANT ===
+Now replace the checkbox selection block to target only the specific image row:
+
+=== ASSISTANT ===
+Now pass `image_id` through from `download_single_image()`:
+
+=== ASSISTANT ===
+Now run the smoke test:
+
+=== ASSISTANT ===
+Running (PID 3050789). Monitor with:
+
+```bash
+tail -f logs/adni_smoke.log
+```
+
+The key fix: instead of selecting all 28+ accumulated items in the collection (causing a ~1.4 GB zip that times out), we now find the table row containing the specific `image_id` and check only that one checkbox → server packages 1 item (~54 MB) → link populates quickly.
+
+=== USER ===
+<ide_opened_file>The user opened the file /mnt/e/fyassine/ad-early-detection/logs/adni_smoke.log in the IDE. This may or may not be related to the current task.</ide_opened_file>
+proceed with the download
+
+=== ASSISTANT ===
+Still searching for image 1. Let me check in a moment if more progress has been made:
+
+=== ASSISTANT ===
+`fallback: selected all 0` — the checkboxes are found in the DOM (28 total) but `offsetParent !== null` returns 0, meaning they're inside a scrollable/hidden container. And the image_id row search misses because LONI IDA likely prefixes IDs with "I" (e.g., `I249536`). Fix both:
+
+=== ASSISTANT ===
+Actually the fallback selecting all 28 content-area checkboxes is still the wrong approach. Let me restructure to try "Not Downloaded" first (with a proper 15s wait), then fall back to image_id row search:
+
+=== ASSISTANT ===
+The "Not Downloaded" view shows all 29 accumulated failed items — so even the filter doesn't help. The real fix: use a **per-image collection** (named `I{image_id}`) so each collection always has exactly 1 item.
+
+=== ASSISTANT ===
+Now switch to per-image collections. Change `download_single_image()` to use `f"I{image_id}"` as the collection name, and update the docstring:
+
+=== ASSISTANT ===
+Login failed — the 4s sleep after submit isn't long enough for the portal's redirect. Let me fix the login to wait for the URL to actually change instead of using a fixed sleep:
+
+=== ASSISTANT ===
+Login succeeded. Now waiting for the collection+download step:
+
+=== ASSISTANT ===
+New collection "I249536" created successfully but the tree doesn't show it yet — needs longer wait after navigating to Data Collections. Fix: poll for the collection name to appear in the tree (up to 15s) instead of a single check:
+
+=== ASSISTANT ===
+The new "I249536" collection never appears — the tree isn't refreshing after creation. Also visible: "mci (1)" appears 3× — the Add-to-Collection dialog isn't finding the existing "mci", it's creating new ones each run (the dialog opens after the button force-click but JS finds no inputs — `fill_result = "dialog not found"`).
+
+Two fixes needed:
+1. Navigate directly to the `dataColl` URL (forces a full page reload of the tree, picks up new collections)
+2. Add a log line to `_add_to_collection()` so we can see what path it takes
+
+=== ASSISTANT ===
+Now fix the Data Collections navigation to use a direct URL reload instead of clicking the tab:
+
+=== ASSISTANT ===
+You've hit your session limit · resets 11:10pm (Europe/Berlin)
+
