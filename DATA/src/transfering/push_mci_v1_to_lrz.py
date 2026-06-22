@@ -4,7 +4,6 @@ import argparse
 import csv
 import shlex
 import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import List, Set, Tuple

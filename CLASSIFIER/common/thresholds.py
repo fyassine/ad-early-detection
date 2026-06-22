@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import Tuple
 
 import numpy as np
-from sklearn.metrics import roc_curve, f1_score, confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score, roc_curve
 
 
 def youden_threshold(targets, probs) -> float:

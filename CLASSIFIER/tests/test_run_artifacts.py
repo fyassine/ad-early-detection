@@ -7,8 +7,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from CLASSIFIER.common.run_artifacts import record_test_metrics, save_run
 from CLASSIFIER.common.seeding import make_rng
-from CLASSIFIER.common.run_artifacts import save_run, record_test_metrics
 
 
 def _save_kwargs(output_dir):

@@ -20,7 +20,6 @@ from typing import Optional
 
 import numpy as np
 
-
 PERCENTILES = (5, 25, 50, 75, 95)
 
 

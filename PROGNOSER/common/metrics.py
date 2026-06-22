@@ -9,15 +9,15 @@ from __future__ import annotations
 from typing import Iterable
 
 import numpy as np
-import pandas as pd
-
+from lifelines.statistics import multivariate_logrank_test
 from sksurv.metrics import (
     concordance_index_censored,
-    integrated_brier_score as _sksurv_ibs,
     cumulative_dynamic_auc,
 )
+from sksurv.metrics import (
+    integrated_brier_score as _sksurv_ibs,
+)
 from sksurv.util import Surv
-from lifelines.statistics import multivariate_logrank_test
 
 
 def to_struct_array(T: np.ndarray, E: np.ndarray) -> np.ndarray:

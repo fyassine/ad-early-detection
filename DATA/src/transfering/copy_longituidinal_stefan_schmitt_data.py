@@ -76,21 +76,21 @@ def setup_local_master_connection():
     print_colored("========================================", Colors.BLUE)
     log_message("Prompting for Wunderlich password")
     print("Please enter your Wunderlich password:")
-    
+
     subprocess.run(["rm", "-f", LOCAL_SOCKET], capture_output=True)
-    
+
     cmd = [
         "ssh", "-M", "-S", LOCAL_SOCKET, "-fN",
         *SSH_OPTS,
         f"{WUNDERLICH_USER}@{WUNDERLICH_HOST}"
     ]
-    
+
     result = subprocess.run(cmd)
-    
+
     if result.returncode != 0:
         print_colored("\n✗ Failed to connect to Wunderlich. Script aborted.", Colors.RED)
         sys.exit(1)
-    
+
     print_colored("✓ Connected to Wunderlich!", Colors.GREEN)
 
 def setup_remote_master_connection():
@@ -102,20 +102,20 @@ def setup_remote_master_connection():
     print("You will see the LRZ password prompt below.")
     print("Please enter your LRZ Password and 2FA codes now.")
     print_colored("This will only happen ONCE.", Colors.YELLOW)
-    
+
     ssh_opts_str = " ".join([f"'{opt}'" for opt in SSH_OPTS])
     setup_cmd = [
         "ssh", "-S", LOCAL_SOCKET, "-t", f"{WUNDERLICH_USER}@{WUNDERLICH_HOST}",
         f"rm -f {REMOTE_SOCKET}; ssh -M -S {REMOTE_SOCKET} -fN {ssh_opts_str} {LRZ_USER}@{LRZ_HOST}"
     ]
-    
+
     result = subprocess.run(setup_cmd)
-    
+
     if result.returncode != 0:
         print_colored("\n✗ Failed to establish LRZ link. Script aborted.", Colors.RED)
         close_local_master_connection()
         sys.exit(1)
-        
+
     print_colored("\n✓ Persistent link to LRZ established!", Colors.GREEN)
     print_colored("\n========================================", Colors.GREEN)
     print_colored("All connections ready! No more passwords needed.", Colors.GREEN)
@@ -251,7 +251,7 @@ def process_files_sequential(files: List[str], existing_subjects: set, directory
     # Pre-filter already downloaded subjects
     files_to_process = []
     skipped = 0
-    
+
     for zip_path in files:
         # files are LRZ paths to .nii.gz; try to extract subject dir token
         import re
@@ -270,13 +270,13 @@ def process_files_sequential(files: List[str], existing_subjects: set, directory
                 continue
 
         files_to_process.append(zip_path)
-    
+
     if not files_to_process:
         return 0, 0, skipped
-    
+
     successful = 0
     failed = 0
-    
+
     total_files = len(files_to_process)
     print_colored(f"  Starting copy of {total_files} NIfTI files...", Colors.CYAN)
 
@@ -285,14 +285,14 @@ def process_files_sequential(files: List[str], existing_subjects: set, directory
         iterator = tqdm(files_to_process, unit="file", desc=f"  {directory}")
     else:
         iterator = files_to_process
-    
+
     for idx, zip_file in enumerate(iterator, start=1):
         print_colored(
             f"  [{idx}/{total_files}] Copying {os.path.basename(zip_file)}",
             Colors.CYAN
         )
         success, msg = process_file_on_wunderlich(zip_file, directory)
-        
+
         if success:
             successful += 1
             if "Skipped" in msg:
@@ -304,7 +304,7 @@ def process_files_sequential(files: List[str], existing_subjects: set, directory
         else:
             failed += 1
             print_colored(f"  ✗ Failed {os.path.basename(zip_file)}: {msg}", Colors.RED)
-    
+
     return successful, failed, skipped
 
 def parse_args() -> argparse.Namespace:
@@ -339,40 +339,40 @@ def main():
         if args.setup_only:
             print_colored("Setup complete. Exiting due to --setup-only.", Colors.GREEN)
             return
-        
+
         total_successful = 0
         total_failed = 0
         total_skipped = 0
-        
+
         # 2. The Processing Loop (sequential, no parallelism)
         for directory in DIRECTORIES:
             print_colored(f"\n{'='*50}", Colors.BLUE)
             print_colored(f"Processing: {directory}", Colors.BLUE)
             print_colored(f"{'='*50}", Colors.BLUE)
-            
+
             # Get existing subjects for this specific directory
-            print_colored(f"  Checking existing subjects...", Colors.CYAN)
+            print_colored("  Checking existing subjects...", Colors.CYAN)
             existing_subjects = get_existing_subjects(directory)
             print_colored(f"  Found {len(existing_subjects)} existing subject folders", Colors.CYAN)
-            
+
             # Fetch list via the tunnels
             files = get_lrz_file_list(directory)
             if not files:
                 print_colored(f"  No files found in {directory}.", Colors.YELLOW)
                 continue
-            
+
             print_colored(f"  Found {len(files)} NIfTI files to check", Colors.CYAN)
-            
+
             # Process files SEQUENTIALLY (one at a time for stability)
             successful, failed, skipped = process_files_sequential(files, existing_subjects, directory)
-            
+
             total_successful += successful
             total_failed += failed
             total_skipped += skipped
-            
-            print_colored(f"  ✓ Completed: {successful} successful, {failed} failed, {skipped} skipped", 
+
+            print_colored(f"  ✓ Completed: {successful} successful, {failed} failed, {skipped} skipped",
                          Colors.GREEN if failed == 0 else Colors.YELLOW)
-        
+
         # Final summary
         print_colored(f"\n{'='*50}", Colors.GREEN)
         print_colored("FINAL SUMMARY", Colors.GREEN)

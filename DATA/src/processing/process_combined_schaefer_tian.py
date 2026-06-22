@@ -35,16 +35,17 @@ from __future__ import annotations
 
 import argparse
 import contextlib
-import joblib
 import json
 from pathlib import Path
 from typing import Any, cast
 
+import joblib
 import numpy as np
-from nilearn import datasets, image as nli_image
+from joblib import Parallel, delayed
+from nilearn import datasets
+from nilearn import image as nli_image
 from nilearn.connectome import ConnectivityMeasure
 from nilearn.maskers import NiftiLabelsMasker
-from joblib import Parallel, delayed
 
 try:
     from tqdm import tqdm

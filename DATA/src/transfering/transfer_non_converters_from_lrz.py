@@ -195,7 +195,7 @@ def setup_remote_master_connection(args: argparse.Namespace) -> None:
 
 def check_ssh_sockets(args: argparse.Namespace) -> None:
     print_status(args, "Validating SSH master sockets before transfer...", Colors.BLUE)
-    
+
     # Local check
     local_cmd = [
         "ssh", "-S", args.local_socket, "-O", "check", f"{args.wunderlich_user}@{args.wunderlich_host}"
@@ -209,7 +209,7 @@ def check_ssh_sockets(args: argparse.Namespace) -> None:
     res_remote = run_on_wunderlich(args, remote_check_cmd, capture_output=True, text=True)
     if res_remote.returncode != 0:
         raise RuntimeError(f"Remote SSH socket missing or inactive: {res_remote.stderr.strip()}")
-        
+
     print_status(args, "SSH master sockets are active and healthy.", Colors.GREEN)
 
 
@@ -447,7 +447,7 @@ def copy_single_item(args: argparse.Namespace, group: FileGroup) -> CopyResult:
     dest_dir = f"{args.dest_base.rstrip('/')}/{subject_label}"
     dest_file = f"{dest_dir}/{filename}"
     src_spec = f"{args.lrz_user}@{args.lrz_host}:{group.chosen.path}"
-    
+
     scp_opts = f"-o ControlPath={q(args.remote_socket)}"
     if args.non_interactive:
         scp_opts += " -o BatchMode=yes"
@@ -484,7 +484,7 @@ def copy_single_item(args: argparse.Namespace, group: FileGroup) -> CopyResult:
         stderr = result.stderr.strip()
         stdout = result.stdout.strip()
         combined_err = f"{stderr} {stdout}".strip()
-        
+
         # Extract concise failure reasons
         if "Permission denied" in combined_err:
             reason = "Permission denied"
@@ -496,7 +496,7 @@ def copy_single_item(args: argparse.Namespace, group: FileGroup) -> CopyResult:
             reason = "SSH Master socket dropped"
         else:
             reason = combined_err[:100] if combined_err else "Unknown copy error"
-            
+
         return CopyResult(status="failed", message=reason, bytes_copied=0, destination=dest_file)
 
     for line in stdout_lines:

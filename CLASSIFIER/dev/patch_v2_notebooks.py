@@ -16,7 +16,6 @@ Run with:  python CLASSIFIER/dev/patch_v2_notebooks.py
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 V2_NB = Path(__file__).resolve().parents[1] / "notebooks"

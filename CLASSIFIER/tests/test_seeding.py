@@ -2,7 +2,9 @@ import numpy as np
 import torch
 
 from CLASSIFIER.common.seeding import (
-    set_seed, make_rng, make_torch_generator,
+    make_rng,
+    make_torch_generator,
+    set_seed,
 )
 
 

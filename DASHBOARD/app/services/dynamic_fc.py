@@ -22,7 +22,6 @@ are available the rest of the pipeline lights up.
 
 from __future__ import annotations
 
-import math
 from typing import Optional
 
 import numpy as np

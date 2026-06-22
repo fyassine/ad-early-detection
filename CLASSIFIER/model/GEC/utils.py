@@ -1,27 +1,26 @@
-import torch
 import numpy as np
-from torch_geometric.utils import to_dense_adj
+import torch
 
 
 def load_frozen_encoder_from_gaae(gec_model, gaae_checkpoint_path, device='cpu'):
     checkpoint = torch.load(gaae_checkpoint_path, map_location=device, weights_only=False)
-    
+
     if 'model_state_dict' in checkpoint:
         gaae_state_dict = checkpoint['model_state_dict']
     else:
         gaae_state_dict = checkpoint
-    
+
     encoder_keys = [
         'encoder_gat1', 'encoder_bn1',
         'encoder_gat2', 'encoder_bn2',
         'encoder_gat3',
         'film_gamma', 'film_beta'
     ]
-    
+
     gec_state_dict = gec_model.state_dict()
     keys_to_load = {}
     mismatched_keys = []
-    
+
     for key in gaae_state_dict:
         if any(key.startswith(enc_key) for enc_key in encoder_keys):
             if key in gec_state_dict:
@@ -49,11 +48,11 @@ def load_frozen_encoder_from_gaae(gec_model, gaae_checkpoint_path, device='cpu')
         )
 
     gec_state_dict.update(keys_to_load)
-    
+
     gec_model.load_state_dict(gec_state_dict)
     gec_model.freeze_encoder()
     print(f"Loaded {len(keys_to_load)} pretrained encoder parameters from {gaae_checkpoint_path}")
-    
+
     return gec_model
 
 
@@ -62,12 +61,12 @@ def compute_class_weights(labels, device='cpu'):
     n_samples = len(labels)
     n_positive = labels.sum()
     n_negative = n_samples - n_positive
-    
+
     if n_positive == 0 or n_negative == 0:
         return torch.tensor(1.0, device=device)
-    
+
     pos_weight = n_negative / n_positive
-    
+
     return torch.tensor(pos_weight, dtype=torch.float, device=device)
 
 

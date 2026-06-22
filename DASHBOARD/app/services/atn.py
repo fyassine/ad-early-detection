@@ -23,7 +23,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-
 # NIA-AA 2024 / Jack et al. consensus-style defaults. CSF assay typical
 # cutoffs (Innogenetics/Lumipulse style); plasma cutoffs differ.
 ATN_CUTOFFS = {

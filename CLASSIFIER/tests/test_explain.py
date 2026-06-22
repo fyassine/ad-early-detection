@@ -7,14 +7,12 @@ covered end-to-end by the experiment runner, not here.
 """
 from __future__ import annotations
 
+import matplotlib
 import numpy as np
 import pytest
 
-import matplotlib
-
 matplotlib.use("Agg")  # headless
 
-from CLASSIFIER.common import explain as ce
 from CLASSIFIER.adapters.explain import (
     GAAEExplainAdapter,
     GECExplainAdapter,
@@ -22,6 +20,7 @@ from CLASSIFIER.adapters.explain import (
     get_explain_adapter,
     resolve_source_run,
 )
+from CLASSIFIER.common import explain as ce
 
 
 # ── atlas ─────────────────────────────────────────────────────────────────────

@@ -6,17 +6,16 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-
 from common.provenance import (
-    region_from_data_root,
-    make_run_dir,
-    capture_git_provenance,
     capture_env,
+    capture_git_provenance,
+    make_run_dir,
+    patch_run_summary,
+    region_from_data_root,
+    save_full_checkpoint,
     snapshot_source,
     snapshot_source_dirs,
     write_run_summary,
-    patch_run_summary,
-    save_full_checkpoint,
 )
 
 

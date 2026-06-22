@@ -11,12 +11,11 @@ Discovers:
 
 import os
 import re
-import numpy as np
 from copy import deepcopy
-from pathlib import Path
 from threading import Lock
 from typing import Optional
 
+import numpy as np
 
 # Pattern to extract subject ID (sub-XXXXXXXXX) from paths/filenames
 SUBJECT_PATTERN = re.compile(r"sub-([a-f0-9]+)", re.IGNORECASE)

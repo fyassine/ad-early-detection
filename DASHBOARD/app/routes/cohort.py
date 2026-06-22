@@ -1,16 +1,20 @@
 import os
 
-from fastapi import APIRouter, Query, Request
-from fastapi.responses import JSONResponse, Response
+from fastapi import APIRouter, Query
+from fastapi.responses import JSONResponse
 
-from ..config import DATA_ROOT, DASHBOARD_CACHE_ROOT
+from ..cohort_stats import COHORTS, get_cohort_stats, is_stats_cached
+from ..config import DASHBOARD_CACHE_ROOT, DATA_ROOT
 from ..metadata_parser import load_metadata
-from ..biomarkers import find_subject_nifti_files
-from ..cohort_stats import COHORTS, get_cohort_stats, is_stats_cached, project_visits
-from ..services.utils import _safe_round_matrix, cache_headers, check_not_modified
 from ..services.job_manager import (
-    canonical_job_id, start_job, get_status, list_jobs, cancel_job, register_workspace,
+    cancel_job,
+    canonical_job_id,
+    get_status,
+    list_jobs,
+    register_workspace,
+    start_job,
 )
+from ..services.utils import _safe_round_matrix, cache_headers
 
 router = APIRouter()
 
@@ -267,8 +271,6 @@ def api_cohort_missingness(
     if not os.path.exists(abs_csv):
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
 
-    import pandas as pd
-    import math
 
     df = load_metadata(abs_csv)
     if "subject_id" not in df.columns:
@@ -364,12 +366,14 @@ def api_cohort_graph_topology(
         return _stats_pending_response(csv_path, folder_list)
     stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
 
-    from ..services.graph_metrics import (
-        subject_graph_metrics, _HAS_NX,
-        load_graph_metrics_cache, save_graph_metrics_cache,
-    )
     from ..biomarkers import find_subject_npz_files, load_correlation_matrix
-    from ..metadata_parser import load_metadata, _get_baseline
+    from ..metadata_parser import _get_baseline, load_metadata
+    from ..services.graph_metrics import (
+        _HAS_NX,
+        load_graph_metrics_cache,
+        save_graph_metrics_cache,
+        subject_graph_metrics,
+    )
 
     if not _HAS_NX:
         return JSONResponse({

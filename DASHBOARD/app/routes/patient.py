@@ -1,25 +1,24 @@
+import asyncio
 import json
 import os
-import asyncio
 import re
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
-from ..config import DATA_ROOT
-from ..metadata_parser import load_metadata, get_patient_clinical_trajectory
 from ..biomarkers import (
+    SCHAEFER_200_DMN_INDICES,
     find_subject_nifti_files,
     find_subject_npz_files,
     get_subject_trajectory_stream,
     load_correlation_matrix,
-    SCHAEFER_200_DMN_INDICES,
 )
 from ..cohort_stats import get_cohort_stats, project_visits
+from ..config import DATA_ROOT
+from ..metadata_parser import get_patient_clinical_trajectory, load_metadata
 from ..services.gelstm import get_gelstm_service
-from ..services.utils import _safe_round_matrix, _safe_under_root
 from ..services.qc import _ensure_qc_reduce as _ensure_qc_mean
-
+from ..services.utils import _safe_round_matrix, _safe_under_root
 
 _VISIT_MONTH_RE = re.compile(r"M(\d+)", re.IGNORECASE)
 
@@ -110,8 +109,8 @@ def api_patient_staging(
     clinical = get_patient_clinical_trajectory(df, subject_id)
 
     from ..services.atn import classify_visits
-    from ..services.ebm import stage_visit
     from ..services.brain_age import predict_brain_age
+    from ..services.ebm import stage_visit
     from ..services.time_shift import estimate_patient_time_shift
 
     atn_records = classify_visits(clinical)
@@ -400,10 +399,10 @@ def api_patient_conversion_risk(
     """
     abs_csv = os.path.join(DATA_ROOT, csv_path)
     if not os.path.exists(abs_csv):
-        return JSONResponse({"error": f"CSV not found"}, status_code=404)
+        return JSONResponse({"error": "CSV not found"}, status_code=404)
 
     df = load_metadata(abs_csv)
-    from ..services.survival import time_to_conversion_table, kaplan_meier, _is_apoe4_carrier
+    from ..services.survival import time_to_conversion_table
 
     table = time_to_conversion_table(df)
     if table.empty:
@@ -581,7 +580,7 @@ def api_patient_graph_trajectory(
     if not os.path.exists(abs_csv):
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
 
-    from ..services.graph_metrics import subject_graph_metrics, _HAS_NX
+    from ..services.graph_metrics import _HAS_NX, subject_graph_metrics
     if not _HAS_NX:
         return JSONResponse({"available": False, "note": "networkx not installed"})
 

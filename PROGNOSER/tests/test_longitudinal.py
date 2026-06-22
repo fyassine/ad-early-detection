@@ -6,11 +6,10 @@ import pandas as pd
 import pytest
 
 from PROGNOSER.common.longitudinal import (
-    visit_months,
-    compute_at_risk_window,
     LongitudinalAggregator,
+    compute_at_risk_window,
+    visit_months,
 )
-
 
 # ── visit_months ──────────────────────────────────────────────────────────────
 

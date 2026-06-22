@@ -5,7 +5,6 @@ import pytest
 
 from CLASSIFIER.common.contrasts import CONTRASTS, Contrast, contrast_by_name, regions_referenced
 
-
 # Slugs must match folder names under DATA/DELCODE/__fc_<slug>_*_flat__
 VALID_REGIONS = {
     "wholebrain",

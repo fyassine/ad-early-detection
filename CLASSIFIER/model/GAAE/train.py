@@ -1,11 +1,13 @@
-import logging
 import copy
+import logging
+
 import torch
+from torch_geometric.utils import to_dense_adj
 from tqdm.notebook import tqdm
 
-from torch_geometric.utils import to_dense_adj
-from .utils import create_mask
 from .losses import total_loss_fn
+from .utils import create_mask
+
 
 def train_model_with_val_notebook_train_loss(model, train_loader, val_loader, optimizer, device,
                 batch_size, learning_rate, model_config, adj_loss_weight=1.0,
@@ -33,7 +35,7 @@ def train_model_with_val_notebook_train_loss(model, train_loader, val_loader, op
         for batch in train_loader:
             batch = batch.to(device)
             x, edge_index, edge_attr, batch_mask = batch.x, batch.edge_index, batch.edge_attr, batch.batch
-            
+
             dense_adj = to_dense_adj(edge_index, batch=batch_mask).to(device)
 
             cond_vec = torch.stack([

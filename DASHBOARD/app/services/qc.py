@@ -1,7 +1,9 @@
-import os
 import hashlib
-import numpy as np
+import os
 from pathlib import Path
+
+import numpy as np
+
 from ..config import DATA_ROOT
 
 _QC_CACHE_DIR = Path(os.environ.get(

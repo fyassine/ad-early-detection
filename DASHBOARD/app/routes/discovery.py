@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
+from ..biomarkers import index_nifti_by_subject, index_npz_by_subject
 from ..config import DATA_ROOT
 from ..scanner import discover_csvs, discover_scan_folders, scan_selected_folders
-from ..biomarkers import index_nifti_by_subject, index_npz_by_subject
 
 router = APIRouter()
 

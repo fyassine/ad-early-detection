@@ -2,8 +2,8 @@
 import numpy as np
 import torch
 
-from CLASSIFIER.model.GELSTM.train import evaluate
 from CLASSIFIER.configs.gelstm import EvalConfig
+from CLASSIFIER.model.GELSTM.train import evaluate
 
 
 class _StubModel(torch.nn.Module):

@@ -14,9 +14,10 @@ Grouped into three protocol groups by TR value:
 """
 
 import os
-import pandas as pd
-import numpy as np
 from datetime import date
+
+import numpy as np
+import pandas as pd
 
 # ---------------------------------------------------------------------------
 # Config
@@ -292,12 +293,12 @@ try:
     old_nonconv = set(old[old["label"] == "non_converter_stable_mci"]["subject_id"])
     new_conv    = set(conv_out["subject_id"].dropna().unique())
     new_nonconv = set(nonconv_out["subject_id"].dropna().unique())
-    print(f"\n  vs old artifact —")
+    print("\n  vs old artifact —")
     print(f"    Converters:     {len(old_conv)} → {len(new_conv)} "
           f"(+{len(new_conv - old_conv)} new, -{len(old_conv - new_conv)} dropped)")
     print(f"    Non-converters: {len(old_nonconv)} → {len(new_nonconv)} "
           f"(+{len(new_nonconv - old_nonconv)} new, -{len(old_nonconv - new_nonconv)} dropped)")
 except FileNotFoundError:
-    print(f"  (Old artifact not found for comparison)")
+    print("  (Old artifact not found for comparison)")
 
 print("\nDone.")

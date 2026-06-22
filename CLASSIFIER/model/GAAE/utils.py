@@ -23,7 +23,7 @@ def knn_binary_adjacency_matrix_no_diag(corr_matrix, k):
         corr_row = np.copy(corr_matrix[i, :])
         corr_row[i] = -np.inf  # Ensure self-connections are not considered
 
-        nearest_indices = np.argsort(-corr_row)[:k] 
+        nearest_indices = np.argsort(-corr_row)[:k]
         adjacency_matrix[i, nearest_indices] = 1
 
     binary_adjacency_matrix = np.maximum(adjacency_matrix, adjacency_matrix.T)
@@ -61,13 +61,13 @@ def create_mask(batch):
     num_nodes_per_graph = torch.bincount(batch)
     N = batch.size(0)  # Total number of nodes
     mask = torch.zeros((N, N), device=batch.device, dtype=torch.bool)
-    
+
     start_idx = 0
     for num_nodes in num_nodes_per_graph:
         if num_nodes > 0:
             mask[start_idx:start_idx + num_nodes, start_idx:start_idx + num_nodes] = True
             start_idx += num_nodes
-    
+
     return mask
 
 def save_run_config(run_name, timestamp, dataset_info, model_config, training_config, run_artifact_dir):

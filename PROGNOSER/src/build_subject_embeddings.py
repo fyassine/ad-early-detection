@@ -27,11 +27,10 @@ import argparse
 import os
 from pathlib import Path
 
-from PROGNOSER.common.embeddings import extract_subject_embeddings, cache_embeddings
+from DATA.src.splitting.load_splits import splits_dir
+from PROGNOSER.common.embeddings import cache_embeddings, extract_subject_embeddings
 from PROGNOSER.common.experiment_utils import COMBO_TABLE
 from PROGNOSER.common.survival_table import build_survival_table
-from DATA.src.splitting.load_splits import splits_dir
-
 
 # Repo root resolves from this file (PROGNOSER/src/... -> repo root),
 # overridable via the AD_REPO_ROOT env var for non-standard checkouts.

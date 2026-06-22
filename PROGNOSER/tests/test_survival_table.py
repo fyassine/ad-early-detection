@@ -1,10 +1,9 @@
 """Tests for PROGNOSER/common/survival_table.py."""
-import pytest
 import numpy as np
 import pandas as pd
+import pytest
 
-from PROGNOSER.common.survival_table import build_survival_table, make_xte, filter_to_split
-
+from PROGNOSER.common.survival_table import build_survival_table, filter_to_split, make_xte
 
 # ── CSV fixtures ──────────────────────────────────────────────────────────────
 

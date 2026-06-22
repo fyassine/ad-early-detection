@@ -1,5 +1,5 @@
-from .gelstm import GELSTMTrainConfig, EvalConfig
-from .gec import GECTrainConfig, GECBatch
+from .gec import GECBatch, GECTrainConfig
+from .gelstm import EvalConfig, GELSTMTrainConfig
 
 __all__ = [
     "GELSTMTrainConfig",

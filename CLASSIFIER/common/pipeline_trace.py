@@ -218,7 +218,7 @@ def plot_brain_graph(
     import matplotlib.pyplot as plt
     import networkx as nx
 
-    from CLASSIFIER.common.explain import atlas_coords, atlas_networks, NETWORK_COLORS
+    from CLASSIFIER.common.explain import NETWORK_COLORS, atlas_coords, atlas_networks
 
     coords = atlas_coords(atlas)
     networks = atlas_networks(atlas)

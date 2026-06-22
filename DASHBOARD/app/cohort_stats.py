@@ -32,12 +32,10 @@ import pandas as pd
 
 from .biomarkers import (
     compute_fmri_biomarkers,
-    find_subject_npz_files,
     index_npz_by_subject,
     load_correlation_matrix,
 )
-from .metadata_parser import load_metadata, _get_baseline
-
+from .metadata_parser import _get_baseline, load_metadata
 
 # --------------------------------------------------------------------------- #
 # Constants                                                                   #
@@ -862,8 +860,12 @@ def _build_time_shift_model(
 ) -> Optional[object]:
     """Fit logistic curves to converter biomarkers over months-from-M0."""
     try:
+        from .biomarkers import (  # noqa: F401
+            compute_fmri_biomarkers,
+            find_subject_npz_files,
+            load_correlation_matrix,
+        )
         from .services.time_shift import fit_time_shift_model
-        from .biomarkers import compute_fmri_biomarkers, find_subject_npz_files, load_correlation_matrix  # noqa: F401
     except Exception:
         return None
     import re as _re
@@ -1092,7 +1094,7 @@ def get_cohort_stats(
             cached.fingerprint = fingerprint  # ensure field is set on disk-loaded objects
             with _LOCK:
                 _CACHE[key] = cached
-            print(f"[cohort_stats] disk_cache_hit (skipping compute)", flush=True)
+            print("[cohort_stats] disk_cache_hit (skipping compute)", flush=True)
             return cached
 
     abs_csv = os.path.join(data_root, csv_path)

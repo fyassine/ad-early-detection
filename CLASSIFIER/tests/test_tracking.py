@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from CLASSIFIER.common import tracking
 
-
 EXP = {"id": "exp-x", "mode": "static", "model": "GAAE", "dataset": "X", "seed": 42}
 PARAMS = {"SEED": 42, "epochs": 3}
 

@@ -30,11 +30,10 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import torch
 import torch.nn as nn
-from sklearn.metrics import roc_auc_score
-from sklearn.preprocessing import StandardScaler
-
 from common.crossval import Bundle
 from model.GELSTM.dataset import LongitudinalSubjectDataset
+from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import StandardScaler
 
 from . import (
     LongitudinalAdapter,

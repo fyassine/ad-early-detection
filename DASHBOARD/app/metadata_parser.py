@@ -5,14 +5,11 @@ Dataset-agnostic: auto-detects delimiter, normalizes common column names,
 computes derived fields (age), and returns structured metrics.
 """
 
-import io
 import csv
 from datetime import datetime
-from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-
 
 # Column name normalization map (lowercase source -> canonical name)
 COLUMN_ALIASES = {
@@ -427,11 +424,11 @@ def get_patient_clinical_trajectory(df: pd.DataFrame, subject_id: str) -> dict:
     """
     if "subject_id" not in df.columns:
         return {}
-    
+
     patient_df = df[df["subject_id"] == subject_id].copy()
     if patient_df.empty:
         return {}
-    
+
     # Sort by visit logically (M0, M12, M24...). Returns a (priority, value)
     # tuple so visits that don't match the "M<n>" pattern sort *after* parsed
     # ones while keeping a stable secondary order, instead of all collapsing
@@ -444,14 +441,14 @@ def get_patient_clinical_trajectory(df: pd.DataFrame, subject_id: str) -> dict:
             except ValueError:
                 pass
         return (1, v)
-        
+
     if "visit" in patient_df.columns:
         patient_df["sort_key"] = patient_df["visit"].apply(visit_sort_key)
         patient_df = patient_df.sort_values("sort_key")
         visits = patient_df["visit"].tolist()
     else:
         visits = [f"V{i}" for i in range(len(patient_df))]
-        
+
     def _extract_col(col_name):
         if col_name in patient_df.columns:
             # Handle string conversions if necessary, keep None for NaNs
@@ -466,7 +463,7 @@ def get_patient_clinical_trajectory(df: pd.DataFrame, subject_id: str) -> dict:
                     res.append(None)
             return res
         return [None] * len(patient_df)
-        
+
     def _extract_str_col(col_name):
         if col_name in patient_df.columns:
             res = []
@@ -477,7 +474,7 @@ def get_patient_clinical_trajectory(df: pd.DataFrame, subject_id: str) -> dict:
                     res.append(None)
             return res
         return [None] * len(patient_df)
-        
+
     return {
         "visits": visits,
         "diagnosis": _extract_str_col("diagnosis"),

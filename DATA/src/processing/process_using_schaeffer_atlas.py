@@ -154,7 +154,7 @@ def main(
 
     masker = build_masker()
     correlation_measure = ConnectivityMeasure(
-        kind="correlation", 
+        kind="correlation",
         standardize=cast(Any, "zscore_sample")
     )
     processed_count = 0

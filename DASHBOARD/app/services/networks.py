@@ -18,13 +18,11 @@ from __future__ import annotations
 
 import json
 import math
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
 
 from ..config import STATIC_DIR
-
 
 # Cache for loaded Schaefer atlas labels — small JSON, never invalidated at
 # runtime (atlas doesn't change while the server is up).

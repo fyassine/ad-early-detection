@@ -15,8 +15,8 @@ from .base import SurvivalModel
 
 def _require_pycox():
     try:
-        from pycox.models import CoxPH  # noqa: F401
         import torchtuples as tt  # noqa: F401
+        from pycox.models import CoxPH  # noqa: F401
     except ImportError as exc:
         raise ImportError(
             'DeepSurvWrapper requires pycox + torchtuples. Install with:\n'

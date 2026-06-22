@@ -5,12 +5,11 @@ import numpy as np
 import pytest
 
 from CLASSIFIER.common.thresholds import (
-    youden_threshold,
     best_f1_threshold,
     oof_threshold_metrics,
     select_oof_threshold,
+    youden_threshold,
 )
-
 
 # A perfectly separable set: positives score high, negatives score low.
 TARGETS = np.array([0, 0, 0, 1, 1, 1])

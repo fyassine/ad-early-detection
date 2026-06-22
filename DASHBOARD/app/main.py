@@ -9,8 +9,8 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .config import STATIC_DIR, DATA_ROOT, DASHBOARD_CACHE_ROOT
-from .routes import discovery, metadata, cohort, patient, atlas, health, population
+from .config import DASHBOARD_CACHE_ROOT, DATA_ROOT, STATIC_DIR
+from .routes import atlas, cohort, discovery, health, metadata, patient, population
 from .services import job_manager
 
 

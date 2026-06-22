@@ -3,14 +3,13 @@ import pytest
 import torch
 from torch_geometric.data import Data
 
-from CLASSIFIER.model.GAAE.models import GraphAttentionAutoencoderConditioned
 from CLASSIFIER.model.GAAE.losses import (
-    feature_reconstruction_loss,
     adjacency_reconstruction_loss,
+    feature_reconstruction_loss,
     total_loss_fn,
 )
+from CLASSIFIER.model.GAAE.models import GraphAttentionAutoencoderConditioned
 from CLASSIFIER.model.GAAE.utils import calculate_dense_adjacency, create_mask
-
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 

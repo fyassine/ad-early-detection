@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
 from ..config import DATA_ROOT
-from ..metadata_parser import load_metadata, compute_metadata_metrics
+from ..metadata_parser import compute_metadata_metrics, load_metadata
 from ..scanner import scan_selected_folders
 
 router = APIRouter()

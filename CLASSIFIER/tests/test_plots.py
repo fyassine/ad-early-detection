@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.figure import Figure
 
-from CLASSIFIER.common.plots import plot_oof_test_roc, plot_conversion_trajectories
+from CLASSIFIER.common.plots import plot_conversion_trajectories, plot_oof_test_roc
 
 
 def test_plot_oof_test_roc_returns_figure():

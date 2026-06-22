@@ -10,11 +10,11 @@ v2 additions (vs CLASSIFIER/model/GELSTM/utils.py):
 from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 import torch
-from torch.nn.utils.rnn import pack_padded_sequence, PackedSequence
+from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence
 
 
 @contextmanager

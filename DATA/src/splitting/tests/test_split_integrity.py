@@ -16,6 +16,7 @@ import pytest
 # Repo root → dotted imports resolve
 sys.path.insert(0, str(Path(__file__).parents[4]))
 
+from CLASSIFIER.common.sanity import run_full_audit
 from DATA.src.splitting.create_downstream_data_splits import _patient_groups as _downstream_groups
 from DATA.src.splitting.create_pretrain_data_splits import _patient_groups as _pretrain_groups
 from DATA.src.splitting.load_splits import (
@@ -24,7 +25,6 @@ from DATA.src.splitting.load_splits import (
     split_csv_paths,
     splits_dir,
 )
-from CLASSIFIER.common.sanity import run_full_audit
 
 # ---------------------------------------------------------------------------
 # Helpers

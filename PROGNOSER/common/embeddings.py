@@ -25,9 +25,7 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 import torch
-from torch_geometric.data import Data
 from torch_geometric.utils import dense_to_sparse
-
 
 # Repo root resolves from this file (PROGNOSER/common/embeddings.py -> repo root),
 # overridable via the AD_REPO_ROOT env var for non-standard checkouts.

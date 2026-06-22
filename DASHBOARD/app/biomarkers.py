@@ -10,13 +10,12 @@ Metrics:
   - Modularity: greedy modularity Q from networkx (thresholded graph)
 """
 
+import math
 import os
 import re
-import math
 from threading import Lock
 
 import numpy as np
-
 
 # --------------------------------------------------------------------------- #
 # Module-level file-index cache                                               #
@@ -397,5 +396,5 @@ def get_subject_trajectory_stream(
     }
     with _INDEX_LOCK:
         _TRAJECTORY_CACHE[cache_key] = result
-    
+
     yield {"type": "complete", "data": result}

@@ -34,7 +34,6 @@ import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
-
 # ──────────────────────────────────────────────────────────────────────────── #
 # Bootstrap                                                                   #
 # ──────────────────────────────────────────────────────────────────────────── #
@@ -74,11 +73,11 @@ def _stage_cohort_stats(
 ) -> object:
     """Stage 1 — Compute and disk-cache CohortStats (UMAP + EBM + brain-age)."""
     import threading
-    import time
+
     from app.cohort_stats import get_cohort_stats  # noqa: PLC0415
 
     _update_status(status_path, stage="cohort_stats", progress=0.05)
-    _log(f"Stage 1: CohortStats — fitting UMAP, EBM, brain-age…")
+    _log("Stage 1: CohortStats — fitting UMAP, EBM, brain-age…")
     _log(f"  csv    : {csv_path}")
     _log(f"  folders: {scan_folders}")
 
@@ -116,11 +115,13 @@ def _stage_graph_metrics(
     import hashlib
     import signal
     import time
+
     import numpy as np
-    from app.cohort_stats import COHORTS
+
     from app.biomarkers import find_subject_npz_files, load_correlation_matrix
-    from app.metadata_parser import load_metadata, _get_baseline
-    from app.services.graph_metrics import subject_graph_metrics, _HAS_NX
+    from app.cohort_stats import COHORTS
+    from app.metadata_parser import _get_baseline, load_metadata
+    from app.services.graph_metrics import _HAS_NX, subject_graph_metrics
 
     if not _HAS_NX:
         _log("Stage 2 SKIPPED — networkx not installed")
@@ -249,12 +250,14 @@ def _stage_gelstm(
     status_path: Path,
 ) -> None:
     """Stage 3 — Batch GELSTM predictions for all baseline subjects."""
-    import numpy as np
-    from app.services.gelstm import get_gelstm_service  # noqa: PLC0415
-    from app.metadata_parser import load_metadata
-    from app.biomarkers import find_subject_npz_files, load_correlation_matrix
-    import re
     import pickle
+    import re
+
+    import numpy as np
+
+    from app.biomarkers import find_subject_npz_files, load_correlation_matrix
+    from app.metadata_parser import load_metadata
+    from app.services.gelstm import get_gelstm_service  # noqa: PLC0415
 
     _update_status(status_path, stage="gelstm", progress=0.56)
     svc = get_gelstm_service()
@@ -367,8 +370,8 @@ def _stage_qc_volumes(
     status_path: Path,
 ) -> None:
     """Stage 4 — Pre-compute QC temporal-std volumes for converter subjects."""
-    from app.metadata_parser import load_metadata  # noqa: PLC0415
     from app.biomarkers import find_subject_nifti_files
+    from app.metadata_parser import load_metadata  # noqa: PLC0415
     from app.services.qc import _ensure_qc_reduce as _ensure_qc_mean
 
     _update_status(status_path, stage="qc_volumes", progress=0.71)
@@ -410,12 +413,16 @@ def _stage_dfc(
     """Stage 5 — Dynamic FC: parcellate BOLD .nii.gz, fit k-means states, cache."""
     import hashlib
     import json as _json
+
     import numpy as np
-    from app.cohort_stats import COHORTS
-    from app.metadata_parser import load_metadata, _get_baseline
+
     from app.biomarkers import find_subject_nifti_files
+    from app.cohort_stats import COHORTS
+    from app.metadata_parser import _get_baseline, load_metadata
     from app.services.dynamic_fc import (
-        load_or_extract_timeseries, compute_cohort_dfc, _HAS_SKLEARN,
+        _HAS_SKLEARN,
+        compute_cohort_dfc,
+        load_or_extract_timeseries,
     )
 
     if not _HAS_SKLEARN:

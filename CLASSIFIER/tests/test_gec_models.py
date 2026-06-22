@@ -1,12 +1,11 @@
 """Unit tests for GEC graph encoder-classifier models."""
-import torch
 import pytest
+import torch
 
 from CLASSIFIER.model.GEC.models import (
     GraphEncoderClassifier,
     GraphEncoderClassifierAttention,
 )
-
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
 

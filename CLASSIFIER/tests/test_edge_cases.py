@@ -1,16 +1,15 @@
 """Tests for fail-loud error paths and edge cases across CLASSIFIER utilities."""
-import warnings
 import tempfile
+import warnings
 
 import numpy as np
 import pytest
 import torch
 from torch_geometric.data import Data
 
-from CLASSIFIER.model.GELSTM.utils import encode_batch_sequences
-from CLASSIFIER.common.utils import compute_class_weights, compute_class_cost_weights
+from CLASSIFIER.common.utils import compute_class_cost_weights, compute_class_weights
 from CLASSIFIER.model.GEC.models import GraphEncoderClassifier
-
+from CLASSIFIER.model.GELSTM.utils import encode_batch_sequences
 
 # ── encode_batch_sequences ────────────────────────────────────────────────────
 

@@ -41,7 +41,6 @@ import numpy as np
 
 from ..config import CLASSIFIER_ROOT, DASHBOARD_CACHE_ROOT, GELSTM_CHECKPOINT_DIR
 
-
 # --------------------------------------------------------------------------- #
 # Checkpoint discovery                                                        #
 # --------------------------------------------------------------------------- #
@@ -298,8 +297,7 @@ class GELSTMService:
             return cached
 
         import torch
-        from torch_geometric.data import Data, Batch
-        from torch_geometric.utils import dense_to_sparse
+        from torch_geometric.data import Batch
 
         if not visit_matrices:
             return {

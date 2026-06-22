@@ -23,8 +23,6 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import torch
 import torch.nn as nn
-from sklearn.preprocessing import StandardScaler
-
 from common.crossval import Bundle
 from common.fdr import compute_fdr_filter
 from configs.gelstm import EvalConfig
@@ -32,6 +30,7 @@ from model.GELSTM.dataset import LongitudinalSubjectDataset
 from model.GELSTM.models import GELSTMClassifier
 from model.GELSTM.train import evaluate, make_batches, train_epoch
 from model.GELSTM.utils import compute_class_weights
+from sklearn.preprocessing import StandardScaler
 
 from . import LongitudinalAdapter, load_run_checkpoint, model_state_from_checkpoint
 

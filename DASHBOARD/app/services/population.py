@@ -27,8 +27,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from ..cohort_stats import COHORTS, SCHAEFER_NETWORKS, CohortStats
-
+from ..cohort_stats import COHORTS, CohortStats
 
 # --------------------------------------------------------------------------- #
 # Fang et al. 2025 lifetime-risk reference                                    #

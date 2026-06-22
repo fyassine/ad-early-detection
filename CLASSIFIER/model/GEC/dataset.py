@@ -1,14 +1,15 @@
-import pandas as pd
 import os
+
 import numpy as np
+import pandas as pd
 import torch
 from torch_geometric.data import Data, InMemoryDataset
 from torch_geometric.utils import dense_to_sparse
 
 
 class ClassificationDataset(InMemoryDataset):
-    def __init__(self, root, adjacency_function, adjacency_args=None, transform=None, 
-                 pre_transform=None, patient_info_path=None, converter_list_path=None, 
+    def __init__(self, root, adjacency_function, adjacency_args=None, transform=None,
+                 pre_transform=None, patient_info_path=None, converter_list_path=None,
                  is_converter_dataset=False, separator=",", correlation_type="pearson",
                  filter_csv_path=None, subject_ids=None, file_variant="z_transformed"):
         self.adjacency_function = adjacency_function
@@ -55,7 +56,7 @@ class ClassificationDataset(InMemoryDataset):
                 self.converter_ids = set(converter_df['ID'].astype(str))
             elif 'Pseudonym' in converter_df.columns:
                 self.converter_ids = set(converter_df['Pseudonym'].astype(str))
-        
+
         super().__init__(root, transform, pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)
 
@@ -165,9 +166,9 @@ class ClassificationDataset(InMemoryDataset):
                 is_converter = 1
             else:
                 is_converter = 0
-            
+
             data.is_converter = torch.tensor(is_converter, dtype=torch.float)
-            
+
             data_list.append(data)
 
         if self.pre_filter is not None:

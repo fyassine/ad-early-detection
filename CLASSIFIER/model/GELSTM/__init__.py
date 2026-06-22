@@ -1,3 +1,3 @@
-from .models import GELSTMClassifier
 from .dataset import LongitudinalSubjectDataset
-from .utils import encode_batch_sequences, compute_class_weights
+from .models import GELSTMClassifier
+from .utils import compute_class_weights, encode_batch_sequences

@@ -21,8 +21,8 @@ from dataclasses import dataclass
 from typing import Any, Callable, List, Optional, Sequence
 
 import numpy as np
+from sklearn.metrics import f1_score, roc_curve
 from sklearn.model_selection import StratifiedGroupKFold
-from sklearn.metrics import roc_curve, f1_score
 
 
 @dataclass

@@ -16,8 +16,8 @@ import os
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
-from ..config import DATA_ROOT
 from ..cohort_stats import get_cohort_stats, is_stats_cached
+from ..config import DATA_ROOT
 from ..metadata_parser import load_metadata
 from ..services.gelstm import get_gelstm_service
 from ..services.population import (

@@ -6,7 +6,7 @@ evaluated rather than silently dropped to NaN.
 """
 import numpy as np
 
-from PROGNOSER.common.metrics import time_dependent_auc, integrated_brier_score
+from PROGNOSER.common.metrics import integrated_brier_score, time_dependent_auc
 
 
 def _toy_survival():

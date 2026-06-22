@@ -14,7 +14,6 @@ Run with:  python CLASSIFIER/dev/patch_runner_params.py
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 import yaml
