@@ -28,6 +28,7 @@ coverage/
 **/.cache/
 .idea/
 .DS_Store
+CHECKS.json
 
 **/*.nii.gz
 **/*.pth

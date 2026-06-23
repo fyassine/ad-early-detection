@@ -58,7 +58,8 @@ jobs:
           pip install numpy==1.26.4 pandas==2.2.0 scikit-learn==1.7.2
           pip install -r requirements-dev.txt
           pip install -r PROGNOSER/requirements.txt
-      - run: mypy CLASSIFIER PROGNOSER DATA/src
+          pip install -r DASHBOARD/requirements.txt
+      - run: mypy CLASSIFIER PROGNOSER DASHBOARD DATA/src
 
   test:
     name: Tests

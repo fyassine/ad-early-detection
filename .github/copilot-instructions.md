@@ -20,11 +20,11 @@
 - [Evaluation](../.claude/rules/evaluation.md) — best-F1 threshold (default) on val only, never re-threshold on test; use `threshold_mode="f1"` (preferred over `"youden"` for imbalanced data)
 - [Checkpoints](../.claude/rules/checkpoints.md) — full-state schema, `outputs/` vs legacy `checkpoints/`
 - [Notebooks](../.claude/rules/notebooks.md) — `BASELINE_` / `LONGITUDINAL_` / `STATIC_` / `SANITY_` prefix, splits via `common.splits`, sanity audit at head; three mandatory interactive prompts: (1) GAAE checkpoint index selection, (2) train vs load existing checkpoint, (3) threshold mode with Best-F1 as default (Youden as option 2)
-- [CI](../.claude/rules/ci.md) — `ruff check .` + `pytest` block before code is done; mypy/format/complexity/bandit/pip-audit report only; never introduce new errors in any check, but don't fix pre-existing findings outside your change
+- [CI](../.claude/rules/ci.md) — run `python scripts/run_checks.py` once, after all steps of a multi-step plan are finished (not after each step — intermediate steps can leave the tree transiently broken); lint/tests block, mypy/format/complexity/bandit/pip-audit are ratcheted against `CHECKS.json` (pre-existing backlog ok, new findings fail the run)
 
 ## Reference docs
 
 - [CLASSIFIER README](../CLASSIFIER/README.md) — reproducibility contract, checkpoint schema, notebook index
-- [Experiments registry](../CLASSIFIER/experiments.yaml)
+- [Experiments directory](../CLASSIFIER/experiments/)
 - [PROGNOSER README](../PROGNOSER/README.md)
 - [DASHBOARD README](../DASHBOARD/README.md)
