@@ -4,6 +4,13 @@ CI (`.github/workflows/test.yml`) runs on every push to `main` and on every PR. 
 handing off code as done, run the blocking checks locally — don't wait for CI to report
 the failure.
 
+## No new errors
+
+Across every check below — blocking or non-blocking — a change should not introduce
+errors that weren't already there. Run the relevant checks on the touched files before
+and after your change (or scope the diff) and compare. Pre-existing failures elsewhere
+in the codebase are not yours to fix as a side effect, but don't add to the count.
+
 ## Blocking (must pass before you say a task is done)
 
 - `ruff check .` — lint (pyflakes, import sort, pycodestyle subset, bugbear)
