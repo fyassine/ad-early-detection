@@ -41,7 +41,7 @@ def fill_visits(df: pd.DataFrame) -> tuple[pd.DataFrame, int, int, pd.DataFrame]
     for _, group in df.groupby(subject_col, sort=False):
         group_sorted = group.sort_values(by=["_date_key", "_row_id"], na_position="last")
         targets = ["M" + str(i * 12) for i in range(len(group_sorted))]
-        for row_id, target in zip(group_sorted["_row_id"].tolist(), targets):
+        for row_id, target in zip(group_sorted["_row_id"].tolist(), targets, strict=False):
             target_visits[row_id] = target
 
     target_series = pd.Series(target_visits, index=df.index)

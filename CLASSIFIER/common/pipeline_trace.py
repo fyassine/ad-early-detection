@@ -194,7 +194,7 @@ def plot_fc_heatmap(fc_matrix: np.ndarray, z_fc: Optional[np.ndarray] = None) ->
     fig, axes = plt.subplots(1, len(mats), figsize=(6.2 * len(mats), 5.4))
     if len(mats) == 1:
         axes = [axes]
-    for ax, (name, mat) in zip(axes, mats):
+    for ax, (name, mat) in zip(axes, mats, strict=False):
         mat = np.asarray(mat, dtype=float)
         vmax = float(np.nanpercentile(np.abs(mat), 99)) or 1.0
         im = ax.imshow(mat, cmap="RdBu_r", vmin=-vmax, vmax=vmax, aspect="equal")
@@ -227,7 +227,7 @@ def plot_brain_graph(
     G = nx.Graph()
     G.add_nodes_from(range(len(atlas)))
     ei = np.asarray(edge_index)
-    edges = list(zip(ei[0].tolist(), ei[1].tolist()))
+    edges = list(zip(ei[0].tolist(), ei[1].tolist(), strict=False))
     if len(edges) > max_edges:  # subsample purely for legibility
         step = max(1, len(edges) // max_edges)
         edges = edges[::step]

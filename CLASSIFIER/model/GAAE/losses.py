@@ -48,7 +48,7 @@ def adjacency_reconstruction_loss(precomputed_adj, adj_reconstructed, mask):
 def total_loss_fn(x, x_reconstructed, adj_original, adj_reconstructed, mask, adj_loss_weight=1.0):
     """
     Combines the feature reconstruction loss and adjacency reconstruction loss.
-    
+
     Args:
         x (Tensor): Original node features [N, F] where N=nodes, F=features
         x_reconstructed (Tensor): Reconstructed node features [N, F]
@@ -56,7 +56,7 @@ def total_loss_fn(x, x_reconstructed, adj_original, adj_reconstructed, mask, adj
         adj_reconstructed (Tensor): Reconstructed adjacency matrix [N, N]
         mask (Tensor): Mask for valid adjacency regions [N, N]
         adj_loss_weight (float): Weighting factor for the adjacency loss term
-    
+
     Returns:
         total_loss (Tensor): Combined weighted loss
         feature_loss (Tensor): Feature reconstruction loss (MSE)
@@ -105,57 +105,3 @@ def compute_sample_reconstruction_error(
     except Exception:
         adj_error = 0.0
     return float(x_error), float(adj_error), float(x_error + adj_loss_weight * adj_error)
-
-
-def evaluate_reconstruction_errors_with_ids(dataset, model, device, adj_loss_weight=1.0):
-    """
-    Evaluate reconstruction errors and return patient IDs.
-    
-    Args:
-        dataset: PyTorch Geometric dataset
-        model: Trained autoencoder model
-        device: torch device (cpu or cuda)
-        adj_loss_weight: Weight for adjacency loss component
-    
-    Returns:
-        x_errors: List of feature reconstruction errors
-        adj_errors: List of adjacency reconstruction errors
-        total_errors: List of total weighted errors
-        patient_ids: List of patient IDs
-    """
-    x_errors = []
-    adj_errors = []
-    total_errors = []
-    patient_ids = []
-
-    model.eval()
-    for data in dataset:
-        data = data.to(device)
-        x, edge_index = data.x, data.edge_index
-
-        # 1. Conditioning vector: [age, sex]
-        cond_vec = torch.tensor([[data.patient_age.item(), float(data.patient_sex.item())]], device=device)
-
-        # 2. Batch mask (all nodes belong to the same graph → batch = 0)
-        batch_mask = torch.zeros(x.size(0), dtype=torch.long, device=device)
-
-        with torch.no_grad():
-            z, x_reconstructed, adj_reconstructed = model(x, edge_index, cond_vec, batch_mask)
-
-        # 3. Compute reconstruction errors
-        x_error = feature_reconstruction_loss(x, x_reconstructed).item()
-        adj_original = calculate_dense_adjacency(data)
-        adj_error = adjacency_reconstruction_loss_single_instance(adj_original, adj_reconstructed).item()
-        total_error = x_error + adj_error * adj_loss_weight
-
-        x_errors.append(x_error)
-        adj_errors.append(adj_error)
-        total_errors.append(total_error)
-
-        # Check if patient_id exists, otherwise use a placeholder or skip
-        if hasattr(data, 'patient_id'):
-            patient_ids.append(data.patient_id)
-        else:
-            patient_ids.append(None)
-
-    return x_errors, adj_errors, total_errors, patient_ids

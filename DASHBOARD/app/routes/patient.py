@@ -298,7 +298,7 @@ def api_patient_matrix(
     try:
         matrix = load_correlation_matrix(target["abs_path"])
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to load matrix: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to load matrix: {e}") from e
 
     n = matrix.shape[0]
     is_dmn_only = n <= 50
@@ -423,10 +423,10 @@ def api_patient_conversion_risk(
         return JSONResponse({"available": False, "reason": "lifelines not installed"})
 
     if patient_apoe4 is True:
-        sub = table[table["apoe4"] == True]
+        sub = table[table["apoe4"]]
         label = "APOE4+"
     elif patient_apoe4 is False:
-        sub = table[table["apoe4"] == False]
+        sub = table[not table["apoe4"]]
         label = "APOE4−"
     else:
         sub = table

@@ -134,12 +134,18 @@ def evaluate(
     if any(x is not None for x in (use_time_delta, zero_time_delta, graph_pool,
                                    threshold, shuffle_order, shuffle_rng, dim_filter)):
         overrides = {}
-        if use_time_delta is not None:  overrides["use_time_delta"]  = use_time_delta
-        if zero_time_delta is not None: overrides["zero_time_delta"] = zero_time_delta
-        if graph_pool is not None:      overrides["graph_pool"]      = graph_pool
-        if shuffle_order is not None:   overrides["shuffle_order"]   = shuffle_order
-        if shuffle_rng is not None:     overrides["shuffle_rng"]     = shuffle_rng
-        if dim_filter is not None:      overrides["dim_filter"]      = dim_filter
+        if use_time_delta is not None:
+            overrides["use_time_delta"] = use_time_delta
+        if zero_time_delta is not None:
+            overrides["zero_time_delta"] = zero_time_delta
+        if graph_pool is not None:
+            overrides["graph_pool"] = graph_pool
+        if shuffle_order is not None:
+            overrides["shuffle_order"] = shuffle_order
+        if shuffle_rng is not None:
+            overrides["shuffle_rng"] = shuffle_rng
+        if dim_filter is not None:
+            overrides["dim_filter"] = dim_filter
         if threshold is not None:
             overrides["threshold_mode"]  = "fixed"
             overrides["fixed_threshold"] = threshold

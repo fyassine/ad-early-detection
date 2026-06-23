@@ -69,7 +69,7 @@ def plot_conversion_trajectories(traj_df, threshold: float, *, title: str = "") 
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     palette = {1: "#F44336", 0: "#2196F3"}
-    for ax, (label, panel_title) in zip(axes, [(1, "Converters"), (0, "Stable MCI")]):
+    for ax, (label, panel_title) in zip(axes, [(1, "Converters"), (0, "Stable MCI")], strict=False):
         sub = traj_df[traj_df["label"] == label]
         for _pid, grp in sub.groupby("pid"):
             ax.plot(

@@ -135,7 +135,8 @@ def _stage_graph_metrics(
     h = hashlib.sha1()
     h.update(csv_path.encode())
     for f in sorted(scan_folders):
-        h.update(b"\x00"); h.update(f.encode())
+        h.update(b"\x00")
+        h.update(f.encode())
     cache_key = h.hexdigest()[:20]
 
     gm_dir = cache_root / "graph_metrics"
@@ -437,7 +438,8 @@ def _stage_dfc(
     h = hashlib.sha1()
     h.update(csv_path.encode())
     for f in sorted(scan_folders):
-        h.update(b"\x00"); h.update(f.encode())
+        h.update(b"\x00")
+        h.update(f.encode())
     cache_key = h.hexdigest()[:20]
     dfc_dir = cache_root / "dfc"
     dfc_dir.mkdir(parents=True, exist_ok=True)

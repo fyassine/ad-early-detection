@@ -85,6 +85,6 @@ def knn_binary_adjacency_matrix_no_diag(corr_matrix, k):
 
 
 def create_mask(batch_mask):
-    num_nodes = batch_mask.size(0)
+    batch_mask.size(0)
     mask = batch_mask.unsqueeze(0) == batch_mask.unsqueeze(1)
     return mask

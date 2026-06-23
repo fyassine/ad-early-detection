@@ -324,8 +324,11 @@ def plot_classification_diagnostics(
         auc = roc_auc_score(targets, probs)
         ax.plot(fpr, tpr, lw=2, color="#F44336", label=f"AUC={auc:.3f}")
     ax.plot([0, 1], [0, 1], "--", color="grey", alpha=0.5)
-    ax.set_xlabel("FPR"); ax.set_ylabel("TPR"); ax.set_title("ROC")
-    ax.legend(); ax.grid(alpha=0.3)
+    ax.set_xlabel("FPR")
+    ax.set_ylabel("TPR")
+    ax.set_title("ROC")
+    ax.legend()
+    ax.grid(alpha=0.3)
 
     ax = axes[1]
     cm = confusion_matrix(targets, preds, labels=[0, 1])
@@ -333,9 +336,12 @@ def plot_classification_diagnostics(
     for (i, j), v in np.ndenumerate(cm):
         ax.text(j, i, str(int(v)), ha="center", va="center",
                 color="white" if v > cm.max() / 2 else "black", fontsize=12)
-    ax.set_xticks([0, 1]); ax.set_xticklabels(["stable", "converter"])
-    ax.set_yticks([0, 1]); ax.set_yticklabels(["stable", "converter"])
-    ax.set_xlabel("predicted"); ax.set_ylabel("true")
+    ax.set_xticks([0, 1])
+    ax.set_xticklabels(["stable", "converter"])
+    ax.set_yticks([0, 1])
+    ax.set_yticklabels(["stable", "converter"])
+    ax.set_xlabel("predicted")
+    ax.set_ylabel("true")
     ax.set_title(f"Confusion @ thr={threshold:.3f}")
     fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
@@ -350,9 +356,13 @@ def plot_classification_diagnostics(
             ys.append(float(targets[m].mean()))
     ax.plot([0, 1], [0, 1], "--", color="grey", alpha=0.6, label="perfect")
     ax.plot(xs, ys, "o-", color="#2196F3", label="model")
-    ax.set_xlabel("mean predicted P"); ax.set_ylabel("observed frequency")
+    ax.set_xlabel("mean predicted P")
+    ax.set_ylabel("observed frequency")
     ax.set_title("Calibration (reliability)")
-    ax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.legend(); ax.grid(alpha=0.3)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.legend()
+    ax.grid(alpha=0.3)
 
     if title:
         fig.suptitle(title, fontsize=11)

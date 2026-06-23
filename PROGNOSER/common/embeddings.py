@@ -291,7 +291,7 @@ def _build_sequence_embeddings(
             emb = _encode_one(p, model, device, knn_k)
             if emb is not None:
                 row = {'subject_id': sid, 'visit_month': visit_m}
-                row.update(dict(zip(col_names, emb.tolist())))
+                row.update(dict(zip(col_names, emb.tolist(), strict=False)))
                 rows.append(row)
     return pd.DataFrame(rows)
 

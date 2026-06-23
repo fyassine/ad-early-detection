@@ -11,7 +11,7 @@ def _make_bundle(n=40):
     # balanced classes, deterministic.
     labels = [i % 2 for i in range(n)]
     groups = [f"sub{i}" for i in range(n)]  # one item per subject (subject-level)
-    items = [{"subject_id": g, "label": l, "n_scans": 1} for g, l in zip(groups, labels)]
+    items = [{"subject_id": g, "label": l, "n_scans": 1} for g, l in zip(groups, labels, strict=False)]
     return Bundle(labels, groups, items)
 
 

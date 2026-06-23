@@ -377,7 +377,7 @@ def main() -> int:
                 try:
                     compile(code, f"{rel}::cell{i}", "exec")
                 except SyntaxError as e:
-                    raise SystemExit(f"SYNTAX ERROR in {rel} cell {i}: {e}\n---\n{code}")
+                    raise SystemExit(f"SYNTAX ERROR in {rel} cell {i}: {e}\n---\n{code}") from e
         path.write_text(json.dumps(nb, indent=1))
         print(f"  wired          {rel}")
     return 0

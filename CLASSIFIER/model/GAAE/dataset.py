@@ -17,7 +17,7 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
         self,
         root,
         adjacency_function=knn_binary_adjacency_matrix_no_diag,
-        adjacency_args={'k': 16},
+        adjacency_args=None,
         filter_csv_path=None,
         patient_info_path=None,
         separator=",",
@@ -26,6 +26,8 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
         transform=None,
         pre_transform=None,
     ):
+        if adjacency_args is None:
+            adjacency_args = {'k': 16}
         self.adjacency_function = adjacency_function
         self.adjacency_args = adjacency_args or {}
         self.filter_csv_path = filter_csv_path

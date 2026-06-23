@@ -78,7 +78,7 @@ def time_dependent_auc(
     valid_times = times_arr[valid_mask]
     try:
         auc, _ = cumulative_dynamic_auc(y_train, y_test, risk.astype(float), valid_times)
-        for t, a in zip(valid_times, auc):
+        for t, a in zip(valid_times, auc, strict=False):
             out[int(t)] = float(a)
     except Exception as exc:
         print(f"WARNING: cumulative_dynamic_auc failed: {exc}")

@@ -20,7 +20,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from model.GAAE.models import GraphAttentionAutoencoderConditioned
+from model.GAAE.models import GraphAttentionAutoencoderConditioned  # noqa: E402
 
 
 def build_classifier_head(

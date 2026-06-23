@@ -167,13 +167,13 @@ def init_run(exp: Dict[str, Any], params: Dict[str, Any], *, fold: Optional[int]
     try:
         import wandb
     except Exception as exc:  # wandb not installed in this env
-        warnings.warn(f"[tracking] wandb unavailable ({exc!r}); logging disabled for this run.")
+        warnings.warn(f"[tracking] wandb unavailable ({exc!r}); logging disabled for this run.", stacklevel=2)
         return _NoOpRun(config=params)
 
     if mode == "online" and not _credentials_available():
         warnings.warn(
             "[tracking] WANDB_MODE=online but no WANDB_API_KEY/.netrc credentials found; "
-            "falling back to offline mode (sync later with `wandb sync`)."
+            "falling back to offline mode (sync later with `wandb sync`).", stacklevel=2
         )
         mode = "offline"
 
@@ -187,13 +187,13 @@ def init_run(exp: Dict[str, Any], params: Dict[str, Any], *, fold: Optional[int]
         return wandb.init(mode=mode, reinit=True, **init_kwargs)
     except Exception as exc:
         if mode != "offline":
-            warnings.warn(f"[tracking] wandb.init failed ({exc!r}); retrying in offline mode.")
+            warnings.warn(f"[tracking] wandb.init failed ({exc!r}); retrying in offline mode.", stacklevel=2)
             try:
                 return wandb.init(mode="offline", reinit=True, **init_kwargs)
             except Exception as exc2:
-                warnings.warn(f"[tracking] offline wandb.init also failed ({exc2!r}); logging disabled.")
+                warnings.warn(f"[tracking] offline wandb.init also failed ({exc2!r}); logging disabled.", stacklevel=2)
         else:
-            warnings.warn(f"[tracking] offline wandb.init failed ({exc!r}); logging disabled.")
+            warnings.warn(f"[tracking] offline wandb.init failed ({exc!r}); logging disabled.", stacklevel=2)
         return _NoOpRun(config=params)
 
 
@@ -204,7 +204,7 @@ def log_metrics(run: Any, metrics: Dict[str, Any], step: Optional[int] = None) -
     try:
         run.log(metrics, step=step) if step is not None else run.log(metrics)
     except Exception as exc:
-        warnings.warn(f"[tracking] run.log failed ({exc!r}); continuing.")
+        warnings.warn(f"[tracking] run.log failed ({exc!r}); continuing.", stacklevel=2)
 
 
 def finish_run(run: Any) -> None:
@@ -214,4 +214,4 @@ def finish_run(run: Any) -> None:
     try:
         run.finish()
     except Exception as exc:
-        warnings.warn(f"[tracking] run.finish failed ({exc!r}); continuing.")
+        warnings.warn(f"[tracking] run.finish failed ({exc!r}); continuing.", stacklevel=2)

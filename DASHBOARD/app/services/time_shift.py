@@ -97,7 +97,10 @@ def fit_time_shift_model(
         else:
             # Linear fallback
             slope, intercept = np.polyfit(ts, ys, 1)
-            L = float(L_init); k = float(slope) / max(L_init, 1e-6); t0 = float(np.median(ts)); b = float(intercept)
+            L = float(L_init)
+            k = float(slope) / max(L_init, 1e-6)
+            t0 = float(np.median(ts))
+            b = float(intercept)
 
         out.biomarkers[key] = {
             "L": L, "k": k, "t0": t0, "b": b,

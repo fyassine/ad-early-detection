@@ -17,8 +17,10 @@ import numpy as np
 
 def cohens_d(x: np.ndarray, y: np.ndarray) -> Optional[float]:
     """Hedges-corrected Cohen's d between two samples. Returns None if either is empty."""
-    x = np.asarray(x, dtype=np.float64); x = x[np.isfinite(x)]
-    y = np.asarray(y, dtype=np.float64); y = y[np.isfinite(y)]
+    x = np.asarray(x, dtype=np.float64)
+    x = x[np.isfinite(x)]
+    y = np.asarray(y, dtype=np.float64)
+    y = y[np.isfinite(y)]
     nx, ny = len(x), len(y)
     if nx < 2 or ny < 2:
         return None
@@ -41,8 +43,10 @@ def bootstrap_ci(
     seed: int = 42,
 ) -> tuple[Optional[float], Optional[float]]:
     """Percentile bootstrap CI for Cohen's d. Returns (lower, upper)."""
-    x = np.asarray(x, dtype=np.float64); x = x[np.isfinite(x)]
-    y = np.asarray(y, dtype=np.float64); y = y[np.isfinite(y)]
+    x = np.asarray(x, dtype=np.float64)
+    x = x[np.isfinite(x)]
+    y = np.asarray(y, dtype=np.float64)
+    y = y[np.isfinite(y)]
     nx, ny = len(x), len(y)
     if nx < 2 or ny < 2:
         return None, None

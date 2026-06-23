@@ -183,7 +183,7 @@ def to_long_format(
     cohorts_df["_months"] = cohorts_df[visit_col].apply(visit_months)
     cohorts_df["_diagnosis_norm"] = cohorts_df["diagnosis"].astype(str).str.lower().str.strip()
 
-    agg = LongitudinalAggregator(
+    LongitudinalAggregator(
         cohorts_df, id_col=id_col_actual, visit_col=visit_col, diagnosis_col="diagnosis"
     )
 

@@ -27,7 +27,7 @@ async def api_schaefer_coords(n_parcels: int = Query(default=200)):
         with coord_file.open("r") as f:
             data = json.load(f)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to read coords: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to read coords: {e}") from e
     return JSONResponse(
         data,
         headers={"Cache-Control": "public, max-age=86400, immutable"},

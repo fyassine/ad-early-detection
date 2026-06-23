@@ -16,6 +16,7 @@ Compatible with PROGNOSER_RUNNER.ipynb via the 'lstm_surv' method option.
 from __future__ import annotations
 
 import math
+from typing import Callable
 
 import numpy as np
 import torch

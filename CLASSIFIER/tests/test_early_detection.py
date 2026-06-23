@@ -10,7 +10,7 @@ from CLASSIFIER.common.early_detection import early_detection_table, trajectory_
 def _bundle_with_visits(n_scans_per_subject, labels):
     items = [
         {"subject_id": f"s{i}", "label": lab, "n_scans": ns}
-        for i, (ns, lab) in enumerate(zip(n_scans_per_subject, labels))
+        for i, (ns, lab) in enumerate(zip(n_scans_per_subject, labels, strict=False))
     ]
     return Bundle(list(labels), [it["subject_id"] for it in items], items)
 

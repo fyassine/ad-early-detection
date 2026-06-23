@@ -37,6 +37,7 @@ def _run_epoch(model, loader, optimizer, device, beta, *, train: bool,
     for batch in loader:
         batch = batch.to(device)
         x, edge_index, edge_attr, batch_mask = batch.x, batch.edge_index, batch.edge_attr, batch.batch
+        cond_vec = torch.stack([batch.patient_age, batch.patient_sex.float()], dim=1)
 
         with torch.set_grad_enabled(train):
             _z, mu, logvar, adj_reconstructed, x_reconstructed = model(

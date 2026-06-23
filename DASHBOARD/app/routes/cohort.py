@@ -305,7 +305,7 @@ def api_cohort_missingness(
         observed = []
         for col, _ in available:
             has_val = grp[col].dropna()
-            has_val = has_val[has_val.astype(str).str.strip().isin(["", "nan"]) == False]
+            has_val = has_val[not has_val.astype(str).str.strip().isin(["", "nan"])]
             observed.append(1 if len(has_val) > 0 else 0)
         observed.append(min(n_visits, 10))  # visit count capped at 10 for colour scaling
         rows.append({
@@ -598,7 +598,8 @@ def api_cohort_dfc_states(
     h = hashlib.sha1()
     h.update(csv_path.encode())
     for f in sorted(folder_list):
-        h.update(b"\x00"); h.update(f.encode())
+        h.update(b"\x00")
+        h.update(f.encode())
     cache_key = h.hexdigest()[:20]
     cache_path = DASHBOARD_CACHE_ROOT / "dfc" / f"dfc_{cache_key}_k{k}_w{window}_s{step}.json"
 

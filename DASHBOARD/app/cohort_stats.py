@@ -261,7 +261,7 @@ def _collect_baseline_fc_vectors(
     subject_ids: list[str] = []
     n_rois: int = 0
 
-    for (sid, cohort, _path), matrix in zip(plan, matrices):
+    for (sid, cohort, _path), matrix in zip(plan, matrices, strict=False):
         if matrix is None:
             continue
         if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
@@ -353,7 +353,7 @@ def _collect_longitudinal_fc_vectors(
     feature_rows: list[np.ndarray] = []
     sids: list[str] = []
     visits: list[str] = []
-    for (sid, visit, _path), matrix in zip(plan, matrices):
+    for (sid, visit, _path), matrix in zip(plan, matrices, strict=False):
         if matrix is None:
             continue
         if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
@@ -508,13 +508,13 @@ def _biomarker_stats_from_features(
         # so ThreadPool gives no speedup on the 838-subject pass.
         with ProcessPoolExecutor(max_workers=n_workers) as pool:
             results = list(pool.map(_biomarkers_worker, miss_args, chunksize=16))
-        for idx, result in zip(miss_indices, results):
+        for idx, result in zip(miss_indices, results, strict=False):
             per_subject[idx] = result
     per_subject = [v if v is not None else {} for v in per_subject]
 
     # Write any newly computed entries back to the cache.
     dirty = False
-    for k, result in zip(keys, per_subject):
+    for k, result in zip(keys, per_subject, strict=False):
         if k not in cache and result:
             cache[k] = result
             dirty = True
@@ -672,10 +672,13 @@ def _conversion_score(x: float, y: float, axis: dict) -> Optional[float]:
     origin centroid, 1 at the target centroid."""
     if not axis:
         return None
-    origin = axis.get("origin"); direction = axis.get("direction"); length = axis.get("length", 0.0) or 0.0
+    origin = axis.get("origin")
+    direction = axis.get("direction")
+    length = axis.get("length", 0.0) or 0.0
     if not origin or not direction or length <= 1e-9:
         return None
-    dx = x - origin["x"]; dy = y - origin["y"]
+    dx = x - origin["x"]
+    dy = y - origin["y"]
     raw = dx * direction["x"] + dy * direction["y"]
     return _safe_float(raw / length)
 
@@ -710,7 +713,8 @@ def _build_patient_visit_coords(
         baseline_rec = _pick_baseline_npz(recs)
         if baseline_rec is None:
             continue
-        x = float(embedding[i, 0]); y = float(embedding[i, 1])
+        x = float(embedding[i, 0])
+        y = float(embedding[i, 1])
         out.setdefault(sid, {})[baseline_rec["visit"]] = {
             "x": _safe_float(x),
             "y": _safe_float(y),
@@ -722,7 +726,8 @@ def _build_patient_visit_coords(
         row = n_baseline + k
         if row >= embedding.shape[0]:
             break
-        x = float(embedding[row, 0]); y = float(embedding[row, 1])
+        x = float(embedding[row, 0])
+        y = float(embedding[row, 1])
         out.setdefault(sid, {})[long_visits[k]] = {
             "x": _safe_float(x),
             "y": _safe_float(y),
@@ -878,7 +883,7 @@ def _build_time_shift_model(
 
     samples: dict[str, list[tuple[int, float]]] = {k: [] for k in BIOMARKER_KEYS}
     # Baseline converters
-    for i, sid in enumerate(subject_ids):
+    for i, _sid in enumerate(subject_ids):
         if cohorts[i] != "converter":
             continue
         for key in BIOMARKER_KEYS:

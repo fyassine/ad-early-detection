@@ -191,7 +191,7 @@ class GELSTMAdapter(LongitudinalAdapter):
         eval_cfg = self._eval_cfg(dim_filter)
 
         best_auc, best_state, no_improve = 0.0, None, 0
-        for epoch in range(self.epochs):
+        for _epoch in range(self.epochs):
             tr_batches = make_batches(tr_items, self.batch_size, shuffle=True, rng=rng)
             va_batches = make_batches(va_items, self.batch_size, shuffle=False)
             train_epoch(model, tr_batches, optimizer, criterion, device,

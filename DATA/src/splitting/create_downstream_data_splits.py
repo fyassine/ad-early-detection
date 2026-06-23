@@ -107,7 +107,7 @@ def main():
     print(df["diagnosis"].value_counts().to_string())
 
     train_parts, val_parts, test_parts = [], [], []
-    for diagnosis, group_df in df.groupby("diagnosis"):
+    for _diagnosis, group_df in df.groupby("diagnosis"):
         ids = group_df["Pseudonym"].tolist()
         train_ids, temp = _stratified_split(ids, test_size=0.4, random_state=RANDOM_SEED)
         val_ids, test_ids = _stratified_split(temp, test_size=0.5, random_state=RANDOM_SEED)

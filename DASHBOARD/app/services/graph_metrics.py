@@ -299,7 +299,8 @@ def _gm_cache_key(csv_path: str, scan_folders: list[str]) -> str:
     h = hashlib.sha1()
     h.update(csv_path.encode("utf-8"))
     for f in sorted(scan_folders):
-        h.update(b"\x00"); h.update(f.encode("utf-8"))
+        h.update(b"\x00")
+        h.update(f.encode("utf-8"))
     return h.hexdigest()[:20]
 
 

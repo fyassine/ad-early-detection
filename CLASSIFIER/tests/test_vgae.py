@@ -162,6 +162,8 @@ def test_loss_backward_updates_encoder():
     mask = create_mask(batch_mask)
     _z, mu, logvar, adj_hat, _x_hat = model(x, ei, ea)
     total, _r, _k, _f = vgae_total_loss(adj_true, adj_hat, mask, mu, logvar)
-    opt.zero_grad(); total.backward(); opt.step()
+    opt.zero_grad()
+    total.backward()
+    opt.step()
     # at least one encoder parameter received a gradient
     assert any(p.grad is not None and torch.any(p.grad != 0) for p in model.parameters())

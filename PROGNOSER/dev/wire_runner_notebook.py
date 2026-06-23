@@ -69,7 +69,9 @@ def validate(nb, path: Path) -> None:
         try:
             compile(c.source, f"{path.name}[cell {i}]", "exec")
         except SyntaxError as exc:
-            raise SystemExit(f"[wire] {path.name} cell {i} does not compile: {exc}\n---\n{c.source}\n---")
+            raise SystemExit(
+                f"[wire] {path.name} cell {i} does not compile: {exc}\n---\n{c.source}\n---"
+            ) from exc
     _ensure_cell_ids(nb)
     nbformat.validate(nb)
 

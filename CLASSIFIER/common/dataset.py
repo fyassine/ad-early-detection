@@ -131,7 +131,7 @@ class ClassificationDataset(InMemoryDataset):
 
     def process(self):
         data_list = []
-        for idx, raw_path in enumerate(self.raw_paths):
+        for _idx, raw_path in enumerate(self.raw_paths):
             data_npz = np.load(raw_path)
             if 'array' in data_npz:
                 feature_matrix = data_npz['array']

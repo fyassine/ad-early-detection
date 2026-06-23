@@ -105,7 +105,6 @@ print(f"\nDXSUM after filtering: {len(dx):,} rows, {dx['PTID'].nunique():,} subj
 def _classify(group: pd.DataFrame):
     g = group.sort_values("EXAMDATE")
     diag = g["DIAGNOSIS"].values
-    dates = g["EXAMDATE"].values
 
     if 2 not in diag:
         return None, None, None
@@ -200,7 +199,7 @@ def attach_fmri(visits_df: pd.DataFrame, fmri_df: pd.DataFrame,
         best = pd.DataFrame()
 
     # 2. Visits with no in-window scan — recover from original visit list
-    matched_keys = (set(zip(best["PTID"], best["EXAMDATE"]))
+    (set(zip(best["PTID"], best["EXAMDATE"], strict=False))
                     if len(best) else set())
 
     no_scan = visits_df.merge(

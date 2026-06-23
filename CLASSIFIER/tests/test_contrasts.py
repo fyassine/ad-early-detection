@@ -1,6 +1,8 @@
 """Tests for CLASSIFIER.common.contrasts — frozen pre-registered contrasts."""
 from __future__ import annotations
 
+import dataclasses
+
 import pytest
 
 from CLASSIFIER.common.contrasts import CONTRASTS, Contrast, contrast_by_name, regions_referenced
@@ -33,7 +35,7 @@ def test_all_regions_are_valid_slugs():
 
 def test_contrast_dataclass_is_frozen():
     c = CONTRASTS[0]
-    with pytest.raises(Exception):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         c.name = "modified"  # type: ignore[misc]
 
 

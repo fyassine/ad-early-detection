@@ -269,7 +269,9 @@ class GAAEExplainAdapter(ExplainAdapter):
             per_subj.append(q["mse"])             # mean per-ROI reconstruction error (MSE)
             fidelity_r.append(q["pearson_r"])     # input↔reconstruction agreement
             labels.append(int(it["label"]))
-        per_subj = np.array(per_subj); fidelity_r = np.array(fidelity_r); labels = np.array(labels)
+        per_subj = np.array(per_subj)
+        fidelity_r = np.array(fidelity_r)
+        labels = np.array(labels)
         auc = (float(roc_auc_score(labels, per_subj))
                if len(np.unique(labels)) > 1 else float("nan"))
         return {
@@ -393,7 +395,9 @@ class VGAEExplainAdapter(ExplainAdapter):
             per_subj.append(q["mse"])
             fidelity_r.append(q["pearson_r"])
             labels.append(int(it["label"]))
-        per_subj = np.array(per_subj); fidelity_r = np.array(fidelity_r); labels = np.array(labels)
+        per_subj = np.array(per_subj)
+        fidelity_r = np.array(fidelity_r)
+        labels = np.array(labels)
         auc = (float(roc_auc_score(labels, per_subj))
                if len(np.unique(labels)) > 1 else float("nan"))
         return {
