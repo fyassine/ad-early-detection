@@ -70,7 +70,7 @@ CLASSIFIER/
   outputs/     all new run artifacts (gitignored)
   checkpoints/ legacy artifacts (back-compat only — do not write new runs here)
   tests/       pytest suite
-  experiments.yaml   registry of major runs
+  experiments/ directory   registry of major runs
 ```
 
 Every notebook in `notebooks/` starts with exactly one prefix:
@@ -101,7 +101,7 @@ Pass the RNG explicitly into anything that shuffles (`make_batches(..., rng=rng)
 Run an experiment via the registry rather than ad hoc notebook execution:
 
 ```bash
-python run_experiment.py --id <experiment_id>     # CLASSIFIER/experiments.yaml entries
+python run_experiment.py --id <experiment_id>     # CLASSIFIER/experiments/ directory entries
 python run_experiment.py --mode explain           # all EXPLAIN_ entries
 ```
 

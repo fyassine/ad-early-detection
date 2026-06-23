@@ -1,7 +1,7 @@
 # Experiment Runner
 
 Reproducible, background-capable, tracked execution of the notebooks registered in
-[`experiments.yaml`](experiments.yaml), via [`run_experiment.py`](run_experiment.py)
+[`experiments/` directory](experiments.yaml), via [`run_experiment.py`](run_experiment.py)
 (papermill).
 
 ## What you can do

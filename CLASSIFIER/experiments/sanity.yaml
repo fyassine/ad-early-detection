@@ -1,0 +1,76 @@
+# Sanity floors and visit-count confound diagnostics
+experiments:
+  - id: sanity-split-hygiene
+    mode: sanity
+    model: n/a
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb
+    notes: Hard-fails if any subject crosses train/val/test.
+
+  - id: sanity-metadata-baseline
+    mode: sanity
+    model: LogReg
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY/SANITY_BASELINE_METADATA_TIME.ipynb
+    notes: Metadata-only floor (age, sex, visit time).
+
+  - id: sanity-gelstm-ablations
+    mode: sanity
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY/SANITY_LONGITUDINAL_GELSTM.ipynb
+    notes: Shuffled-order, no-Δt, fixed-N ablations.
+
+  # Visit-count confound diagnostics — reload each model's latest trajectory run
+  # (no retraining) and quantify the converters-have-fewer-visits confound.
+  - id: sanity-visit-confound-gec
+    mode: sanity
+    model: GEC
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb
+    adapter: gec
+    source_experiment: gec-trajectory-whole-brain
+    notes: Visit-count confound diagnostics on the latest GEC trajectory model.
+
+  - id: sanity-visit-confound-gelstm
+    mode: sanity
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb
+    adapter: gelstm
+    source_experiment: gelstm-trajectory-whole-brain
+    notes: Visit-count confound diagnostics on the latest GELSTM trajectory model.
+
+  - id: sanity-visit-confound-gegru
+    mode: sanity
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb
+    adapter: gelstm
+    source_experiment: gegru-trajectory-whole-brain
+    notes: Visit-count confound diagnostics on the latest GEGRU (GRU) trajectory model.
+
+  - id: sanity-visit-confound-gelstm-wide-lnorm
+    mode: sanity
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb
+    adapter: gelstm
+    source_experiment: gelstm-whole-brain-wide-lnorm
+    notes: Confound + spread diagnostics on the wider-LayerNorm GELSTM variant.
+
+  # Model comparison overview
+  - id: model-comparison
+    mode: baseline
+    model: multi
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/BASELINE/BASELINE_MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb
+    notes: Subject-level comparison table across trajectory, early-detection, and static models.

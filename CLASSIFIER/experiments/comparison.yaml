@@ -1,0 +1,17 @@
+# Cross-region comparisons
+experiments:
+  - id: comparison-cross-region-classifier
+    mode: comparison
+    model: multi
+    dataset: DELCODE_MULTI_REGION
+    seed: 42
+    notebook: notebooks/COMPARISON/COMPARISON_CROSS_REGION_CLASSIFIER.ipynb
+    notes: Aggregates saved classifier predictions across brain regions.
+
+  - id: comparison-cross-region-survival
+    mode: comparison
+    model: multi
+    dataset: DELCODE_MULTI_REGION
+    seed: 42
+    notebook: notebooks/COMPARISON/COMPARISON_CROSS_REGION_SURVIVAL.ipynb
+    notes: Aggregates saved survival predictions across brain regions.

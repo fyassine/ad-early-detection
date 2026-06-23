@@ -56,7 +56,7 @@ from CLASSIFIER.common.runner_io import (  # noqa: E402
     format_metric_summary,
 )
 
-_REGISTRY = _CLASSIFIER_ROOT / "experiments.yaml"
+_REGISTRY = _CLASSIFIER_ROOT / "experiments"
 _OUTPUTS = _CLASSIFIER_ROOT / "outputs"
 
 # Source trees snapshotted into each run's source/ so a past run can be read back
@@ -67,7 +67,7 @@ _SOURCE_ROOTS = [
     "CLASSIFIER/configs",
     "CLASSIFIER/common",
     "CLASSIFIER/run_experiment.py",
-    "CLASSIFIER/experiments.yaml",
+    "CLASSIFIER/experiments",
     "DATA/src/splitting",
     "DATA/src/processing",
 ]

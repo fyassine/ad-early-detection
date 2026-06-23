@@ -374,7 +374,7 @@ flowchart LR
 
 # Part 5 — Technical Reference & Glossary
 
-## 5.1 Experiment registry (`CLASSIFIER/experiments.yaml`)
+## 5.1 Experiment registry (`CLASSIFIER/experiments/ directory`)
 
 The single source of truth for "what experiments exist." **12 entries** (verified against the
 file). Each entry has fields `id` (kebab-case slug), `mode`, `model`, `dataset`, `seed` (all 42),
@@ -552,7 +552,7 @@ threshold selection, FDR selection, contrasts immutability, and the comparison s
 
 | Assumption | Confidence | Basis |
 |---|---|---|
-| `experiments.yaml` contains 12 entries with kebab-case ids | **High** | Read the file end-to-end. |
+| `experiments/` directory contains entries with kebab-case ids | **High** | Read the files end-to-end. |
 | Config dataclass fields/defaults as listed in §5.2 | **High** | Read `configs/gelstm.py` and `configs/gec.py` verbatim. |
 | DASHBOARD route list in §5.4 | **High** | Grepped `@router.{get,delete}` decorators across `app/routes/`. |
 | `config.py` constants in §5.5 | **High** | Read `DASHBOARD/app/config.py` verbatim. |

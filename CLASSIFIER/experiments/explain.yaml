@@ -1,0 +1,102 @@
+# Explainability / diagnostics — one adapter-driven notebook, no retraining.
+# Needs CLASSIFIER/requirements-explain.txt (captum, nilearn).
+experiments:
+  - id: explain-gaae
+    mode: explain
+    model: GAAE
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: gaae
+    config_path: configs/gaae_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    notes: GAAE encoder explainability — latent space, GAT attention, reconstruction, latent-dim IG / GNNExplainer.
+
+  - id: explain-gec
+    mode: explain
+    model: GEC
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: gec
+    source_experiment: gec-trajectory-whole-brain
+    notes: Diagnose + explain the latest GEC trajectory run (reload, no retraining).
+
+  - id: explain-gelstm
+    mode: explain
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    source_experiment: gelstm-trajectory-whole-brain
+    notes: Diagnose + explain the latest GELSTM trajectory run (hidden states, occlusion, ablations).
+
+  - id: explain-gegru
+    mode: explain
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: gegru
+    source_experiment: gegru-trajectory-whole-brain
+    notes: Diagnose + explain the latest GEGRU (GRU) trajectory run.
+
+  - id: explain-gep
+    mode: explain
+    model: GEP
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: gep
+    source_experiment: gep-trajectory-whole-brain
+    notes: Diagnose + explain the latest pooled-embedding MLP run (reload, no retraining).
+
+  # VGAE encoder explainability (latent space, diagonal-masked adjacency reconstruction
+  # scored as edge AUC/AP, GAT attention). Reconstruction is FiLM-conditioned, so each
+  # entry's checkpoint_path must be a re-pretrained encoder (run vgae-*-static or
+  # vgae-*-static-anticollapse first); the pre-conditioning VGAE_*.pth no longer loads.
+  # config_path must match the arch (and feature_decoder) the checkpoint was trained with.
+  - id: explain-vgae-gcn
+    mode: explain
+    model: VGAE
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: vgae
+    config_path: configs/vgae_gcn_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GCN.pth
+    notes: VGAE (GCN) encoder explainability.
+
+  - id: explain-vgae-gat
+    mode: explain
+    model: VGAE
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: vgae
+    config_path: configs/vgae_gat_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GAT.pth
+    notes: VGAE (GAT) encoder explainability.
+
+  - id: explain-vgae-gcn-anticollapse
+    mode: explain
+    model: VGAE
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: vgae
+    config_path: configs/vgae_gcn_anticollapse_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GCN_ANTICOLLAPSE.pth
+    notes: Anti-collapse VGAE (GCN) encoder explainability — compare KL/recon vs vgae-gcn-static.
+
+  - id: explain-vgae-gat-anticollapse
+    mode: explain
+    model: VGAE
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: vgae
+    config_path: configs/vgae_gat_anticollapse_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GAT_ANTICOLLAPSE.pth
+    notes: Anti-collapse VGAE (GAT) encoder explainability — compare KL/recon vs vgae-gat-static.

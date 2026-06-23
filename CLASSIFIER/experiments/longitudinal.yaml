@@ -1,0 +1,143 @@
+# Longitudinal trajectory models
+experiments:
+  - id: gec-trajectory-whole-brain
+    mode: longitudinal
+    model: GEC
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gec
+    config_path: configs/long_gec_mlp_full_delcode.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: Flattened-trajectory GEC over the FULL GAAE latent space (no FDR) + Δt.
+
+  - id: gec-trajectory-whole-brain-fdr
+    mode: longitudinal
+    model: GEC
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gec
+    config_path: configs/long_gec_mlp_delcode.json
+    hyperparams:
+      use_fdr: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: Flattened-trajectory GEC over per-fold FDR-selected GAAE dims (top_k) + Δt.
+
+  - id: gep-trajectory-whole-brain
+    mode: longitudinal
+    model: GEP
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gep
+    config_path: configs/gep_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: Simplest downstream model — small MLP on the mean-pooled GAAE 64-d graph embedding (no trajectory flattening). encoder_arch=gaae.
+
+  - id: gelstm-trajectory-whole-brain
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: Full-trajectory LSTM (h32, 1 layer) on GAAE latents + per-fold StandardScaler + weight_decay=1e-4.
+
+  - id: gegru-trajectory-whole-brain
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gegru_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: Full-trajectory GRU (h32, 1 layer ~10k params) on GAAE latents + per-fold StandardScaler + weight_decay=1e-4. Size-matched to the LSTM entry (cell type is the only difference).
+
+  - id: gelstm-whole-brain-wide-lnorm
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_whole_brain_wide_lnorm.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: GELSTM with a wider LayerNorm head (h64, classifier_hidden64, dropout 0.15) to widen the narrow probability spread. See common/VISIT_COUNT_CONFOUND.md.
+
+  - id: gelstm-trajectory-whole-brain-fdr
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_fdr_filtered_delcode.json
+    hyperparams:
+      use_fdr: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: Per-fold FDR latent-dim selection (top_k), recurrent core patched to TOP_K input.
+
+  - id: gelstm-early-detection-first-n
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_FIRST_N_DELCODE.ipynb
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: First-N-visits ablation (early-detection task).
+
+  # Downstream classification on a VGAE encoder (the converter target for VGAE):
+  # the simplest GEP head on the pooled VGAE embedding. Set checkpoint_path to the
+  # VGAE model_*.pth and add `encoder_arch: vgae` + the VGAE arch via hyperparams.
+  - id: gep-vgae-gcn-trajectory-whole-brain
+    mode: longitudinal
+    model: GEP
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gep
+    config_path: configs/gep_delcode_whole_brain.json
+    hyperparams: {encoder_arch: vgae, conv_type: gcn, hidden_dim: 128, latent_dim: 64, adjacency_k: 16}
+    checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GCN.pth
+    threshold_mode: best-f1
+    notes: GEP head on the pooled VGAE(GCN) embedding — VGAE→converter classification.
+
+  # Same GEP head on the anti-collapse encoders — does fighting posterior collapse
+  # produce a more discriminative pooled embedding downstream? One per VGAE backbone.
+  - id: gep-vgae-gcn-anticollapse-trajectory-whole-brain
+    mode: longitudinal
+    model: GEP
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gep
+    config_path: configs/gep_delcode_whole_brain.json
+    hyperparams: {encoder_arch: vgae, conv_type: gcn, hidden_dim: 128, latent_dim: 64, adjacency_k: 16, feature_decoder: true}
+    checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GCN_ANTICOLLAPSE.pth
+    threshold_mode: best-f1
+    notes: GEP head on the pooled anti-collapse VGAE(GCN) embedding.
+
+  - id: gep-vgae-gat-anticollapse-trajectory-whole-brain
+    mode: longitudinal
+    model: GEP
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gep
+    config_path: configs/gep_delcode_whole_brain.json
+    hyperparams: {encoder_arch: vgae, conv_type: gat, hidden_dim: 128, latent_dim: 64, adjacency_k: 16, feature_decoder: true}
+    checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GAT_ANTICOLLAPSE.pth
+    threshold_mode: best-f1
+    notes: GEP head on the pooled anti-collapse VGAE(GAT) embedding.
