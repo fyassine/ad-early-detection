@@ -78,6 +78,7 @@ jobs:
           pip install PyYAML matplotlib
           pip install -r requirements-dev.txt
           pip install -r PROGNOSER/requirements.txt
+          pip install -r CLASSIFIER/requirements-explain.txt
       - name: Run tests (parallel, randomized order, coverage report)
         run: |
           pytest CLASSIFIER/tests/ PROGNOSER/tests/ DATA/src/splitting/tests/ \
