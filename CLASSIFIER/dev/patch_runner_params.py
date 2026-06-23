@@ -1,6 +1,6 @@
 """
 Idempotent patcher: inject a papermill ``parameters`` cell into every notebook
-referenced by experiments.yaml.
+referenced by experiments.
 
 The injected cell declares the variables ``run_experiment.py`` overrides, each
 with a safe *interactive* default so opening the notebook in Jupyter behaves
@@ -19,7 +19,7 @@ from pathlib import Path
 import yaml
 
 _CLASSIFIER_ROOT = Path(__file__).resolve().parents[1]
-_REGISTRY = _CLASSIFIER_ROOT / "experiments.yaml"
+_REGISTRY = _CLASSIFIER_ROOT / "experiments"
 
 PARAM_TAG = "parameters"
 

@@ -35,3 +35,20 @@ def test_log_metrics_swallows_errors():
 
     # Should warn, not raise.
     tracking.log_metrics(Boom(), {"a": 1})
+
+
+def test_run_name_splices_local_display_name_and_timestamp():
+    params = {**PARAMS, "RUN_NAME": "classic-wind-17-c68891b6f-2026-06-22_01-11-38"}
+    kwargs = tracking._build_init_kwargs(EXP, params, None)
+    assert kwargs["name"] == "classic-wind-17-exp-x-2026-06-22_01-11-38"
+
+
+def test_run_name_falls_back_without_local_run_name():
+    kwargs = tracking._build_init_kwargs(EXP, PARAMS, None)
+    assert kwargs["name"] == "exp-x"
+
+
+def test_run_name_keeps_fold_suffix():
+    params = {**PARAMS, "RUN_NAME": "classic-wind-17-c68891b6f-2026-06-22_01-11-38"}
+    kwargs = tracking._build_init_kwargs(EXP, params, 2)
+    assert kwargs["name"] == "classic-wind-17-exp-x-2026-06-22_01-11-38-fold2"

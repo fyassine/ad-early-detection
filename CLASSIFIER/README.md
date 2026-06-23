@@ -22,7 +22,7 @@ CLASSIFIER/
   checkpoints/        # legacy artifacts (back-compat only — do not write here)
   dev/                # one-off migration tools (e.g. patch_v2_notebooks.py)
   tests/              # pytest suite
-  experiments.yaml    # registry of major runs
+  experiments/ directory    # registry of major runs
 ```
 
 ## Naming convention

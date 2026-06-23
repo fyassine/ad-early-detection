@@ -1,18 +1,24 @@
 """Tests for model.VGAE — forward shapes, encode contract, and the VGAE loss.
 
 CPU-only, tiny synthetic graphs (no DELCODE matrices, no GAAE checkpoint). The
-full training path is exercised end-to-end by the experiment runner, not here.
+full training path (data loading, GAAE pretrain, notebook orchestration) is
+exercised end-to-end by the experiment runner, not here — but the early-stopping
+*logic* inside ``train_vgae_with_val`` is pure control flow and is unit-tested
+below on tiny synthetic loaders.
 """
 from __future__ import annotations
 
 import numpy as np
 import pytest
 import torch
+from torch_geometric.data import Data
+from torch_geometric.loader import DataLoader
 from torch_geometric.utils import dense_to_sparse, to_dense_adj
 
 from CLASSIFIER.model.GAAE.utils import create_mask
 from CLASSIFIER.model.VGAE.losses import kl_divergence, vgae_total_loss
 from CLASSIFIER.model.VGAE.models import VariationalGraphAutoencoder
+from CLASSIFIER.model.VGAE.train import train_vgae_with_val
 
 IN_FEATURES = 8
 N_NODES = 10
@@ -167,3 +173,83 @@ def test_loss_backward_updates_encoder():
     opt.step()
     # at least one encoder parameter received a gradient
     assert any(p.grad is not None and torch.any(p.grad != 0) for p in model.parameters())
+
+
+def _toy_loader(num_graphs=2, seed=0):
+    rng = np.random.default_rng(seed)
+    graphs = []
+    for i in range(num_graphs):
+        x, ei, ea = _toy_graph(seed + i)
+        graphs.append(Data(
+            x=x, edge_index=ei, edge_attr=ea,
+            patient_age=torch.tensor(rng.random(), dtype=torch.float),
+            patient_sex=torch.tensor(rng.integers(0, 2), dtype=torch.long),
+        ))
+    return DataLoader(graphs, batch_size=2, shuffle=False)
+
+
+def _stub_run_epoch_factory(recon=1.0, kl=2.0, feat=0.0):
+    """Deterministic stand-in for ``_run_epoch``: flat recon/kl/feat every epoch,
+    so the only thing that can move ``loss`` across epochs is the beta passed in —
+    mirrors the observed vgae-*-anticollapse curves (recon/kl flatlining fast)."""
+    def _stub(model, loader, optimizer, device, beta, *, train, free_bits=0.0,
+               feature_loss_weight=0.0):
+        return recon + beta * kl + feature_loss_weight * feat, recon, kl, feat
+    return _stub
+
+
+def test_early_stopping_waits_for_beta_warmup(monkeypatch):
+    """Regression test: patience must not exhaust during the beta ramp.
+
+    With flat recon/kl (stubbed, mirroring the observed vgae-anticollapse curves),
+    val_loss = recon + beta*kl rises every epoch purely because beta is ramping up.
+    Before the fix this made the first epoch (smallest beta) look like the
+    unbeatable "best" and exhausted patience almost immediately — exactly what
+    happened on the vgae-gcn/gat-static-anticollapse W&B runs, which stopped at
+    epoch ~25-27 with beta_warmup_epochs=100, early_stopping_patience=25.
+    """
+    import CLASSIFIER.model.VGAE.train as vgae_train
+    monkeypatch.setattr(vgae_train, "_run_epoch", _stub_run_epoch_factory())
+
+    model = VariationalGraphAutoencoder(IN_FEATURES, HIDDEN, LATENT, conv_type="gcn")
+    opt = torch.optim.Adam(model.parameters(), lr=1e-2)
+    train_loader = _toy_loader(seed=0)
+    val_loader = _toy_loader(seed=100)
+
+    beta_warmup_epochs = 10
+    early_stopping_patience = 2  # deliberately much shorter than the warmup
+    _best, history = train_vgae_with_val(
+        model, train_loader, val_loader, opt, torch.device("cpu"),
+        beta=1.0, beta_warmup_epochs=beta_warmup_epochs,
+        epochs=beta_warmup_epochs + early_stopping_patience + 2,
+        early_stopping_patience=early_stopping_patience,
+    )
+    # Must run through the full warmup before early stopping is even considered.
+    assert len(history["val_loss"]) >= beta_warmup_epochs
+    assert history["beta"][beta_warmup_epochs - 1] == pytest.approx(1.0)
+    # Post-warmup, val_loss is flat (recon/kl stubbed flat) -> patience exhausts
+    # exactly `early_stopping_patience` epochs after warmup completes.
+    assert len(history["val_loss"]) == beta_warmup_epochs + early_stopping_patience
+
+
+def test_early_stopping_unaffected_when_no_warmup(monkeypatch):
+    """beta_warmup_epochs=0 (the non-anticollapse default) keeps prior behaviour:
+    patience is counted from epoch 0 since beta is constant throughout."""
+    import CLASSIFIER.model.VGAE.train as vgae_train
+    monkeypatch.setattr(vgae_train, "_run_epoch", _stub_run_epoch_factory())
+
+    model = VariationalGraphAutoencoder(IN_FEATURES, HIDDEN, LATENT, conv_type="gcn")
+    opt = torch.optim.Adam(model.parameters(), lr=1e-2)
+    train_loader = _toy_loader(seed=0)
+    val_loader = _toy_loader(seed=100)
+
+    early_stopping_patience = 3
+    _best, history = train_vgae_with_val(
+        model, train_loader, val_loader, opt, torch.device("cpu"),
+        beta=1.0, beta_warmup_epochs=0,
+        epochs=50, early_stopping_patience=early_stopping_patience,
+    )
+    # Flat val_loss from epoch 0 (beta constant) -> stops right after `patience`
+    # epochs of no improvement, long before the 50-epoch cap.
+    assert len(history["val_loss"]) == early_stopping_patience + 1
+    assert all(b == pytest.approx(1.0) for b in history["beta"])

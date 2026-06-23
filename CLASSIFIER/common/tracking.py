@@ -31,6 +31,7 @@ Mode resolution (env ``WANDB_MODE`` wins, then experiment, then default):
 from __future__ import annotations
 
 import os
+import re
 import sys
 import warnings
 from pathlib import Path
@@ -39,6 +40,24 @@ from typing import Any, Dict, Optional
 from .provenance import capture_git_provenance
 
 _DEFAULT_PROJECT = "ad-early-detection"
+
+# Matches the local run_dir/notebook name the runner generates (run_naming.py +
+# run_experiment.py::run_one): "<adjective>-<noun>-<n>-<gitsha-or-nogit>-<timestamp>".
+# Used to lift the random display name + timestamp back out so the W&B run name
+# can splice in the experiment id in place of the git hash.
+_LOCAL_RUN_NAME_RE = re.compile(
+    r"^(?P<display>.+)-(?P<git>[0-9a-f]+|nogit)-(?P<timestamp>\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})$"
+)
+
+
+def _split_local_run_name(run_name: Optional[str]) -> Optional[tuple[str, str]]:
+    """Split a local run name into (display_name, timestamp), or None if it doesn't match."""
+    if not run_name:
+        return None
+    m = _LOCAL_RUN_NAME_RE.match(run_name)
+    if not m:
+        return None
+    return m.group("display"), m.group("timestamp")
 
 
 class _NoOpRun:
@@ -109,13 +128,22 @@ def _build_init_kwargs(exp: Dict[str, Any], params: Dict[str, Any], fold: Option
     """Assemble the wandb.init kwargs implementing the naming convention."""
     git = capture_git_provenance()
 
-    # W&B run name = the experiment id (the human-readable name given in the
-    # registry), so runs are easy to tell apart in the UI. The commit lives in
-    # the run config and the timestamp in the local run_dir; W&B shows its own
-    # created-at column. Folds get a ``-fold{k}`` suffix so they stay distinct
-    # within the experiment's group.
+    # W&B run name = "<local-display-name>-<experiment-id>-<timestamp>", e.g.
+    # "classic-wind-17-gec-trajectory-whole-brain-2026-06-23_21-13-30". The
+    # display name + timestamp are lifted from the local run_dir/notebook name
+    # (params["RUN_NAME"], set by run_experiment.py) so a run is identifiable
+    # from either W&B or the local outputs/ tree at a glance. Falls back to the
+    # bare experiment id if RUN_NAME isn't available (e.g. interactive notebook
+    # use outside the runner). Folds get a ``-fold{k}`` suffix.
     base_name = exp.get("id") or params.get("RUN_NAME") or "run"
-    name = f"{base_name}-fold{fold}" if fold is not None else base_name
+    local_parts = _split_local_run_name(params.get("RUN_NAME"))
+    if local_parts:
+        display_name, timestamp = local_parts
+        name = f"{display_name}-{base_name}-{timestamp}"
+    else:
+        name = base_name
+    if fold is not None:
+        name = f"{name}-fold{fold}"
 
     region = _region_tag(exp, params)
     tags = [
@@ -148,7 +176,7 @@ def init_run(exp: Dict[str, Any], params: Dict[str, Any], *, fold: Optional[int]
     Parameters
     ----------
     exp : dict
-        Experiment entry from ``experiments.yaml`` (needs at least ``id``,
+        Experiment entry from ``the experiments/ directory`` (needs at least ``id``,
         ``model``; ``mode``/``dataset``/``seed``/``notes`` are used for tags).
     params : dict
         The merged hyperparameter dict; logged verbatim as the run config.
@@ -184,7 +212,7 @@ def init_run(exp: Dict[str, Any], params: Dict[str, Any], *, fold: Optional[int]
     # the same stream so the banner always starts fresh.
     print(file=sys.stderr, flush=True)
     try:
-        return wandb.init(mode=mode, reinit=True, **init_kwargs)
+        return wandb.init(mode=mode, reinit=True, **init_kwargs)  # type: ignore[arg-type]
     except Exception as exc:
         if mode != "offline":
             warnings.warn(f"[tracking] wandb.init failed ({exc!r}); retrying in offline mode.", stacklevel=2)

@@ -90,6 +90,16 @@ def train_vgae_with_val(
         the model to have been built with ``feature_decoder=True`` (otherwise
         ``x_reconstructed`` is ``None`` and the term stays zero).
 
+    Early stopping is evaluated only once the β warmup has finished (``current_beta``
+    has reached its target ``beta``). ``val_loss = recon + beta*kl + feat_weight*feat``
+    rises every epoch while beta ramps up, purely from the beta multiplier, even when
+    recon/kl/feat are flat or improving — comparing val_loss across warmup epochs would
+    pick the first (smallest-beta, least-trained) epoch as "best" and exhaust patience
+    almost immediately. While warming up, ``best_model`` tracks the latest state_dict
+    (a fallback only) and ``epochs_no_improve`` does not advance. With
+    ``beta_warmup_epochs=0`` warmup is already complete at epoch 0, so this is a no-op
+    and behaviour for existing constant-beta configs is unchanged.
+
     Pass ``wandb_run=None`` to disable logging.
     """
     best_val_loss = float("inf")
@@ -129,13 +139,19 @@ def train_vgae_with_val(
         history["train_feat"].append(tr_feat)
         history["beta"].append(current_beta)
 
-        if va_loss < best_val_loss:
+        warmed_up = current_beta >= beta
+        if not warmed_up:
+            # val_loss isn't comparable across epochs while beta is still ramping up
+            # (the beta*kl term alone can make it rise epoch over epoch regardless of
+            # model quality) — keep the latest state as a fallback, don't early-stop.
+            best_model = copy.deepcopy(model.state_dict())
+        elif va_loss < best_val_loss:
             best_val_loss = va_loss
             epochs_no_improve = 0
             best_model = copy.deepcopy(model.state_dict())
         else:
             epochs_no_improve += 1
-        if epochs_no_improve >= early_stopping_patience:
+        if warmed_up and epochs_no_improve >= early_stopping_patience:
             logging.info("Early stopping triggered.")
             break
 

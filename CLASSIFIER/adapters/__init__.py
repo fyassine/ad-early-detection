@@ -70,7 +70,7 @@ def get_adapter(name: str) -> type:
     if target is None:
         raise ValueError(
             f"Unknown adapter {name!r}. Known adapter keys: {sorted(_REGISTRY)}. "
-            "Set 'adapter:' on the experiment in experiments.yaml (defaults to MODEL)."
+            "Set 'adapter:' on the experiment in the experiments/ directory (defaults to MODEL)."
         )
     module_path, _, cls_name = target.partition(":")
     import importlib

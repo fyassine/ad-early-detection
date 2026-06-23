@@ -29,19 +29,37 @@ _VALID_THRESHOLD_MODES = {None, "youden", "best-f1", "fixed"}
 # --------------------------------------------------------------------------- #
 def load_registry(yaml_path: str | Path) -> List[Dict[str, Any]]:
     """Load all experiment entries, raising on a malformed registry."""
-    yaml_path = Path(yaml_path)
-    if not yaml_path.is_file():
-        raise FileNotFoundError(f"Experiment registry not found: {yaml_path}")
-    data = yaml.safe_load(yaml_path.read_text()) or {}
-    experiments = data.get("experiments")
-    if not isinstance(experiments, list) or not experiments:
-        raise ValueError(f"{yaml_path} has no 'experiments:' list.")
+    registry_path = Path(yaml_path)
+
+    experiments = []
+
+    if registry_path.is_dir():
+        yaml_files = sorted(registry_path.glob("*.yaml"))
+        if not yaml_files:
+            raise FileNotFoundError(f"No .yaml files found in experiment registry directory: {registry_path}")
+    elif registry_path.is_file():
+        yaml_files = [registry_path]
+    else:
+        raise FileNotFoundError(f"Experiment registry not found: {registry_path}")
+
+    for current_yaml_path in yaml_files:
+        data = yaml.safe_load(current_yaml_path.read_text()) or {}
+        file_exps = data.get("experiments")
+        if not isinstance(file_exps, list) or not file_exps:
+            raise ValueError(f"{current_yaml_path} has no 'experiments:' list.")
+
+        for exp in file_exps:
+            if isinstance(exp, dict):
+                exp["_source_yaml"] = str(current_yaml_path)
+            experiments.append(exp)
+
     ids = [e.get("id") for e in experiments]
     dupes = {i for i in ids if i is not None and ids.count(i) > 1}
     if dupes:
-        raise ValueError(f"Duplicate experiment id(s) in {yaml_path}: {sorted(dupes)}")
+        raise ValueError(f"Duplicate experiment id(s) in {registry_path}: {sorted(dupes)}")
     for exp in experiments:
-        _validate_experiment(exp, yaml_path)
+        source_yaml = Path(exp.pop("_source_yaml")) if isinstance(exp, dict) and "_source_yaml" in exp else registry_path
+        _validate_experiment(exp, source_yaml)
     return experiments
 
 
@@ -121,15 +139,9 @@ def build_parameter_dict(exp: Dict[str, Any], classifier_root: str | Path) -> Di
         "EXPERIMENT_ID": exp["id"],
         "MODE": exp["mode"],
         "MODEL": exp["model"],
-        # Adapter registry key for the shared LONGITUDINAL_COMMON notebook; defaults
-        # to MODEL when 'adapter:' is omitted (see CLASSIFIER/adapters/__init__.py).
-        "ADAPTER": exp.get("adapter") or exp["model"],
         "DATASET": exp["dataset"],
         "SEED": exp["seed"],
         "GAAE_CHECKPOINT_PATH": exp.get("checkpoint_path"),
-        # Source run to reload for analysis-only notebooks (e.g. the visit-count
-        # confound sanity notebook): the notebook reads outputs/<id>/latest/.
-        "SOURCE_EXPERIMENT": exp.get("source_experiment"),
         "THRESHOLD_MODE": exp.get("threshold_mode"),
         "FIXED_THRESHOLD": exp.get("fixed_threshold"),
         "WANDB_ENABLED": exp.get("wandb", True),
@@ -139,6 +151,17 @@ def build_parameter_dict(exp: Dict[str, Any], classifier_root: str | Path) -> Di
         "RUN_DIR": None,
         "RUN_NAME": None,
     }
+
+    # Adapter registry key for the shared LONGITUDINAL_COMMON notebook; defaults
+    # to MODEL when 'adapter:' is omitted (see CLASSIFIER/adapters/__init__.py).
+    if "adapter" in exp or exp.get("mode") == "longitudinal":
+        params["ADAPTER"] = exp.get("adapter") or exp["model"]
+
+    # Source run to reload for analysis-only notebooks (e.g. the visit-count
+    # confound sanity notebook): the notebook reads outputs/<id>/latest/.
+    if "source_experiment" in exp:
+        params["SOURCE_EXPERIMENT"] = exp["source_experiment"]
+
     return params
 
 

@@ -457,7 +457,7 @@ class _ClassifierExplainAdapter(ExplainAdapter):
         if not self.source_experiment:
             raise ValueError(
                 f"{type(self).__name__} requires source_experiment; set "
-                "'source_experiment:' on the entry in experiments.yaml."
+                "'source_experiment:' on the entry in the experiments/ directory."
             )
         self.run_dir = resolve_source_run(self.source_experiment, classifier_root=self.classifier_root)
         summary_path = self.run_dir / "run_summary.json"

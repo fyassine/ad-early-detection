@@ -112,7 +112,7 @@ def select_oof_threshold(
         if runner_active:
             raise ValueError(
                 "threshold_mode is required under the experiment runner "
-                "(youden | best-f1 | fixed). Set 'threshold_mode:' in experiments.yaml."
+                "(youden | best-f1 | fixed). Set 'threshold_mode:' in the experiments/ directory."
             )
         if not interactive:
             # Non-interactive standalone use falls back to the documented default.
