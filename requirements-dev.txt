@@ -1,0 +1,10 @@
+# CI / local tooling only — not part of the runtime stack.
+# Install on top of the project-root .venv: pip install -r requirements-dev.txt
+ruff==0.6.9
+mypy==1.13.0
+pytest==8.3.3
+pytest-cov==6.0.0
+pytest-randomly==3.16.0
+pytest-xdist==3.6.1
+bandit==1.9.4
+pip-audit==2.7.3

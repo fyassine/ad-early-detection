@@ -17,6 +17,7 @@ Research codebase for Alzheimer's disease early detection using longitudinal bra
 @.claude/rules/evaluation.md
 @.claude/rules/checkpoints.md
 @.claude/rules/notebooks.md
+@.claude/rules/ci.md
 
 ## Reference docs (load on demand — do not embed)
 
@@ -29,4 +30,8 @@ Research codebase for Alzheimer's disease early detection using longitudinal bra
 
 ```bash
 pytest CLASSIFIER/tests/ PROGNOSER/tests/ DATA/src/splitting/tests/
+ruff check .
 ```
+
+Both must pass before code is handed off — see [ci.md](rules/ci.md) for the full gate
+list (lint/tests block; type/format/complexity/security report only).

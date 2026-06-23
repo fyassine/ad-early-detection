@@ -20,6 +20,7 @@
 - [Evaluation](../.claude/rules/evaluation.md) — best-F1 threshold (default) on val only, never re-threshold on test; use `threshold_mode="f1"` (preferred over `"youden"` for imbalanced data)
 - [Checkpoints](../.claude/rules/checkpoints.md) — full-state schema, `outputs/` vs legacy `checkpoints/`
 - [Notebooks](../.claude/rules/notebooks.md) — `BASELINE_` / `LONGITUDINAL_` / `STATIC_` / `SANITY_` prefix, splits via `common.splits`, sanity audit at head; three mandatory interactive prompts: (1) GAAE checkpoint index selection, (2) train vs load existing checkpoint, (3) threshold mode with Best-F1 as default (Youden as option 2)
+- [CI](../.claude/rules/ci.md) — `ruff check .` + `pytest` block before code is done; mypy/format/complexity/bandit/pip-audit report only, don't fix pre-existing findings outside your change
 
 ## Reference docs
 

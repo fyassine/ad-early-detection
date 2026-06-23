@@ -40,3 +40,31 @@ extend-exclude = '''
   | DATA/DELCODE
 )/
 '''
+
+[tool.mypy]
+# Non-blocking in CI (see .github/workflows/test.yml) — codebase is not fully
+# annotated yet. ignore_missing_imports covers untyped third-party deps
+# (torch_geometric, nilearn, lifelines, scikit-survival, wandb).
+python_version = "3.10"
+ignore_missing_imports = true
+exclude = '''(?x)(
+    ^__CLASSIFIER__/
+  | ^ABI/
+  | ^DCI/
+  | ^DATA/DELCODE/
+  | /checkpoints/.*/source/
+  | ^CLASSIFIER/outputs/
+  | ^PROGNOSER/outputs/
+  | ^DASHBOARD/\.venv/
+)'''
+
+[tool.pytest.ini_options]
+addopts = "--cov=CLASSIFIER --cov=PROGNOSER --cov-report=term-missing"
+
+[tool.coverage.run]
+omit = [
+    "*/tests/*",
+    "*/__CLASSIFIER__/*",
+    "*/ABI/*",
+    "*/DCI/*",
+]

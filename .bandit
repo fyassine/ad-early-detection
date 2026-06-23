@@ -1,0 +1,9 @@
+exclude_dirs:
+  - tests
+  - __CLASSIFIER__
+  - ABI
+  - DCI
+  - .venv
+  - outputs
+  - checkpoints
+  - node_modules
