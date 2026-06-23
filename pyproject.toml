@@ -47,6 +47,8 @@ extend-exclude = '''
 # (torch_geometric, nilearn, lifelines, scikit-survival, wandb).
 python_version = "3.10"
 ignore_missing_imports = true
+mypy_path = "."
+explicit_package_bases = true
 exclude = '''(?x)(
     ^__CLASSIFIER__/
   | ^ABI/

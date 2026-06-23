@@ -2,6 +2,7 @@
 # Install on top of the project-root .venv: pip install -r requirements-dev.txt
 ruff==0.6.9
 mypy==1.13.0
+types-PyYAML==6.0.12.20240917
 pytest==8.3.3
 pytest-cov==6.0.0
 pytest-randomly==3.16.0
