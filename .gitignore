@@ -11,12 +11,15 @@ CLASSIFIER/outputs/**
 !CLASSIFIER/outputs/**/
 !CLASSIFIER/outputs/**/.gitkeep
 !CLASSIFIER/outputs/**/*.ipynb
+!CLASSIFIER/outputs/**/latest
 
 # --- PROGNOSER outputs ---
 PROGNOSER/outputs/**
 !PROGNOSER/outputs/**/
 !PROGNOSER/outputs/**/.gitkeep
 !PROGNOSER/outputs/**/*.ipynb
+!PROGNOSER/outputs/**/latest
+
 
 *.log
 **/*.pkl
