@@ -5,10 +5,19 @@
 **/.venv/
 **/wandb/
 **/checkpoints/
-CLASSIFIER/outputs/*
-!CLASSIFIER/outputs/.gitkeep
-PROGNOSER/outputs/*
-!PROGNOSER/outputs/.gitkeep
+
+# --- CLASSIFIER outputs ---
+CLASSIFIER/outputs/**
+!CLASSIFIER/outputs/**/
+!CLASSIFIER/outputs/**/.gitkeep
+!CLASSIFIER/outputs/**/*.ipynb
+
+# --- PROGNOSER outputs ---
+PROGNOSER/outputs/**
+!PROGNOSER/outputs/**/
+!PROGNOSER/outputs/**/.gitkeep
+!PROGNOSER/outputs/**/*.ipynb
+
 *.log
 **/*.pkl
 **/*.npz
@@ -48,4 +57,3 @@ DATA/src/processing/subcortex/**/*.pptx
 DATA/src/processing/subcortex/**/*.xlsx
 DATA/src/processing/subcortex/**/*.pdf
 DATA/src/processing/subcortex/**/license.txt
-
