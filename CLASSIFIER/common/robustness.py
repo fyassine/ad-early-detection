@@ -71,11 +71,14 @@ def perturb_graph(
             new_src, new_dst = new_src[valid], new_dst[valid]
             if new_src.numel() > 0:
                 add_edges = torch.stack([new_src.long(), new_dst.long()], dim=0)
-                d.edge_index = torch.cat([kept_edges, add_edges], dim=1)
+                # Dedup against kept_edges and within add_edges itself — duplicate
+                # (src, dst) pairs make to_dense_adj sum them to >1, which violates
+                # BCE's target-in-[0,1] assumption downstream.
+                d.edge_index = torch.unique(torch.cat([kept_edges, add_edges], dim=1), dim=1)
             else:
-                d.edge_index = kept_edges
+                d.edge_index = torch.unique(kept_edges, dim=1)
         else:
-            d.edge_index = kept_edges
+            d.edge_index = torch.unique(kept_edges, dim=1)
 
         if hasattr(d, "edge_attr") and d.edge_attr is not None:
             d.edge_attr = torch.ones(d.edge_index.size(1), dtype=d.edge_attr.dtype)

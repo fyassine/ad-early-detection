@@ -17,6 +17,14 @@ Contract (see ``ExplainAdapter``):
     capabilities, load, prepare_bundles, latent_embeddings, diagnostics,
     pick_walkthrough_subject, baseline_visit, trace_forward, region_importance,
     predict_one, extra.
+
+``extra`` also dispatches three generic, non-capability-gated names available on
+*every* adapter purely via ``latent_embeddings()`` — ``logreg_probe``,
+``latent_separability`` (silhouette + Fisher Discriminant Ratio), and
+``disease_axis`` (logistic-regression steering direction + residual PCA). GAAE
+additionally exposes the decoder-dependent ``disease_axis_steering`` and
+``sorted_reconstruction`` (capability-gated; VGAE's adjacency decoder is structurally
+different enough that porting those two is left for later).
 """
 from __future__ import annotations
 
@@ -181,8 +189,41 @@ class ExplainAdapter:
     def predict_one(self, subject: Dict[str, Any]) -> Dict[str, Any]:  # pragma: no cover
         raise NotImplementedError
 
-    def extra(self, name: str, ctx: Dict[str, Any]) -> Dict[str, Any]:  # pragma: no cover
-        raise NotImplementedError
+    def extra(self, name: str, ctx: Dict[str, Any]) -> Dict[str, Any]:
+        """Generic extras available to every adapter, driven purely by
+        ``latent_embeddings()`` — ``logreg_probe``, ``latent_separability``,
+        ``disease_axis``. These are not capability-gated: every adapter implements
+        ``latent_embeddings``, so every adapter gets them for free.
+
+        Subclasses override ``extra`` for their own (capability-gated) names and
+        fall back to ``super().extra(name, ctx)`` instead of raising directly, so
+        these generic names keep working everywhere.
+        """
+        bundle = ctx.get("bundle")
+        if bundle is None:
+            raise ValueError(f"ExplainAdapter.extra({name!r}) requires ctx['bundle'].")
+        X, y, sids = self.latent_embeddings(bundle)
+
+        if name == "latent_separability":
+            from common.explain import latent_dim_separability
+
+            return {**latent_dim_separability(X, y), "X": X, "y": y}
+
+        if name == "logreg_probe":
+            from model.classification.logreg_cv import train_logreg_cv
+
+            groups = np.array(sids)
+            n_folds = min(int(ctx.get("n_folds", 5)), len(np.unique(groups)))
+            result = train_logreg_cv(X, y, groups, n_folds=n_folds, seed=int(ctx.get("seed", 42)))
+            return {"result": result, "X": X, "y": y, "sids": sids}
+
+        if name == "disease_axis":
+            from common.explain import disease_axis_projection
+
+            proj = disease_axis_projection(X, y, seed=int(ctx.get("seed", 42)))
+            return {**proj, "X": X, "y": y, "sids": sids}
+
+        raise ValueError(f"{type(self).__name__} has no extra {name!r}.")
 
     # ── shared helpers ──────────────────────────────────────────────────────
     def _encoder(self) -> GraphAttentionAutoencoderConditioned:  # overridden where a trained encoder exists
@@ -196,7 +237,7 @@ class ExplainAdapter:
             out_features=self.gaae_latent, cond_dim=self.gaae_cond_dim,
             num_heads=self.gaae_heads, dropout=self.gaae_dropout,
         ).to(self.device)
-        obj = torch.load(self.gaae_ckpt_path, map_location=self.device, weights_only=False)
+        obj = torch.load(self.gaae_ckpt_path, map_location=self.device, weights_only=False)  # nosec B614
         enc.load_state_dict(obj if isinstance(obj, dict) else obj.state_dict())
         enc.eval()
         for p in enc.parameters():
@@ -230,7 +271,8 @@ class ExplainAdapter:
 class GAAEExplainAdapter(ExplainAdapter):
     """Explain the GAAE encoder itself: latent space, attention, reconstruction, IG."""
 
-    capabilities = {"reconstruction", "latent_ig", "gnn_explainer", "attention"}
+    capabilities = {"reconstruction", "latent_ig", "gnn_explainer", "attention",
+                    "disease_axis_steering", "sorted_reconstruction"}
     model_tag = "gaae"
 
     def load(self) -> Dict[str, Any]:
@@ -262,16 +304,16 @@ class GAAEExplainAdapter(ExplainAdapter):
         from sklearn.metrics import roc_auc_score
 
         enc = self._encoder()
-        per_subj, fidelity_r, labels = [], [], []
+        per_subj_list, fidelity_r_list, labels_list = [], [], []
         for it in bundle.items:
             x, x_rec = reconstruct_features(enc, it["graphs"][0], device=self.device)
             q = reconstruction_quality(x, x_rec)  # one forward pass → error + fidelity
-            per_subj.append(q["mse"])             # mean per-ROI reconstruction error (MSE)
-            fidelity_r.append(q["pearson_r"])     # input↔reconstruction agreement
-            labels.append(int(it["label"]))
-        per_subj = np.array(per_subj)
-        fidelity_r = np.array(fidelity_r)
-        labels = np.array(labels)
+            per_subj_list.append(q["mse"])             # mean per-ROI reconstruction error (MSE)
+            fidelity_r_list.append(q["pearson_r"])     # input↔reconstruction agreement
+            labels_list.append(int(it["label"]))
+        per_subj: np.ndarray = np.array(per_subj_list)
+        fidelity_r: np.ndarray = np.array(fidelity_r_list)
+        labels: np.ndarray = np.array(labels_list)
         auc = (float(roc_auc_score(labels, per_subj))
                if len(np.unique(labels)) > 1 else float("nan"))
         return {
@@ -316,7 +358,21 @@ class GAAEExplainAdapter(ExplainAdapter):
 
             dim = int(ctx.get("latent_dim", 0))
             return {**gnn_explain_latent_dim(enc, g, dim, device=self.device), "latent_dim": dim}
-        raise ValueError(f"GAAEExplainAdapter has no extra {name!r}.")
+        if name == "disease_axis_steering":
+            from model.GAAE.explain import steer_along_axis
+
+            proj = ctx["disease_axis"]  # precomputed via extra('disease_axis', ...)
+            sigma = float(ctx.get("sigma", np.std(proj["X"])))
+            return steer_along_axis(enc, g, proj["w_hat"], sigma,
+                                    scales=ctx.get("scales"), device=self.device)
+        if name == "sorted_reconstruction":
+            from model.GAAE.explain import reconstruct_sorted_by_score
+
+            # ``subjects``: list of {"data": <PyG Data>, "score": float, "label": int},
+            # selected/sorted by the caller (e.g. evenly sampled across the disease-
+            # score range from a precomputed extra('disease_axis', ...) result).
+            return reconstruct_sorted_by_score(enc, ctx["subjects"], device=self.device)
+        return super().extra(name, ctx)  # nosec B610 - capability-dispatch contract, not Django QuerySet.extra()
 
 
 # --------------------------------------------------------------------------- #
@@ -353,7 +409,7 @@ class VGAEExplainAdapter(ExplainAdapter):
         if not self.gaae_ckpt_path:
             raise ValueError("VGAEExplainAdapter requires checkpoint_path to the VGAE encoder.")
         enc = VariationalGraphAutoencoder(**self._vgae_kw()).to(self.device)
-        obj = torch.load(self.gaae_ckpt_path, map_location=self.device, weights_only=False)
+        obj = torch.load(self.gaae_ckpt_path, map_location=self.device, weights_only=False)  # nosec B614
         enc.load_state_dict(obj if isinstance(obj, dict) else obj.state_dict())
         enc.eval()
         for p in enc.parameters():
@@ -388,16 +444,16 @@ class VGAEExplainAdapter(ExplainAdapter):
         from sklearn.metrics import roc_auc_score
 
         enc = self._encoder()
-        per_subj, fidelity_r, labels = [], [], []
+        per_subj_list, fidelity_r_list, labels_list = [], [], []
         for it in bundle.items:
             adj_true, adj_hat = reconstruct_adjacency(enc, it["graphs"][0], device=self.device)
             q = reconstruction_quality(adj_true, adj_hat)  # adjacency MSE + input↔recon r
-            per_subj.append(q["mse"])
-            fidelity_r.append(q["pearson_r"])
-            labels.append(int(it["label"]))
-        per_subj = np.array(per_subj)
-        fidelity_r = np.array(fidelity_r)
-        labels = np.array(labels)
+            per_subj_list.append(q["mse"])
+            fidelity_r_list.append(q["pearson_r"])
+            labels_list.append(int(it["label"]))
+        per_subj: np.ndarray = np.array(per_subj_list)
+        fidelity_r: np.ndarray = np.array(fidelity_r_list)
+        labels: np.ndarray = np.array(labels_list)
         auc = (float(roc_auc_score(labels, per_subj))
                if len(np.unique(labels)) > 1 else float("nan"))
         return {
@@ -430,7 +486,7 @@ class VGAEExplainAdapter(ExplainAdapter):
             return {"per_node_error": per_node_adjacency_error(enc, g, device=self.device)}
         if name == "attention":
             return {"region_importance": self.region_importance(subject)}
-        raise ValueError(f"VGAEExplainAdapter has no extra {name!r}.")
+        return super().extra(name, ctx)  # nosec B610 - capability-dispatch contract, not Django QuerySet.extra()
 
 
 # --------------------------------------------------------------------------- #
@@ -470,6 +526,7 @@ class _ClassifierExplainAdapter(ExplainAdapter):
         self.threshold = read_run_threshold(self.run_dir)
         metrics = summary.get("metrics") or {}
         self.saved_auc = metrics.get("test_auc", summary.get("test_auc"))
+        assert self.threshold is not None, "read_run_threshold returned None — check the run directory."
         return {
             "run_dir": str(self.run_dir),
             "threshold": float(self.threshold),
@@ -485,6 +542,7 @@ class _ClassifierExplainAdapter(ExplainAdapter):
     def diagnostics(self, bundle: Bundle) -> Dict[str, Any]:
         from common.calibration import expected_calibration_error
 
+        assert self.threshold is not None, "load() must be called before diagnostics()"
         res = self._tr.eval_split(self.state, bundle, self.threshold, device=self.device)
         probs = np.asarray(res["probs"], dtype=float)
         targets = np.asarray(res["targets"], dtype=int)
@@ -537,6 +595,7 @@ class GECExplainAdapter(_ClassifierExplainAdapter):
         }
 
     def predict_one(self, subject: Dict[str, Any]) -> Dict[str, Any]:
+        assert self.threshold is not None, "load() must be called before predict_one()"
         pv = self._tr.per_visit_probs(self.state, subject, device=self.device)
         prob = float(pv[-1][1]) if pv else float("nan")
         return {"prob": prob, "pred": int(prob >= self.threshold), "true": int(subject["label"]),
@@ -557,6 +616,7 @@ class GECExplainAdapter(_ClassifierExplainAdapter):
         if name == "latent_ig":
             from model.GEC.explain import mlp_input_attribution, unpack_flat_importance
 
+            assert self.state is not None, "load() must be called before extra()"
             model = self._tr._model_for_state(self.state)
             X, _y = self._tr._records_to_X([subject], self.state["dim_filter"], self.state["max_visits"])
             X_s = self.state["scaler"].transform(X)[0]
@@ -566,7 +626,7 @@ class GECExplainAdapter(_ClassifierExplainAdapter):
                 use_time_delta=self._tr.use_time_delta, append_visit_mask=self._tr.append_visit_mask,
             )
             return unpacked
-        raise ValueError(f"GECExplainAdapter has no extra {name!r}.")
+        return super().extra(name, ctx)  # nosec B610 - capability-dispatch contract, not Django QuerySet.extra()
 
 
 # --------------------------------------------------------------------------- #
@@ -605,6 +665,7 @@ class GEPExplainAdapter(_ClassifierExplainAdapter):
         }
 
     def predict_one(self, subject: Dict[str, Any]) -> Dict[str, Any]:
+        assert self.threshold is not None, "load() must be called before predict_one()"
         pv = self._tr.per_visit_probs(self.state, subject, device=self.device)
         prob = float(pv[-1][1]) if pv else float("nan")
         return {"prob": prob, "pred": int(prob >= self.threshold), "true": int(subject["label"]),
@@ -622,7 +683,7 @@ class GEPExplainAdapter(_ClassifierExplainAdapter):
                 self.state, self.threshold, device=self.device,
             )
             return {"early_detection": rows}
-        raise ValueError(f"GEPExplainAdapter has no extra {name!r}.")
+        return super().extra(name, ctx)  # nosec B610 - capability-dispatch contract, not Django QuerySet.extra()
 
 
 # --------------------------------------------------------------------------- #
@@ -665,6 +726,7 @@ class GELSTMExplainAdapter(_ClassifierExplainAdapter):
         )
 
     def predict_one(self, subject: Dict[str, Any]) -> Dict[str, Any]:
+        assert self.threshold is not None, "load() must be called before predict_one()"
         tr = self.trace_forward(subject)
         prob = float(tr["prob"])
         return {"prob": prob, "pred": int(prob >= self.threshold), "true": int(subject["label"]),
@@ -703,7 +765,7 @@ class GELSTMExplainAdapter(_ClassifierExplainAdapter):
                 use_time_delta=self._tr.use_time_delta, graph_pool=self.graph_pool,
                 dim_filter=self._dim_filter(),
             )
-        raise ValueError(f"GELSTMExplainAdapter has no extra {name!r}.")
+        return super().extra(name, ctx)  # nosec B610 - capability-dispatch contract, not Django QuerySet.extra()
 
     def _visit_occlusion(self, subject) -> List[Dict[str, Any]]:
         """Drop each visit in turn; record the change in P(converter)."""

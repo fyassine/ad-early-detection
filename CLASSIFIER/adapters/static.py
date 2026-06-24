@@ -210,7 +210,7 @@ class VGAEStaticAdapter(StaticAdapter):
         }
         return model, model_config
 
-    def run_training(self, model, optimizer, train_loader, val_loader, wandb_run):
+    def run_training(self, model, optimizer, train_loader, val_loader, wandb_run, *, on_epoch_end=None):
         from model.VGAE.train import train_vgae_with_val
 
         c = self.cfg
@@ -227,6 +227,7 @@ class VGAEStaticAdapter(StaticAdapter):
             epochs=c.get("epochs", 500),
             early_stopping_patience=c.get("early_stopping_patience", 25),
             wandb_run=wandb_run,
+            on_epoch_end=on_epoch_end,
         )
 
     def compute_sample_error(self, sample, model):

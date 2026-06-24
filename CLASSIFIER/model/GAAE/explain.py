@@ -295,6 +295,67 @@ def gnn_explain_latent_dim(
     }
 
 
+@torch.no_grad()
+def steer_along_axis(
+    model, data, w_hat: np.ndarray, sigma: float, *,
+    scales: Optional[np.ndarray] = None, device="cpu",
+) -> Dict[str, Any]:
+    """Steer one subject's baseline graph along a disease-axis direction and decode.
+
+    ``w_hat`` is a unit steering direction in latent space (e.g. from
+    ``common.explain.disease_axis_projection``); ``sigma`` is the population std of
+    the pooled latent space (1 step = 1 std), passed explicitly by the caller rather
+    than recomputed here — see ``.claude/rules/errors.md`` on not hiding implicit
+    defaults. Returns ``{"scales", "baseline_fc", "steered_fcs"}``, where
+    ``baseline_fc``/each entry of ``steered_fcs`` is the (N_nodes, in_features)
+    decoder reconstruction at that scale.
+    """
+    if scales is None:
+        scales = np.linspace(-3.0, 3.0, 11)
+    model.eval()
+    x = data.x.to(device)
+    ei = data.edge_index.to(device)
+    ea = _edge_attr(data)
+    ea = ea.to(device) if ea is not None else None
+    z = model.encode(x, ei, ea)
+    w = torch.tensor(np.asarray(w_hat, dtype=np.float32), device=device)
+
+    baseline_fc = model.decode_features(z, ei, ea).cpu().numpy()
+    steered_fcs = []
+    for scale in scales:
+        shift = float(scale * sigma) * w.unsqueeze(0)
+        fc = model.decode_features(z + shift, ei, ea).cpu().numpy()
+        steered_fcs.append(fc)
+    return {"scales": np.asarray(scales, dtype=float), "baseline_fc": baseline_fc,
+            "steered_fcs": steered_fcs}
+
+
+@torch.no_grad()
+def reconstruct_sorted_by_score(model, subjects: List[Dict[str, Any]], *, device="cpu") -> Dict[str, Any]:
+    """Encode+decode each subject's baseline graph; pair with its disease score/label.
+
+    ``subjects`` is a list of ``{"data": <PyG Data>, "score": float, "label": int}``
+    — already selected/sorted by the caller (e.g. evenly sampled across the disease-
+    score range). Returns aligned ``{"gt", "recon", "scores", "labels"}`` lists for
+    the ground-truth-vs-reconstruction grid plot.
+    """
+    model.eval()
+    gt, recon, scores, labels = [], [], [], []
+    for subj in subjects:
+        data = subj["data"]
+        x = data.x.to(device)
+        ei = data.edge_index.to(device)
+        ea = _edge_attr(data)
+        ea = ea.to(device) if ea is not None else None
+        z = model.encode(x, ei, ea)
+        x_rec = model.decode_features(z, ei, ea)
+        gt.append(x.cpu().numpy())
+        recon.append(x_rec.cpu().numpy())
+        scores.append(float(subj["score"]))
+        labels.append(subj["label"])
+    return {"gt": gt, "recon": recon, "scores": scores, "labels": labels}
+
+
 __all__ = [
     "aggregate_gat_attention",
     "per_node_reconstruction_error",
@@ -303,4 +364,6 @@ __all__ = [
     "trace_forward",
     "latent_dim_integrated_gradients",
     "gnn_explain_latent_dim",
+    "steer_along_axis",
+    "reconstruct_sorted_by_score",
 ]

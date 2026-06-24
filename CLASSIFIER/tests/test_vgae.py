@@ -16,7 +16,7 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.utils import dense_to_sparse, to_dense_adj
 
 from CLASSIFIER.model.GAAE.utils import create_mask
-from CLASSIFIER.model.VGAE.losses import kl_divergence, vgae_total_loss
+from CLASSIFIER.model.VGAE.losses import kl_divergence, raw_kl_stats, vgae_total_loss
 from CLASSIFIER.model.VGAE.models import VariationalGraphAutoencoder
 from CLASSIFIER.model.VGAE.train import train_vgae_with_val
 
@@ -110,19 +110,75 @@ def test_kl_divergence_zero_at_standard_normal():
 
 
 def test_free_bits_floors_per_dim_kl():
-    """A near-collapsed posterior has KL clamped up to free_bits*latent_dim."""
+    """A near-collapsed posterior has KL raised by ``clamp(kl, min=free_bits) +
+    clamp(free_bits - kl, min=0)**2``: at/above the floor this is just ``kl``
+    (matches the plain hard clamp exactly); below it, the squared-shortfall
+    term adds an extra, strictly positive contribution — see
+    ``test_free_bits_keeps_gradient_below_floor`` for why that term's *sign*,
+    not just its magnitude, is what actually matters here.
+    """
     # mu/logvar close to the prior -> raw KL ~ 0; free_bits installs a per-dim floor.
     mu = torch.full((N_NODES, LATENT), 1e-3)
     logvar = torch.zeros(N_NODES, LATENT)
     raw = kl_divergence(mu, logvar, free_bits=0.0)
     floored = kl_divergence(mu, logvar, free_bits=0.5)
     assert raw < floored
-    # Each of LATENT dims is floored at 0.5 nats -> total ~= 0.5 * LATENT.
-    assert torch.allclose(floored, torch.tensor(0.5 * LATENT), atol=1e-3)
-    # free_bits is a floor only: a posterior already above it is left untouched.
+    # Each dim sits at clamp(raw_per_dim, min=0.5) + clamp(0.5 - raw_per_dim, min=0)**2
+    # ~= 0.5 + 0.5**2 since raw_per_dim ~= 0.
+    expected_per_dim = 0.5 + 0.5**2
+    assert torch.allclose(floored, torch.tensor(expected_per_dim * LATENT), atol=1e-3)
+    # far above the floor, the shortfall term is zero and this matches the plain hard clamp.
     big = kl_divergence(torch.ones(N_NODES, LATENT) * 5, torch.zeros(N_NODES, LATENT))
     assert torch.allclose(big, kl_divergence(torch.ones(N_NODES, LATENT) * 5,
-                                             torch.zeros(N_NODES, LATENT), free_bits=0.5))
+                                             torch.zeros(N_NODES, LATENT), free_bits=0.5), atol=1e-3)
+
+
+def test_free_bits_keeps_gradient_below_floor():
+    """Below the floor, the gradient w.r.t. raw KL must be NEGATIVE (push KL
+    up), not just nonzero. A plain ``torch.clamp(kl, min=free_bits)`` gives
+    exactly zero gradient there — that zero-gradient region is exactly what
+    made every trial in ``scripts/tune_vgae_anticollapse.py`` collapse
+    identically regardless of the swept free_bits value: at init (mu~0,
+    logvar~0) every dim's raw KL starts near 0, below any reasonable
+    free_bits, so the KL term gave zero gradient for every dim simultaneously
+    and nothing ever pushed a dim back above the floor. A naive
+    ``free_bits + softplus(kl - free_bits)`` relaxation is not a fix either —
+    its gradient stays *positive* below the floor (it still pushes KL down,
+    just less strongly), which empirically converges to a *more* collapsed
+    posterior, not less.
+    """
+    # logvar=0 exactly is a stationary point of the raw KL itself (d/dlogvar = 0
+    # there independent of any floor), so pick a nearby value to isolate the
+    # floor's effect on the gradient rather than that unrelated stationary point.
+    mu = torch.full((N_NODES, LATENT), 0.1, requires_grad=True)
+    logvar = torch.full((N_NODES, LATENT), -0.2, requires_grad=True)
+    raw = kl_divergence(mu.detach(), logvar.detach(), free_bits=0.0)
+    assert raw < 0.5  # below the free_bits floor used below
+
+    loss = kl_divergence(mu, logvar, free_bits=0.5)
+    loss.backward()
+    # d(kl_per_dim)/d(mu) = mu > 0 here, so a *negative* d(loss)/d(mu) means
+    # gradient descent increases mu (and hence kl) — i.e. the push is genuinely
+    # upward, not just "nonzero in some direction".
+    assert mu.grad is not None and torch.all(mu.grad < 0)
+    assert logvar.grad is not None and torch.all(logvar.grad != 0)
+
+
+def test_raw_kl_stats_reports_pre_clamp_values_and_floor_fraction():
+    """``torch.clamp(min=free_bits)`` zeroes the gradient for any dimension already
+    at/below the floor, so once free-bits is pinning the loss the clamped KL alone
+    can't tell you how collapsed the posterior really is — raw_kl_stats exposes the
+    unclamped per-dim KL the clamp is hiding."""
+    # Half the dims near-collapsed (raw KL ~0), half well above the floor.
+    mu = torch.cat([torch.full((N_NODES, LATENT // 2), 1e-3), torch.full((N_NODES, LATENT // 2), 5.0)], dim=1)
+    logvar = torch.zeros(N_NODES, LATENT)
+    stats = raw_kl_stats(mu, logvar, free_bits=0.5)
+    assert stats["raw_kl_min"] < 0.5  # the near-collapsed half sits under the floor
+    assert stats["raw_kl_max"] > 0.5  # the healthy half sits well above it
+    assert stats["raw_kl_mean"] == pytest.approx((stats["raw_kl_min"] + stats["raw_kl_max"]) / 2, rel=1e-3)
+    assert stats["frac_dims_at_floor"] == pytest.approx(0.5)
+    # free_bits<=0 means there's no floor to sit at.
+    assert raw_kl_stats(mu, logvar, free_bits=0.0)["frac_dims_at_floor"] == 0.0
 
 
 def test_vgae_total_loss_finite_and_splits():
@@ -191,10 +247,13 @@ def _toy_loader(num_graphs=2, seed=0):
 def _stub_run_epoch_factory(recon=1.0, kl=2.0, feat=0.0):
     """Deterministic stand-in for ``_run_epoch``: flat recon/kl/feat every epoch,
     so the only thing that can move ``loss`` across epochs is the beta passed in —
-    mirrors the observed vgae-*-anticollapse curves (recon/kl flatlining fast)."""
+    this is the failure signature that the free-bits floor-pinning bug used to
+    produce (recon/kl flatlining fast) before the Optuna-tuned hyperparameters
+    fixed it; kept here purely to exercise the warmup/early-stopping control flow."""
     def _stub(model, loader, optimizer, device, beta, *, train, free_bits=0.0,
                feature_loss_weight=0.0):
-        return recon + beta * kl + feature_loss_weight * feat, recon, kl, feat
+        kl_stats = {"raw_kl_min": kl, "raw_kl_mean": kl, "raw_kl_max": kl, "frac_dims_at_floor": 0.0}
+        return recon + beta * kl + feature_loss_weight * feat, recon, kl, feat, kl_stats
     return _stub
 
 

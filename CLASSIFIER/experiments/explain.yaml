@@ -9,7 +9,7 @@ experiments:
     notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
     adapter: gaae
     config_path: configs/gaae_delcode_whole_brain.json
-    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/GAAE.pth
     notes: GAAE encoder explainability — latent space, GAT attention, reconstruction, latent-dim IG / GNNExplainer.
 
   - id: explain-gec

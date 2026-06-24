@@ -15,7 +15,7 @@ from torch_geometric.utils import to_dense_adj
 from tqdm.notebook import tqdm
 
 from ..GAAE.utils import create_mask
-from .losses import vgae_total_loss
+from .losses import raw_kl_stats, vgae_total_loss
 
 
 def _combined_dense_adj(edge_index, batch_mask, total_nodes, device):
@@ -34,6 +34,7 @@ def _run_epoch(model, loader, optimizer, device, beta, *, train: bool,
                free_bits=0.0, feature_loss_weight=0.0):
     model.train(train)
     total_loss = total_recon = total_kl = total_feat = 0.0
+    kl_stats_sum = {"raw_kl_min": 0.0, "raw_kl_mean": 0.0, "raw_kl_max": 0.0, "frac_dims_at_floor": 0.0}
     for batch in loader:
         batch = batch.to(device)
         x, edge_index, edge_attr, batch_mask = batch.x, batch.edge_index, batch.edge_attr, batch.batch
@@ -61,16 +62,29 @@ def _run_epoch(model, loader, optimizer, device, beta, *, train: bool,
         total_recon += recon.item()
         total_kl += kl.item()
         total_feat += feat.item()
+        with torch.no_grad():
+            for k, v in raw_kl_stats(mu, logvar, free_bits=free_bits).items():
+                kl_stats_sum[k] += v
     n = max(1, len(loader))
-    return total_loss / n, total_recon / n, total_kl / n, total_feat / n
+    kl_stats = {k: v / n for k, v in kl_stats_sum.items()}
+    return total_loss / n, total_recon / n, total_kl / n, total_feat / n, kl_stats
 
 
 def train_vgae_with_val(
     model, train_loader, val_loader, optimizer, device,
     *, beta=1.0, beta_warmup_epochs=0, free_bits=0.0, feature_loss_weight=0.0,
-    epochs=100, early_stopping_patience=25, wandb_run=None,
+    epochs=100, early_stopping_patience=25, wandb_run=None, on_epoch_end=None,
 ):
     """Train the VGAE; return ``(best_state_dict, history)`` (best = lowest val loss).
+
+    ``on_epoch_end``, if given, is called as ``on_epoch_end(epoch, epoch_metrics)``
+    after each epoch's history is recorded (``epoch_metrics`` is a dict with that
+    epoch's ``train_loss``/``val_loss``/``train_recon``/``raw_kl_mean``/
+    ``frac_dims_at_floor``/etc.). Returning ``True`` stops training immediately —
+    this is a generic hook, not Optuna-specific (this module stays free of any
+    tuning-library import); callers like a hyperparameter sweep can use it to bail
+    out of a clearly-collapsing trial well before the epoch budget is exhausted,
+    rather than paying the full cost just to discover the same thing at the end.
 
     ``beta`` weights the KL term (β-VGAE) — its target value once warmup completes.
     ``beta_warmup_epochs`` linearly ramps the KL weight from 0 up to ``beta`` over the
@@ -106,18 +120,19 @@ def train_vgae_with_val(
     best_model = copy.deepcopy(model.state_dict())
     epochs_no_improve = 0
     history = {"train_loss": [], "val_loss": [], "train_recon": [], "train_kl": [],
-               "train_feat": [], "beta": []}
+               "train_feat": [], "val_recon": [], "val_feat": [], "beta": [],
+               "raw_kl_min": [], "raw_kl_mean": [], "raw_kl_max": [], "frac_dims_at_floor": []}
 
     outer_bar = tqdm(range(epochs), desc="VGAE Training")
     for epoch in outer_bar:
         current_beta = (
             beta * min(1.0, (epoch + 1) / beta_warmup_epochs) if beta_warmup_epochs > 0 else beta
         )
-        tr_loss, tr_recon, tr_kl, tr_feat = _run_epoch(
+        tr_loss, tr_recon, tr_kl, tr_feat, tr_kl_stats = _run_epoch(
             model, train_loader, optimizer, device, current_beta, train=True,
             free_bits=free_bits, feature_loss_weight=feature_loss_weight,
         )
-        va_loss, _va_recon, _va_kl, _va_feat = _run_epoch(
+        va_loss, va_recon, _va_kl, va_feat, _va_kl_stats = _run_epoch(
             model, val_loader, optimizer, device, current_beta, train=False,
             free_bits=free_bits, feature_loss_weight=feature_loss_weight,
         )
@@ -125,19 +140,29 @@ def train_vgae_with_val(
         outer_bar.set_postfix({"Train": f"{tr_loss:.4f}", "Val": f"{va_loss:.4f}", "beta": f"{current_beta:.4f}"})
         logging.info(
             f"Epoch {epoch}: train={tr_loss:.6f} (recon={tr_recon:.4f} kl={tr_kl:.4f} "
-            f"feat={tr_feat:.4f} beta={current_beta:.4f}) val={va_loss:.6f}"
+            f"feat={tr_feat:.4f} beta={current_beta:.4f}) val={va_loss:.6f} "
+            f"(val_recon={va_recon:.4f}) "
+            f"raw_kl=[{tr_kl_stats['raw_kl_min']:.4f}, {tr_kl_stats['raw_kl_mean']:.4f}, "
+            f"{tr_kl_stats['raw_kl_max']:.4f}] frac_at_floor={tr_kl_stats['frac_dims_at_floor']:.2f}"
         )
         if wandb_run is not None:
             wandb_run.log({"train_loss": tr_loss, "val_loss": va_loss,
                            "train_recon": tr_recon, "train_kl": tr_kl,
-                           "train_feat": tr_feat, "beta": current_beta, "epoch": epoch})
+                           "train_feat": tr_feat, "val_recon": va_recon, "val_feat": va_feat,
+                           "beta": current_beta, "epoch": epoch, **tr_kl_stats})
 
         history["train_loss"].append(tr_loss)
         history["val_loss"].append(va_loss)
         history["train_recon"].append(tr_recon)
         history["train_kl"].append(tr_kl)
         history["train_feat"].append(tr_feat)
+        history["val_recon"].append(va_recon)
+        history["val_feat"].append(va_feat)
         history["beta"].append(current_beta)
+        history["raw_kl_min"].append(tr_kl_stats["raw_kl_min"])
+        history["raw_kl_mean"].append(tr_kl_stats["raw_kl_mean"])
+        history["raw_kl_max"].append(tr_kl_stats["raw_kl_max"])
+        history["frac_dims_at_floor"].append(tr_kl_stats["frac_dims_at_floor"])
 
         warmed_up = current_beta >= beta
         if not warmed_up:
@@ -154,5 +179,16 @@ def train_vgae_with_val(
         if warmed_up and epochs_no_improve >= early_stopping_patience:
             logging.info("Early stopping triggered.")
             break
+
+        if on_epoch_end is not None:
+            epoch_metrics = {
+                "train_loss": tr_loss, "val_loss": va_loss, "train_recon": tr_recon,
+                "train_kl": tr_kl, "train_feat": tr_feat, "val_recon": va_recon,
+                "val_feat": va_feat, "beta": current_beta, "warmed_up": warmed_up,
+                **tr_kl_stats,
+            }
+            if on_epoch_end(epoch, epoch_metrics):
+                logging.info("Stopped via on_epoch_end callback.")
+                break
 
     return best_model, history

@@ -4,3 +4,4 @@ papermill>=2.5
 ipykernel>=6.29
 wandb>=0.17
 PyYAML>=6.0
+optuna>=3.6

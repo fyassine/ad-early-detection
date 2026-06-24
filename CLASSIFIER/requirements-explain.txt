@@ -8,3 +8,4 @@
 captum>=0.7.0
 nilearn>=0.11.0
 umap-learn>=0.5.5
+plotly>=5.24.0

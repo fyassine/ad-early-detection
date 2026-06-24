@@ -56,9 +56,11 @@ def trace_forward(model, data, *, device="cpu") -> Dict[str, Any]:
     """Capture intermediates of one VGAE forward pass for the data-journey plots.
 
     Returns ``x`` (N, F), ``latent`` = ``mu`` (N, latent), ``pooled`` (latent,),
-    ``adj_recon`` (N, N), and an ordered ``stages`` list. Deliberately omits the
-    GAAE-only ``decoder_gat*`` / feature-``recon`` keys so the shared EXPLAIN
-    notebook renders the generic latent panels (not the feature-recon comparison).
+    ``adj_true`` (N, N), ``adj_recon`` (N, N), and an ordered ``stages`` list.
+    Deliberately omits the GAAE-only ``decoder_gat*`` / feature-``recon`` keys —
+    the EXPLAIN notebook's VGAE branch compares ``adj_true`` against ``adj_recon``
+    instead of feature reconstruction. Identical key set for both ``conv_type``
+    variants (``gcn`` / ``gat``); only the encoder internals differ.
     """
     model.eval()
     x = data.x.to(device)
@@ -69,6 +71,7 @@ def trace_forward(model, data, *, device="cpu") -> Dict[str, Any]:
     mu = model.encode(x, ei, ea)
     pooled = mu.mean(dim=0)
     adj_recon = model.decode_all(mu)
+    adj_true = to_dense_adj(ei, max_num_nodes=x.shape[0]).squeeze(0).to(device)
 
     def _np(t):
         return t.detach().cpu().numpy()
@@ -77,12 +80,14 @@ def trace_forward(model, data, *, device="cpu") -> Dict[str, Any]:
         "x": _np(x),
         "latent": _np(mu),
         "pooled": _np(pooled),
+        "adj_true": _np(adj_true),
         "adj_recon": _np(adj_recon),
     }
     out["stages"] = [
         ("input x (FC rows)", out["x"].shape),
         (f"latent mu ({model.conv_type})", out["latent"].shape),
         ("pooled graph embedding", out["pooled"].shape),
+        ("true adjacency (kNN graph)", out["adj_true"].shape),
         ("reconstructed adjacency (sigmoid z zᵀ)", out["adj_recon"].shape),
     ]
     return out
