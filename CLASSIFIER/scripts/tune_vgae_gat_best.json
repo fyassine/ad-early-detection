@@ -1,0 +1,352 @@
+{
+  "conv_type": "gat",
+  "max_floor_frac": 0.5,
+  "epochs_cap": 80,
+  "best_params": null,
+  "best_val_recon": null,
+  "best_user_attrs": null,
+  "n_completed": 0,
+  "n_pruned": 20,
+  "all_trials": [
+    {
+      "number": 0,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.22004194800697371,
+        "beta_warmup_epochs": 34,
+        "learning_rate": 0.00104222058281029,
+        "feature_loss_weight": 2.423402305765911
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.8796875,
+        "raw_kl_mean_tail": 0.20040792475144067,
+        "val_recon_best": 0.6914629936218262,
+        "epochs_run": 43
+      }
+    },
+    {
+      "number": 1,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.05215041300612404,
+        "beta_warmup_epochs": 23,
+        "learning_rate": 0.0020543794319431027,
+        "feature_loss_weight": 2.775806017404779
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.79765625,
+        "raw_kl_mean_tail": 0.0445566431308786,
+        "val_recon_best": 0.6941307485103607,
+        "epochs_run": 32
+      }
+    },
+    {
+      "number": 2,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.12074209671323073,
+        "beta_warmup_epochs": 16,
+        "learning_rate": 0.002480873783967587,
+        "feature_loss_weight": 2.9888444875807596
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.8338541666666666,
+        "raw_kl_mean_tail": 0.10128393334647019,
+        "val_recon_best": 0.6946246474981308,
+        "epochs_run": 25
+      }
+    },
+    {
+      "number": 3,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.07381984425110498,
+        "beta_warmup_epochs": 11,
+        "learning_rate": 0.0009042983233268247,
+        "feature_loss_weight": 2.5248045276478663
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.7734374999999999,
+        "raw_kl_mean_tail": 0.06919417468210062,
+        "val_recon_best": 0.694869264960289,
+        "epochs_run": 20
+      }
+    },
+    {
+      "number": 4,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.414529611158716,
+        "beta_warmup_epochs": 20,
+        "learning_rate": 0.0009304591774395161,
+        "feature_loss_weight": 1.6444106542480978
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.8747395833333332,
+        "raw_kl_mean_tail": 0.38802943974733356,
+        "val_recon_best": 0.6937982589006424,
+        "epochs_run": 29
+      }
+    },
+    {
+      "number": 5,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.2680832442544514,
+        "beta_warmup_epochs": 39,
+        "learning_rate": 0.0006761883085110404,
+        "feature_loss_weight": 1.5696365595354316
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.8802083333333334,
+        "raw_kl_mean_tail": 0.2504485758642356,
+        "val_recon_best": 0.6940312683582306,
+        "epochs_run": 48
+      }
+    },
+    {
+      "number": 6,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.3761634839631331,
+        "beta_warmup_epochs": 22,
+        "learning_rate": 0.002641048359535586,
+        "feature_loss_weight": 0.8006211641212947
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.8578125,
+        "raw_kl_mean_tail": 0.3388264576594035,
+        "val_recon_best": 0.6940160840749741,
+        "epochs_run": 31
+      }
+    },
+    {
+      "number": 7,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.11968279960339759,
+        "beta_warmup_epochs": 13,
+        "learning_rate": 0.0012280414270586187,
+        "feature_loss_weight": 0.7098388717954702
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.8354166666666666,
+        "raw_kl_mean_tail": 0.1067761288334926,
+        "val_recon_best": 0.6948768943548203,
+        "epochs_run": 22
+      }
+    },
+    {
+      "number": 8,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.15728828391439215,
+        "beta_warmup_epochs": 18,
+        "learning_rate": 0.0013574887898219657,
+        "feature_loss_weight": 2.876612042421367
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.8585937499999998,
+        "raw_kl_mean_tail": 0.1397003690401713,
+        "val_recon_best": 0.6941063553094864,
+        "epochs_run": 27
+      }
+    },
+    {
+      "number": 9,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.10481918527502954,
+        "beta_warmup_epochs": 19,
+        "learning_rate": 0.0021066376029114965,
+        "feature_loss_weight": 2.169249641484985
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.83359375,
+        "raw_kl_mean_tail": 0.08971098015705745,
+        "val_recon_best": 0.6945430189371109,
+        "epochs_run": 28
+      }
+    },
+    {
+      "number": 10,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.22934820835199496,
+        "beta_warmup_epochs": 40,
+        "learning_rate": 0.0005667986344212343,
+        "feature_loss_weight": 1.3411808091122999
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.87421875,
+        "raw_kl_mean_tail": 0.21436563680569334,
+        "val_recon_best": 0.6940752863883972,
+        "epochs_run": 49
+      }
+    },
+    {
+      "number": 11,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.05046978917975167,
+        "beta_warmup_epochs": 29,
+        "learning_rate": 0.001784440784366104,
+        "feature_loss_weight": 2.3107432476123972
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.8041666666666666,
+        "raw_kl_mean_tail": 0.04398261078943809,
+        "val_recon_best": 0.6944532990455627,
+        "epochs_run": 38
+      }
+    },
+    {
+      "number": 12,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.056280448235258365,
+        "beta_warmup_epochs": 30,
+        "learning_rate": 0.0015212099507824755,
+        "feature_loss_weight": 2.584497509111524
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.7979166666666667,
+        "raw_kl_mean_tail": 0.048833421431481845,
+        "val_recon_best": 0.6940087974071503,
+        "epochs_run": 39
+      }
+    },
+    {
+      "number": 13,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.20420767164202197,
+        "beta_warmup_epochs": 29,
+        "learning_rate": 0.0009985821529840597,
+        "feature_loss_weight": 1.9979416478741243
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.86484375,
+        "raw_kl_mean_tail": 0.18613177960117658,
+        "val_recon_best": 0.6938243508338928,
+        "epochs_run": 38
+      }
+    },
+    {
+      "number": 14,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.07068882797446907,
+        "beta_warmup_epochs": 33,
+        "learning_rate": 0.0018498599820764173,
+        "feature_loss_weight": 2.6004347997976045
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.8205729166666668,
+        "raw_kl_mean_tail": 0.06096847653388976,
+        "val_recon_best": 0.6943569034337997,
+        "epochs_run": 42
+      }
+    },
+    {
+      "number": 15,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.08574577904062679,
+        "beta_warmup_epochs": 25,
+        "learning_rate": 0.0007517613694162733,
+        "feature_loss_weight": 1.9370731632453182
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.8143229166666668,
+        "raw_kl_mean_tail": 0.07887616232037545,
+        "val_recon_best": 0.6942198127508163,
+        "epochs_run": 34
+      }
+    },
+    {
+      "number": 16,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.30064815251074706,
+        "beta_warmup_epochs": 35,
+        "learning_rate": 0.002962501483021258,
+        "feature_loss_weight": 2.7951503244595477
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.8682291666666668,
+        "raw_kl_mean_tail": 0.2688186645507813,
+        "val_recon_best": 0.6939761191606522,
+        "epochs_run": 44
+      }
+    },
+    {
+      "number": 17,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.16535742655189706,
+        "beta_warmup_epochs": 25,
+        "learning_rate": 0.0005023936481362569,
+        "feature_loss_weight": 2.300558974505305
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.8619791666666666,
+        "raw_kl_mean_tail": 0.15499765699108442,
+        "val_recon_best": 0.6950497627258301,
+        "epochs_run": 34
+      }
+    },
+    {
+      "number": 18,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.15589602763810614,
+        "beta_warmup_epochs": 36,
+        "learning_rate": 0.0012092449231379597,
+        "feature_loss_weight": 2.5970341594046875
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.8734375,
+        "raw_kl_mean_tail": 0.13876112004121147,
+        "val_recon_best": 0.6938551217317581,
+        "epochs_run": 45
+      }
+    },
+    {
+      "number": 19,
+      "state": "TrialState.PRUNED",
+      "params": {
+        "free_bits": 0.4614288025767168,
+        "beta_warmup_epochs": 33,
+        "learning_rate": 0.0015634497306461217,
+        "feature_loss_weight": 1.1393135865517299
+      },
+      "value": null,
+      "user_attrs": {
+        "frac_dims_at_floor_tail_mean": 0.8703125,
+        "raw_kl_mean_tail": 0.4269457211097082,
+        "val_recon_best": 0.6935045272111893,
+        "epochs_run": 42
+      }
+    }
+  ]
+}

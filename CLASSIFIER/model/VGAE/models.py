@@ -143,42 +143,30 @@ class VariationalGraphAutoencoder(nn.Module):
             return out, a
         return conv(h, edge_index, edge_attr=ea), None
 
-    def encode_dist(
-        self, x, edge_index, edge_attr=None, return_attention=False, cond_vec=None, batch_mask=None,
-    ):
-        """Return ``(mu, logvar)`` (and an attention list when requested).
-
-        When ``cond_vec``/``batch_mask`` are both given, ``mu`` is FiLM-conditioned
-        (see ``condition_latent``) before being returned.
-        """
+    def encode_dist(self, x, edge_index, edge_attr=None, return_attention=False, cond_vec=None, batch_mask=None):
         h, attn = self._shared(x, edge_index, edge_attr, return_attention=return_attention)
         mu, a_mu = self._head(self.conv_mu, h, edge_index, edge_attr, return_attention)
         logvar, _ = self._head(self.conv_logvar, h, edge_index, edge_attr, return_attention=False)
+
+        mu_raw = mu  # type: ignore[misc]
         if cond_vec is not None and batch_mask is not None:
             mu = self.condition_latent(mu, cond_vec, batch_mask)
+
         if return_attention:
             if a_mu is not None:
                 attn.append(a_mu)
-            return mu, logvar, attn
-        return mu, logvar
+            return mu, logvar, attn, mu_raw   
 
-    def encode(
-        self, x, edge_index, edge_attr=None, return_attention=False, cond_vec=None, batch_mask=None,
-    ) -> Union[torch.Tensor, Tuple[torch.Tensor, List]]:
-        """Deterministic latent ``mu`` (drop-in for the GAAE pooling path).
+        return mu, logvar, mu_raw 
 
-        Returns ``mu`` (``[N, latent_dim]``); with ``return_attention=True`` returns
-        ``(mu, attention_weights)`` so ``region_importance`` works for the GAT variant
-        (empty list for GCN, which has no attention). ``cond_vec``/``batch_mask``
-        FiLM-condition ``mu`` (see ``condition_latent``); omit both to leave it plain.
-        """
+    def encode(self, x, edge_index, edge_attr=None, return_attention=False, cond_vec=None, batch_mask=None):
         if return_attention:
-            mu, _logvar, attn = self.encode_dist(
+            mu, _logvar, attn, _mu_raw = self.encode_dist(   # type: ignore[misc]
                 x, edge_index, edge_attr, return_attention=True,
                 cond_vec=cond_vec, batch_mask=batch_mask,
             )
             return mu, attn
-        mu, _logvar = self.encode_dist(
+        mu, _logvar, _mu_raw = self.encode_dist(              # type: ignore[misc]
             x, edge_index, edge_attr, cond_vec=cond_vec, batch_mask=batch_mask,
         )
         return mu
@@ -215,17 +203,10 @@ class VariationalGraphAutoencoder(nn.Module):
         return self.feat_decoder(z)
 
     def forward(self, x, edge_index, edge_attr=None, cond_vec=None, batch_mask=None):
-        """Return ``(z, mu, logvar, adj_reconstructed_dense, x_reconstructed)``.
-
-        Training samples ``z`` via reparameterisation; ``eval`` collapses to ``mu``
-        (``randn_like`` is a no-op variance source we skip when not training). When
-        ``cond_vec``/``batch_mask`` are passed, ``mu`` is FiLM-conditioned inside
-        ``encode_dist``, so both the KL term (on ``mu``/``logvar``) and the decoded ``z``
-        use the conditioned latent. ``x_reconstructed`` is ``None`` unless the model
-        was built with ``feature_decoder=True``.
-        """
-        mu, logvar = self.encode_dist(x, edge_index, edge_attr, cond_vec=cond_vec, batch_mask=batch_mask)
-        z = self.reparameterize(mu, logvar) if self.training else mu
+        mu, logvar, mu_raw = self.encode_dist(
+            x, edge_index, edge_attr, cond_vec=cond_vec, batch_mask=batch_mask
+        )
+        z = self.reparameterize(mu, logvar)   # decoding uses FiLM-conditioned mu
         adj_reconstructed = self.decode_all(z)
         x_reconstructed = self.decode_features(z)
-        return z, mu, logvar, adj_reconstructed, x_reconstructed
+        return z, mu_raw, logvar, adj_reconstructed, x_reconstructed

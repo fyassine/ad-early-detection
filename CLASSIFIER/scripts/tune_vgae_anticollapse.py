@@ -147,14 +147,11 @@ def make_objective(
     def objective(trial: optuna.Trial) -> float:
         cfg = dict(base_cfg)
         cfg["conv_type"] = conv_type
-        cfg["free_bits"] = trial.suggest_float("free_bits", 0.05, 0.5, log=True)
-        # Capped well under epochs_cap so every trial actually reaches the
-        # post-warmup region within its epoch budget — the observed collapse
-        # signature (recon flatlining, KL pinned at the floor) shows up by
-        # epoch ~5-20, so a short warmup is enough to see whether it persists.
-        cfg["beta_warmup_epochs"] = trial.suggest_int("beta_warmup_epochs", 10, 40)
+        cfg["beta"] = trial.suggest_float("beta", 0.001, 0.1, log=True)
+        cfg["free_bits"] = trial.suggest_float("free_bits", 0.5, 2.0, log=True)
+        cfg["beta_warmup_epochs"] = trial.suggest_int("beta_warmup_epochs", 30, 60)
         cfg["learning_rate"] = trial.suggest_float("learning_rate", 5e-4, 3e-3, log=True)
-        cfg["feature_loss_weight"] = trial.suggest_float("feature_loss_weight", 0.5, 3.0)
+        cfg["feature_loss_weight"] = trial.suggest_float("feature_loss_weight", 1.0, 5.0)
         cfg["epochs"] = epochs_cap
         cfg["feature_decoder"] = True
 
