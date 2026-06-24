@@ -101,21 +101,7 @@ experiments:
   # Downstream classification on a VGAE encoder (the converter target for VGAE):
   # the simplest GEP head on the pooled VGAE embedding. Set checkpoint_path to the
   # VGAE model_*.pth and add `encoder_arch: vgae` + the VGAE arch via hyperparams.
-  - id: gep-vgae-gcn-trajectory-whole-brain
-    mode: longitudinal
-    model: GEP
-    dataset: DELCODE_WHOLE_BRAIN
-    seed: 42
-    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
-    adapter: gep
-    config_path: configs/gep_delcode_whole_brain.json
-    hyperparams: {encoder_arch: vgae, conv_type: gcn, hidden_dim: 128, latent_dim: 64, adjacency_k: 16}
-    checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GCN.pth
-    threshold_mode: best-f1
-    notes: GEP head on the pooled VGAE(GCN) embedding — VGAE→converter classification.
-
-  # Same GEP head on the anti-collapse encoders — does fighting posterior collapse
-  # produce a more discriminative pooled embedding downstream? One per VGAE backbone.
+  # One per anti-collapse VGAE backbone.
   - id: gep-vgae-gcn-anticollapse-trajectory-whole-brain
     mode: longitudinal
     model: GEP

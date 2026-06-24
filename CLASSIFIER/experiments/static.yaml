@@ -12,38 +12,12 @@ experiments:
     notes: Per-scan GAAE-embedding with subject rollup.
 
   # VGAE encoders — pre-trained on adjacency reconstruction (masked BCE + β·KL) with
-  # always-on FiLM age/sex conditioning of the latent (mirrors the GAAE). Two variants
-  # share one notebook via conv_type. RE-PRETRAIN REQUIRED: the FiLM params did not exist
-  # in the earlier VGAE_GCN.pth / VGAE_GAT.pth, so those checkpoints no longer load (the
-  # explain adapter raises a clear "re-pretrain" error). The baseline entries below are
-  # the conditioned-only variant (no anti-collapse); the *-anticollapse entries add the
-  # free-bits + feature-decoder remedy. The trained encoder is consumed downstream by
-  # setting encoder_arch=vgae + checkpoint_path on a gep/gec/gelstm entry.
-  - id: vgae-gcn-static
-    mode: static
-    model: VGAE
-    adapter: vgae
-    dataset: DELCODE_WHOLE_BRAIN
-    seed: 42
-    notebook: notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb
-    config_path: configs/vgae_gcn_delcode_whole_brain.json
-    notes: VGAE pre-training (canonical GCN encoder, InnerProduct adjacency decoder) with FiLM age/sex conditioning.
-
-  - id: vgae-gat-static
-    mode: static
-    model: VGAE
-    adapter: vgae
-    dataset: DELCODE_WHOLE_BRAIN
-    seed: 42
-    notebook: notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb
-    config_path: configs/vgae_gat_delcode_whole_brain.json
-    notes: VGAE pre-training (variational-GAT encoder, InnerProduct adjacency decoder) with FiLM age/sex conditioning.
-
-  # Anti-collapse VGAE re-pretraining: longer β-warmup (100 ep), per-dim free-bits
-  # KL floor (0.5 nats), and a node-feature decoder (feature_loss_weight=1.0). These
-  # fight the posterior collapse seen on vgae-{gcn,gat}-static (train_kl -> ~0,
-  # train_recon stuck at the constant-p BCE floor). checkpoint_tag keeps the encoder
-  # under latest/VGAE_<ARCH>_ANTICOLLAPSE.pth so the baseline pointer is preserved.
+  # always-on FiLM age/sex conditioning of the latent (mirrors the GAAE), plus an
+  # anti-collapse remedy: β-warmup, per-dim free-bits KL floor, and a node-feature
+  # decoder. RE-PRETRAIN REQUIRED: the FiLM params did not exist in the earlier
+  # VGAE_GCN.pth / VGAE_GAT.pth, so those checkpoints no longer load (the explain
+  # adapter raises a clear "re-pretrain" error). The trained encoder is consumed
+  # downstream by setting encoder_arch=vgae + checkpoint_path on a gep/gec/gelstm entry.
   - id: vgae-gcn-static-anticollapse
     mode: static
     model: VGAE

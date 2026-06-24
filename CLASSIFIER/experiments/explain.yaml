@@ -54,31 +54,9 @@ experiments:
 
   # VGAE encoder explainability (latent space, diagonal-masked adjacency reconstruction
   # scored as edge AUC/AP, GAT attention). Reconstruction is FiLM-conditioned, so each
-  # entry's checkpoint_path must be a re-pretrained encoder (run vgae-*-static or
-  # vgae-*-static-anticollapse first); the pre-conditioning VGAE_*.pth no longer loads.
-  # config_path must match the arch (and feature_decoder) the checkpoint was trained with.
-  - id: explain-vgae-gcn
-    mode: explain
-    model: VGAE
-    dataset: DELCODE_WHOLE_BRAIN
-    seed: 42
-    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
-    adapter: vgae
-    config_path: configs/vgae_gcn_delcode_whole_brain.json
-    checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GCN.pth
-    notes: VGAE (GCN) encoder explainability.
-
-  - id: explain-vgae-gat
-    mode: explain
-    model: VGAE
-    dataset: DELCODE_WHOLE_BRAIN
-    seed: 42
-    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
-    adapter: vgae
-    config_path: configs/vgae_gat_delcode_whole_brain.json
-    checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GAT.pth
-    notes: VGAE (GAT) encoder explainability.
-
+  # entry's checkpoint_path must be a re-pretrained encoder (run vgae-*-static-anticollapse
+  # first); the pre-conditioning VGAE_*.pth no longer loads. config_path must match the
+  # arch (and feature_decoder) the checkpoint was trained with.
   - id: explain-vgae-gcn-anticollapse
     mode: explain
     model: VGAE
@@ -88,7 +66,7 @@ experiments:
     adapter: vgae
     config_path: configs/vgae_gcn_anticollapse_delcode_whole_brain.json
     checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GCN_ANTICOLLAPSE.pth
-    notes: Anti-collapse VGAE (GCN) encoder explainability — compare KL/recon vs vgae-gcn-static.
+    notes: Anti-collapse VGAE (GCN) encoder explainability.
 
   - id: explain-vgae-gat-anticollapse
     mode: explain
@@ -99,4 +77,4 @@ experiments:
     adapter: vgae
     config_path: configs/vgae_gat_anticollapse_delcode_whole_brain.json
     checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GAT_ANTICOLLAPSE.pth
-    notes: Anti-collapse VGAE (GAT) encoder explainability — compare KL/recon vs vgae-gat-static.
+    notes: Anti-collapse VGAE (GAT) encoder explainability.
