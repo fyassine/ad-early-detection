@@ -13,7 +13,7 @@ model-agnostic — like ``early_detection.py`` they take the trained model's
 
 All functions are deterministic (no sampling), so none takes an ``rng``.
 
-Label convention (see ``DATA/src/splitting/create_downstream_data_splits.py`` and
+Label convention (see ``DATA/DELCODE/src/splitting/create_downstream_data_splits.py`` and
 ``model/GELSTM/dataset.py``): ``1 = converter``, ``0 = non-converter`` (stable MCI).
 """
 from __future__ import annotations

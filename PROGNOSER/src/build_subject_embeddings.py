@@ -27,7 +27,7 @@ import argparse
 import os
 from pathlib import Path
 
-from DATA.src.splitting.load_splits import splits_dir
+from DATA.DELCODE.src.splitting.load_splits import splits_dir
 from PROGNOSER.common.embeddings import cache_embeddings, extract_subject_embeddings
 from PROGNOSER.common.experiment_utils import COMBO_TABLE
 from PROGNOSER.common.survival_table import build_survival_table
@@ -36,7 +36,7 @@ from PROGNOSER.common.survival_table import build_survival_table
 # overridable via the AD_REPO_ROOT env var for non-standard checkouts.
 REPO_ROOT = Path(os.environ.get("AD_REPO_ROOT", Path(__file__).resolve().parents[2]))
 CACHE_DIR = REPO_ROOT / 'PROGNOSER' / 'notebooks' / '_embeddings_cache_'
-COHORTS_CSV = REPO_ROOT / 'DATA' / 'DELCODE' / '__fc_wholebrain_sch200_flat__' / 'metadata' / 'cohorts.csv'
+COHORTS_CSV = REPO_ROOT / 'DATA' / 'DELCODE' / '__metadata__' / 'cohorts_with_scans_on_disk.csv'
 SPLITS_DIR = splits_dir('downstream')
 
 # COMBO_TABLE (combo -> data_version, file_suffix) is the single source of truth

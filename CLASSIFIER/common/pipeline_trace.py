@@ -8,7 +8,7 @@ matrix, and the kNN brain graph fed to the GAAE encoder.
 
 Model-agnostic (no model imports, per ``.claude/rules/architecture.md``): the
 ``.nii → timeseries → FC`` step reuses the documented preprocessing
-(``DATA/src/processing/process_using_schaeffer_atlas.py``), imported lazily so this
+(``DATA/DELCODE/src/processing/process_using_schaeffer_atlas.py``), imported lazily so this
 module stays cheap to import and nilearn is only required when a raw scan is actually
 processed. The ``FC → PyG Data`` step uses an inlined kNN adjacency identical to
 ``model/GAAE/utils.py::knn_binary_adjacency_matrix_no_diag`` (kept here so ``common``
@@ -127,7 +127,7 @@ def nii_to_fc_to_graph(
             import nibabel as nib  # type: ignore
             from nilearn.connectome import ConnectivityMeasure  # type: ignore
 
-            from DATA.src.processing.process_using_schaeffer_atlas import (
+            from DATA.DELCODE.src.processing.process_using_schaeffer_atlas import (
                 build_masker,
                 compute_connectivity_matrices,
             )
