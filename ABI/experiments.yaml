@@ -1,0 +1,37 @@
+# ABI experiment registry — run via `python run_experiment.py --id <id>`.
+#
+# Two notebook types are wired in:
+#   notebooks/ABI_BASELINE.ipynb                        (kind: baseline)
+#   notebooks/ABI_LONGITUDINAL_DELCODE_WHOLE_BRAIN.ipynb (kind: longitudinal)
+# `kind` is derived from the notebook filename stem, not a separate field —
+# there is exactly one notebook per kind, so a free-standing 'kind:' field
+# could disagree with 'notebook:' and there is nothing useful that buys us.
+#
+# Required fields per entry:
+#   id          unique slug; names the outputs/<id>/ directory
+#   notebook    path to one of the two notebooks above (relative to ABI/)
+#   seed        int; injected as RANDOM_STATE
+#
+# Optional fields:
+#   config_path   path (relative to ABI/) to a JSON file under ABI/configs/
+#                 overriding the notebook's DEFAULT_CONFIG scalars/paths
+#                 (WB_ROOT, METADATA_DIR, Z_THRESHOLD, N_FOLDS, ...)
+#   config        mapping of any config key to override inline (wins over
+#                 config_path; same layering as CLASSIFIER's hyperparams: block)
+#   wandb         set `true` to enable W&B for one run (off by default for
+#                 ABI — see ABI/README.md for why)
+#   output_dir    override the outputs/<id> location
+#   notes         free-text; logged as the W&B run note when wandb: true
+
+experiments:
+  - id: abi-baseline-delcode
+    notebook: notebooks/ABI_BASELINE.ipynb
+    seed: 42
+    config_path: configs/baseline_delcode_whole_brain.json
+    notes: "Converter-vs-MCI ABI baseline, Schaefer-200 whole-brain, Z=2.0, 5-fold CV."
+
+  - id: abi-longitudinal-delcode-whole-brain
+    notebook: notebooks/ABI_LONGITUDINAL_DELCODE_WHOLE_BRAIN.ipynb
+    seed: 42
+    config_path: configs/longitudinal_delcode_whole_brain.json
+    notes: "Subject-level ABI (baseline/last/delta), StratifiedGroupKFold CV, Z=3.0."
