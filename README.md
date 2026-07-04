@@ -9,7 +9,7 @@ Research codebase for Alzheimer's disease early detection using longitudinal bra
 | [`CLASSIFIER/`](CLASSIFIER/README.md) | Graph classifiers (GAAE, GEC, GELSTM, VGAE, GEP). Reproducibility framework (seeding, configs, splits, checkpoints) lives here. |
 | [`PROGNOSER/`](PROGNOSER/README.md) | Survival analysis (Cox, RSF, LSTM-Surv, Kaplan-Meier). Consumes GAAE embeddings to predict time-to-conversion. |
 | [`DASHBOARD/`](DASHBOARD/README.md) | FastAPI backend + Vite frontend for cohort browsing and GELSTM inference. |
-| `DATA/src/processing/` | Preprocessing pipeline — atlas/subcortex extraction, run-all orchestration. |
+| `DATA/DELCODE/src/processing/` | Preprocessing pipeline — atlas/subcortex extraction, run-all orchestration. |
 
 **Legacy — read-only:**
 
@@ -54,7 +54,7 @@ Do not pin different torch/PyG versions in subpackage requirements, and don't as
 ## Tests
 
 ```bash
-pytest CLASSIFIER/tests/ PROGNOSER/tests/ DATA/src/splitting/tests/
+pytest CLASSIFIER/tests/ PROGNOSER/tests/ DATA/DELCODE/src/splitting/tests/
 ```
 
 ## CLASSIFIER

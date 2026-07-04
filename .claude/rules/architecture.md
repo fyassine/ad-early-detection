@@ -6,13 +6,13 @@
 
 - `CLASSIFIER/` — graph classifiers (GAAE, GEC, GELSTM). The reproducibility framework lives here.
 - `PROGNOSER/` — survival analysis (Cox, RSF, LSTM-Surv, Kaplan-Meier). Consumes GAAE embeddings.
+- `ABI/` — Abnormality Index experiment runner (`run_experiment.py` + `experiments.yaml`), wired for `notebooks/ABI_BASELINE.ipynb` (cross-sectional converter-vs-MCI) and `notebooks/ABI_LONGITUDINAL_DELCODE_WHOLE_BRAIN.ipynb` (subject-level baseline/last/delta). `comp_corr_v1.py` and `dci_scripts/*.py` remain untouched, hardcoded-path HPC batch scripts — out of scope for the runner, do not pattern-match against them.
 - `DASHBOARD/` — FastAPI backend + Vite frontend for cohort browsing and GELSTM inference. Has its own `requirements.txt` for the API layer but reuses the project-root `.venv` for torch / torch_geometric / nilearn.
-- `DATA/src/processing/` — preprocessing pipeline. Atlas/subcortex extraction, run-all orchestration.
+- `DATA/DELCODE/src/processing/` — preprocessing pipeline. Atlas/subcortex extraction, run-all orchestration.
 
 **Legacy — read-only:**
 
 - `__CLASSIFIER__/` — prior iteration; keep only for back-compat artifact loading.
-- `ABI/` — artifact-based indices, notebooks only.
 - `DCI/` — disconnectivity index, notebooks only.
 
 Do not pattern-match against legacy code when writing new code.

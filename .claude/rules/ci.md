@@ -38,14 +38,14 @@ regression and rerun the script.
 ## Blocking (must pass before you say a task is done)
 
 - `ruff check .` — lint (pyflakes, import sort, pycodestyle subset, bugbear)
-- `pytest CLASSIFIER/tests/ PROGNOSER/tests/ DATA/src/splitting/tests/ -q` — full suite
+- `pytest CLASSIFIER/tests/ PROGNOSER/tests/ DATA/DELCODE/src/splitting/tests/ -q` — full suite
 
 ## Non-blocking (ratcheted via the script — see above; don't fix unrelated backlog)
 
 - `ruff format --check .` — formatting
 - `ruff check --select C90 .` — McCabe complexity
-- `mypy CLASSIFIER PROGNOSER DASHBOARD DATA/src` — type checking, `ignore_missing_imports = true` (not `strict`)
-- `bandit -r CLASSIFIER PROGNOSER DASHBOARD DATA/src -c .bandit` — security static analysis
+- `mypy CLASSIFIER PROGNOSER DASHBOARD DATA/DELCODE/src` — type checking, `ignore_missing_imports = true` (not `strict`)
+- `bandit -r CLASSIFIER PROGNOSER DASHBOARD DATA/DELCODE/src -c .bandit` — security static analysis
 - `pip-audit` — dependency CVE scan (skipped, not failed, if offline)
 
 Coverage (`pytest-cov`, configured via `[tool.pytest.ini_options].addopts` in

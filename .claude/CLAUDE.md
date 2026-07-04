@@ -4,8 +4,8 @@ Research codebase for Alzheimer's disease early detection using longitudinal bra
 
 ## Active vs legacy directories
 
-- **Active** (write new code here): `CLASSIFIER/` (graph classifiers), `PROGNOSER/` (survival analysis, consumes GAAE embeddings), `DASHBOARD/` (FastAPI+Vite app), `DATA/src/processing/` (preprocessing pipeline)
-- **Legacy / read-only**: everything inside `__CLASSIFIER__/`, `ABI/`, `DCI/`
+- **Active** (write new code here): `CLASSIFIER/` (graph classifiers), `PROGNOSER/` (survival analysis, consumes GAAE embeddings), `ABI/` (Abnormality Index experiment runner, 2 wired notebooks), `DASHBOARD/` (FastAPI+Vite app), `DATA/DELCODE/src/processing/` (preprocessing pipeline)
+- **Legacy / read-only**: everything inside `__CLASSIFIER__/`, `DCI/`; within `ABI/`, `comp_corr_v1.py` and `dci_scripts/` (hardcoded HPC paths)
 
 ## Rule modules (loaded automatically)
 
@@ -24,6 +24,7 @@ Research codebase for Alzheimer's disease early detection using longitudinal bra
 - `CLASSIFIER/README.md` — full reproducibility contract, checkpoint schema, notebook index
 - `CLASSIFIER/experiments/` — run registry directory (split by domain)
 - `PROGNOSER/README.md` — survival pipeline
+- `ABI/README.md` — Abnormality Index experiment runner, registry schema
 - `DASHBOARD/README.md` — app setup, venv contract
 
 ## Tests and commands

@@ -42,7 +42,7 @@ For cross-validation loops, use `CLASSIFIER.common.validation.run_kfold_cv`. Do 
 
 ```python
 from CLASSIFIER.common.sanity import run_full_audit
-from DATA.src.splitting.load_splits import split_csv_paths
+from DATA.DELCODE.src.splitting.load_splits import split_csv_paths
 run_full_audit(split_csv_paths("downstream"))
 ```
 

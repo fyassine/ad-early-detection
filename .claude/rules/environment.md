@@ -11,7 +11,7 @@ Use latest APIs as of May 2026.
 - pandas 2.2.0
 - scikit-learn 1.7.2
 
-This is the venv used by `CLASSIFIER/`, `PROGNOSER/`, and DASHBOARD's model-inference path.
+This is the venv used by `CLASSIFIER/`, `PROGNOSER/`, and DASHBOARD's model-inference path. Always activate this virtual environment using `source .venv/bin/activate` before running any terminal commands.
 
 ## Subpackage requirements
 
