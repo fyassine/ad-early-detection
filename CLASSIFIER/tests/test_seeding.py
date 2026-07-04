@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from CLASSIFIER.common.seeding import (
+from SHARED.seeding import (
     make_rng,
     make_torch_generator,
     set_seed,

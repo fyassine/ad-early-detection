@@ -41,9 +41,9 @@ _REPO_ROOT = _PROGNOSER_ROOT.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from CLASSIFIER.common.provenance import capture_git_provenance, snapshot_source_dirs  # noqa: E402
-from CLASSIFIER.common.run_naming import generate_run_name  # noqa: E402
-from CLASSIFIER.common.runner_io import (  # noqa: E402
+from SHARED.provenance import capture_git_provenance, snapshot_source_dirs  # noqa: E402
+from SHARED.run_naming import generate_run_name  # noqa: E402
+from SHARED.runner_io import (  # noqa: E402
     Heartbeat,
     color,
     format_elapsed,
@@ -67,13 +67,13 @@ _DEFAULT_WANDB_PROJECT = "ad-early-detection-prognosis"
 # with the exact code that produced it. CLASSIFIER/common is included because the
 # survival notebook imports tracking/provenance and reads GAAE checkpoints.
 _SOURCE_ROOTS = [
-    "PROGNOSER/model",
     "PROGNOSER/common",
+    "PROGNOSER/model",
     "PROGNOSER/src",
     "PROGNOSER/run_experiment.py",
     "PROGNOSER/experiments.yaml",
-    "CLASSIFIER/common",
-    "DATA/src/splitting",
+    "SHARED",
+    "DATA/DELCODE/src/splitting",
 ]
 
 # Embedding-consuming methods that need a precomputed cache before launch.

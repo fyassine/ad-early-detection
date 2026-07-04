@@ -8,7 +8,7 @@ import numpy as np
 import torch
 
 from CLASSIFIER.common.run_artifacts import record_test_metrics, save_run
-from CLASSIFIER.common.seeding import make_rng
+from SHARED.seeding import make_rng
 
 
 def _save_kwargs(output_dir):

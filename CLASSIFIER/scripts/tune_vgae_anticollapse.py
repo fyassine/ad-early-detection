@@ -39,11 +39,11 @@ for _p in (str(_REPO_ROOT), str(_CLASSIFIER_ROOT)):
 
 from adapters.static import get_static_adapter  # noqa: E402
 from common import tracking  # noqa: E402
-from common.seeding import make_rng, make_torch_generator, seed_worker, set_seed  # noqa: E402
+from SHARED.seeding import make_rng, make_torch_generator, seed_worker, set_seed  # noqa: E402
 from model.GAAE.dataset import GraphDatasetInMemoryFiltered  # noqa: E402
 from model.GAAE.utils import knn_binary_adjacency_matrix_no_diag  # noqa: E402
 
-from DATA.src.splitting.load_splits import splits_dir  # noqa: E402
+from DATA.DELCODE.src.splitting.load_splits import splits_dir  # noqa: E402
 
 SEED = 100  # matches configs/vgae_*_delcode_whole_brain.json
 

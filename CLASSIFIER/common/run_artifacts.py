@@ -17,7 +17,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Sequence, Tuple
 
-from .provenance import (
+from SHARED.provenance import (
     capture_env,
     capture_git_provenance,
     make_run_dir,

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from common.provenance import (
+from SHARED.provenance import (
     capture_env,
     capture_git_provenance,
     make_run_dir,

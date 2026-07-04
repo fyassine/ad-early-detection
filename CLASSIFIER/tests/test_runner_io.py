@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import io
 
-from common.runner_io import color, format_elapsed, supports_color
+from SHARED.runner_io import color, format_elapsed, supports_color
 
 
 def test_format_elapsed_minutes_seconds():
@@ -47,14 +47,14 @@ def test_no_color_env_disables(monkeypatch):
 
 
 def test_format_metric_summary():
-    from common.runner_io import format_metric_summary
+    from SHARED.runner_io import format_metric_summary
     out = format_metric_summary({"test_auc": 0.532, "threshold_method": "oof_f1"})
     assert "test_auc 0.532" in out
     assert "threshold_method oof_f1" in out
 
 
 def test_format_cv_summary():
-    from common.runner_io import format_cv_summary
+    from SHARED.runner_io import format_cv_summary
     cv = {
         "n_folds": 5,
         "val_auc_mean": 0.9816, "val_auc_std": 0.0107,
@@ -68,5 +68,5 @@ def test_format_cv_summary():
 
 
 def test_format_cv_summary_empty():
-    from common.runner_io import format_cv_summary
+    from SHARED.runner_io import format_cv_summary
     assert format_cv_summary({}) == ""

@@ -46,9 +46,9 @@ from CLASSIFIER.common.experiment_utils import (  # noqa: E402
     load_registry,
     read_statuses,
 )
-from CLASSIFIER.common.provenance import capture_git_provenance, snapshot_source_dirs  # noqa: E402
-from CLASSIFIER.common.run_naming import generate_run_name  # noqa: E402
-from CLASSIFIER.common.runner_io import (  # noqa: E402
+from SHARED.provenance import capture_git_provenance, snapshot_source_dirs  # noqa: E402
+from SHARED.run_naming import generate_run_name  # noqa: E402
+from SHARED.runner_io import (  # noqa: E402
     Heartbeat,
     color,
     format_cv_summary,
@@ -68,8 +68,9 @@ _SOURCE_ROOTS = [
     "CLASSIFIER/common",
     "CLASSIFIER/run_experiment.py",
     "CLASSIFIER/experiments",
-    "DATA/src/splitting",
-    "DATA/src/processing",
+    "DATA/DELCODE/src/splitting",
+    "DATA/DELCODE/src/processing",
+    "SHARED",
 ]
 
 

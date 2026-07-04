@@ -1,6 +1,6 @@
 import numpy as np
 
-from CLASSIFIER.common.seeding import make_rng
+from SHARED.seeding import make_rng
 from CLASSIFIER.model.GELSTM.train import make_batches
 
 

@@ -83,7 +83,7 @@ def _insert_seeding(nb):
         return
     src = [
         "# v2 reproducibility seeding — must run before datasets, samplers, or models.\n",
-        "from CLASSIFIER.common.seeding import (\n",
+        "from SHARED.seeding import (\n",
         "    set_seed, make_rng, make_torch_generator, seed_worker,\n",
         ")\n",
         "SEED = 42\n",
@@ -113,7 +113,7 @@ def _insert_sanity_call(nb, model):
     if _has_tag(nb, SANITY_CELL_TAG):
         return
     # Self-contained audit cell: split locations come from the single source of
-    # truth in DATA/src/splitting/load_splits.py (no hardcoded split paths).
+    # truth in DATA/DELCODE/src/splitting/load_splits.py (no hardcoded split paths).
     src = [
         "# v2 split-hygiene audit — hard-fails if any subject crosses splits.\n",
         "import sys\n",
@@ -124,8 +124,8 @@ def _insert_sanity_call(nb, model):
         "_V2_ROOT = _REPO_ROOT / 'CLASSIFIER'\n",
         "if str(_V2_ROOT) not in sys.path:\n",
         "    sys.path.insert(0, str(_V2_ROOT))\n",
-        "from common.sanity import run_full_audit\n",
-        "from DATA.src.splitting.load_splits import split_csv_paths\n",
+        "from SHARED.sanity import run_full_audit\n",
+        "from DATA.DELCODE.src.splitting.load_splits import split_csv_paths\n",
         f"_ = run_full_audit(split_csv_paths('{model}'))\n",
     ]
     cell = _make_code_cell(src, tag=SANITY_CELL_TAG)

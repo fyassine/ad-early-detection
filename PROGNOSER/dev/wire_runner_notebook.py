@@ -135,10 +135,10 @@ REPO_ROOT = Path('/mnt/e/fyassine/ad-early-detection')
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from DATA.src.splitting.load_splits import splits_dir
-from CLASSIFIER.common import tracking, provenance
+from DATA.DELCODE.src.splitting.load_splits import splits_dir
+from SHARED import tracking, provenance
 
-COHORTS_CSV = REPO_ROOT / 'DATA' / 'DELCODE' / '__fc_wholebrain_sch200_flat__' / 'metadata' / 'cohorts.csv'
+COHORTS_CSV = REPO_ROOT / 'DATA' / 'DELCODE' / '__metadata__' / 'cohorts_with_scans_on_disk.csv'
 SPLITS_DIR = splits_dir('downstream')
 EMBEDDINGS_CACHE = REPO_ROOT / 'PROGNOSER' / 'notebooks' / '_embeddings_cache_'
 CHECKPOINT_ROOT = REPO_ROOT / 'PROGNOSER' / 'notebooks' / f"checkpoints_prognoser_{EXPERIMENT['network_combo']}"

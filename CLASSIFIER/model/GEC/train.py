@@ -7,7 +7,7 @@ Callers should build DataLoaders with a seeded ``generator`` and
 ``worker_init_fn`` (use :func:`build_loader` below or import the helpers from
 ``CLASSIFIER.common.seeding``)::
 
-    from CLASSIFIER.common.seeding import make_torch_generator, seed_worker
+    from SHARED.seeding import make_torch_generator, seed_worker
     loader = DataLoader(ds, batch_size=32, shuffle=True,
                         generator=make_torch_generator(SEED),
                         worker_init_fn=seed_worker)
@@ -37,7 +37,7 @@ from sklearn.metrics import (
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from CLASSIFIER.common.seeding import make_torch_generator, seed_worker
+from SHARED.seeding import make_torch_generator, seed_worker
 from CLASSIFIER.configs.gec import GECTrainConfig
 
 

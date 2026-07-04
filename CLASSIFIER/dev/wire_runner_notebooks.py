@@ -305,7 +305,7 @@ def wire_first_n(nb):
            "        tracking.log_metrics(wandb_run, {f\"{_r['window']}_cv_auc\": _r['cv_auc_mean'], "
            "f\"{_r['window']}_test_auc\": _r['test_auc']})\n"
            "    if RUN_DIR:\n"
-           "        from common.provenance import write_run_summary, capture_git_provenance, capture_env\n"
+           "        from SHARED.provenance import write_run_summary, capture_git_provenance, capture_env\n"
            "        write_run_summary(RUN_DIR, {'experiment_id': EXPERIMENT_ID, 'timestamp': RUN_NAME,\n"
            "            'git': capture_git_provenance(), 'env': capture_env(),\n"
            "            'metrics': {r['window'] + '_test_auc': r['test_auc'] for r in rows}})\n"
