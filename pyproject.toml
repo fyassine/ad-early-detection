@@ -4,7 +4,8 @@ target-version = "py310"
 line-length = 100
 extend-exclude = [
     "__CLASSIFIER__",
-    "ABI",
+    "ABI/comp_corr_v1.py",
+    "ABI/dci_scripts",
     "DCI",
     "DATA/DELCODE",
     ".venv",
@@ -32,13 +33,16 @@ ignore = [
 target-version = ["py310"]
 line-length = 100
 extend-exclude = '''
-/(
-    __CLASSIFIER__
-  | ABI
-  | DCI
-  | \.venv
-  | DATA/DELCODE
-)/
+(
+    /(
+        __CLASSIFIER__
+      | ABI/dci_scripts
+      | DCI
+      | \.venv
+      | DATA/DELCODE
+    )/
+  | ABI/comp_corr_v1\.py
+)
 '''
 
 [tool.mypy]
@@ -51,22 +55,25 @@ mypy_path = "."
 explicit_package_bases = true
 exclude = '''(?x)(
     ^__CLASSIFIER__/
-  | ^ABI/
+  | ^ABI/comp_corr_v1\.py$
+  | ^ABI/dci_scripts/
   | ^DCI/
   | ^DATA/DELCODE/
   | /checkpoints/.*/source/
   | ^CLASSIFIER/outputs/
   | ^PROGNOSER/outputs/
+  | ^ABI/outputs/
   | ^DASHBOARD/\.venv/
 )'''
 
 [tool.pytest.ini_options]
-addopts = "--cov=CLASSIFIER --cov=PROGNOSER --cov-report=term-missing"
+addopts = "--cov=CLASSIFIER --cov=PROGNOSER --cov=ABI --cov-report=term-missing"
 
 [tool.coverage.run]
 omit = [
     "*/tests/*",
     "*/__CLASSIFIER__/*",
-    "*/ABI/*",
+    "*/ABI/comp_corr_v1.py",
+    "*/ABI/dci_scripts/*",
     "*/DCI/*",
 ]

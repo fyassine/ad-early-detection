@@ -5,14 +5,14 @@ Mirrors .github/workflows/test.yml exactly:
 
   Blocking (must have zero issues):
     - ruff check .
-    - pytest CLASSIFIER/tests/ PROGNOSER/tests/ DATA/src/splitting/tests/
+    - pytest CLASSIFIER/tests/ PROGNOSER/tests/ ABI/tests/ DATA/DELCODE/src/splitting/tests/
 
   Non-blocking, ratcheted against CHECKS.json (a pre-existing backlog is fine,
   a *new* finding is not):
     - ruff format --check .
     - ruff check --select C90 .
-    - mypy CLASSIFIER PROGNOSER DASHBOARD DATA/src
-    - bandit -r CLASSIFIER PROGNOSER DASHBOARD DATA/src -c .bandit
+    - mypy CLASSIFIER PROGNOSER ABI DASHBOARD DATA/DELCODE/src
+    - bandit -r CLASSIFIER PROGNOSER ABI DASHBOARD DATA/DELCODE/src -c .bandit
     - pip-audit (skipped, not failed, if it can't reach the network)
 
 CHECKS.json (repo root, gitignored) stores the fingerprinted findings from the
@@ -73,7 +73,8 @@ def check_pytest() -> tuple[bool, str]:
             "pytest",
             "CLASSIFIER/tests/",
             "PROGNOSER/tests/",
-            "DATA/src/splitting/tests/",
+            "ABI/tests/",
+            "DATA/DELCODE/src/splitting/tests/",
             "-q",
             "-n",
             "auto",
@@ -107,7 +108,7 @@ _MYPY_LINE_RE = re.compile(r"^(?P<file>[^:]+):(?P<line>\d+): error: .*\[(?P<code
 
 
 def check_mypy() -> set[str]:
-    _, output = run(["mypy", "CLASSIFIER", "PROGNOSER", "DASHBOARD", "DATA/src"])
+    _, output = run(["mypy", "CLASSIFIER", "PROGNOSER", "ABI", "DASHBOARD", "DATA/DELCODE/src"])
     fingerprints = set()
     for line in output.splitlines():
         match = _MYPY_LINE_RE.match(line)
@@ -123,10 +124,13 @@ def check_bandit() -> set[str]:
             "-r",
             "CLASSIFIER",
             "PROGNOSER",
+            "ABI",
             "DASHBOARD",
-            "DATA/src",
+            "DATA/DELCODE/src",
             "-c",
             ".bandit",
+            "-x",
+            "ABI/comp_corr_v1.py",
             "-f",
             "json",
             "-q",

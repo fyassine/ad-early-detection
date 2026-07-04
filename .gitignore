@@ -20,6 +20,13 @@ PROGNOSER/outputs/**
 !PROGNOSER/outputs/**/*.ipynb
 !PROGNOSER/outputs/**/latest
 
+# --- ABI outputs ---
+ABI/outputs/**
+!ABI/outputs/**/
+!ABI/outputs/**/.gitkeep
+!ABI/outputs/**/*.ipynb
+!ABI/outputs/**/latest
+
 
 *.log
 **/*.pkl

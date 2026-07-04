@@ -59,7 +59,7 @@ jobs:
           pip install -r requirements-dev.txt
           pip install -r PROGNOSER/requirements.txt
           pip install -r DASHBOARD/requirements.txt
-      - run: mypy CLASSIFIER PROGNOSER DASHBOARD DATA/src
+      - run: mypy CLASSIFIER PROGNOSER ABI DASHBOARD DATA/src
 
   test:
     name: Tests
@@ -82,7 +82,7 @@ jobs:
           pip install -r CLASSIFIER/requirements-explain.txt
       - name: Run tests (parallel, randomized order, coverage report)
         run: |
-          pytest CLASSIFIER/tests/ PROGNOSER/tests/ DATA/src/splitting/tests/ \
+          pytest CLASSIFIER/tests/ PROGNOSER/tests/ ABI/tests/ DATA/src/splitting/tests/ \
             -q -n auto --dist loadscope
 
   security:
@@ -96,7 +96,7 @@ jobs:
           python-version: "3.10"
       - run: pip install -r requirements-dev.txt
       - name: bandit (static security analysis)
-        run: bandit -r CLASSIFIER PROGNOSER DASHBOARD DATA/src -c .bandit
+        run: bandit -r CLASSIFIER PROGNOSER ABI DASHBOARD DATA/src -c .bandit -x ABI/comp_corr_v1.py
       - name: pip-audit (dependency CVE scan)
         run: |
           pip install -r PROGNOSER/requirements.txt
