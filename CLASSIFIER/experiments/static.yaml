@@ -38,6 +38,19 @@ experiments:
     config_path: configs/vgae_gat_anticollapse_delcode_whole_brain.json
     notes: Anti-collapse VGAE(GAT) — β-warmup 100 + free_bits 0.5 + feature decoder.
 
+  - id: gaae-latent-experiment
+    mode: static
+    model: GAAE
+    adapter: gaae
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/STATIC/GAAE_LATENT_SPACE_VISUALIZER.ipynb
+    config_path: configs/gaae_delcode_whole_brain.json
+    notes: >
+      GAAE latent-space analysis — UMAP projection, logistic-regression probe,
+      Fisher discriminant ratio, attention heatmap, disease-axis steering,
+      and interactive 3-D Plotly visualisations.
+
   - id: logreg-static
     mode: static
     model: LogReg

@@ -66,6 +66,20 @@ experiments:
     source_experiment: gelstm-whole-brain-wide-lnorm
     notes: Confound + spread diagnostics on the wider-LayerNorm GELSTM variant.
 
+  - id: sanity-gegru-synthetic-scanner-drift
+    mode: sanity
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/SANITY/SANITY_GEGRU_SYNTHETIC_SCANNER_DRIFT.ipynb
+    adapter: gelstm
+    source_experiment: gegru-trajectory-whole-brain
+    site_stats_experiment_id: comparison-gegru-cross-dataset
+    notes: >-
+      Simulated ADNI/OASIS3-like scanner-drift degradation sweep on the latest
+      GEGRU trajectory model, calibrated against comparison-gegru-cross-dataset's
+      site_heterogeneity_stats.json (run that experiment first).
+
   # Model comparison overview
   - id: model-comparison
     mode: baseline

@@ -162,6 +162,12 @@ def build_parameter_dict(exp: Dict[str, Any], classifier_root: str | Path) -> Di
     if "source_experiment" in exp:
         params["SOURCE_EXPERIMENT"] = exp["source_experiment"]
 
+    # Experiment id whose outputs hold a calibration anchor file (e.g. the
+    # site_heterogeneity_stats.json written by COMPARISON_GEGRU_CROSS_DATASET.ipynb
+    # and read by SANITY_GEGRU_SYNTHETIC_SCANNER_DRIFT.ipynb).
+    if "site_stats_experiment_id" in exp:
+        params["SITE_STATS_EXPERIMENT_ID"] = exp["site_stats_experiment_id"]
+
     return params
 
 

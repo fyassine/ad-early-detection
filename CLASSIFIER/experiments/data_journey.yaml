@@ -1,0 +1,81 @@
+# Multi-subject data journey (validation-split converters + stable, ranked by visit
+# count) + train+val cohort reconstruction-fidelity check. Same adapter-driven
+# notebook contract as explain.yaml; no retraining.
+# Needs CLASSIFIER/requirements-explain.txt (captum, nilearn).
+experiments:
+  - id: data-journey-gaae
+    mode: data_journey
+    model: GAAE
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/STATIC/STATIC_COMMON_DATA_JOURNEY_DELCODE.ipynb
+    adapter: gaae
+    config_path: configs/gaae_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/GAAE.pth
+    notes: GAAE multi-subject data journey + train+val reconstruction fidelity.
+
+  - id: data-journey-gec
+    mode: data_journey
+    model: GEC
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/STATIC/STATIC_COMMON_DATA_JOURNEY_DELCODE.ipynb
+    adapter: gec
+    source_experiment: gec-trajectory-whole-brain
+    notes: GEC multi-subject data journey (reload, no retraining; fidelity section skips — classifier).
+
+  - id: data-journey-gelstm
+    mode: data_journey
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/STATIC/STATIC_COMMON_DATA_JOURNEY_DELCODE.ipynb
+    adapter: gelstm
+    source_experiment: gelstm-trajectory-whole-brain
+    notes: GELSTM multi-subject data journey (reload, no retraining; fidelity section skips — classifier).
+
+  - id: data-journey-gegru
+    mode: data_journey
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/STATIC/STATIC_COMMON_DATA_JOURNEY_DELCODE.ipynb
+    adapter: gegru
+    source_experiment: gegru-trajectory-whole-brain
+    notes: GEGRU (GRU) multi-subject data journey (reload, no retraining; fidelity section skips — classifier).
+
+  - id: data-journey-gep
+    mode: data_journey
+    model: GEP
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/STATIC/STATIC_COMMON_DATA_JOURNEY_DELCODE.ipynb
+    adapter: gep
+    source_experiment: gep-trajectory-whole-brain
+    notes: GEP multi-subject data journey (reload, no retraining; fidelity section skips — classifier).
+
+  # VGAE encoder data journey + train+val reconstruction fidelity. Reconstruction is
+  # FiLM-conditioned, so checkpoint_path must be a re-pretrained encoder (run
+  # vgae-*-static-anticollapse first); config_path must match the arch the
+  # checkpoint was trained with (see explain.yaml for the same caveat).
+  - id: data-journey-vgae-gcn-anticollapse
+    mode: data_journey
+    model: VGAE
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/STATIC/STATIC_COMMON_DATA_JOURNEY_DELCODE.ipynb
+    adapter: vgae
+    config_path: configs/vgae_gcn_anticollapse_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GCN_ANTICOLLAPSE.pth
+    notes: Anti-collapse VGAE (GCN) multi-subject data journey + train+val reconstruction fidelity.
+
+  - id: data-journey-vgae-gat-anticollapse
+    mode: data_journey
+    model: VGAE
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/STATIC/STATIC_COMMON_DATA_JOURNEY_DELCODE.ipynb
+    adapter: vgae
+    config_path: configs/vgae_gat_anticollapse_delcode_whole_brain.json
+    checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GAT_ANTICOLLAPSE.pth
+    notes: Anti-collapse VGAE (GAT) multi-subject data journey + train+val reconstruction fidelity.

@@ -15,3 +15,16 @@ experiments:
     seed: 42
     notebook: notebooks/COMPARISON/COMPARISON_CROSS_REGION_SURVIVAL.ipynb
     notes: Aggregates saved survival predictions across brain regions.
+
+  - id: comparison-gegru-cross-dataset
+    mode: comparison
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/COMPARISON/COMPARISON_GEGRU_CROSS_DATASET.ipynb
+    adapter: gelstm
+    source_experiment: gegru-trajectory-whole-brain
+    notes: >-
+      Real-DELCODE vs. ADNI/OASIS3 site-heterogeneity comparison for the latest
+      GEGRU trajectory model; computes and persists the site_heterogeneity_stats.json
+      calibration anchor that sanity-gegru-synthetic-scanner-drift reads.
