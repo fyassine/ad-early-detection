@@ -41,14 +41,6 @@ _REPO_ROOT = _PROGNOSER_ROOT.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from SHARED.provenance import capture_git_provenance, snapshot_source_dirs  # noqa: E402
-from SHARED.run_naming import generate_run_name  # noqa: E402
-from SHARED.runner_io import (  # noqa: E402
-    Heartbeat,
-    color,
-    format_elapsed,
-    format_metric_summary,
-)
 from PROGNOSER.common.experiment_utils import (  # noqa: E402
     build_experiment,
     build_parameter_dict,
@@ -56,6 +48,14 @@ from PROGNOSER.common.experiment_utils import (  # noqa: E402
     load_experiment,
     load_registry,
     read_statuses,
+)
+from SHARED.provenance import capture_git_provenance, snapshot_source_dirs  # noqa: E402
+from SHARED.run_naming import generate_run_name  # noqa: E402
+from SHARED.runner_io import (  # noqa: E402
+    Heartbeat,
+    color,
+    format_elapsed,
+    format_metric_summary,
 )
 
 _REGISTRY = _PROGNOSER_ROOT / "experiments.yaml"

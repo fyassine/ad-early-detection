@@ -1,7 +1,7 @@
 import numpy as np
 
-from SHARED.seeding import make_rng
 from CLASSIFIER.model.GELSTM.train import make_batches
+from SHARED.seeding import make_rng
 
 
 def _items(n):
