@@ -9,7 +9,32 @@ import torch
 from torch_geometric.data import Data, InMemoryDataset
 from torch_geometric.utils import dense_to_sparse
 
+from CLASSIFIER.common.visits import allowed_months_map, month_allowed
+
 from .utils import knn_binary_adjacency_matrix_no_diag
+
+
+def _filter_by_ids_and_months(all_files, filter_csv_path, separator):
+    """Keep files whose subject is in the filter CSV's Pseudonym column and,
+    if an `allowed_months` column is present, whose visit month is allowed for
+    that subject (see CLASSIFIER.common.visits for the leakage rationale)."""
+    if not os.path.exists(filter_csv_path):
+        raise FileNotFoundError(f"Filter CSV not found at {filter_csv_path}")
+    filter_df = pd.read_csv(filter_csv_path, sep=separator)
+    if "Pseudonym" not in filter_df.columns:
+        raise ValueError(f"Filter CSV must contain 'Pseudonym' column. Found: {filter_df.columns}")
+    allowed_ids = set(filter_df["Pseudonym"].astype(str))
+    months_map = allowed_months_map(filter_df)
+
+    result = []
+    for f in all_files:
+        pid = f.split("_")[0].replace("sub-", "")
+        if pid not in allowed_ids:
+            continue
+        if months_map is not None and not month_allowed(f, months_map.get(pid)):
+            continue
+        result.append(f)
+    return result
 
 
 class GraphDatasetInMemoryFiltered(InMemoryDataset):
@@ -122,14 +147,7 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
                 raise ValueError("file_variant must be one of: raw, z_transformed")
             all_files = [f for f in all_npz_files if f.endswith(variant_map[variant_key])]
 
-        if not os.path.exists(self.filter_csv_path):
-            raise FileNotFoundError(f"Filter CSV not found at {self.filter_csv_path}")
-        filter_df = pd.read_csv(self.filter_csv_path, sep=self.separator)
-        if 'Pseudonym' not in filter_df.columns:
-            raise ValueError(f"Filter CSV must contain 'Pseudonym' column. Found: {filter_df.columns}")
-        allowed_ids = set(filter_df['Pseudonym'].astype(str))
-
-        return [f for f in all_files if f.split('_')[0].replace('sub-', '') in allowed_ids]
+        return _filter_by_ids_and_months(all_files, self.filter_csv_path, self.separator)
 
     @property
     def processed_file_names(self):
@@ -167,11 +185,4 @@ class GraphDMNDatasetInMemoryFiltered(GraphDatasetInMemoryFiltered):
                 raise ValueError("file_variant must be one of: raw, z_transformed")
             all_files = [f for f in all_npz_files if f.endswith(variant_map[variant_key])]
 
-        if not os.path.exists(self.filter_csv_path):
-            raise FileNotFoundError(f"Filter CSV not found at {self.filter_csv_path}")
-        filter_df = pd.read_csv(self.filter_csv_path, sep=self.separator)
-        if 'Pseudonym' not in filter_df.columns:
-            raise ValueError(f"Filter CSV must contain 'Pseudonym' column. Found: {filter_df.columns}")
-        allowed_ids = set(filter_df['Pseudonym'].astype(str))
-
-        return [f for f in all_files if f.split('_')[0].replace('sub-', '') in allowed_ids]
+        return _filter_by_ids_and_months(all_files, self.filter_csv_path, self.separator)

@@ -6,6 +6,8 @@ import torch
 from torch_geometric.data import Data, InMemoryDataset
 from torch_geometric.utils import dense_to_sparse
 
+from CLASSIFIER.common.visits import allowed_months_map, month_allowed
+
 
 class ClassificationDataset(InMemoryDataset):
     def __init__(self, root, adjacency_function, adjacency_args=None, transform=None,
@@ -22,6 +24,7 @@ class ClassificationDataset(InMemoryDataset):
         self.filter_csv_path = filter_csv_path
         self.file_variant = str(file_variant).lower()
         self.allowed_ids = set()
+        self.allowed_months_per_pid = None
 
         if subject_ids is not None:
             self.allowed_ids.update(str(s) for s in subject_ids)
@@ -35,6 +38,7 @@ class ClassificationDataset(InMemoryDataset):
                     f"Filter CSV must contain 'Pseudonym' column. Found: {list(filter_df.columns)}"
                 )
             self.allowed_ids.update(filter_df["Pseudonym"].astype(str))
+            self.allowed_months_per_pid = allowed_months_map(filter_df)
 
         if patient_info_path:
             self.patient_info = pd.read_csv(patient_info_path, sep=self.separator)
@@ -103,6 +107,14 @@ class ClassificationDataset(InMemoryDataset):
             candidate_files = [
                 f for f in candidate_files
                 if f.split('_')[0].replace('sub-', '') in self.allowed_ids
+            ]
+
+        if self.allowed_months_per_pid is not None:
+            candidate_files = [
+                f for f in candidate_files
+                if month_allowed(
+                    f, self.allowed_months_per_pid.get(f.split('_')[0].replace('sub-', ''))
+                )
             ]
 
         if not candidate_files:

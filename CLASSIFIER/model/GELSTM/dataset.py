@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import glob
 import os
-import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -37,6 +36,8 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from model.GAAE.utils import knn_binary_adjacency_matrix_no_diag  # noqa: E402
+
+from CLASSIFIER.common.visits import parse_allowed_months, parse_month  # noqa: E402
 
 # Maximum visit interval for Δt normalisation (months); covers up to M108.
 MAX_INTERVAL_MONTHS: float = 108.0
@@ -109,6 +110,7 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
 
         self.subjects: List[Dict] = []
         n_dropped_full_window = 0
+        has_allowed_months = "allowed_months" in sub_df.columns
         for _, row in sub_df.iterrows():
             pid   = str(row["Pseudonym"])
             label = 1 if row["diagnosis"] == "converter" else 0
@@ -116,7 +118,10 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
             age_raw = row.get("age", 50.0)
             age   = float(min(max(float(age_raw) / 100.0, 0.0), 1.0))
 
-            visit_files = self._find_visit_files(pid)
+            allowed_months = (
+                parse_allowed_months(row["allowed_months"]) if has_allowed_months else None
+            )
+            visit_files = self._find_visit_files(pid, allowed_months)
             if not visit_files:
                 continue
 
@@ -161,15 +166,19 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
             ns = [s["n_scans"] for s in self.subjects]
             print(f"  Scans per subject: min={min(ns)}  max={max(ns)}  mean={np.mean(ns):.1f}")
 
-    def _find_visit_files(self, pid: str) -> List[tuple]:
+    def _find_visit_files(
+        self, pid: str, allowed_months: Optional[set] = None
+    ) -> List[tuple]:
         pattern = os.path.join(self.matrices_dir, f"sub-{pid}_*{self.suffix}")
         files   = glob.glob(pattern)
         result  = []
         for f in files:
-            m = re.search(r"_(M\d+)_", os.path.basename(f))
-            if m:
-                month = int(m.group(1).replace("M", ""))
-                result.append((month, f))
+            month = parse_month(os.path.basename(f))
+            if month is None:
+                continue
+            if allowed_months is not None and month not in allowed_months:
+                continue
+            result.append((month, f))
         return sorted(result, key=lambda x: x[0])
 
     def _load_graph(self, filepath: str) -> Data:
