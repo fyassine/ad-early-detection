@@ -52,6 +52,30 @@ def reconstruct_adjacency(model, data, *, device="cpu"):
 
 
 @torch.no_grad()
+def reconstruct_features(model, data, *, device="cpu"):
+    """Return ``(x, x̂)`` numpy arrays for one graph, or ``None`` if the model was
+    built without a feature decoder (``feature_decoder=False``).
+
+    Pairs with ``model.GAAE.explain.reconstruction_quality`` to score node-feature
+    reconstruction fidelity for VGAE variants trained with ``feature_decoder=True``
+    (``decode_features``), the same way ``reconstruct_features`` in
+    ``model.GAAE.explain`` scores the GAAE — needed for an apples-to-apples
+    comparison, since ``reconstruct_adjacency`` above scores a different decoder
+    head (adjacency, not features).
+    """
+    if not model.has_feature_decoder:
+        return None
+    model.eval()
+    x = data.x.to(device)
+    ei = data.edge_index.to(device)
+    ea = _edge_attr(data)
+    ea = ea.to(device) if ea is not None else None
+    z = model.encode(x, ei, ea)
+    x_hat = model.decode_features(z)
+    return x.detach().cpu().numpy(), x_hat.detach().cpu().numpy()
+
+
+@torch.no_grad()
 def trace_forward(model, data, *, device="cpu") -> Dict[str, Any]:
     """Capture intermediates of one VGAE forward pass for the data-journey plots.
 
@@ -93,4 +117,9 @@ def trace_forward(model, data, *, device="cpu") -> Dict[str, Any]:
     return out
 
 
-__all__ = ["per_node_adjacency_error", "trace_forward"]
+__all__ = [
+    "per_node_adjacency_error",
+    "reconstruct_adjacency",
+    "reconstruct_features",
+    "trace_forward",
+]

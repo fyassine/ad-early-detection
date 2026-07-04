@@ -74,6 +74,9 @@ class VariationalGraphAutoencoder(nn.Module):
                 nn.Linear(latent_dim, hidden_dim),
                 nn.ReLU(),
                 nn.Dropout(dropout),
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.ReLU(),
+                nn.LayerNorm(hidden_dim),
                 nn.Linear(hidden_dim, in_features),
             )
 
