@@ -60,8 +60,9 @@ def test_encode_is_drop_in_pooling(conv_type):
     assert z.shape == (N_NODES, LATENT)
     pooled = z.mean(0)
     assert pooled.shape == (LATENT,)
-    # eval encode == mu (deterministic).
-    mu, _ = model.encode_dist(x, ei, ea)
+    # eval encode == mu (deterministic). encode_dist returns (mu, logvar, mu_raw);
+    # without conditioning mu and mu_raw coincide.
+    mu, _logvar, _mu_raw = model.encode_dist(x, ei, ea)
     assert torch.allclose(z, mu)
 
 
@@ -87,9 +88,11 @@ def test_film_conditioning_changes_latent_but_keeps_shape(conv_type):
     mu_plain = model.encode(x, ei, ea)
     mu_cond = model.encode(x, ei, ea, cond_vec=cond_vec, batch_mask=batch_mask)
     assert mu_cond.shape == mu_plain.shape == (N_NODES, LATENT)
-    # Conditioning is the single source of truth: forward() with cond matches encode().
+    # forward() returns the *un-conditioned* mu_raw: the KL term regularises the raw
+    # posterior while only the decoded z uses the FiLM-conditioned mu. So forward()'s
+    # mu matches the un-conditioned encode(), not the conditioned one.
     _z, mu_fwd, _lv, adj_hat, _x_hat = model(x, ei, ea, cond_vec=cond_vec, batch_mask=batch_mask)
-    assert torch.allclose(mu_fwd, mu_cond)
+    assert torch.allclose(mu_fwd, mu_plain)
     assert adj_hat.shape == (N_NODES, N_NODES)
     # FiLM (gamma*mu+beta) actually moves the latent away from the un-conditioned one
     # (film MLPs are randomly initialised but non-degenerate).
