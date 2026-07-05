@@ -174,8 +174,9 @@ def to_long_format(
         <feature_cols>
     """
     cohorts_df = cohorts_df.copy()
-    id_col_actual = next((c for c in (id_col, "Pseudonym", "subject_id")
-                          if c in cohorts_df.columns), None)
+    id_col_actual = next(
+        (c for c in (id_col, "Pseudonym", "subject_id") if c in cohorts_df.columns), None
+    )
     if id_col_actual is None:
         raise ValueError(f"No subject ID column found in cohorts_df: {list(cohorts_df.columns)}")
 
@@ -195,7 +196,9 @@ def to_long_format(
 
         grp = cohorts_df[cohorts_df[id_col_actual] == sid].copy()
         grp = grp.sort_values("_months", na_position="last").reset_index(drop=True)
-        win_rows = grp[grp["_months"].notna() & (grp["_months"] < window_end)].reset_index(drop=True)
+        win_rows = grp[grp["_months"].notna() & (grp["_months"] < window_end)].reset_index(
+            drop=True
+        )
 
         if len(win_rows) == 0:
             # Fall back to baseline row as a single interval
@@ -255,8 +258,9 @@ def to_sequence_tensors(
         subject_ids : list of subject IDs in the same order
     """
     cohorts_df = cohorts_df.copy()
-    id_col_actual = next((c for c in (id_col, "Pseudonym", "subject_id")
-                          if c in cohorts_df.columns), None)
+    id_col_actual = next(
+        (c for c in (id_col, "Pseudonym", "subject_id") if c in cohorts_df.columns), None
+    )
     if id_col_actual is None:
         raise ValueError(f"No subject ID column found in cohorts_df: {list(cohorts_df.columns)}")
 
@@ -297,7 +301,9 @@ def to_sequence_tensors(
         all_E.append(event)
         all_ids.append(sid)
 
-    sequences = np.stack(all_seqs, axis=0) if all_seqs else np.zeros((0, max_len, n_feat), dtype=np.float32)
+    sequences = (
+        np.stack(all_seqs, axis=0) if all_seqs else np.zeros((0, max_len, n_feat), dtype=np.float32)
+    )
     lengths = np.array(all_lengths, dtype=np.int64)
     T = np.array(all_T, dtype=np.float64)
     E = np.array(all_E, dtype=np.int64)

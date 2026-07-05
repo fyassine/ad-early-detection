@@ -47,19 +47,19 @@ class CoxTimeVaryingWrapper(SurvivalModel):
     def fit(self, X: np.ndarray, T: np.ndarray, E: np.ndarray, **kwargs) -> "CoxTimeVaryingWrapper":
         """Wide-format fit (builds a single-interval long-format internally)."""
         df = pd.DataFrame(X, columns=self.feature_columns)
-        df['subject_id'] = [f'subj_{i}' for i in range(len(X))]
-        df['start_months'] = 0.0
-        df['stop_months'] = T.astype(float)
-        df['event'] = E.astype(int)
+        df["subject_id"] = [f"subj_{i}" for i in range(len(X))]
+        df["start_months"] = 0.0
+        df["stop_months"] = T.astype(float)
+        df["event"] = E.astype(int)
         return self.fit_long(df)
 
     def fit_long(
         self,
         df_long: pd.DataFrame,
-        id_col: str = 'subject_id',
-        start_col: str = 'start_months',
-        stop_col: str = 'stop_months',
-        event_col: str = 'event',
+        id_col: str = "subject_id",
+        start_col: str = "start_months",
+        stop_col: str = "stop_months",
+        event_col: str = "event",
     ) -> "CoxTimeVaryingWrapper":
         """
         Fit on long-format DataFrame. Each row is one (subject, interval).
@@ -71,7 +71,7 @@ class CoxTimeVaryingWrapper(SurvivalModel):
         df = df_long.copy()
         missing = [c for c in self.feature_columns if c not in df.columns]
         if missing:
-            raise KeyError(f'Missing feature columns in df_long: {missing}')
+            raise KeyError(f"Missing feature columns in df_long: {missing}")
 
         df = df.dropna(subset=self.feature_columns + [start_col, stop_col, event_col])
         df = df[df[stop_col] > df[start_col]]  # drop zero-duration rows

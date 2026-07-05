@@ -9,6 +9,7 @@ plots with a footnote naming the model run(s) that produced the plotted data.
 This module deliberately has no model-specific imports — callers pass explicit
 run-name strings and figure/axes objects.
 """
+
 from __future__ import annotations
 
 import os

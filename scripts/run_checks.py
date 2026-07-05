@@ -44,9 +44,7 @@ RATCHETED_CHECKS = ["ruff_format", "ruff_complexity", "mypy", "bandit", "pip_aud
 
 
 def run(cmd: list[str]) -> tuple[int, str]:
-    proc = subprocess.run(
-        cmd, cwd=ROOT, capture_output=True, text=True, check=False
-    )
+    proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, check=False)
     return proc.returncode, proc.stdout + proc.stderr
 
 
@@ -98,10 +96,7 @@ def check_ruff_complexity() -> set[str]:
     issues = run_json(["ruff", "check", "--select", "C90", "--output-format=json", "."])
     if issues is None:
         return set()
-    return {
-        f"{issue['filename']}:{issue['location']['row']}:{issue['code']}"
-        for issue in issues
-    }
+    return {f"{issue['filename']}:{issue['location']['row']}:{issue['code']}" for issue in issues}
 
 
 _MYPY_LINE_RE = re.compile(r"^(?P<file>[^:]+):(?P<line>\d+): error: .*\[(?P<code>[\w-]+)\]$")

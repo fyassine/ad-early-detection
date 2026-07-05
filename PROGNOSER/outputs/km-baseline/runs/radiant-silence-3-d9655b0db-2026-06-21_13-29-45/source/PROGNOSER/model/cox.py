@@ -46,8 +46,9 @@ class CoxPHWrapper(SurvivalModel):
         )
 
     @classmethod
-    def with_embedding_features(cls, latent_dim: int = 64, use_pca: bool = False,
-                                pca_components: int = 16, **kwargs) -> "CoxPHWrapper":
+    def with_embedding_features(
+        cls, latent_dim: int = 64, use_pca: bool = False, pca_components: int = 16, **kwargs
+    ) -> "CoxPHWrapper":
         cols = [f"z_{i}" for i in range(latent_dim)]
         return cls(
             feature_columns=cols,
@@ -59,7 +60,9 @@ class CoxPHWrapper(SurvivalModel):
     def with_clinical_plus_embedding(
         cls, latent_dim: int = 64, use_pca: bool = True, pca_components: int = 16, **kwargs
     ) -> "CoxPHWrapper":
-        cols = ["age", "sex", "mmstot", "cdrglobal", "apoe4"] + [f"z_{i}" for i in range(latent_dim)]
+        cols = ["age", "sex", "mmstot", "cdrglobal", "apoe4"] + [
+            f"z_{i}" for i in range(latent_dim)
+        ]
         return cls(
             feature_columns=cols,
             pca_components=pca_components if use_pca else None,

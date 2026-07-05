@@ -1,4 +1,5 @@
 """Tests for PROGNOSER/common/longitudinal.py."""
+
 import math
 
 import numpy as np
@@ -13,13 +14,17 @@ from PROGNOSER.common.longitudinal import (
 
 # ── visit_months ──────────────────────────────────────────────────────────────
 
-@pytest.mark.parametrize("v,expected", [
-    ("M0",   0),
-    ("M12",  12),
-    ("M36",  36),
-    ("m0",   0),    # case-insensitive
-    ("M024", 24),
-])
+
+@pytest.mark.parametrize(
+    "v,expected",
+    [
+        ("M0", 0),
+        ("M12", 12),
+        ("M36", 36),
+        ("m0", 0),  # case-insensitive
+        ("M024", 24),
+    ],
+)
 def test_visit_months_valid(v, expected):
     assert visit_months(v) == expected
 
@@ -31,6 +36,7 @@ def test_visit_months_invalid_returns_none(v):
 
 # ── compute_at_risk_window ────────────────────────────────────────────────────
 
+
 def _make_grp(rows: list[dict]) -> pd.DataFrame:
     df = pd.DataFrame(rows)
     df["_months"] = df["visit"].apply(visit_months)
@@ -39,58 +45,67 @@ def _make_grp(rows: list[dict]) -> pd.DataFrame:
 
 
 def test_at_risk_window_converter():
-    grp = _make_grp([
-        {"visit": "M0",  "diagnosis": "mci"},
-        {"visit": "M12", "diagnosis": "mci"},
-        {"visit": "M24", "diagnosis": "ad"},
-    ])
+    grp = _make_grp(
+        [
+            {"visit": "M0", "diagnosis": "mci"},
+            {"visit": "M12", "diagnosis": "mci"},
+            {"visit": "M24", "diagnosis": "ad"},
+        ]
+    )
     start, end, event = compute_at_risk_window(grp)
     assert start == 0
-    assert end   == 24
+    assert end == 24
     assert event == 1
 
 
 def test_at_risk_window_non_converter():
-    grp = _make_grp([
-        {"visit": "M0",  "diagnosis": "mci"},
-        {"visit": "M12", "diagnosis": "mci"},
-        {"visit": "M36", "diagnosis": "mci"},
-    ])
+    grp = _make_grp(
+        [
+            {"visit": "M0", "diagnosis": "mci"},
+            {"visit": "M12", "diagnosis": "mci"},
+            {"visit": "M36", "diagnosis": "mci"},
+        ]
+    )
     start, end, event = compute_at_risk_window(grp)
     assert start == 0
-    assert end   == 36
+    assert end == 36
     assert event == 0
 
 
 def test_at_risk_window_converter_picks_earliest_ad():
     """When multiple AD visits exist, window_end = earliest AD month."""
-    grp = _make_grp([
-        {"visit": "M0",  "diagnosis": "mci"},
-        {"visit": "M12", "diagnosis": "ad"},
-        {"visit": "M24", "diagnosis": "ad"},
-    ])
+    grp = _make_grp(
+        [
+            {"visit": "M0", "diagnosis": "mci"},
+            {"visit": "M12", "diagnosis": "ad"},
+            {"visit": "M24", "diagnosis": "ad"},
+        ]
+    )
     _, end, event = compute_at_risk_window(grp)
-    assert end   == 12
+    assert end == 12
     assert event == 1
 
 
 # ── LongitudinalAggregator ────────────────────────────────────────────────────
 
+
 @pytest.fixture()
 def agg_df():
     rows = [
-        {"Pseudonym": "s1", "visit": "M0",  "diagnosis": "mci",  "mmstot": 28.0},
-        {"Pseudonym": "s1", "visit": "M12", "diagnosis": "mci",  "mmstot": 26.0},
-        {"Pseudonym": "s1", "visit": "M24", "diagnosis": "mci",  "mmstot": 24.0},
-        {"Pseudonym": "s1", "visit": "M36", "diagnosis": "ad",   "mmstot": 20.0},
-        {"Pseudonym": "s2", "visit": "M0",  "diagnosis": "mci",  "mmstot": 25.0},
+        {"Pseudonym": "s1", "visit": "M0", "diagnosis": "mci", "mmstot": 28.0},
+        {"Pseudonym": "s1", "visit": "M12", "diagnosis": "mci", "mmstot": 26.0},
+        {"Pseudonym": "s1", "visit": "M24", "diagnosis": "mci", "mmstot": 24.0},
+        {"Pseudonym": "s1", "visit": "M36", "diagnosis": "ad", "mmstot": 20.0},
+        {"Pseudonym": "s2", "visit": "M0", "diagnosis": "mci", "mmstot": 25.0},
     ]
     return pd.DataFrame(rows)
 
 
 @pytest.fixture()
 def agg(agg_df):
-    return LongitudinalAggregator(agg_df, id_col="Pseudonym", visit_col="visit", diagnosis_col="diagnosis")
+    return LongitudinalAggregator(
+        agg_df, id_col="Pseudonym", visit_col="visit", diagnosis_col="diagnosis"
+    )
 
 
 def test_baseline_returns_m0_value(agg):

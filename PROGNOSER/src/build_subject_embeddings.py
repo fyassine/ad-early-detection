@@ -35,9 +35,9 @@ from PROGNOSER.common.survival_table import build_survival_table
 # Repo root resolves from this file (PROGNOSER/src/... -> repo root),
 # overridable via the AD_REPO_ROOT env var for non-standard checkouts.
 REPO_ROOT = Path(os.environ.get("AD_REPO_ROOT", Path(__file__).resolve().parents[2]))
-CACHE_DIR = REPO_ROOT / 'PROGNOSER' / 'notebooks' / '_embeddings_cache_'
-COHORTS_CSV = REPO_ROOT / 'DATA' / 'DELCODE' / '__metadata__' / 'cohorts_with_scans_on_disk.csv'
-SPLITS_DIR = splits_dir('downstream')
+CACHE_DIR = REPO_ROOT / "PROGNOSER" / "notebooks" / "_embeddings_cache_"
+COHORTS_CSV = REPO_ROOT / "DATA" / "DELCODE" / "__metadata__" / "cohorts_with_scans_on_disk.csv"
+SPLITS_DIR = splits_dir("downstream")
 
 # COMBO_TABLE (combo -> data_version, file_suffix) is the single source of truth
 # in PROGNOSER.common.experiment_utils; imported above so the runner registry and
@@ -47,12 +47,12 @@ SPLITS_DIR = splits_dir('downstream')
 def _build_at_risk_windows() -> dict[str, int]:
     """Build per-subject at-risk window from full cohort (all splits)."""
     table = build_survival_table(str(COHORTS_CSV))
-    return {str(row['subject_id']): int(row['duration']) for _, row in table.iterrows()}
+    return {str(row["subject_id"]): int(row["duration"]) for _, row in table.iterrows()}
 
 
-def build_one(combo: str, strategy: str, knn_k: int = 8, device: str = 'cuda') -> Path:
+def build_one(combo: str, strategy: str, knn_k: int = 8, device: str = "cuda") -> Path:
     if combo not in COMBO_TABLE:
-        raise ValueError(f'Unknown combo: {combo}. Options: {list(COMBO_TABLE)}')
+        raise ValueError(f"Unknown combo: {combo}. Options: {list(COMBO_TABLE)}")
     data_version, file_suffix = COMBO_TABLE[combo]
 
     print(f'\n{"="*60}\n  {combo} | {strategy} ({data_version}, knn_k={knn_k})\n{"="*60}')
@@ -70,21 +70,26 @@ def build_one(combo: str, strategy: str, knn_k: int = 8, device: str = 'cuda') -
         device=device,
         knn_k=knn_k,
     )
-    out_path = CACHE_DIR / f'{combo}_{strategy}_embeddings.parquet'
+    out_path = CACHE_DIR / f"{combo}_{strategy}_embeddings.parquet"
     cache_embeddings(df, out_path)
     return out_path
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--combo', type=str, default=None, help='Network combo name')
-    parser.add_argument('--all', action='store_true', help='Build embeddings for all 8 combos')
-    parser.add_argument('--strategy', type=str, default='last',
-                        choices=['baseline', 'last', 'mean', 'slope', 'all_aggs', 'sequence'],
-                        help='Embedding aggregation strategy')
-    parser.add_argument('--knn-k', type=int, default=8)
-    parser.add_argument('--device', type=str, default='cuda')
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("--combo", type=str, default=None, help="Network combo name")
+    parser.add_argument("--all", action="store_true", help="Build embeddings for all 8 combos")
+    parser.add_argument(
+        "--strategy",
+        type=str,
+        default="last",
+        choices=["baseline", "last", "mean", "slope", "all_aggs", "sequence"],
+        help="Embedding aggregation strategy",
+    )
+    parser.add_argument("--knn-k", type=int, default=8)
+    parser.add_argument("--device", type=str, default="cuda")
     args = parser.parse_args()
 
     if args.all:
@@ -92,12 +97,12 @@ def main() -> None:
             try:
                 build_one(combo, strategy=args.strategy, knn_k=args.knn_k, device=args.device)
             except FileNotFoundError as exc:
-                print(f'[skip] {combo}: {exc}')
+                print(f"[skip] {combo}: {exc}")
     elif args.combo:
         build_one(args.combo, strategy=args.strategy, knn_k=args.knn_k, device=args.device)
     else:
         parser.print_help()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

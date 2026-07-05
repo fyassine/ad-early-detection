@@ -32,8 +32,10 @@ def c_index(T: np.ndarray, E: np.ndarray, risk: np.ndarray) -> float:
 
 
 def integrated_brier_score(
-    T_train: np.ndarray, E_train: np.ndarray,
-    T_test: np.ndarray, E_test: np.ndarray,
+    T_train: np.ndarray,
+    E_train: np.ndarray,
+    T_test: np.ndarray,
+    E_test: np.ndarray,
     survival_test: np.ndarray,
     eval_times: Iterable[float],
 ) -> float:
@@ -53,8 +55,10 @@ def integrated_brier_score(
 
 
 def time_dependent_auc(
-    T_train: np.ndarray, E_train: np.ndarray,
-    T_test: np.ndarray, E_test: np.ndarray,
+    T_train: np.ndarray,
+    E_train: np.ndarray,
+    T_test: np.ndarray,
+    E_test: np.ndarray,
     risk: np.ndarray,
     times: Iterable[float] = (24, 36, 60),
 ) -> dict[int, float]:
@@ -93,8 +97,12 @@ def log_rank_strata(T: np.ndarray, E: np.ndarray, groups: np.ndarray) -> dict:
 
 def evaluate_model(
     model,
-    X_train: np.ndarray, T_train: np.ndarray, E_train: np.ndarray,
-    X_test: np.ndarray, T_test: np.ndarray, E_test: np.ndarray,
+    X_train: np.ndarray,
+    T_train: np.ndarray,
+    E_train: np.ndarray,
+    X_test: np.ndarray,
+    T_test: np.ndarray,
+    E_test: np.ndarray,
     eval_times: Iterable[float] = (12, 24, 36, 48, 60, 72),
 ) -> dict:
     """

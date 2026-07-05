@@ -14,6 +14,7 @@ code) so the CLI starts fast. ``COMBO_TABLE`` lives here as the single source of
 truth for the combo -> (data_version, file_suffix) mapping; the embedding-build
 CLI imports it from here.
 """
+
 from __future__ import annotations
 
 import csv
@@ -28,14 +29,26 @@ import yaml
 # build_subject_embeddings.py imports COMBO_TABLE from here.
 # --------------------------------------------------------------------------- #
 COMBO_TABLE: Dict[str, tuple[str, str]] = {
-    "dmn":              ("__fc_dmn_sch200_flat__",                       "_dmn_correlation_matrix_z_transformed.npz"),
-    "hippo":            ("__fc_hippo_tian2_flat__",                      "_hippocampus_correlation_matrix_z_transformed.npz"),
-    "limbic":           ("__fc_limbic_sch200_flat__",                    "_limbic_correlation_matrix_z_transformed.npz"),
-    "dan":              ("__fc_dan_sch200_flat__",                       "_dorsal_attention_correlation_matrix_z_transformed.npz"),
-    "dmn_hippo":        ("__fc_dmn-hippo_sch200-tian2_flat__",           "_dmn_hippo_correlation_matrix_z_transformed.npz"),
-    "dmn_limbic":       ("__fc_dmn-limbic_sch200_flat__",                "_dmn_limbic_correlation_matrix_z_transformed.npz"),
-    "dmn_limbic_hippo": ("__fc_dmn-hippo-limbic_sch200-tian2_flat__",    "_dmn_limbic_hippo_correlation_matrix_z_transformed.npz"),
-    "all_combined":     ("__fc_dmn-hippo-limbic-dan_sch200-tian2_flat__", "_all_combined_correlation_matrix_z_transformed.npz"),
+    "dmn": ("__fc_dmn_sch200_flat__", "_dmn_correlation_matrix_z_transformed.npz"),
+    "hippo": ("__fc_hippo_tian2_flat__", "_hippocampus_correlation_matrix_z_transformed.npz"),
+    "limbic": ("__fc_limbic_sch200_flat__", "_limbic_correlation_matrix_z_transformed.npz"),
+    "dan": ("__fc_dan_sch200_flat__", "_dorsal_attention_correlation_matrix_z_transformed.npz"),
+    "dmn_hippo": (
+        "__fc_dmn-hippo_sch200-tian2_flat__",
+        "_dmn_hippo_correlation_matrix_z_transformed.npz",
+    ),
+    "dmn_limbic": (
+        "__fc_dmn-limbic_sch200_flat__",
+        "_dmn_limbic_correlation_matrix_z_transformed.npz",
+    ),
+    "dmn_limbic_hippo": (
+        "__fc_dmn-hippo-limbic_sch200-tian2_flat__",
+        "_dmn_limbic_hippo_correlation_matrix_z_transformed.npz",
+    ),
+    "all_combined": (
+        "__fc_dmn-hippo-limbic-dan_sch200-tian2_flat__",
+        "_all_combined_correlation_matrix_z_transformed.npz",
+    ),
 }
 
 # --------------------------------------------------------------------------- #
@@ -65,8 +78,15 @@ DEFAULT_EXPERIMENT: Dict[str, Any] = {
 _REQUIRED_FIELDS = ("id", "method", "network_combo", "seed", "notebook")
 
 _VALID_METHODS = {
-    "km", "cox_clinical", "cox_embedding", "cox_combined",
-    "cox_clinical_longitudinal", "cox_time_varying", "rsf", "deepsurv", "lstm_surv",
+    "km",
+    "cox_clinical",
+    "cox_embedding",
+    "cox_combined",
+    "cox_clinical_longitudinal",
+    "cox_time_varying",
+    "rsf",
+    "deepsurv",
+    "lstm_surv",
 }
 _VALID_STRATEGIES = {"baseline", "last", "mean", "slope", "all_aggs", "sequence"}
 # Methods that consume GAAE embeddings and therefore require an embedding cache.
@@ -107,7 +127,9 @@ def load_experiment(yaml_path: str | Path, exp_id: str) -> Dict[str, Any]:
 def _validate_experiment(exp: Dict[str, Any], yaml_path: Path) -> None:
     """Fail loudly on a missing/invalid field (see .claude/rules/errors.md)."""
     if not isinstance(exp, dict):
-        raise ValueError(f"Each experiment in {yaml_path} must be a mapping, got {type(exp).__name__}.")
+        raise ValueError(
+            f"Each experiment in {yaml_path} must be a mapping, got {type(exp).__name__}."
+        )
     missing = [f for f in _REQUIRED_FIELDS if exp.get(f) is None]
     if missing:
         raise ValueError(
@@ -236,7 +258,8 @@ def collect_results(outputs_root: str | Path) -> List[Dict[str, Any]]:
             "method": summary.get("method") or exp.get("method"),
             "network_combo": exp.get("network_combo"),
             "feature_set": summary.get("feature_set") or exp.get("feature_set"),
-            "embedding_strategy": summary.get("embedding_strategy") or exp.get("embedding_strategy"),
+            "embedding_strategy": summary.get("embedding_strategy")
+            or exp.get("embedding_strategy"),
         }
         git = summary.get("git") or {}
         row["git_commit"] = git.get("short_commit")

@@ -35,7 +35,9 @@ class SurvivalModel(ABC):
 
     def score(
         self,
-        X: np.ndarray, T: np.ndarray, E: np.ndarray,
+        X: np.ndarray,
+        T: np.ndarray,
+        E: np.ndarray,
         X_train: np.ndarray | None = None,
         T_train: np.ndarray | None = None,
         E_train: np.ndarray | None = None,
@@ -45,12 +47,15 @@ class SurvivalModel(ABC):
         not provided, IBS/AUC are computed using the test data as the
         reference distribution (less ideal, but works)."""
         from PROGNOSER.common.metrics import evaluate_model
+
         return evaluate_model(
             self,
             X_train if X_train is not None else X,
             T_train if T_train is not None else T,
             E_train if E_train is not None else E,
-            X, T, E,
+            X,
+            T,
+            E,
             eval_times=eval_times,
         )
 

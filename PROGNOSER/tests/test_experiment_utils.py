@@ -1,4 +1,5 @@
 """Unit tests for the PROGNOSER experiment-registry helpers."""
+
 from __future__ import annotations
 
 import json
@@ -51,57 +52,72 @@ def test_load_experiment_unknown_id_lists_known(tmp_path):
 
 
 def test_missing_required_field_raises(tmp_path):
-    reg = _write_registry(tmp_path, """\
+    reg = _write_registry(
+        tmp_path,
+        """\
         experiments:
           - id: no-seed
             method: km
             network_combo: dmn_hippo
             notebook: notebooks/PROGNOSER_RUNNER.ipynb
-    """)
+    """,
+    )
     with pytest.raises(ValueError, match="missing required field"):
         load_registry(reg)
 
 
 def test_duplicate_ids_raise(tmp_path):
-    reg = _write_registry(tmp_path, _KM + """\
+    reg = _write_registry(
+        tmp_path,
+        _KM
+        + """\
   - id: km-baseline
     method: cox_clinical
     network_combo: dmn
     seed: 1
     notebook: notebooks/PROGNOSER_RUNNER.ipynb
-""")
+""",
+    )
     with pytest.raises(ValueError, match="Duplicate experiment id"):
         load_registry(reg)
 
 
 def test_invalid_method_raises(tmp_path):
-    reg = _write_registry(tmp_path, """\
+    reg = _write_registry(
+        tmp_path,
+        """\
         experiments:
           - id: bad-method
             method: random_forest
             network_combo: dmn_hippo
             seed: 1
             notebook: notebooks/PROGNOSER_RUNNER.ipynb
-    """)
+    """,
+    )
     with pytest.raises(ValueError, match="method='random_forest' invalid"):
         load_registry(reg)
 
 
 def test_unknown_combo_raises(tmp_path):
-    reg = _write_registry(tmp_path, """\
+    reg = _write_registry(
+        tmp_path,
+        """\
         experiments:
           - id: bad-combo
             method: km
             network_combo: cerebellum
             seed: 1
             notebook: notebooks/PROGNOSER_RUNNER.ipynb
-    """)
+    """,
+    )
     with pytest.raises(ValueError, match="network_combo='cerebellum' unknown"):
         load_registry(reg)
 
 
 def test_invalid_strategy_raises(tmp_path):
-    reg = _write_registry(tmp_path, """\
+    reg = _write_registry(
+        tmp_path,
+        """\
         experiments:
           - id: bad-strategy
             method: cox_combined
@@ -110,13 +126,16 @@ def test_invalid_strategy_raises(tmp_path):
             notebook: notebooks/PROGNOSER_RUNNER.ipynb
             experiment:
               embedding_strategy: teleport
-    """)
+    """,
+    )
     with pytest.raises(ValueError, match="embedding_strategy='teleport' invalid"):
         load_registry(reg)
 
 
 def test_embedding_method_requires_strategy(tmp_path):
-    reg = _write_registry(tmp_path, """\
+    reg = _write_registry(
+        tmp_path,
+        """\
         experiments:
           - id: cox-emb-no-strategy
             method: cox_embedding
@@ -125,13 +144,16 @@ def test_embedding_method_requires_strategy(tmp_path):
             notebook: notebooks/PROGNOSER_RUNNER.ipynb
             experiment:
               embedding_strategy: null
-    """)
+    """,
+    )
     with pytest.raises(ValueError, match="requires a non-null embedding_strategy"):
         load_registry(reg)
 
 
 def test_lstm_requires_sequence_strategy(tmp_path):
-    reg = _write_registry(tmp_path, """\
+    reg = _write_registry(
+        tmp_path,
+        """\
         experiments:
           - id: lstm-wrong-strategy
             method: lstm_surv
@@ -140,7 +162,8 @@ def test_lstm_requires_sequence_strategy(tmp_path):
             notebook: notebooks/PROGNOSER_RUNNER.ipynb
             experiment:
               embedding_strategy: last
-    """)
+    """,
+    )
     with pytest.raises(ValueError, match="requires .*embedding_strategy='sequence'"):
         load_registry(reg)
 
@@ -150,8 +173,11 @@ def test_lstm_requires_sequence_strategy(tmp_path):
 # --------------------------------------------------------------------------- #
 def test_build_experiment_merge_and_combo_derivation():
     exp = {
-        "id": "cox-combined", "method": "cox_combined", "network_combo": "dmn",
-        "seed": 7, "notebook": "notebooks/PROGNOSER_RUNNER.ipynb",
+        "id": "cox-combined",
+        "method": "cox_combined",
+        "network_combo": "dmn",
+        "seed": 7,
+        "notebook": "notebooks/PROGNOSER_RUNNER.ipynb",
         "experiment": {"penalizer": 0.2, "embedding_strategy": "mean"},
     }
     merged = build_experiment(exp)
@@ -169,13 +195,21 @@ def test_build_experiment_merge_and_combo_derivation():
 
 def test_build_parameter_dict_keys():
     exp = {
-        "id": "km-baseline", "method": "km", "network_combo": "dmn_hippo",
-        "seed": 42, "notebook": "notebooks/PROGNOSER_RUNNER.ipynb",
+        "id": "km-baseline",
+        "method": "km",
+        "network_combo": "dmn_hippo",
+        "seed": 42,
+        "notebook": "notebooks/PROGNOSER_RUNNER.ipynb",
     }
     params = build_parameter_dict(exp)
     assert set(params) == {
-        "EXPERIMENT_ID", "EXPERIMENT", "SEED", "WANDB_ENABLED",
-        "OUTPUT_DIR", "RUN_DIR", "RUN_NAME",
+        "EXPERIMENT_ID",
+        "EXPERIMENT",
+        "SEED",
+        "WANDB_ENABLED",
+        "OUTPUT_DIR",
+        "RUN_DIR",
+        "RUN_NAME",
     }
     assert params["EXPERIMENT_ID"] == "km-baseline"
     assert params["WANDB_ENABLED"] is True
@@ -184,8 +218,12 @@ def test_build_parameter_dict_keys():
 
 def test_wandb_false_propagates():
     exp = {
-        "id": "x", "method": "km", "network_combo": "dmn_hippo", "seed": 1,
-        "notebook": "notebooks/PROGNOSER_RUNNER.ipynb", "wandb": False,
+        "id": "x",
+        "method": "km",
+        "network_combo": "dmn_hippo",
+        "seed": 1,
+        "notebook": "notebooks/PROGNOSER_RUNNER.ipynb",
+        "wandb": False,
     }
     assert build_parameter_dict(exp)["WANDB_ENABLED"] is False
 

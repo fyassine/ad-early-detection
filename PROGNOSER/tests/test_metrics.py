@@ -4,6 +4,7 @@ Focus: the time-window guard in time_dependent_auc / integrated_brier_score uses
 inclusive endpoints (>=/<=) so a horizon equal to T_test.min() or T_test.max() is
 evaluated rather than silently dropped to NaN.
 """
+
 import numpy as np
 
 from PROGNOSER.common.metrics import integrated_brier_score, time_dependent_auc

@@ -1,4 +1,5 @@
 """Tests for PROGNOSER/common/survival_table.py."""
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -9,25 +10,89 @@ from PROGNOSER.common.survival_table import build_survival_table, filter_to_spli
 
 _COHORT_ROWS = [
     # converter: mci baseline, reaches ad at M24
-    {"Pseudonym": "s01", "visit": "M0",  "diagnosis": "mci",  "age": 65, "sex": "m",
-     "mmstot": 28.0, "cdrglobal": 0.5, "ApoE": "e3/e4"},
-    {"Pseudonym": "s01", "visit": "M12", "diagnosis": "mci",  "age": 66, "sex": "m",
-     "mmstot": 27.0, "cdrglobal": 0.5, "ApoE": "e3/e4"},
-    {"Pseudonym": "s01", "visit": "M24", "diagnosis": "ad",   "age": 67, "sex": "m",
-     "mmstot": 24.0, "cdrglobal": 1.0, "ApoE": "e3/e4"},
+    {
+        "Pseudonym": "s01",
+        "visit": "M0",
+        "diagnosis": "mci",
+        "age": 65,
+        "sex": "m",
+        "mmstot": 28.0,
+        "cdrglobal": 0.5,
+        "ApoE": "e3/e4",
+    },
+    {
+        "Pseudonym": "s01",
+        "visit": "M12",
+        "diagnosis": "mci",
+        "age": 66,
+        "sex": "m",
+        "mmstot": 27.0,
+        "cdrglobal": 0.5,
+        "ApoE": "e3/e4",
+    },
+    {
+        "Pseudonym": "s01",
+        "visit": "M24",
+        "diagnosis": "ad",
+        "age": 67,
+        "sex": "m",
+        "mmstot": 24.0,
+        "cdrglobal": 1.0,
+        "ApoE": "e3/e4",
+    },
     # non-converter: mci baseline, last visit M36
-    {"Pseudonym": "s02", "visit": "M0",  "diagnosis": "mci",  "age": 70, "sex": "f",
-     "mmstot": 26.0, "cdrglobal": 0.5, "ApoE": "e3/e3"},
-    {"Pseudonym": "s02", "visit": "M36", "diagnosis": "mci",  "age": 73, "sex": "f",
-     "mmstot": 25.0, "cdrglobal": 0.5, "ApoE": "e3/e3"},
+    {
+        "Pseudonym": "s02",
+        "visit": "M0",
+        "diagnosis": "mci",
+        "age": 70,
+        "sex": "f",
+        "mmstot": 26.0,
+        "cdrglobal": 0.5,
+        "ApoE": "e3/e3",
+    },
+    {
+        "Pseudonym": "s02",
+        "visit": "M36",
+        "diagnosis": "mci",
+        "age": 73,
+        "sex": "f",
+        "mmstot": 25.0,
+        "cdrglobal": 0.5,
+        "ApoE": "e3/e3",
+    },
     # excluded: baseline diagnosis is 'ad' (not mci/converter)
-    {"Pseudonym": "s03", "visit": "M0",  "diagnosis": "ad",   "age": 60, "sex": "m",
-     "mmstot": 20.0, "cdrglobal": 2.0, "ApoE": "e4/e4"},
+    {
+        "Pseudonym": "s03",
+        "visit": "M0",
+        "diagnosis": "ad",
+        "age": 60,
+        "sex": "m",
+        "mmstot": 20.0,
+        "cdrglobal": 2.0,
+        "ApoE": "e4/e4",
+    },
     # converter baseline label
-    {"Pseudonym": "s04", "visit": "M0",  "diagnosis": "converter", "age": 68, "sex": "f",
-     "mmstot": 27.0, "cdrglobal": 0.5, "ApoE": "e3/e4"},
-    {"Pseudonym": "s04", "visit": "M12", "diagnosis": "ad",         "age": 69, "sex": "f",
-     "mmstot": 24.0, "cdrglobal": 1.0, "ApoE": "e3/e4"},
+    {
+        "Pseudonym": "s04",
+        "visit": "M0",
+        "diagnosis": "converter",
+        "age": 68,
+        "sex": "f",
+        "mmstot": 27.0,
+        "cdrglobal": 0.5,
+        "ApoE": "e3/e4",
+    },
+    {
+        "Pseudonym": "s04",
+        "visit": "M12",
+        "diagnosis": "ad",
+        "age": 69,
+        "sex": "f",
+        "mmstot": 24.0,
+        "cdrglobal": 1.0,
+        "ApoE": "e3/e4",
+    },
 ]
 
 
@@ -39,6 +104,7 @@ def cohort_csv(tmp_path):
 
 
 # ── build_survival_table ──────────────────────────────────────────────────────
+
 
 def test_converter_duration_and_event(cohort_csv):
     tbl = build_survival_table(cohort_csv)
@@ -109,6 +175,7 @@ def test_no_subject_id_column_raises(tmp_path):
 
 # ── make_xte ──────────────────────────────────────────────────────────────────
 
+
 def test_make_xte_shapes(cohort_csv):
     tbl = build_survival_table(cohort_csv, include_features=("age", "sex"))
     X, T, E, used = make_xte(tbl, feature_cols=["age", "sex"])
@@ -147,6 +214,7 @@ def test_make_xte_empty_feature_cols_keeps_full_cohort(cohort_csv):
 
 
 # ── filter_to_split ───────────────────────────────────────────────────────────
+
 
 def test_filter_to_split(cohort_csv, tmp_path):
     tbl = build_survival_table(cohort_csv)
