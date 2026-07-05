@@ -3,12 +3,11 @@ GELSTM/train.py — Training and evaluation loops for GELSTMClassifier.
 """
 from __future__ import annotations
 
-import copy
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 import numpy as np
 import torch
-from sklearn.metrics import roc_auc_score, roc_curve, f1_score, confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score, roc_curve
 
 from .utils import encode_batch_sequences
 

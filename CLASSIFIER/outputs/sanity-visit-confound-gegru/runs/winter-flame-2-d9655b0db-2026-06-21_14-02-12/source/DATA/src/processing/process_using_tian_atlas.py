@@ -18,15 +18,15 @@ from __future__ import annotations
 
 import argparse
 import contextlib
-import joblib
 from pathlib import Path
 from typing import Any, cast
 
+import joblib
 import numpy as np
+from joblib import Parallel, delayed
 from nilearn import image as nli_image
 from nilearn.connectome import ConnectivityMeasure
 from nilearn.maskers import NiftiLabelsMasker
-from joblib import Parallel, delayed
 
 try:
     from tqdm import tqdm

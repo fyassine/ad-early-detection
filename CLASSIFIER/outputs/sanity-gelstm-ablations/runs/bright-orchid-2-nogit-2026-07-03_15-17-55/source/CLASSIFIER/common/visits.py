@@ -66,7 +66,7 @@ def allowed_months_map(
         return None
     return {
         str(pid): parse_allowed_months(val)
-        for pid, val in zip(filter_df[id_col].astype(str), filter_df[column])
+        for pid, val in zip(filter_df[id_col].astype(str), filter_df[column], strict=False)
     }
 
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import GATv2Conv, BatchNorm, global_mean_pool, GlobalAttention
+from torch_geometric.nn import BatchNorm, GATv2Conv, GlobalAttention, global_mean_pool
 
 
 def _set_requires_grad(modules: list[nn.Module], value: bool) -> None:

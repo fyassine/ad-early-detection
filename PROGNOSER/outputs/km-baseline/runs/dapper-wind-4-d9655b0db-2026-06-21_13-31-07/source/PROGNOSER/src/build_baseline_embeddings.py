@@ -17,10 +17,9 @@ import os
 from pathlib import Path
 
 from PROGNOSER.common.embeddings import (
-    extract_baseline_embeddings,
     cache_embeddings,
+    extract_baseline_embeddings,
 )
-
 
 # Repo root resolves from this file (PROGNOSER/src/... -> repo root),
 # overridable via the AD_REPO_ROOT env var for non-standard checkouts.

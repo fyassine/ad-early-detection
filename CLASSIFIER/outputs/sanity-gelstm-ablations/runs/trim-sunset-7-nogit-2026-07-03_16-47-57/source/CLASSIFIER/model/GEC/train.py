@@ -37,8 +37,8 @@ from sklearn.metrics import (
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from SHARED.seeding import make_torch_generator, seed_worker
 from CLASSIFIER.configs.gec import GECTrainConfig
+from SHARED.seeding import make_torch_generator, seed_worker
 
 
 def build_loader(

@@ -502,7 +502,7 @@ class VGAEExplainAdapter(ExplainAdapter):
         enc = self._encoder()
 
         if name in ("reconstruction", "attention"):
-            subject = ctx["subject"]  
+            subject = ctx["subject"]
             g = subject["graphs"][0]
 
             if name == "reconstruction":

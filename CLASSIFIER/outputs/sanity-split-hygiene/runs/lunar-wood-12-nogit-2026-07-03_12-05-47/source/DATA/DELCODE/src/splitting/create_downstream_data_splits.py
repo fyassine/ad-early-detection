@@ -148,7 +148,7 @@ def main():
         .to_csv(OUTPUT_DIR / "_all_splits_patient_info.csv", index=False)
 
     log(f"\nSaved to {OUTPUT_DIR}")
-    
+
     with open(OUTPUT_DIR / "split_report.txt", "w") as f:
         f.write("\n".join(lines) + "\n")
 

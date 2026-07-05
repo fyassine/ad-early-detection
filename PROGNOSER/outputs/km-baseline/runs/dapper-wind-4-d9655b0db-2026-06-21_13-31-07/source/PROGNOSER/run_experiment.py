@@ -41,14 +41,6 @@ _REPO_ROOT = _PROGNOSER_ROOT.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from PROGNOSER.common.experiment_utils import (  # noqa: E402
-    build_experiment,
-    build_parameter_dict,
-    collect_results,
-    load_experiment,
-    load_registry,
-    read_statuses,
-)
 from CLASSIFIER.common.provenance import capture_git_provenance, snapshot_source_dirs  # noqa: E402
 from CLASSIFIER.common.run_naming import generate_run_name  # noqa: E402
 from CLASSIFIER.common.runner_io import (  # noqa: E402
@@ -56,6 +48,14 @@ from CLASSIFIER.common.runner_io import (  # noqa: E402
     color,
     format_elapsed,
     format_metric_summary,
+)
+from PROGNOSER.common.experiment_utils import (  # noqa: E402
+    build_experiment,
+    build_parameter_dict,
+    collect_results,
+    load_experiment,
+    load_registry,
+    read_statuses,
 )
 
 _REGISTRY = _PROGNOSER_ROOT / "experiments.yaml"

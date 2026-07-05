@@ -143,8 +143,8 @@ def main():
     # Stratified 60/20/20 split of available patients, one cohort at a time.
     train_parts, val_parts, test_parts = [], [downstream_val_reserved], [downstream_test_reserved]
 
-    for diagnosis, group_df in available.groupby("diagnosis"):
-        scan_map = dict(zip(group_df["Pseudonym"], group_df["n_scans"]))
+    for _diagnosis, group_df in available.groupby("diagnosis"):
+        scan_map = dict(zip(group_df["Pseudonym"], group_df["n_scans"], strict=False))
         ids = list(scan_map.keys())
 
         if len(ids) >= 5:

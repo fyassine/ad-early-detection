@@ -1,6 +1,7 @@
-import pandas as pd
 import os
+
 import numpy as np
+import pandas as pd
 import torch
 from torch_geometric.data import Data, InMemoryDataset
 from torch_geometric.utils import dense_to_sparse
@@ -57,7 +58,7 @@ class ClassificationDataset(InMemoryDataset):
                 self.converter_ids = set(converter_df['ID'].astype(str))
             elif 'Pseudonym' in converter_df.columns:
                 self.converter_ids = set(converter_df['Pseudonym'].astype(str))
-        
+
         super().__init__(root, transform, pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)
 
@@ -130,7 +131,7 @@ class ClassificationDataset(InMemoryDataset):
 
     def process(self):
         data_list = []
-        for idx, raw_path in enumerate(self.raw_paths):
+        for _idx, raw_path in enumerate(self.raw_paths):
             data_npz = np.load(raw_path)
             if 'array' in data_npz:
                 feature_matrix = data_npz['array']
@@ -170,9 +171,9 @@ class ClassificationDataset(InMemoryDataset):
                 is_converter = 1
             else:
                 is_converter = 0
-            
+
             data.is_converter = torch.tensor(is_converter, dtype=torch.float)
-            
+
             data_list.append(data)
 
         if self.pre_filter is not None:

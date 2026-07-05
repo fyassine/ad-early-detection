@@ -30,9 +30,9 @@ _VALID_THRESHOLD_MODES = {None, "youden", "best-f1", "fixed"}
 def load_registry(yaml_path: str | Path) -> List[Dict[str, Any]]:
     """Load all experiment entries, raising on a malformed registry."""
     registry_path = Path(yaml_path)
-    
+
     experiments = []
-    
+
     if registry_path.is_dir():
         yaml_files = sorted(registry_path.glob("*.yaml"))
         if not yaml_files:
@@ -47,7 +47,7 @@ def load_registry(yaml_path: str | Path) -> List[Dict[str, Any]]:
         file_exps = data.get("experiments")
         if not isinstance(file_exps, list) or not file_exps:
             raise ValueError(f"{current_yaml_path} has no 'experiments:' list.")
-        
+
         for exp in file_exps:
             if isinstance(exp, dict):
                 exp["_source_yaml"] = str(current_yaml_path)
@@ -151,17 +151,17 @@ def build_parameter_dict(exp: Dict[str, Any], classifier_root: str | Path) -> Di
         "RUN_DIR": None,
         "RUN_NAME": None,
     }
-    
+
     # Adapter registry key for the shared LONGITUDINAL_COMMON notebook; defaults
     # to MODEL when 'adapter:' is omitted (see CLASSIFIER/adapters/__init__.py).
     if "adapter" in exp or exp.get("mode") == "longitudinal":
         params["ADAPTER"] = exp.get("adapter") or exp["model"]
-        
+
     # Source run to reload for analysis-only notebooks (e.g. the visit-count
     # confound sanity notebook): the notebook reads outputs/<id>/latest/.
     if "source_experiment" in exp:
         params["SOURCE_EXPERIMENT"] = exp["source_experiment"]
-        
+
     return params
 
 

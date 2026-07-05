@@ -25,9 +25,7 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 import torch
-from torch_geometric.data import Data
 from torch_geometric.utils import dense_to_sparse
-
 
 # Repo root resolves from this file (PROGNOSER/common/embeddings.py -> repo root),
 # overridable via the AD_REPO_ROOT env var for non-standard checkouts.
@@ -293,7 +291,7 @@ def _build_sequence_embeddings(
             emb = _encode_one(p, model, device, knn_k)
             if emb is not None:
                 row = {'subject_id': sid, 'visit_month': visit_m}
-                row.update(dict(zip(col_names, emb.tolist())))
+                row.update(dict(zip(col_names, emb.tolist(), strict=False)))
                 rows.append(row)
     return pd.DataFrame(rows)
 

@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Any, Dict, Tuple
 
 import numpy as np
-from sklearn.metrics import roc_auc_score, confusion_matrix, f1_score
+from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score
 
 # Make `model.*` / `common.*` importable the same way the notebooks do (CLASSIFIER
 # root on sys.path), and `CLASSIFIER.*` importable the way the tests do (repo root).

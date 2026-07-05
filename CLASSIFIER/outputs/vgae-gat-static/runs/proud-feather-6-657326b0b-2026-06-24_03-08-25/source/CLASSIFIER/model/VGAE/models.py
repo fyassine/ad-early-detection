@@ -18,7 +18,7 @@ enable it; omitting them leaves the plain textbook VGAE behavior unchanged.
 """
 from __future__ import annotations
 
-from typing import List, Tuple, Union
+from typing import List
 
 import torch
 import torch.nn as nn
@@ -155,9 +155,9 @@ class VariationalGraphAutoencoder(nn.Module):
         if return_attention:
             if a_mu is not None:
                 attn.append(a_mu)
-            return mu, logvar, attn, mu_raw   
+            return mu, logvar, attn, mu_raw
 
-        return mu, logvar, mu_raw 
+        return mu, logvar, mu_raw
 
     def encode(self, x, edge_index, edge_attr=None, return_attention=False, cond_vec=None, batch_mask=None):
         if return_attention:

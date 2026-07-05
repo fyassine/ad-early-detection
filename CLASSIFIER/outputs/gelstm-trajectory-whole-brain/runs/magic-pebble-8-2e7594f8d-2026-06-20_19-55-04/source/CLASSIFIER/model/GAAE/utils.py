@@ -23,7 +23,7 @@ def knn_binary_adjacency_matrix_no_diag(corr_matrix, k):
         corr_row = np.copy(corr_matrix[i, :])
         corr_row[i] = -np.inf  # Ensure self-connections are not considered
 
-        nearest_indices = np.argsort(-corr_row)[:k] 
+        nearest_indices = np.argsort(-corr_row)[:k]
         adjacency_matrix[i, nearest_indices] = 1
 
     binary_adjacency_matrix = np.maximum(adjacency_matrix, adjacency_matrix.T)
@@ -33,10 +33,10 @@ def knn_binary_adjacency_matrix_no_diag(corr_matrix, k):
 def calculate_dense_adjacency(data):
     """
     Converts sparse edge_index to dense adjacency matrix.
-    
+
     Args:
         data (Data): PyTorch Geometric Data object with edge_index.
-    
+
     Returns:
         torch.Tensor: Dense adjacency matrix of shape [N, N].
     """
@@ -46,28 +46,28 @@ def calculate_dense_adjacency(data):
 def create_mask(batch):
     """
     Creates a mask for adjacency matrices in batched graph data.
-    
+
     This is useful when processing multiple graphs of different sizes in a batch.
     The mask identifies which regions of the batched adjacency matrix correspond
     to actual graph connections vs. padding.
-    
+
     Args:
         batch (torch.Tensor): A tensor where each node is assigned a graph index.
-    
+
     Returns:
-        torch.Tensor: A mask of shape [N, N] where valid graph regions are 1 
+        torch.Tensor: A mask of shape [N, N] where valid graph regions are 1
                       and padded regions are 0.
     """
     num_nodes_per_graph = torch.bincount(batch)
     N = batch.size(0)  # Total number of nodes
     mask = torch.zeros((N, N), device=batch.device, dtype=torch.bool)
-    
+
     start_idx = 0
     for num_nodes in num_nodes_per_graph:
         if num_nodes > 0:
             mask[start_idx:start_idx + num_nodes, start_idx:start_idx + num_nodes] = True
             start_idx += num_nodes
-    
+
     return mask
 
 def save_run_config(run_name, timestamp, dataset_info, model_config, training_config, run_artifact_dir):

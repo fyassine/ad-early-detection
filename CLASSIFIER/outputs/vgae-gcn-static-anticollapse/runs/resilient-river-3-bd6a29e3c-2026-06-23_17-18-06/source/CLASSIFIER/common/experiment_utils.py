@@ -30,9 +30,9 @@ _VALID_THRESHOLD_MODES = {None, "youden", "best-f1", "fixed"}
 def load_registry(yaml_path: str | Path) -> List[Dict[str, Any]]:
     """Load all experiment entries, raising on a malformed registry."""
     registry_path = Path(yaml_path)
-    
+
     experiments = []
-    
+
     if registry_path.is_dir():
         yaml_files = sorted(registry_path.glob("*.yaml"))
         if not yaml_files:
@@ -47,7 +47,7 @@ def load_registry(yaml_path: str | Path) -> List[Dict[str, Any]]:
         file_exps = data.get("experiments")
         if not isinstance(file_exps, list) or not file_exps:
             raise ValueError(f"{current_yaml_path} has no 'experiments:' list.")
-        
+
         for exp in file_exps:
             if isinstance(exp, dict):
                 exp["_source_yaml"] = str(current_yaml_path)

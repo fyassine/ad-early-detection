@@ -35,9 +35,8 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from model.GAAE.utils import knn_binary_adjacency_matrix_no_diag  # noqa: E402
-
 from CLASSIFIER.common.visits import parse_allowed_months, parse_month  # noqa: E402
+from model.GAAE.utils import knn_binary_adjacency_matrix_no_diag  # noqa: E402
 
 # Maximum visit interval for Δt normalisation (months); covers up to M108.
 MAX_INTERVAL_MONTHS: float = 108.0

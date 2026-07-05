@@ -16,16 +16,20 @@ import pytest
 # Repo root → dotted imports resolve
 sys.path.insert(0, str(Path(__file__).resolve().parents[5]))
 
-from SHARED.sanity import run_full_audit
 from DATA.DELCODE.src.splitting.create_downstream_data_splits import COHORTS_CSV
-from DATA.DELCODE.src.splitting.create_downstream_data_splits import _patient_groups as _downstream_groups
-from DATA.DELCODE.src.splitting.create_pretrain_data_splits import _patient_groups as _pretrain_groups
+from DATA.DELCODE.src.splitting.create_downstream_data_splits import (
+    _patient_groups as _downstream_groups,
+)
+from DATA.DELCODE.src.splitting.create_pretrain_data_splits import (
+    _patient_groups as _pretrain_groups,
+)
 from DATA.DELCODE.src.splitting.load_splits import (
     get_split_indices_for_dataset,
     get_split_patient_ids,
     split_csv_paths,
     splits_dir,
 )
+from SHARED.sanity import run_full_audit
 
 # ---------------------------------------------------------------------------
 # Helpers

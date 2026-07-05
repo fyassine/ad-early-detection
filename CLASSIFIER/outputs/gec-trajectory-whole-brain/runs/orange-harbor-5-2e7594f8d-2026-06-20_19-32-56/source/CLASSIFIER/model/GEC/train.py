@@ -27,14 +27,18 @@ from typing import Dict, Optional, Tuple
 import torch
 import torch.nn as nn
 from sklearn.metrics import (
-    accuracy_score, f1_score, roc_auc_score, roc_curve,
-    confusion_matrix, classification_report,
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    roc_auc_score,
+    roc_curve,
 )
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from CLASSIFIER.configs.gec import GECTrainConfig
 from CLASSIFIER.common.seeding import make_torch_generator, seed_worker
+from CLASSIFIER.configs.gec import GECTrainConfig
 
 
 def build_loader(

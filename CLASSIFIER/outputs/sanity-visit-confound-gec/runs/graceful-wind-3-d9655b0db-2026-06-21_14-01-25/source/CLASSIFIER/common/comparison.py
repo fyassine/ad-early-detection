@@ -134,7 +134,7 @@ def paired_bootstrap_ci(
 
     deltas = np.empty(n_boot, dtype=float)
     valid = 0
-    for k in range(n_boot):
+    for _k in range(n_boot):
         idx = rng.integers(0, n, size=n)
         try:
             m_a = metric_fn(labels[idx], probs_a[idx])

@@ -69,9 +69,9 @@ def update_latest_checkpoint(
     ckpt_root = Path(ckpt_root)
     target_path = Path(target_path)
     latest_link = ckpt_root / f"{latest_tag}.pth"
-    
+
     if latest_link.is_symlink() or latest_link.exists():
         latest_link.unlink(missing_ok=True)
-        
+
     latest_link.symlink_to(target_path.resolve())
     return latest_link

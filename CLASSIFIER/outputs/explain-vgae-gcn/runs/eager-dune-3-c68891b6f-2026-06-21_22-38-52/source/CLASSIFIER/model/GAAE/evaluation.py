@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-import numpy as np
-import pandas as pd
-import torch
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
+import torch
 from sklearn.metrics import roc_auc_score, roc_curve
+
+from CLASSIFIER.common.robustness import perturb_graph
 
 from .losses import compute_sample_reconstruction_error
 from .utils import knn_binary_adjacency_matrix_no_diag
-from CLASSIFIER.common.robustness import perturb_graph
 
 
 def compute_errors_for_dataset(

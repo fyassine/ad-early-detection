@@ -23,8 +23,6 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import torch
 import torch.nn as nn
-from sklearn.preprocessing import StandardScaler
-
 from common.crossval import Bundle
 from common.fdr import compute_fdr_filter
 from configs.gelstm import EvalConfig
@@ -32,6 +30,7 @@ from model.GELSTM.dataset import LongitudinalSubjectDataset
 from model.GELSTM.models import GELSTMClassifier
 from model.GELSTM.train import evaluate, make_batches, train_epoch
 from model.GELSTM.utils import compute_class_weights
+from sklearn.preprocessing import StandardScaler
 
 from . import LongitudinalAdapter
 
@@ -192,7 +191,7 @@ class GELSTMAdapter(LongitudinalAdapter):
         eval_cfg = self._eval_cfg(dim_filter)
 
         best_auc, best_state, no_improve = 0.0, None, 0
-        for epoch in range(self.epochs):
+        for _epoch in range(self.epochs):
             tr_batches = make_batches(tr_items, self.batch_size, shuffle=True, rng=rng)
             va_batches = make_batches(va_items, self.batch_size, shuffle=False)
             train_epoch(model, tr_batches, optimizer, criterion, device,

@@ -20,10 +20,11 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
-from sklearn.metrics import roc_auc_score, roc_curve, f1_score, confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score, roc_curve
+
+from CLASSIFIER.configs.gelstm import EvalConfig, GELSTMTrainConfig
 
 from .utils import encode_batch_sequences
-from CLASSIFIER.configs.gelstm import GELSTMTrainConfig, EvalConfig
 
 
 def _eval_cfg(eval_cfg: Optional[EvalConfig]) -> EvalConfig:

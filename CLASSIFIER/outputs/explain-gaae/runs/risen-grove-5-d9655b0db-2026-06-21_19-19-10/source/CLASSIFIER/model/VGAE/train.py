@@ -15,6 +15,7 @@ from torch_geometric.utils import to_dense_adj
 from tqdm.notebook import tqdm
 
 from model.GAAE.utils import create_mask
+
 from .losses import vgae_total_loss
 
 

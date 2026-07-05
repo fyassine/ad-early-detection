@@ -11,11 +11,11 @@ from __future__ import annotations
 
 import os
 import random
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 import torch
-from torch.nn.utils.rnn import pack_padded_sequence, PackedSequence
+from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence
 
 
 def set_seed(seed: int = 42) -> None:
