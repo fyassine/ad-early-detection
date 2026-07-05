@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gec-trajectory-whole-brain",
+  "run_name": "azure-storm-3-2e7594f8d-2026-06-20_16-09-02",
+  "state": "done",
+  "pid": 401700,
+  "started_at": "2026-06-20T16:09:02",
+  "git_commit": "2e7594f8d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb",
+  "finished_at": "2026-06-20T16:09:38",
+  "exit_code": 0,
+  "duration_seconds": 35.3
+}

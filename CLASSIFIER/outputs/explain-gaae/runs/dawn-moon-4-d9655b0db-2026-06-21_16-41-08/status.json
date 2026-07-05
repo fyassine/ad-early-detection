@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-gaae",
+  "run_name": "dawn-moon-4-d9655b0db-2026-06-21_16-41-08",
+  "state": "done",
+  "pid": 865740,
+  "started_at": "2026-06-21T16:41:08",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T16:42:45",
+  "exit_code": 0,
+  "duration_seconds": 95.9
+}

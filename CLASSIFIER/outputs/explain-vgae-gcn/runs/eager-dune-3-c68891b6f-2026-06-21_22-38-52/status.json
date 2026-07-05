@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-vgae-gcn",
+  "run_name": "eager-dune-3-c68891b6f-2026-06-21_22-38-52",
+  "state": "done",
+  "pid": 1005047,
+  "started_at": "2026-06-21T22:38:52",
+  "git_commit": "c68891b6f",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T22:40:22",
+  "exit_code": 0,
+  "duration_seconds": 89.8
+}

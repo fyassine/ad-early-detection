@@ -1,0 +1,44 @@
+{
+  "experiment_id": "vgae-gat-static-anticollapse",
+  "timestamp": "2026-06-24T10:04:20",
+  "model_config": {
+    "model_type": "VariationalGraphAutoencoder",
+    "in_features": 200,
+    "hidden_dim": 128,
+    "latent_dim": 64,
+    "conv_type": "gat",
+    "num_heads": 2,
+    "dropout": 0.3,
+    "beta": 0.00111,
+    "beta_warmup_epochs": 41,
+    "free_bits": 1.23,
+    "feature_decoder": true,
+    "feature_loss_weight": 2.93
+  },
+  "training_config": {
+    "seed": 100,
+    "batch_size": 64,
+    "learning_rate": 0.00118,
+    "weight_decay": 0.001,
+    "beta": 0.00111,
+    "beta_warmup_epochs": 41,
+    "free_bits": 1.23,
+    "feature_decoder": true,
+    "feature_loss_weight": 2.93,
+    "epochs": 500,
+    "early_stopping_patience": 25,
+    "latent_dim": 64,
+    "hidden_dim": 128,
+    "conv_type": "gat",
+    "checkpoint_tag": "anticollapse",
+    "num_heads": 2,
+    "dropout": 0.3,
+    "adjacency_k": 16,
+    "num_workers": 8,
+    "file_variant": "z_transformed"
+  },
+  "checkpoint": "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/notebooks/checkpoints/checkpoints_vgae_whole_brain/jolly-night-6-vgae-gat-static-anticollapse-2026-06-24_10-02-08_2026-06-24_10-04-20/model_jolly-night-6-vgae-gat-static-anticollapse-2026-06-24_10-02-08_2026-06-24_10-04-20.pth",
+  "metrics": {
+    "best_val_loss": 0.8605551272630692
+  }
+}

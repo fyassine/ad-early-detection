@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-visit-confound-gelstm",
+  "run_name": "earthy-fire-1-d9655b0db-2026-06-21_02-05-59",
+  "state": "done",
+  "pid": 630566,
+  "started_at": "2026-06-21T02:05:59",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb",
+  "finished_at": "2026-06-21T02:06:17",
+  "exit_code": 0,
+  "duration_seconds": 17.9
+}

@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gec-trajectory-whole-brain",
+  "run_name": "winter-sunset-2-2e7594f8d-2026-06-20_15-39-09",
+  "state": "done",
+  "pid": 391979,
+  "started_at": "2026-06-20T15:39:09",
+  "git_commit": "2e7594f8d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb",
+  "finished_at": "2026-06-20T15:39:43",
+  "exit_code": 0,
+  "duration_seconds": 34.0
+}

@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-vgae-gat-anticollapse",
+  "run_name": "morning-cloud-2-d78a82d34-2026-06-24_10-11-17",
+  "state": "done",
+  "pid": 1806217,
+  "started_at": "2026-06-24T10:11:18",
+  "git_commit": "d78a82d34",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-24T10:13:02",
+  "exit_code": 0,
+  "duration_seconds": 103.8
+}

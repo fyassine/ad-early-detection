@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gec-trajectory-whole-brain",
+  "run_name": "exalted-sea-1-2e7594f8d-2026-06-20_15-37-03",
+  "state": "done",
+  "pid": 391079,
+  "started_at": "2026-06-20T15:37:03",
+  "git_commit": "2e7594f8d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb",
+  "finished_at": "2026-06-20T15:37:38",
+  "exit_code": 0,
+  "duration_seconds": 34.8
+}

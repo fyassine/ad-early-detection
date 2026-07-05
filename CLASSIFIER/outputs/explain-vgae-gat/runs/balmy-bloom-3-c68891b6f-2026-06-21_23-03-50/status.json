@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-vgae-gat",
+  "run_name": "balmy-bloom-3-c68891b6f-2026-06-21_23-03-50",
+  "state": "done",
+  "pid": 1012046,
+  "started_at": "2026-06-21T23:03:50",
+  "git_commit": "c68891b6f",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T23:05:24",
+  "exit_code": 0,
+  "duration_seconds": 93.8
+}

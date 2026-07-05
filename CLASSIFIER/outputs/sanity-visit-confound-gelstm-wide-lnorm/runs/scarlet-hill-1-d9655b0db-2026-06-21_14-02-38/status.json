@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-visit-confound-gelstm-wide-lnorm",
+  "run_name": "scarlet-hill-1-d9655b0db-2026-06-21_14-02-38",
+  "state": "done",
+  "pid": 830136,
+  "started_at": "2026-06-21T14:02:38",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb",
+  "finished_at": "2026-06-21T14:02:58",
+  "exit_code": 0,
+  "duration_seconds": 19.1
+}

@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-vgae-gcn-anticollapse",
+  "run_name": "hardy-river-4-d78a82d34-2026-06-24_04-42-05",
+  "state": "done",
+  "pid": 1716110,
+  "started_at": "2026-06-24T04:42:06",
+  "git_commit": "d78a82d34",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-24T04:43:47",
+  "exit_code": 0,
+  "duration_seconds": 100.8
+}

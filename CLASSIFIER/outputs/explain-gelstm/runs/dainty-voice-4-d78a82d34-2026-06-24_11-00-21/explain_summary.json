@@ -1,0 +1,150 @@
+{
+  "experiment_id": "explain-gelstm",
+  "adapter": "gelstm",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/latent_dim_distributions.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/latent_dim_distributions.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/logreg_probe_roc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/logreg_probe_roc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/latent_space_3d.html",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/disease_axis.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/disease_axis.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/disease_axis_3d.html",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/journey_6_prediction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/journey_6_prediction.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/extra_trajectory.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/extra_trajectory.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/extra_early_detection.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/extra_early_detection.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/extra_hidden_state.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/extra_hidden_state.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/extra_visit_occlusion.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/extra_visit_occlusion.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/extra_temporal_ablation.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/dainty-voice-4-d78a82d34-2026-06-24_11-00-21/figures/extra_temporal_ablation.pdf"
+  ],
+  "latent_separability": {
+    "silhouette": 0.18443551919735535,
+    "top5_dims": [
+      1,
+      19,
+      28,
+      4,
+      27
+    ]
+  },
+  "logreg_probe": {
+    "mean_auc": 0.9030624638519376,
+    "oof_auc": 0.888888888888889
+  },
+  "diagnostics": {
+    "auc": 0.8071428571428572,
+    "sensitivity": 0.8571428571428571,
+    "specificity": 0.55,
+    "f1": 0.6857142857142857,
+    "ece": 0.25433422362103186,
+    "threshold": 0.4588164985179901,
+    "saved_auc": 0.8071428571428572
+  },
+  "walkthrough": {
+    "prob": 0.4065839350223541,
+    "pred": 0,
+    "true": 1,
+    "threshold": 0.4588164985179901,
+    "subject_id": "ae818e1d7"
+  },
+  "region_importance_by_network": {
+    "Vis": 0.7543175169106188,
+    "SomMot": 0.8693212100437709,
+    "DorsAttn": 0.7962159308103415,
+    "SalVentAttn": 0.7864440760829232,
+    "Limbic": 0.8302581260601679,
+    "Cont": 0.7735816915829976,
+    "Default": 0.824851507725923
+  },
+  "early_detection": [
+    {
+      "n_visits": 1,
+      "n_subjects": 34,
+      "auc": 0.5535714285714286,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 0.05
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 28,
+      "auc": 0.8010204081632653,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 0.5714285714285714
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 18,
+      "auc": 0.8625,
+      "sensitivity": 0.8,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "auc": 0.9714285714285715,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 1.0
+    }
+  ],
+  "visit_occlusion": [
+    {
+      "dropped_visit_month": 0,
+      "prob_without": 0.4040713608264923,
+      "delta": 0.0025125443935394287
+    },
+    {
+      "dropped_visit_month": 12,
+      "prob_without": 0.4029316306114197,
+      "delta": 0.0036522746086120605
+    },
+    {
+      "dropped_visit_month": 24,
+      "prob_without": 0.43199193477630615,
+      "delta": -0.025408029556274414
+    },
+    {
+      "dropped_visit_month": 36,
+      "prob_without": 0.40992337465286255,
+      "delta": -0.0033394694328308105
+    },
+    {
+      "dropped_visit_month": 48,
+      "prob_without": 0.40900570154190063,
+      "delta": -0.0024217963218688965
+    },
+    {
+      "dropped_visit_month": 60,
+      "prob_without": 0.4778622090816498,
+      "delta": -0.07127830386161804
+    }
+  ],
+  "temporal_ablation": {
+    "auc_full": 0.8071428571428572,
+    "auc_zero_dt": 0.8071428571428572,
+    "auc_shuffled": 0.7785714285714286
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "experiment_id": "sanity-visit-confound-gegru",
+  "run_name": "leafy-canyon-1-d9655b0db-2026-06-21_02-06-23",
+  "source_experiment": "gegru-trajectory-whole-brain",
+  "timestamp": "2026-06-21T02:06:40",
+  "metrics": {
+    "converter_visit_count_gap": 0.6890968508615565,
+    "visit_count_mwu_pvalue": 0.002203561369249296,
+    "prob_nscans_spearman_overall": -0.07552435813277837,
+    "prob_nscans_spearman_converter": 0.10789241409887614,
+    "early_detection_auc_max_variable": 0.9428571428571428,
+    "early_detection_auc_max_fixed": 0.9428571428571428,
+    "prob_separation": 0.3378584048444671
+  }
+}

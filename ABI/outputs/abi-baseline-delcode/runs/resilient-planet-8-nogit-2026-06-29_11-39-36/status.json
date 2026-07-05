@@ -1,0 +1,14 @@
+{
+  "experiment_id": "abi-baseline-delcode",
+  "run_name": "resilient-planet-8-nogit-2026-06-29_11-39-36",
+  "kind": "baseline",
+  "state": "done",
+  "pid": 2000679,
+  "started_at": "2026-06-29T11:39:38",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/ABI_BASELINE.ipynb",
+  "finished_at": "2026-06-29T11:40:00",
+  "exit_code": 0,
+  "duration_seconds": 21.5
+}

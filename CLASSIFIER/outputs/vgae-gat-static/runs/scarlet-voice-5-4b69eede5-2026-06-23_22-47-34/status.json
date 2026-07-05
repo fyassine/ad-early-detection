@@ -1,0 +1,13 @@
+{
+  "experiment_id": "vgae-gat-static",
+  "run_name": "scarlet-voice-5-4b69eede5-2026-06-23_22-47-34",
+  "state": "done",
+  "pid": 1517070,
+  "started_at": "2026-06-23T22:47:35",
+  "git_commit": "4b69eede5",
+  "git_dirty": true,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-23T22:50:28",
+  "exit_code": 0,
+  "duration_seconds": 173.0
+}

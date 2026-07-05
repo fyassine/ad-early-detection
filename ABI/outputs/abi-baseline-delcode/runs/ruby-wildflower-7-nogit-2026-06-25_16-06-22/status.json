@@ -1,0 +1,14 @@
+{
+  "experiment_id": "abi-baseline-delcode",
+  "run_name": "ruby-wildflower-7-nogit-2026-06-25_16-06-22",
+  "kind": "baseline",
+  "state": "done",
+  "pid": 1970103,
+  "started_at": "2026-06-25T16:06:23",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/ABI_BASELINE.ipynb",
+  "finished_at": "2026-06-25T16:06:35",
+  "exit_code": 0,
+  "duration_seconds": 11.9
+}

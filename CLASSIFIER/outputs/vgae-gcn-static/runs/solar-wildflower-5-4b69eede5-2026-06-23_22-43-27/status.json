@@ -1,0 +1,13 @@
+{
+  "experiment_id": "vgae-gcn-static",
+  "run_name": "solar-wildflower-5-4b69eede5-2026-06-23_22-43-27",
+  "state": "done",
+  "pid": 1515452,
+  "started_at": "2026-06-23T22:43:27",
+  "git_commit": "4b69eede5",
+  "git_dirty": true,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-23T22:45:37",
+  "exit_code": 0,
+  "duration_seconds": 129.2
+}

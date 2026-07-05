@@ -1,0 +1,275 @@
+{
+  "experiment_id": "sanity-visit-confound-gelstm-wide-lnorm",
+  "source_experiment": "gelstm-whole-brain-wide-lnorm",
+  "source_run_dir": "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/gelstm-whole-brain-wide-lnorm/runs/kind-glade-1-d9655b0db-2026-06-21_13-53-16",
+  "model": "GELSTMAdapter",
+  "threshold": 0.5827835202217102,
+  "temperature": 1.4276392174773715,
+  "visit_counts_all": [
+    {
+      "group": "converter",
+      "n": 68,
+      "mean": 3.426470588235294,
+      "median": 3.0,
+      "std": 1.4590548614340297,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.002203561369249296
+    },
+    {
+      "group": "non_converter",
+      "n": 99,
+      "mean": 2.7373737373737375,
+      "median": 2.0,
+      "std": 1.6199386394643986,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.002203561369249296
+    },
+    {
+      "group": "overall",
+      "n": 167,
+      "mean": 3.0179640718562872,
+      "median": 3.0,
+      "std": 1.5886383268828532,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.002203561369249296
+    }
+  ],
+  "visit_counts_test": [
+    {
+      "group": "converter",
+      "n": 14,
+      "mean": 3.7142857142857144,
+      "median": 3.5,
+      "std": 1.489892687336984,
+      "min": 2,
+      "max": 6,
+      "mwu_pvalue": 0.011001737015934675
+    },
+    {
+      "group": "non_converter",
+      "n": 20,
+      "mean": 2.35,
+      "median": 2.0,
+      "std": 1.1821033884786183,
+      "min": 1,
+      "max": 4,
+      "mwu_pvalue": 0.011001737015934675
+    },
+    {
+      "group": "overall",
+      "n": 34,
+      "mean": 2.911764705882353,
+      "median": 3.0,
+      "std": 1.464067539815298,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.011001737015934675
+    }
+  ],
+  "cohort_composition": [
+    {
+      "n_visits": 1,
+      "n_subjects": 34,
+      "n_converters": 14,
+      "n_nonconverters": 20,
+      "frac_converter": 0.4117647058823529
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 28,
+      "n_converters": 14,
+      "n_nonconverters": 14,
+      "frac_converter": 0.5
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 18,
+      "n_converters": 10,
+      "n_nonconverters": 8,
+      "frac_converter": 0.5555555555555556
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "n_converters": 7,
+      "n_nonconverters": 5,
+      "frac_converter": 0.5833333333333334
+    },
+    {
+      "n_visits": 5,
+      "n_subjects": 5,
+      "n_converters": 5,
+      "n_nonconverters": 0,
+      "frac_converter": 1.0
+    },
+    {
+      "n_visits": 6,
+      "n_subjects": 2,
+      "n_converters": 2,
+      "n_nonconverters": 0,
+      "frac_converter": 1.0
+    }
+  ],
+  "early_detection_variable": [
+    {
+      "n_visits": 1,
+      "n_subjects": 34,
+      "auc": 0.45357142857142857,
+      "sensitivity": 0.07142857142857142,
+      "specificity": 0.85
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 28,
+      "auc": 0.7857142857142857,
+      "sensitivity": 0.5714285714285714,
+      "specificity": 0.9285714285714286
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 18,
+      "auc": 0.8875,
+      "sensitivity": 0.5,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "auc": 0.942857142857143,
+      "sensitivity": 0.5714285714285714,
+      "specificity": 1.0
+    }
+  ],
+  "early_detection_fixed": [
+    {
+      "n_visits": 1,
+      "n_subjects": 12,
+      "auc": 0.5142857142857142,
+      "sensitivity": 0.0,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 12,
+      "auc": 0.8571428571428571,
+      "sensitivity": 0.5714285714285714,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 12,
+      "auc": 0.8285714285714286,
+      "sensitivity": 0.42857142857142855,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "auc": 0.942857142857143,
+      "sensitivity": 0.5714285714285714,
+      "specificity": 1.0
+    }
+  ],
+  "prob_vs_visit_count_spearman": {
+    "overall": {
+      "r": 0.004378223659871209,
+      "p": 0.9803944515027943,
+      "n": 34
+    },
+    "converter": {
+      "r": 0.09440586233651661,
+      "p": 0.7481961498367278,
+      "n": 14
+    },
+    "non_converter": {
+      "r": -0.5670212760372325,
+      "p": 0.009130669401778238,
+      "n": 20
+    }
+  },
+  "within_subject_slopes": {
+    "overall": {
+      "n": 28,
+      "median_slope": -0.0014980533858761204,
+      "frac_negative": 0.5
+    },
+    "converter": {
+      "n": 14,
+      "median_slope": 0.14981622222278795,
+      "frac_negative": 0.14285714285714285
+    },
+    "non_converter": {
+      "n": 14,
+      "median_slope": -0.013150910683907568,
+      "frac_negative": 0.8571428571428571
+    }
+  },
+  "prob_spread_final": {
+    "converter": {
+      "n": 14,
+      "mean": 0.6516443512602044,
+      "std": 0.42011721115396944,
+      "iqr": 0.7277321070432663
+    },
+    "non_converter": {
+      "n": 20,
+      "mean": 0.15045828407164663,
+      "std": 0.28700234711269507,
+      "iqr": 0.17033592844381928
+    },
+    "overall": {
+      "n": 34,
+      "mean": 0.3568290176198763,
+      "std": 0.42383957259128835,
+      "iqr": 0.9236067745368928
+    },
+    "separation": 0.5011860671885577
+  },
+  "prob_spread_final_cal": {
+    "converter": {
+      "n": 14,
+      "mean": 0.6396696464785,
+      "std": 0.38128539361019387,
+      "iqr": 0.6296960544584451
+    },
+    "non_converter": {
+      "n": 20,
+      "mean": 0.17994593243596965,
+      "std": 0.26585024510530963,
+      "iqr": 0.22351858189277582
+    },
+    "overall": {
+      "n": 34,
+      "mean": 0.3692439323358351,
+      "std": 0.3882075149176029,
+      "iqr": 0.8291713943550837
+    },
+    "separation": 0.4597237140425303
+  },
+  "prob_spread_trajectory": {
+    "converter": {
+      "n": 52,
+      "mean": 0.46549878675096595,
+      "std": 0.43941024678950286,
+      "iqr": 0.9552574134431779
+    },
+    "non_converter": {
+      "n": 41,
+      "mean": 0.12602784606151102,
+      "std": 0.24447912102013414,
+      "iqr": 0.05815777461975813
+    },
+    "overall": {
+      "n": 93,
+      "mean": 0.31583955483410947,
+      "std": 0.40216545874804677,
+      "iqr": 0.7172425091266632
+    },
+    "separation": 0.33947094068945494
+  },
+  "ece_raw": 0.2002099539865466,
+  "ece_cal": 0.16443160924097946
+}

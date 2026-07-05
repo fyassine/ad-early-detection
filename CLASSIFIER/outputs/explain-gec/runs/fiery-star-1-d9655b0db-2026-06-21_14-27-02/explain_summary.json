@@ -1,0 +1,87 @@
+{
+  "experiment_id": "explain-gec",
+  "adapter": "gec",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/journey_6_prediction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/journey_6_prediction.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/extra_latent_ig.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/extra_latent_ig.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/extra_trajectory.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/extra_trajectory.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/extra_early_detection.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gec/runs/fiery-star-1-d9655b0db-2026-06-21_14-27-02/figures/extra_early_detection.pdf"
+  ],
+  "diagnostics": {
+    "auc": 0.9642857142857143,
+    "sensitivity": 0.8571428571428571,
+    "specificity": 0.85,
+    "f1": 0.8275862068965517,
+    "ece": 0.22496123644797236,
+    "threshold": 0.6535903811454773,
+    "saved_auc": 0.9642857142857143
+  },
+  "walkthrough": {
+    "prob": 0.6254940032958984,
+    "pred": 0,
+    "true": 1,
+    "threshold": 0.6535903811454773,
+    "subject_id": "ae818e1d7"
+  },
+  "region_importance_by_network": {
+    "Vis": 0.7543175312979468,
+    "SomMot": 0.8693212236676897,
+    "DorsAttn": 0.7962159376878005,
+    "SalVentAttn": 0.7864440787922252,
+    "Limbic": 0.8302581459283829,
+    "Cont": 0.7735816766818364,
+    "Default": 0.8248515070780463
+  },
+  "early_detection": [
+    {
+      "n_visits": 1,
+      "n_subjects": 34,
+      "auc": 0.5642857142857143,
+      "sensitivity": 0.14285714285714285,
+      "specificity": 0.85
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 28,
+      "auc": 0.9285714285714286,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 0.7142857142857143
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 18,
+      "auc": 0.95,
+      "sensitivity": 0.9,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "auc": 0.9142857142857143,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 1.0
+    }
+  ]
+}

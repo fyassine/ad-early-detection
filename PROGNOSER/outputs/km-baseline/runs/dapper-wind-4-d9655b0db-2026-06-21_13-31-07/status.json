@@ -1,0 +1,15 @@
+{
+  "experiment_id": "km-baseline",
+  "run_name": "dapper-wind-4-d9655b0db-2026-06-21_13-31-07",
+  "state": "done",
+  "pid": 818089,
+  "started_at": "2026-06-21T13:31:08",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "method": "km",
+  "network_combo": "dmn_hippo",
+  "notebook": "notebooks/PROGNOSER_RUNNER.ipynb",
+  "finished_at": "2026-06-21T13:31:22",
+  "exit_code": 0,
+  "duration_seconds": 14.1
+}

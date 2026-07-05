@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gegru-trajectory-whole-brain",
+  "run_name": "magic-stream-1-2e7594f8d-2026-06-20_19-43-04",
+  "state": "done",
+  "pid": 448624,
+  "started_at": "2026-06-20T19:43:05",
+  "git_commit": "2e7594f8d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb",
+  "finished_at": "2026-06-20T19:46:44",
+  "exit_code": 0,
+  "duration_seconds": 219.0
+}

@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-vgae-gcn",
+  "run_name": "glad-cloud-5-c68891b6f-2026-06-22_01-12-00",
+  "state": "done",
+  "pid": 1041076,
+  "started_at": "2026-06-22T01:12:00",
+  "git_commit": "c68891b6f",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-22T01:13:40",
+  "exit_code": 0,
+  "duration_seconds": 99.9
+}

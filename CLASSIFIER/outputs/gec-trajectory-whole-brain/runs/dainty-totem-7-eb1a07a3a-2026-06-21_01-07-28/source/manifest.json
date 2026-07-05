@@ -1,0 +1,16 @@
+{
+  "copied": [
+    "CLASSIFIER/model/GAAE/models.py",
+    "CLASSIFIER/model/GAAE/dataset.py",
+    "CLASSIFIER/model/GAAE/utils.py",
+    "CLASSIFIER/model/GELSTM/dataset.py",
+    "CLASSIFIER/adapters/gec.py"
+  ],
+  "missing": [],
+  "git": {
+    "commit": "eb1a07a3a8d3fdb000a3b4e70dd1acb8baee65ab",
+    "short_commit": "eb1a07a3a",
+    "branch": "chore/repo-hygiene",
+    "dirty": true
+  }
+}

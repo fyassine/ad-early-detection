@@ -1,0 +1,46 @@
+{
+  "experiment_id": "explain-gaae",
+  "adapter": "gaae",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/journey_5b_recon_compare.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/journey_5b_recon_compare.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/journey_6_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/journey_6_reconstruction.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/extra_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/extra_reconstruction.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/extra_gnnexplainer.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/woolen-brook-3-d9655b0db-2026-06-21_16-13-27/figures/extra_gnnexplainer.pdf"
+  ],
+  "diagnostics": {
+    "recon_error_auc": 0.4928571428571429,
+    "mean_converter": 0.07860647647508553,
+    "mean_stable": 0.06926976926624775
+  },
+  "region_importance_by_network": {
+    "Vis": 0.7543175230766165,
+    "SomMot": 0.8693212236676897,
+    "DorsAttn": 0.7962159216403961,
+    "SalVentAttn": 0.7864440733736212,
+    "Limbic": 0.8302581310272217,
+    "Cont": 0.7735816836357117,
+    "Default": 0.824851512261059
+  }
+}

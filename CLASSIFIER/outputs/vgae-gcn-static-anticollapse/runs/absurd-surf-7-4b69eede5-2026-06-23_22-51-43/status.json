@@ -1,0 +1,13 @@
+{
+  "experiment_id": "vgae-gcn-static-anticollapse",
+  "run_name": "absurd-surf-7-4b69eede5-2026-06-23_22-51-43",
+  "state": "done",
+  "pid": 1518804,
+  "started_at": "2026-06-23T22:51:44",
+  "git_commit": "4b69eede5",
+  "git_dirty": true,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-23T22:56:05",
+  "exit_code": 0,
+  "duration_seconds": 261.2
+}

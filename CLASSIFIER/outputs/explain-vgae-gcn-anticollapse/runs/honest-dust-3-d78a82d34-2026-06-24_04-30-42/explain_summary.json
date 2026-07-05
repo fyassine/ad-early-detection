@@ -1,0 +1,78 @@
+{
+  "experiment_id": "explain-vgae-gcn-anticollapse",
+  "adapter": "vgae",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/latent_dim_distributions.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/latent_dim_distributions.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/logreg_probe_roc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/logreg_probe_roc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/latent_space_3d.html",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/disease_axis.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/disease_axis.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/disease_axis_3d.html",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/journey_5b_recon_compare.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/journey_5b_recon_compare.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/extra_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn-anticollapse/runs/honest-dust-3-d78a82d34-2026-06-24_04-30-42/figures/extra_reconstruction.pdf"
+  ],
+  "latent_separability": {
+    "silhouette": -0.0015118528166101087,
+    "top5_dims": [
+      0,
+      52,
+      4,
+      24,
+      30
+    ]
+  },
+  "logreg_probe": {
+    "mean_auc": 0.5596963562753037,
+    "oof_auc": 0.5439691027926322
+  },
+  "diagnostics": {
+    "recon_error_auc": 0.5285714285714286,
+    "mean_converter": 0.44953490360387105,
+    "mean_stable": 0.4428233985309986,
+    "fidelity_median": 0.2813559793357786,
+    "fidelity_iqr": [
+      0.2610004037761281,
+      0.2967950484783938
+    ]
+  },
+  "reconstruction_fidelity": {
+    "mse": 0.5877199667623301,
+    "rmse": 0.7666289629033918,
+    "mae": 0.6624102343514529,
+    "nrmse": 2.5039611688249757,
+    "pearson_r": 0.19595277701332248,
+    "r2": -5.269821534983339,
+    "quality": "poor"
+  },
+  "region_importance_by_network": {
+    "Vis": 0.0,
+    "SomMot": 0.0,
+    "DorsAttn": 0.0,
+    "SalVentAttn": 0.0,
+    "Limbic": 0.0,
+    "Cont": 0.0,
+    "Default": 0.0
+  }
+}

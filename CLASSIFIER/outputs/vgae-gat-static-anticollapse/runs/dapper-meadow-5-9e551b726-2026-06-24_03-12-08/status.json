@@ -1,0 +1,13 @@
+{
+  "experiment_id": "vgae-gat-static-anticollapse",
+  "run_name": "dapper-meadow-5-9e551b726-2026-06-24_03-12-08",
+  "state": "done",
+  "pid": 1652239,
+  "started_at": "2026-06-24T03:12:08",
+  "git_commit": "9e551b726",
+  "git_dirty": false,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-24T03:19:35",
+  "exit_code": 0,
+  "duration_seconds": 446.5
+}

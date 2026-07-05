@@ -1,0 +1,20 @@
+{
+  "experiment_id": "sanity-visit-confound-gegru",
+  "run_name": "winter-flame-2-d9655b0db-2026-06-21_14-02-12",
+  "source_experiment": "gegru-trajectory-whole-brain",
+  "timestamp": "2026-06-21T14:02:31",
+  "metrics": {
+    "converter_visit_count_gap": 0.6890968508615565,
+    "visit_count_mwu_pvalue": 0.002203561369249296,
+    "prob_nscans_spearman_overall": -0.07552435813277837,
+    "prob_nscans_spearman_converter": 0.10789241409887614,
+    "nonconv_within_subject_median_slope": -0.19828963521867993,
+    "early_detection_auc_max_variable": 0.9428571428571428,
+    "early_detection_auc_max_fixed": 0.9428571428571428,
+    "temperature": 0.742193694373845,
+    "prob_separation": 0.3378583999217621,
+    "prob_separation_cal": 0.3645668517587297,
+    "ece_raw": 0.23590722313041199,
+    "ece_cal": 0.2692503062147235
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gec-trajectory-whole-brain",
+  "run_name": "orange-harbor-5-2e7594f8d-2026-06-20_19-32-56",
+  "state": "done",
+  "pid": 447454,
+  "started_at": "2026-06-20T19:32:56",
+  "git_commit": "2e7594f8d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb",
+  "finished_at": "2026-06-20T19:33:25",
+  "exit_code": 0,
+  "duration_seconds": 28.3
+}

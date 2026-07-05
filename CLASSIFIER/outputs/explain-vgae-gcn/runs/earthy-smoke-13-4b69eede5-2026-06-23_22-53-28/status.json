@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-vgae-gcn",
+  "run_name": "earthy-smoke-13-4b69eede5-2026-06-23_22-53-28",
+  "state": "done",
+  "pid": 1520667,
+  "started_at": "2026-06-23T22:53:29",
+  "git_commit": "4b69eede5",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-23T22:55:15",
+  "exit_code": 0,
+  "duration_seconds": 105.8
+}

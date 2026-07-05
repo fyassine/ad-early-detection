@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gep-trajectory-whole-brain",
+  "run_name": "resilient-cosmos-1-d9655b0db-2026-06-21_19-54-56",
+  "state": "done",
+  "pid": 933602,
+  "started_at": "2026-06-21T19:54:56",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T19:55:20",
+  "exit_code": 0,
+  "duration_seconds": 24.1
+}

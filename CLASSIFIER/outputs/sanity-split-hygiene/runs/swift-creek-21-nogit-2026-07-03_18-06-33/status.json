@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-split-hygiene",
+  "run_name": "swift-creek-21-nogit-2026-07-03_18-06-33",
+  "state": "done",
+  "pid": 2429275,
+  "started_at": "2026-07-03T18:06:35",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb",
+  "finished_at": "2026-07-03T18:06:46",
+  "exit_code": 0,
+  "duration_seconds": 10.4
+}

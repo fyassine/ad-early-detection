@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-split-hygiene",
+  "run_name": "honest-bird-2-d78a82d34-2026-06-24_09-36-43",
+  "state": "done",
+  "pid": 1785033,
+  "started_at": "2026-06-24T09:36:44",
+  "git_commit": "d78a82d34",
+  "git_dirty": true,
+  "notebook": "notebooks/SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb",
+  "finished_at": "2026-06-24T09:36:55",
+  "exit_code": 0,
+  "duration_seconds": 10.8
+}

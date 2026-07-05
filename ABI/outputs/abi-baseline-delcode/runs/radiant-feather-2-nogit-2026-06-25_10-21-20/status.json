@@ -1,0 +1,14 @@
+{
+  "experiment_id": "abi-baseline-delcode",
+  "run_name": "radiant-feather-2-nogit-2026-06-25_10-21-20",
+  "kind": "baseline",
+  "state": "done",
+  "pid": 1935405,
+  "started_at": "2026-06-25T10:21:22",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/ABI_BASELINE.ipynb",
+  "finished_at": "2026-06-25T10:21:35",
+  "exit_code": 0,
+  "duration_seconds": 12.4
+}

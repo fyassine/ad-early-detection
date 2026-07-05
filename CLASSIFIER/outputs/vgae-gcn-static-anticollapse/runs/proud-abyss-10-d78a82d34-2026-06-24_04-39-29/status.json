@@ -1,0 +1,13 @@
+{
+  "experiment_id": "vgae-gcn-static-anticollapse",
+  "run_name": "proud-abyss-10-d78a82d34-2026-06-24_04-39-29",
+  "state": "done",
+  "pid": 1713766,
+  "started_at": "2026-06-24T04:39:31",
+  "git_commit": "d78a82d34",
+  "git_dirty": true,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-24T04:41:18",
+  "exit_code": 0,
+  "duration_seconds": 106.5
+}

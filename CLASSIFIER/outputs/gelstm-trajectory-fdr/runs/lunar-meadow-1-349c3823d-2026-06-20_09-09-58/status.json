@@ -1,0 +1,15 @@
+{
+  "experiment_id": "gelstm-trajectory-fdr",
+  "run_name": "lunar-meadow-1-349c3823d-2026-06-20_09-09-58",
+  "state": "failed",
+  "pid": 332059,
+  "started_at": "2026-06-20T09:09:58",
+  "git_commit": "349c3823d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE.ipynb",
+  "finished_at": "2026-06-20T09:10:24",
+  "duration_seconds": 25.1,
+  "error": "NameError: name 'compute_fdr_filter' is not defined",
+  "cell": "In [17]",
+  "notebook_traceback": "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m\n\u001b[0;31mNameError\u001b[0m                                 Traceback (most recent call last)\nCell \u001b[0;32mIn[17], line 40\u001b[0m\n\u001b[1;32m     38\u001b[0m tr_embs_fold   \u001b[38;5;241m=\u001b[39m fdr_embs[tr_emb_idx]\n\u001b[1;32m     39\u001b[0m tr_labels_fdr  \u001b[38;5;241m=\u001b[39m fdr_labels[tr_emb_idx]\n\u001b[0;32m---> 40\u001b[0m DIM_FILTER, fold_fdr_scores \u001b[38;5;241m=\u001b[39m \u001b[43mcompute_fdr_filter\u001b[49m(tr_embs_fold, tr_labels_fdr, TOP_K)\n\u001b[1;32m     41\u001b[0m \u001b[38;5;28mprint\u001b[39m(\u001b[38;5;124mf\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124m  [Fold \u001b[39m\u001b[38;5;132;01m{\u001b[39;00mfold\u001b[38;5;241m+\u001b[39m\u001b[38;5;241m1\u001b[39m\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m] FDR top-\u001b[39m\u001b[38;5;132;01m{\u001b[39;00mTOP_K\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m: \u001b[39m\u001b[38;5;132;01m{\u001b[39;00mDIM_FILTER\u001b[38;5;241m.\u001b[39mtolist()\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m'\u001b[39m)\n\u001b[1;32m     43\u001b[0m \u001b[38;5;66;03m# FDR bar chart for this fold\u001b[39;00m\n\n\u001b[0;31mNameError\u001b[0m: name 'compute_fdr_filter' is not defined"
+}

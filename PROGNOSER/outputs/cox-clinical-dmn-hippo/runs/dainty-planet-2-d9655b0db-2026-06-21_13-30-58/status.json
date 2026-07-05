@@ -1,0 +1,15 @@
+{
+  "experiment_id": "cox-clinical-dmn-hippo",
+  "run_name": "dainty-planet-2-d9655b0db-2026-06-21_13-30-58",
+  "state": "done",
+  "pid": 817739,
+  "started_at": "2026-06-21T13:30:58",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "method": "cox_clinical",
+  "network_combo": "dmn_hippo",
+  "notebook": "notebooks/PROGNOSER_RUNNER.ipynb",
+  "finished_at": "2026-06-21T13:31:08",
+  "exit_code": 0,
+  "duration_seconds": 9.9
+}

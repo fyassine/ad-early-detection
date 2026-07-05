@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-split-hygiene",
+  "run_name": "splendid-violet-4-d78a82d34-2026-06-24_09-49-24",
+  "state": "done",
+  "pid": 1793383,
+  "started_at": "2026-06-24T09:49:25",
+  "git_commit": "d78a82d34",
+  "git_dirty": true,
+  "notebook": "notebooks/SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb",
+  "finished_at": "2026-06-24T09:49:38",
+  "exit_code": 0,
+  "duration_seconds": 12.3
+}

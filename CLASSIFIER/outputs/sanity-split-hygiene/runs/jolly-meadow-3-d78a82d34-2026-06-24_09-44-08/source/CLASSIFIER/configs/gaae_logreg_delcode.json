@@ -1,0 +1,7 @@
+{
+    "graph_pool": "mean",
+    "lr_C": 1.0,
+    "lr_max_iter": 2000,
+    "lr_class_weight": "balanced",
+    "n_folds": 5
+}

@@ -1,0 +1,43 @@
+{
+  "experiment_id": "explain-vgae-gcn",
+  "adapter": "vgae",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/journey_5b_recon_compare.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/journey_5b_recon_compare.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/extra_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/glad-cloud-5-c68891b6f-2026-06-22_01-12-00/figures/extra_reconstruction.pdf"
+  ],
+  "diagnostics": {
+    "recon_error_auc": 0.5,
+    "mean_converter": 0.29117249745185875,
+    "mean_stable": 0.2870734672317671,
+    "fidelity_median": 0.3263214111527309,
+    "fidelity_iqr": [
+      0.30766100123306167,
+      0.3600350297320858
+    ]
+  },
+  "reconstruction_fidelity": {
+    "mse": 0.28744708725491125,
+    "rmse": 0.5361409210785083,
+    "mae": 0.5316499277248978,
+    "nrmse": 1.751141833090143,
+    "pearson_r": 0.3204337044446305,
+    "r2": -2.066497719598306,
+    "quality": "poor"
+  }
+}

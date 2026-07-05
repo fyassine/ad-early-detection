@@ -1,0 +1,15 @@
+{
+  "experiment_id": "sanity-visit-confound-gec",
+  "run_name": "noble-river-1-d9655b0db-2026-06-21_02-01-19",
+  "source_experiment": "gec-trajectory-whole-brain",
+  "timestamp": "2026-06-21T02:01:36",
+  "metrics": {
+    "converter_visit_count_gap": 0.6890968508615565,
+    "visit_count_mwu_pvalue": 0.002203561369249296,
+    "prob_nscans_spearman_overall": 0.16887434116646094,
+    "prob_nscans_spearman_converter": 0.10114913821769637,
+    "early_detection_auc_max_variable": 0.95,
+    "early_detection_auc_max_fixed": NaN,
+    "prob_separation": 0.5301417741924525
+  }
+}

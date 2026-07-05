@@ -1,0 +1,128 @@
+{
+  "experiment_id": "explain-gelstm",
+  "adapter": "gelstm",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/journey_6_prediction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/journey_6_prediction.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/extra_trajectory.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/extra_trajectory.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/extra_early_detection.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/extra_early_detection.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/extra_hidden_state.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/extra_hidden_state.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/extra_visit_occlusion.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/extra_visit_occlusion.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/extra_temporal_ablation.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm/runs/orange-thunder-1-d9655b0db-2026-06-21_14-22-49/figures/extra_temporal_ablation.pdf"
+  ],
+  "diagnostics": {
+    "auc": 0.8071428571428572,
+    "sensitivity": 0.8571428571428571,
+    "specificity": 0.55,
+    "f1": 0.6857142857142857,
+    "ece": 0.25433422186795407,
+    "threshold": 0.4588164985179901,
+    "saved_auc": 0.8071428571428572
+  },
+  "walkthrough": {
+    "prob": 0.4065839350223541,
+    "pred": 0,
+    "true": 1,
+    "threshold": 0.4588164985179901,
+    "subject_id": "ae818e1d7"
+  },
+  "region_importance_by_network": {
+    "Vis": 0.7543175220489502,
+    "SomMot": 0.8693212253706796,
+    "DorsAttn": 0.7962159159091803,
+    "SalVentAttn": 0.7864440815015272,
+    "Limbic": 0.8302581409613291,
+    "Cont": 0.7735816856225332,
+    "Default": 0.8248515038386636
+  },
+  "early_detection": [
+    {
+      "n_visits": 1,
+      "n_subjects": 34,
+      "auc": 0.5535714285714286,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 0.05
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 28,
+      "auc": 0.8010204081632653,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 0.5714285714285714
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 18,
+      "auc": 0.8625,
+      "sensitivity": 0.8,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "auc": 0.9714285714285715,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 1.0
+    }
+  ],
+  "visit_occlusion": [
+    {
+      "dropped_visit_month": 0,
+      "prob_without": 0.4040713608264923,
+      "delta": 0.002512603998184204
+    },
+    {
+      "dropped_visit_month": 12,
+      "prob_without": 0.4029316306114197,
+      "delta": 0.003652334213256836
+    },
+    {
+      "dropped_visit_month": 24,
+      "prob_without": 0.43199193477630615,
+      "delta": -0.02540796995162964
+    },
+    {
+      "dropped_visit_month": 36,
+      "prob_without": 0.40992337465286255,
+      "delta": -0.003339409828186035
+    },
+    {
+      "dropped_visit_month": 48,
+      "prob_without": 0.40900570154190063,
+      "delta": -0.002421736717224121
+    },
+    {
+      "dropped_visit_month": 60,
+      "prob_without": 0.4778622090816498,
+      "delta": -0.07127824425697327
+    }
+  ],
+  "temporal_ablation": {
+    "auc_full": 0.8071428571428572,
+    "auc_zero_dt": 0.8071428571428572,
+    "auc_shuffled": 0.7785714285714286
+  }
+}

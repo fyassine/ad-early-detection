@@ -1,0 +1,32 @@
+{
+  "experiment_id": "explain-vgae-gcn",
+  "adapter": "vgae",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/extra_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/eager-dune-3-c68891b6f-2026-06-21_22-38-52/figures/extra_reconstruction.pdf"
+  ],
+  "diagnostics": {
+    "recon_error_auc": 0.5107142857142857,
+    "mean_converter": 0.25013547590232105,
+    "mean_stable": 0.2500802670421058,
+    "fidelity_median": 0.3249841648416969,
+    "fidelity_iqr": [
+      0.26883790933208096,
+      0.36542147314894646
+    ]
+  }
+}

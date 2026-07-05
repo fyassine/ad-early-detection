@@ -1,0 +1,13 @@
+{
+  "experiment_id": "vgae-gcn-static",
+  "run_name": "upbeat-creek-1-d9655b0db-2026-06-21_19-38-36",
+  "state": "done",
+  "pid": 913018,
+  "started_at": "2026-06-21T19:38:36",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/STATIC/STATIC_VGAE_DELCODE_WHOLE_BRAIN.ipynb",
+  "finished_at": "2026-06-21T19:45:49",
+  "exit_code": 0,
+  "duration_seconds": 432.5
+}

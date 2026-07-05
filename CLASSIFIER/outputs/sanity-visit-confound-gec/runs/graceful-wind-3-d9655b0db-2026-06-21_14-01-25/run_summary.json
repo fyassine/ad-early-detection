@@ -1,0 +1,20 @@
+{
+  "experiment_id": "sanity-visit-confound-gec",
+  "run_name": "graceful-wind-3-d9655b0db-2026-06-21_14-01-25",
+  "source_experiment": "gec-trajectory-whole-brain",
+  "timestamp": "2026-06-21T14:01:41",
+  "metrics": {
+    "converter_visit_count_gap": 0.6890968508615565,
+    "visit_count_mwu_pvalue": 0.002203561369249296,
+    "prob_nscans_spearman_overall": 0.16887434116646094,
+    "prob_nscans_spearman_converter": 0.10114913821769637,
+    "nonconv_within_subject_median_slope": -0.050214064121246293,
+    "early_detection_auc_max_variable": 0.95,
+    "early_detection_auc_max_fixed": 0.9142857142857143,
+    "temperature": 1.0359562474504256,
+    "prob_separation": 0.530142013276262,
+    "prob_separation_cal": 0.5214260171431427,
+    "ece_raw": 0.22496123863931963,
+    "ece_cal": 0.22909112654443464
+  }
+}

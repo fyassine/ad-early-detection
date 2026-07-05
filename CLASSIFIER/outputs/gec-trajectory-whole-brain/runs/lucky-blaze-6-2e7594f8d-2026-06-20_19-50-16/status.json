@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gec-trajectory-whole-brain",
+  "run_name": "lucky-blaze-6-2e7594f8d-2026-06-20_19-50-16",
+  "state": "done",
+  "pid": 449177,
+  "started_at": "2026-06-20T19:50:17",
+  "git_commit": "2e7594f8d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb",
+  "finished_at": "2026-06-20T19:50:46",
+  "exit_code": 0,
+  "duration_seconds": 29.4
+}

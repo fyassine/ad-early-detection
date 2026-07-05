@@ -1,0 +1,14 @@
+{
+  "experiment_id": "abi-longitudinal-delcode-whole-brain",
+  "run_name": "noble-creek-2-nogit-2026-06-25_10-21-00",
+  "kind": "longitudinal",
+  "state": "done",
+  "pid": 1935089,
+  "started_at": "2026-06-25T10:21:02",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/ABI_LONGITUDINAL_DELCODE_WHOLE_BRAIN.ipynb",
+  "finished_at": "2026-06-25T10:21:14",
+  "exit_code": 0,
+  "duration_seconds": 11.5
+}

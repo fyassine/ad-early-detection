@@ -1,0 +1,105 @@
+{
+  "run_name": "dainty-planet-2-d9655b0db-2026-06-21_13-30-58",
+  "timestamp": "dainty-planet-2-d9655b0db-2026-06-21_13-30-58",
+  "experiment_id": "cox-clinical-dmn-hippo",
+  "experiment": {
+    "network_combo": "dmn_hippo",
+    "data_version": "__fc_dmn-hippo_sch200-tian2_flat__",
+    "file_suffix": "_dmn_hippo_correlation_matrix_z_transformed.npz",
+    "method": "cox_clinical",
+    "feature_set": "clinical",
+    "embedding_strategy": "last",
+    "longitudinal_features": [
+      "mmstot",
+      "cdrglobal"
+    ],
+    "longitudinal_aggs": [
+      "baseline",
+      "last",
+      "slope",
+      "delta"
+    ],
+    "eval_times": [
+      12,
+      24,
+      36,
+      48,
+      60,
+      72
+    ],
+    "penalizer": 0.05,
+    "pca_components": 16,
+    "rsf_n_estimators": 200,
+    "rsf_min_samples_leaf": 5,
+    "lstm_n_time_bins": 12,
+    "lstm_max_horizon_months": 72,
+    "lstm_hidden_dim": 64,
+    "lstm_epochs": 100,
+    "random_state": 42
+  },
+  "method": "cox_clinical",
+  "feature_set": "clinical",
+  "embedding_strategy": "last",
+  "n_features": 5,
+  "feature_columns": [
+    "age",
+    "sex",
+    "mmstot",
+    "cdrglobal",
+    "apoe4"
+  ],
+  "n_train": 90,
+  "n_val": 31,
+  "n_test": 32,
+  "n_events_test": 12,
+  "metrics": {
+    "train": {
+      "c_index": 0.6895485466914039,
+      "ibs": 0.21316625042903656,
+      "auc": {
+        "24": 0.7325581395348837,
+        "36": 0.7371209809415484,
+        "60": 0.7735329637646844
+      }
+    },
+    "val": {
+      "c_index": 0.5335195530726257,
+      "ibs": 0.2254532693986791,
+      "auc": {
+        "24": 0.5254237288135593,
+        "36": 0.5491820396797772,
+        "60": 0.8013805468399822
+      }
+    },
+    "test": {
+      "c_index": 0.5706521739130435,
+      "ibs": 0.2400264444882205,
+      "auc": {
+        "24": 0.5937019969278035,
+        "36": 0.6084735828518798,
+        "60": 0.5852220069087539
+      }
+    }
+  },
+  "eval_times": [
+    12,
+    24,
+    36,
+    48,
+    60,
+    72
+  ],
+  "git": {
+    "commit": "d9655b0db900601994fd950af1f991f869127d47",
+    "short_commit": "d9655b0db",
+    "branch": "chore/repo-hygiene",
+    "dirty": true
+  },
+  "env": {
+    "python": "3.10.12",
+    "torch": "2.10.0+cu128",
+    "torch_geometric": "2.7.0",
+    "numpy": "1.26.4",
+    "sklearn": "1.7.2"
+  }
+}

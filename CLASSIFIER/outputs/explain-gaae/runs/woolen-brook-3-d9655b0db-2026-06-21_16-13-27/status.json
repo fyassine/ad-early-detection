@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-gaae",
+  "run_name": "woolen-brook-3-d9655b0db-2026-06-21_16-13-27",
+  "state": "done",
+  "pid": 859430,
+  "started_at": "2026-06-21T16:13:27",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T16:15:05",
+  "exit_code": 0,
+  "duration_seconds": 97.9
+}

@@ -1,0 +1,99 @@
+{
+  "run_name": "radiant-silence-3-d9655b0db-2026-06-21_13-29-45",
+  "timestamp": "radiant-silence-3-d9655b0db-2026-06-21_13-29-45",
+  "experiment_id": "km-baseline",
+  "experiment": {
+    "network_combo": "dmn_hippo",
+    "data_version": "__fc_dmn-hippo_sch200-tian2_flat__",
+    "file_suffix": "_dmn_hippo_correlation_matrix_z_transformed.npz",
+    "method": "km",
+    "feature_set": "none",
+    "embedding_strategy": "last",
+    "longitudinal_features": [
+      "mmstot",
+      "cdrglobal"
+    ],
+    "longitudinal_aggs": [
+      "baseline",
+      "last",
+      "slope",
+      "delta"
+    ],
+    "eval_times": [
+      12,
+      24,
+      36,
+      48,
+      60,
+      72
+    ],
+    "penalizer": 0.05,
+    "pca_components": 16,
+    "rsf_n_estimators": 200,
+    "rsf_min_samples_leaf": 5,
+    "lstm_n_time_bins": 12,
+    "lstm_max_horizon_months": 72,
+    "lstm_hidden_dim": 64,
+    "lstm_epochs": 100,
+    "random_state": 42
+  },
+  "method": "km",
+  "feature_set": "none",
+  "embedding_strategy": "last",
+  "n_features": 0,
+  "feature_columns": [],
+  "n_train": 92,
+  "n_val": 33,
+  "n_test": 32,
+  "n_events_test": 12,
+  "metrics": {
+    "train": {
+      "c_index": 0.5,
+      "ibs": 0.2470266859965152,
+      "auc": {
+        "24": 0.5,
+        "36": 0.5,
+        "60": 0.5
+      }
+    },
+    "val": {
+      "c_index": 0.5,
+      "ibs": 0.2520502086448324,
+      "auc": {
+        "24": 0.5,
+        "36": 0.5,
+        "60": 0.5
+      }
+    },
+    "test": {
+      "c_index": 0.5,
+      "ibs": 0.24112782547188166,
+      "auc": {
+        "24": 0.5,
+        "36": 0.5,
+        "60": 0.5
+      }
+    }
+  },
+  "eval_times": [
+    12,
+    24,
+    36,
+    48,
+    60,
+    72
+  ],
+  "git": {
+    "commit": "d9655b0db900601994fd950af1f991f869127d47",
+    "short_commit": "d9655b0db",
+    "branch": "chore/repo-hygiene",
+    "dirty": true
+  },
+  "env": {
+    "python": "3.10.12",
+    "torch": "2.10.0+cu128",
+    "torch_geometric": "2.7.0",
+    "numpy": "1.26.4",
+    "sklearn": "1.7.2"
+  }
+}

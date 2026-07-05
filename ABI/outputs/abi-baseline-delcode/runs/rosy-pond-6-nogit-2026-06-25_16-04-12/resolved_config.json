@@ -1,0 +1,12 @@
+{
+  "WB_ROOT": "DATA/DELCODE/__fc_wholebrain_sch200_flat__/matrices",
+  "METADATA_DIR": "DATA/DELCODE/__fc_wholebrain_sch200_flat__/metadata",
+  "SPLITS_DIR": "DATA/DELCODE/__fc_wholebrain_sch200_flat__/metadata/splits_gec",
+  "COHORTS_CSV": "DATA/DELCODE/__fc_wholebrain_sch200_flat__/metadata/cohorts.csv",
+  "FILE_VARIANT": "z_transformed",
+  "FILE_SUFFIX": "_whole_brain_correlation_matrix_z_transformed.npz",
+  "Z_THRESHOLD": 3.0,
+  "N_FOLDS": 5,
+  "RANDOM_STATE": 42,
+  "STD_FLOOR": 1e-06
+}

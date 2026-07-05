@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-visit-confound-gec",
+  "run_name": "graceful-wind-3-d9655b0db-2026-06-21_14-01-25",
+  "state": "done",
+  "pid": 828842,
+  "started_at": "2026-06-21T14:01:25",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb",
+  "finished_at": "2026-06-21T14:01:42",
+  "exit_code": 0,
+  "duration_seconds": 16.9
+}

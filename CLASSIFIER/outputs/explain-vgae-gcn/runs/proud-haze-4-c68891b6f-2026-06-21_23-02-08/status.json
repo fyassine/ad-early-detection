@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-vgae-gcn",
+  "run_name": "proud-haze-4-c68891b6f-2026-06-21_23-02-08",
+  "state": "done",
+  "pid": 1011256,
+  "started_at": "2026-06-21T23:02:08",
+  "git_commit": "c68891b6f",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T23:03:38",
+  "exit_code": 0,
+  "duration_seconds": 89.8
+}

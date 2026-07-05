@@ -1,0 +1,13 @@
+{
+  "experiment_id": "data-journey-vgae-gcn-anticollapse",
+  "run_name": "wise-cloud-2-d78a82d34-2026-06-24_09-49-09",
+  "state": "done",
+  "pid": 1792936,
+  "started_at": "2026-06-24T09:49:10",
+  "git_commit": "d78a82d34",
+  "git_dirty": true,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DATA_JOURNEY_DELCODE.ipynb",
+  "finished_at": "2026-06-24T09:54:24",
+  "exit_code": 0,
+  "duration_seconds": 313.6
+}

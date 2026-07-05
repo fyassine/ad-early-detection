@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-split-hygiene",
+  "run_name": "dapper-island-16-nogit-2026-07-03_16-34-21",
+  "state": "done",
+  "pid": 2393931,
+  "started_at": "2026-07-03T16:34:23",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb",
+  "finished_at": "2026-07-03T16:34:34",
+  "exit_code": 0,
+  "duration_seconds": 10.9
+}

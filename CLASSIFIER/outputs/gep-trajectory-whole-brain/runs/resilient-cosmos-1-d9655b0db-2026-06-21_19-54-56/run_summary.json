@@ -1,0 +1,198 @@
+{
+  "run_name": "resilient-cosmos-1-d9655b0db-2026-06-21_19-54-56",
+  "data_info": {
+    "data_root": "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__fc_wholebrain_sch200_flat__/matrices",
+    "dataset_dir": "__fc_wholebrain_sch200_flat__",
+    "modality": "fc",
+    "region": "wholebrain",
+    "atlas": "sch200",
+    "variant": "flat"
+  },
+  "dataset_info": {
+    "data_root": "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__fc_wholebrain_sch200_flat__/matrices",
+    "dataset_dir": "__fc_wholebrain_sch200_flat__",
+    "modality": "fc",
+    "region": "wholebrain",
+    "atlas": "sch200",
+    "variant": "flat",
+    "train_csv": "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/SPLITS/downstream/train.csv",
+    "val_csv": "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/SPLITS/downstream/val.csv",
+    "test_csv": "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/SPLITS/downstream/test.csv",
+    "n_folds": 5
+  },
+  "model_config": {
+    "model_type": "LongitudinalMLP",
+    "input_dim": 64,
+    "mlp_hidden_layers": [
+      32
+    ],
+    "mlp_dropout": 0.3,
+    "graph_pool": "mean",
+    "encoder_arch": "gaae",
+    "latent": 64,
+    "gaae_latent": 64
+  },
+  "training_config": {
+    "encoder_arch": "gaae",
+    "mlp_hidden_layers": [
+      32
+    ],
+    "mlp_dropout": 0.3,
+    "graph_pool": "mean",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "epochs": 80,
+    "early_stopping_patience": 20,
+    "batch_size": 32,
+    "grad_clip": 1.0,
+    "n_folds": 5
+  },
+  "gaae_checkpoint": "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth",
+  "gaae_run_name": "ethereal-planet-16_2026-06-10_12-31-05",
+  "n_folds": 5,
+  "best_fold": 4,
+  "best_val_auc": 0.925,
+  "active_threshold": 0.46247991919517517,
+  "threshold_method": "oof_f1",
+  "cv_results": {
+    "fold": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "val_auc": [
+      0.7727272727272727,
+      0.8409090909090909,
+      0.7897727272727273,
+      0.925,
+      0.8606060606060606
+    ],
+    "val_sensitivity": [
+      0.6363636363636364,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "val_specificity": [
+      0.875,
+      0.625,
+      0.625,
+      0.8125,
+      0.6
+    ],
+    "val_f1": [
+      0.7,
+      0.7857142857142857,
+      0.7857142857142857,
+      0.8695652173913043,
+      0.7857142857142857
+    ],
+    "best_threshold": [
+      0.5235339403152466,
+      0.19492287933826447,
+      0.46603184938430786,
+      0.5508888363838196,
+      0.4267871081829071
+    ]
+  },
+  "env": {
+    "python": "3.10.12",
+    "torch": "2.10.0+cu128",
+    "torch_geometric": "2.7.0",
+    "numpy": "1.26.4",
+    "sklearn": "1.7.2"
+  },
+  "git": {
+    "commit": "d9655b0db900601994fd950af1f991f869127d47",
+    "short_commit": "d9655b0db",
+    "branch": "chore/repo-hygiene",
+    "dirty": true
+  },
+  "metrics": {
+    "test_auc": 0.7285714285714285,
+    "test_f1": 0.6451612903225806,
+    "test_sensitivity": 0.7142857142857143,
+    "test_specificity": 0.65,
+    "threshold": 0.46247991919517517,
+    "threshold_method": "oof_f1"
+  },
+  "test_auc": 0.7285714285714285,
+  "test_sensitivity": 0.7142857142857143,
+  "test_specificity": 0.65,
+  "test_f1": 0.6451612903225806,
+  "test_probabilities": [
+    0.6492254137992859,
+    0.6209738850593567,
+    0.5074887871742249,
+    0.6406539678573608,
+    0.5448687672615051,
+    0.6186608076095581,
+    0.7025459408760071,
+    0.45387741923332214,
+    0.5200340747833252,
+    0.22176066040992737,
+    0.5709635019302368,
+    0.7243756651878357,
+    0.20077872276306152,
+    0.41919025778770447,
+    0.3761735260486603,
+    0.3756555914878845,
+    0.2601288855075836,
+    0.6757742762565613,
+    0.17004626989364624,
+    0.3501589298248291,
+    0.1194799616932869,
+    0.18538114428520203,
+    0.4707683324813843,
+    0.5734947323799133,
+    0.5912950038909912,
+    0.19132760167121887,
+    0.2176860123872757,
+    0.3510152995586395,
+    0.6166825890541077,
+    0.23646406829357147,
+    0.38975659012794495,
+    0.615546703338623,
+    0.646735668182373,
+    0.2391258031129837
+  ],
+  "test_labels": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ]
+}

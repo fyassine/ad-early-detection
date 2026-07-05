@@ -1,0 +1,14 @@
+{
+  "experiment_id": "abi-baseline-delcode",
+  "run_name": "rosy-surf-4-nogit-2026-06-25_16-02-57",
+  "kind": "baseline",
+  "state": "done",
+  "pid": 1968822,
+  "started_at": "2026-06-25T16:02:58",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/ABI_BASELINE.ipynb",
+  "finished_at": "2026-06-25T16:03:10",
+  "exit_code": 0,
+  "duration_seconds": 11.4
+}

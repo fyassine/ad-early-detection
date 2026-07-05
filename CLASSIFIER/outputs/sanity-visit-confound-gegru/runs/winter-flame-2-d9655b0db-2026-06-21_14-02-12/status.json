@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-visit-confound-gegru",
+  "run_name": "winter-flame-2-d9655b0db-2026-06-21_14-02-12",
+  "state": "done",
+  "pid": 829726,
+  "started_at": "2026-06-21T14:02:13",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb",
+  "finished_at": "2026-06-21T14:02:32",
+  "exit_code": 0,
+  "duration_seconds": 18.8
+}

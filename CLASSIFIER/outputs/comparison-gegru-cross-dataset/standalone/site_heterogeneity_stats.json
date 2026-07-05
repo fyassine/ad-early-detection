@@ -1,0 +1,8 @@
+{
+  "delcode_consecutive_visit_fc_delta_std": 0.2635538876056671,
+  "typical_fc_std": 0.26554680713499434,
+  "base_noise_level": 0.9924950348647419,
+  "adni_tr_cv": 0.38145576325718394,
+  "oasis3_tr_cv": 0.35847226323162534,
+  "note": "base_noise_level = DELCODE natural inter-visit FC-delta std / typical FC value std (a perturb_graph-noise_level-unit drift floor). CV = std/mean of acquisition TR across scanner records, restricted to resting-state BOLD series for OASIS3 (its metadata otherwise mixes in T1/DTI/fieldmap/ASL TRs from unrelated sequence types). The drift notebook sets noise_level_<site> = base_noise_level * (1 + CV_<site>)."
+}

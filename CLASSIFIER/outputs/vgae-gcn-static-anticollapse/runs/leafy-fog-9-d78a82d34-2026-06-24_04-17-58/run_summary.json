@@ -1,0 +1,44 @@
+{
+  "experiment_id": "vgae-gcn-static-anticollapse",
+  "timestamp": "2026-06-24T04:19:13",
+  "model_config": {
+    "model_type": "VariationalGraphAutoencoder",
+    "in_features": 200,
+    "hidden_dim": 128,
+    "latent_dim": 64,
+    "conv_type": "gcn",
+    "num_heads": 2,
+    "dropout": 0.3,
+    "beta": 0.00124,
+    "beta_warmup_epochs": 43,
+    "free_bits": 1.44,
+    "feature_decoder": true,
+    "feature_loss_weight": 2.46
+  },
+  "training_config": {
+    "seed": 100,
+    "batch_size": 64,
+    "learning_rate": 0.00258,
+    "weight_decay": 0.001,
+    "beta": 0.00124,
+    "beta_warmup_epochs": 43,
+    "free_bits": 1.44,
+    "feature_decoder": true,
+    "feature_loss_weight": 2.46,
+    "epochs": 500,
+    "early_stopping_patience": 25,
+    "latent_dim": 64,
+    "hidden_dim": 128,
+    "conv_type": "gcn",
+    "checkpoint_tag": "anticollapse",
+    "num_heads": 2,
+    "dropout": 0.3,
+    "adjacency_k": 24,
+    "num_workers": 8,
+    "file_variant": "z_transformed"
+  },
+  "checkpoint": "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/notebooks/checkpoints/checkpoints_vgae_whole_brain/leafy-fog-9-vgae-gcn-static-anticollapse-2026-06-24_04-17-58_2026-06-24_04-19-13/model_leafy-fog-9-vgae-gcn-static-anticollapse-2026-06-24_04-17-58_2026-06-24_04-19-13.pth",
+  "metrics": {
+    "best_val_loss": 0.8797557801008224
+  }
+}

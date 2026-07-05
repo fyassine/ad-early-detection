@@ -1,0 +1,15 @@
+{
+  "experiment_id": "km-baseline",
+  "run_name": "earnest-leaf-1-d9655b0db-2026-06-21_01-39-54",
+  "state": "done",
+  "pid": 612471,
+  "started_at": "2026-06-21T01:39:55",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "method": "km",
+  "network_combo": "dmn_hippo",
+  "notebook": "notebooks/PROGNOSER_RUNNER.ipynb",
+  "finished_at": "2026-06-21T01:40:11",
+  "exit_code": 0,
+  "duration_seconds": 16.5
+}

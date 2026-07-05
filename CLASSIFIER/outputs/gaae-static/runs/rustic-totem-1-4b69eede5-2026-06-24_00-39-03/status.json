@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gaae-static",
+  "run_name": "rustic-totem-1-4b69eede5-2026-06-24_00-39-03",
+  "state": "done",
+  "pid": 1556898,
+  "started_at": "2026-06-24T00:39:03",
+  "git_commit": "4b69eede5",
+  "git_dirty": true,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-24T00:48:51",
+  "exit_code": 0,
+  "duration_seconds": 586.9
+}

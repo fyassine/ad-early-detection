@@ -1,0 +1,15 @@
+{
+  "experiment_id": "sanity-gelstm-ablations",
+  "run_name": "bright-orchid-2-nogit-2026-07-03_15-17-55",
+  "state": "failed",
+  "pid": 2323534,
+  "started_at": "2026-07-03T15:17:56",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/SANITY/SANITY_LONGITUDINAL_GELSTM.ipynb",
+  "finished_at": "2026-07-03T15:18:04",
+  "duration_seconds": 7.3,
+  "error": "NameError: name 'set_seed' is not defined",
+  "cell": "In [3]",
+  "notebook_traceback": "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m\n\u001b[0;31mNameError\u001b[0m                                 Traceback (most recent call last)\nCell \u001b[0;32mIn[3], line 25\u001b[0m\n\u001b[1;32m     22\u001b[0m \u001b[38;5;28;01mfrom\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mSHARED\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01msanity\u001b[39;00m\u001b[38;5;250m        \u001b[39m\u001b[38;5;28;01mimport\u001b[39;00m run_full_audit\n\u001b[1;32m     24\u001b[0m RANDOM_STATE \u001b[38;5;241m=\u001b[39m \u001b[38;5;241m42\u001b[39m\n\u001b[0;32m---> 25\u001b[0m \u001b[43mset_seed\u001b[49m(RANDOM_STATE)\n\u001b[1;32m     26\u001b[0m device \u001b[38;5;241m=\u001b[39m torch\u001b[38;5;241m.\u001b[39mdevice(\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mcuda\u001b[39m\u001b[38;5;124m'\u001b[39m \u001b[38;5;28;01mif\u001b[39;00m torch\u001b[38;5;241m.\u001b[39mcuda\u001b[38;5;241m.\u001b[39mis_available() \u001b[38;5;28;01melse\u001b[39;00m \u001b[38;5;124m'\u001b[39m\u001b[38;5;124mcpu\u001b[39m\u001b[38;5;124m'\u001b[39m)\n\u001b[1;32m     27\u001b[0m \u001b[38;5;28mprint\u001b[39m(\u001b[38;5;124mf\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mDevice: \u001b[39m\u001b[38;5;132;01m{\u001b[39;00mdevice\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m'\u001b[39m)\n\n\u001b[0;31mNameError\u001b[0m: name 'set_seed' is not defined"
+}

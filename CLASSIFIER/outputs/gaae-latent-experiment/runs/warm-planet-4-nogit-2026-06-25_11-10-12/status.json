@@ -1,0 +1,15 @@
+{
+  "experiment_id": "gaae-latent-experiment",
+  "run_name": "warm-planet-4-nogit-2026-06-25_11-10-12",
+  "state": "failed",
+  "pid": 1953359,
+  "started_at": "2026-06-25T11:10:13",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/STATIC/GAAE_LATENT_SPACE_VISUALIZER.ipynb",
+  "finished_at": "2026-06-25T11:10:52",
+  "duration_seconds": 38.5,
+  "error": "NameError: name 'StandardScaler' is not defined",
+  "cell": "In [14]",
+  "notebook_traceback": "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m\n\u001b[0;31mNameError\u001b[0m                                 Traceback (most recent call last)\nCell \u001b[0;32mIn[14], line 5\u001b[0m\n\u001b[1;32m      3\u001b[0m \u001b[38;5;66;03m# Re-run last fold to get probability values\u001b[39;00m\n\u001b[1;32m      4\u001b[0m tr_idx_last, te_idx_last \u001b[38;5;241m=\u001b[39m \u001b[38;5;28mlist\u001b[39m(cv\u001b[38;5;241m.\u001b[39msplit(X_bin, y_bin, groups\u001b[38;5;241m=\u001b[39mgroups_bin))[\u001b[38;5;241m-\u001b[39m\u001b[38;5;241m1\u001b[39m]\n\u001b[0;32m----> 5\u001b[0m sc_last  \u001b[38;5;241m=\u001b[39m \u001b[43mStandardScaler\u001b[49m()\u001b[38;5;241m.\u001b[39mfit(X_bin[tr_idx_last])\n\u001b[1;32m      6\u001b[0m clf_last \u001b[38;5;241m=\u001b[39m LogisticRegression(max_iter\u001b[38;5;241m=\u001b[39m\u001b[38;5;241m1000\u001b[39m, C\u001b[38;5;241m=\u001b[39m\u001b[38;5;241m1.0\u001b[39m, class_weight\u001b[38;5;241m=\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mbalanced\u001b[39m\u001b[38;5;124m'\u001b[39m)\n\u001b[1;32m      7\u001b[0m clf_last\u001b[38;5;241m.\u001b[39mfit(sc_last\u001b[38;5;241m.\u001b[39mtransform(X_bin[tr_idx_last]), y_bin[tr_idx_last])\n\n\u001b[0;31mNameError\u001b[0m: name 'StandardScaler' is not defined"
+}

@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gelstm-trajectory-whole-brain-gru",
+  "run_name": "floral-meadow-1-2e7594f8d-2026-06-20_19-22-26",
+  "state": "done",
+  "pid": 443372,
+  "started_at": "2026-06-20T19:22:27",
+  "git_commit": "2e7594f8d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb",
+  "finished_at": "2026-06-20T19:25:59",
+  "exit_code": 0,
+  "duration_seconds": 211.3
+}

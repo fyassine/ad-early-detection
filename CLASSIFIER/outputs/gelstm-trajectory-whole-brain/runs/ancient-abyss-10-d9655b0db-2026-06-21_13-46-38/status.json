@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gelstm-trajectory-whole-brain",
+  "run_name": "ancient-abyss-10-d9655b0db-2026-06-21_13-46-38",
+  "state": "done",
+  "pid": 823071,
+  "started_at": "2026-06-21T13:46:38",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T13:49:54",
+  "exit_code": 0,
+  "duration_seconds": 195.6
+}

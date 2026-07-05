@@ -1,0 +1,275 @@
+{
+  "experiment_id": "sanity-visit-confound-gec",
+  "source_experiment": "gec-trajectory-whole-brain",
+  "source_run_dir": "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/gec-trajectory-whole-brain/runs/cosmic-shape-8-d9655b0db-2026-06-21_13-46-02",
+  "model": "GECAdapter",
+  "threshold": 0.6535903811454773,
+  "temperature": 1.0359562474504256,
+  "visit_counts_all": [
+    {
+      "group": "converter",
+      "n": 68,
+      "mean": 3.426470588235294,
+      "median": 3.0,
+      "std": 1.4590548614340297,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.002203561369249296
+    },
+    {
+      "group": "non_converter",
+      "n": 99,
+      "mean": 2.7373737373737375,
+      "median": 2.0,
+      "std": 1.6199386394643986,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.002203561369249296
+    },
+    {
+      "group": "overall",
+      "n": 167,
+      "mean": 3.0179640718562872,
+      "median": 3.0,
+      "std": 1.5886383268828532,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.002203561369249296
+    }
+  ],
+  "visit_counts_test": [
+    {
+      "group": "converter",
+      "n": 14,
+      "mean": 3.7142857142857144,
+      "median": 3.5,
+      "std": 1.489892687336984,
+      "min": 2,
+      "max": 6,
+      "mwu_pvalue": 0.011001737015934675
+    },
+    {
+      "group": "non_converter",
+      "n": 20,
+      "mean": 2.35,
+      "median": 2.0,
+      "std": 1.1821033884786183,
+      "min": 1,
+      "max": 4,
+      "mwu_pvalue": 0.011001737015934675
+    },
+    {
+      "group": "overall",
+      "n": 34,
+      "mean": 2.911764705882353,
+      "median": 3.0,
+      "std": 1.464067539815298,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.011001737015934675
+    }
+  ],
+  "cohort_composition": [
+    {
+      "n_visits": 1,
+      "n_subjects": 34,
+      "n_converters": 14,
+      "n_nonconverters": 20,
+      "frac_converter": 0.4117647058823529
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 28,
+      "n_converters": 14,
+      "n_nonconverters": 14,
+      "frac_converter": 0.5
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 18,
+      "n_converters": 10,
+      "n_nonconverters": 8,
+      "frac_converter": 0.5555555555555556
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "n_converters": 7,
+      "n_nonconverters": 5,
+      "frac_converter": 0.5833333333333334
+    },
+    {
+      "n_visits": 5,
+      "n_subjects": 5,
+      "n_converters": 5,
+      "n_nonconverters": 0,
+      "frac_converter": 1.0
+    },
+    {
+      "n_visits": 6,
+      "n_subjects": 2,
+      "n_converters": 2,
+      "n_nonconverters": 0,
+      "frac_converter": 1.0
+    }
+  ],
+  "early_detection_variable": [
+    {
+      "n_visits": 1,
+      "n_subjects": 34,
+      "auc": 0.5642857142857143,
+      "sensitivity": 0.14285714285714285,
+      "specificity": 0.85
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 28,
+      "auc": 0.9285714285714286,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 0.7142857142857143
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 18,
+      "auc": 0.95,
+      "sensitivity": 0.9,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "auc": 0.9142857142857143,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 1.0
+    }
+  ],
+  "early_detection_fixed": [
+    {
+      "n_visits": 1,
+      "n_subjects": 12,
+      "auc": 0.5428571428571428,
+      "sensitivity": 0.14285714285714285,
+      "specificity": 0.8
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 12,
+      "auc": 0.8571428571428572,
+      "sensitivity": 0.7142857142857143,
+      "specificity": 0.8
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 12,
+      "auc": 0.8857142857142857,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "auc": 0.9142857142857143,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 1.0
+    }
+  ],
+  "prob_vs_visit_count_spearman": {
+    "overall": {
+      "r": 0.16887434116646094,
+      "p": 0.339705563652448,
+      "n": 34
+    },
+    "converter": {
+      "r": 0.10114913821769637,
+      "p": 0.7307982660837846,
+      "n": 14
+    },
+    "non_converter": {
+      "r": -0.4804471884992231,
+      "p": 0.03201901269597686,
+      "n": 20
+    }
+  },
+  "within_subject_slopes": {
+    "overall": {
+      "n": 28,
+      "median_slope": 0.052795598655939094,
+      "frac_negative": 0.39285714285714285
+    },
+    "converter": {
+      "n": 14,
+      "median_slope": 0.12668575942516327,
+      "frac_negative": 0.0
+    },
+    "non_converter": {
+      "n": 14,
+      "median_slope": -0.050214064121246293,
+      "frac_negative": 0.7857142857142857
+    }
+  },
+  "prob_spread_final": {
+    "converter": {
+      "n": 14,
+      "mean": 0.8586441108158657,
+      "std": 0.15976164282930158,
+      "iqr": 0.10626789927482605
+    },
+    "non_converter": {
+      "n": 20,
+      "mean": 0.3285020975396037,
+      "std": 0.2263646295731081,
+      "iqr": 0.3223569393157959
+    },
+    "overall": {
+      "n": 34,
+      "mean": 0.5467958677121821,
+      "std": 0.33120171980991464,
+      "iqr": 0.6737430468201637
+    },
+    "separation": 0.530142013276262
+  },
+  "prob_spread_final_cal": {
+    "converter": {
+      "n": 14,
+      "mean": 0.853566350823019,
+      "std": 0.15812302511639972,
+      "iqr": 0.10964401514398947
+    },
+    "non_converter": {
+      "n": 20,
+      "mean": 0.3321403336798763,
+      "std": 0.2213275405062407,
+      "iqr": 0.31541597219990375
+    },
+    "overall": {
+      "n": 34,
+      "mean": 0.5468451642682292,
+      "std": 0.3254285287163146,
+      "iqr": 0.6582917848394608
+    },
+    "separation": 0.5214260171431427
+  },
+  "prob_spread_trajectory": {
+    "converter": {
+      "n": 52,
+      "mean": 0.7230609128108392,
+      "std": 0.2643419291376423,
+      "iqr": 0.3913176655769348
+    },
+    "non_converter": {
+      "n": 41,
+      "mean": 0.3597486171780563,
+      "std": 0.2287733669351953,
+      "iqr": 0.3299713730812073
+    },
+    "overall": {
+      "n": 93,
+      "mean": 0.562890976026494,
+      "std": 0.3072169668332104,
+      "iqr": 0.5786322951316833
+    },
+    "separation": 0.3633122956327829
+  },
+  "ece_raw": 0.22496123863931963,
+  "ece_cal": 0.22909112654443464
+}

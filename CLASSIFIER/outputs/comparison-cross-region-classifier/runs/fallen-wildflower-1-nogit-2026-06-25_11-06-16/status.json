@@ -1,0 +1,13 @@
+{
+  "experiment_id": "comparison-cross-region-classifier",
+  "run_name": "fallen-wildflower-1-nogit-2026-06-25_11-06-16",
+  "state": "done",
+  "pid": 1951229,
+  "started_at": "2026-06-25T11:06:19",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/COMPARISON/COMPARISON_CROSS_REGION_CLASSIFIER.ipynb",
+  "finished_at": "2026-06-25T11:06:47",
+  "exit_code": 0,
+  "duration_seconds": 28.1
+}

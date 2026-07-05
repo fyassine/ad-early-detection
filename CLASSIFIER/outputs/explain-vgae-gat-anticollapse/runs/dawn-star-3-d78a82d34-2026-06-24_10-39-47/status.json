@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-vgae-gat-anticollapse",
+  "run_name": "dawn-star-3-d78a82d34-2026-06-24_10-39-47",
+  "state": "done",
+  "pid": 1822792,
+  "started_at": "2026-06-24T10:39:49",
+  "git_commit": "d78a82d34",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-24T10:41:35",
+  "exit_code": 0,
+  "duration_seconds": 105.8
+}

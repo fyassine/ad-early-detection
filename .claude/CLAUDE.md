@@ -4,8 +4,26 @@ Research codebase for Alzheimer's disease early detection using longitudinal bra
 
 ## Active vs legacy directories
 
-- **Active** (write new code here): `CLASSIFIER/` (graph classifiers), `PROGNOSER/` (survival analysis, consumes GAAE embeddings), `ABI/` (Abnormality Index experiment runner, 2 wired notebooks), `DASHBOARD/` (FastAPI+Vite app), `DATA/DELCODE/src/processing/` (preprocessing pipeline)
+- **Active** (write new code here): `CLASSIFIER/` (graph classifiers), `PROGNOSER/` (survival analysis, consumes GAAE embeddings), `ABI/` (Abnormality Index experiment runner, 2 wired notebooks), `DASHBOARD/` (FastAPI+Vite app), `DATA/` (preprocessing pipeline, scripts, configs)
 - **Legacy / read-only**: everything inside `__CLASSIFIER__/`, `DCI/`; within `ABI/`, `comp_corr_v1.py` and `dci_scripts/` (hardcoded HPC paths)
+
+## Code search scope
+
+Search and index ALL files in the repository **including `DATA/`** and every other folder,
+except the following which are excluded for performance/privacy — never read these:
+
+- `.venv/` — Python virtual environment (vendored packages, not project code)
+- `.git/` — git internals
+- `.env` — secrets / credentials file
+- `**/wandb/` — ML experiment tracker artifacts
+- `**/checkpoints/` — large model checkpoint blobs (`.pth`)
+- `**/__pycache__/` — compiled bytecode
+- `**/*.nii.gz`, `**/*.npz`, `**/*.pkl` — large binary data arrays
+- `**/*.csv`, `**/*.xlsx`, `**/*.xls` — raw data tables (too large to reason over)
+- `DATA/src/processing/subcortex/` — vendored third-party toolbox (non-project code)
+
+Everything else — Python scripts, notebooks, JSON configs, shell scripts, markdown docs,
+yaml files, etc. — is project code and **must** be included in searches.
 
 ## Rule modules (loaded automatically)
 

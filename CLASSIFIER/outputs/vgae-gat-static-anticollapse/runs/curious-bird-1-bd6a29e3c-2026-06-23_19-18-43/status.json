@@ -1,0 +1,13 @@
+{
+  "experiment_id": "vgae-gat-static-anticollapse",
+  "run_name": "curious-bird-1-bd6a29e3c-2026-06-23_19-18-43",
+  "state": "done",
+  "pid": 1342179,
+  "started_at": "2026-06-23T19:18:44",
+  "git_commit": "bd6a29e3c",
+  "git_dirty": true,
+  "notebook": "notebooks/STATIC/STATIC_VGAE_DELCODE_WHOLE_BRAIN.ipynb",
+  "finished_at": "2026-06-23T19:19:39",
+  "exit_code": 0,
+  "duration_seconds": 55.4
+}

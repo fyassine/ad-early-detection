@@ -1,0 +1,45 @@
+# .cursorignore — Cursor AI indexing exclusions
+#
+# This file is intentionally NOT a copy of .gitignore.
+# .gitignore excludes large data files from git tracking.
+# This file only excludes things that are genuinely irrelevant or sensitive
+# for AI-assisted coding — DATA/ and project code folders are fully indexed.
+
+# ── Secrets & credentials ───────────────────────────────────────────────────
+.env
+
+# ── Runtime / build artifacts ───────────────────────────────────────────────
+.venv/
+**/__pycache__/
+**/*.py[cod]
+.git/
+node_modules/
+dist/
+build/
+coverage/
+
+# ── ML experiment artifacts (large blobs, not code) ─────────────────────────
+**/wandb/
+**/checkpoints/
+**/*.pth
+**/*.pkl
+**/*.npz
+
+# ── Raw data files (binary / tabular, not code) ──────────────────────────────
+**/*.nii.gz
+**/*.csv
+**/*.xlsx
+**/*.xls
+**/*.log
+
+# ── IDE & OS noise ───────────────────────────────────────────────────────────
+.DS_Store
+.idea/
+**/.cache/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ── Vendored third-party toolbox (non-project code) ──────────────────────────
+DATA/src/processing/subcortex/

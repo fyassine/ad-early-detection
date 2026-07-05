@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-gelstm-ablations",
+  "run_name": "lucky-forest-4-nogit-2026-07-03_15-19-42",
+  "state": "done",
+  "pid": 2324847,
+  "started_at": "2026-07-03T15:19:43",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/SANITY/SANITY_LONGITUDINAL_GELSTM.ipynb",
+  "finished_at": "2026-07-03T15:19:59",
+  "exit_code": 0,
+  "duration_seconds": 15.3
+}

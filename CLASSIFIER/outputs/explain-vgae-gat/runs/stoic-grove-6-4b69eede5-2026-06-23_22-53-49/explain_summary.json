@@ -1,0 +1,45 @@
+{
+  "experiment_id": "explain-vgae-gat",
+  "adapter": "vgae",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/extra_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/stoic-grove-6-4b69eede5-2026-06-23_22-53-49/figures/extra_reconstruction.pdf"
+  ],
+  "diagnostics": {
+    "recon_error_auc": 0.3785714285714286,
+    "mean_converter": 0.3882349598540082,
+    "mean_stable": 0.4078822038393784,
+    "fidelity_median": 0.11059395240061709,
+    "fidelity_iqr": [
+      0.08083910578400787,
+      0.13024939346694087
+    ]
+  },
+  "region_importance_by_network": {
+    "Vis": 0.7543175230766165,
+    "SomMot": 0.8693212236676897,
+    "DorsAttn": 0.7962159353953141,
+    "SalVentAttn": 0.7864440869201313,
+    "Limbic": 0.8302581210931143,
+    "Cont": 0.7735817025105158,
+    "Default": 0.8248515116131824
+  }
+}

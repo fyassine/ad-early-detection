@@ -1,0 +1,10 @@
+{
+  "WB_ROOT": "DATA/DELCODE/__fc_wholebrain_sch200_flat__/matrices",
+  "METADATA_DIR": "DATA/DELCODE/__fc_wholebrain_sch200_flat__/metadata",
+  "SPLITS_GAAE_DIR": "DATA/DELCODE/__fc_wholebrain_sch200_flat__/metadata/splits_gaae",
+  "SPLITS_GEC_DIR": "DATA/DELCODE/__fc_wholebrain_sch200_flat__/metadata/splits_gec",
+  "FILE_SUFFIX": "_whole_brain_correlation_matrix_z_transformed.npz",
+  "Z_THRESHOLD": 3.0,
+  "N_FOLDS": 5,
+  "STD_FLOOR": 1e-6
+}

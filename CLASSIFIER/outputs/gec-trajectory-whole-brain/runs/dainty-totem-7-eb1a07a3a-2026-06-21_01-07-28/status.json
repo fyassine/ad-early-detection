@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gec-trajectory-whole-brain",
+  "run_name": "dainty-totem-7-eb1a07a3a-2026-06-21_01-07-28",
+  "state": "done",
+  "pid": 565479,
+  "started_at": "2026-06-21T01:07:28",
+  "git_commit": "eb1a07a3a",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T01:07:54",
+  "exit_code": 0,
+  "duration_seconds": 26.0
+}

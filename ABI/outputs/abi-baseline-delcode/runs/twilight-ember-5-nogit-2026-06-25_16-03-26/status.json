@@ -1,0 +1,14 @@
+{
+  "experiment_id": "abi-baseline-delcode",
+  "run_name": "twilight-ember-5-nogit-2026-06-25_16-03-26",
+  "kind": "baseline",
+  "state": "done",
+  "pid": 1969216,
+  "started_at": "2026-06-25T16:03:27",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/ABI_BASELINE.ipynb",
+  "finished_at": "2026-06-25T16:03:38",
+  "exit_code": 0,
+  "duration_seconds": 10.5
+}

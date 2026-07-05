@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-vgae-gat",
+  "run_name": "patient-waterfall-4-c68891b6f-2026-06-22_01-11-38",
+  "state": "done",
+  "pid": 1040478,
+  "started_at": "2026-06-22T01:11:39",
+  "git_commit": "c68891b6f",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-22T01:13:18",
+  "exit_code": 0,
+  "duration_seconds": 98.6
+}

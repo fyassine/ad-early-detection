@@ -1,0 +1,44 @@
+{
+  "experiment_id": "vgae-gcn-static-anticollapse",
+  "timestamp": "2026-06-23T17:09:43",
+  "model_config": {
+    "model_type": "VariationalGraphAutoencoder",
+    "in_features": 200,
+    "hidden_dim": 128,
+    "latent_dim": 64,
+    "conv_type": "gcn",
+    "num_heads": 2,
+    "dropout": 0.3,
+    "beta": 1.0,
+    "beta_warmup_epochs": 100,
+    "free_bits": 0.5,
+    "feature_decoder": true,
+    "feature_loss_weight": 1.0
+  },
+  "training_config": {
+    "seed": 100,
+    "batch_size": 64,
+    "learning_rate": 0.001,
+    "weight_decay": 0.001,
+    "beta": 1.0,
+    "beta_warmup_epochs": 100,
+    "free_bits": 0.5,
+    "feature_decoder": true,
+    "feature_loss_weight": 1.0,
+    "epochs": 500,
+    "early_stopping_patience": 25,
+    "latent_dim": 64,
+    "hidden_dim": 128,
+    "conv_type": "gcn",
+    "checkpoint_tag": "anticollapse",
+    "num_heads": 2,
+    "dropout": 0.3,
+    "adjacency_k": 16,
+    "num_workers": 8,
+    "file_variant": "z_transformed"
+  },
+  "vgae_checkpoint": "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/notebooks/checkpoints/checkpoints_vgae_whole_brain/vgae-gcn-static-anticollapse_2026-06-23_17-09-43/model_vgae-gcn-static-anticollapse_2026-06-23_17-09-43.pth",
+  "metrics": {
+    "best_val_loss": 1.7194862961769104
+  }
+}

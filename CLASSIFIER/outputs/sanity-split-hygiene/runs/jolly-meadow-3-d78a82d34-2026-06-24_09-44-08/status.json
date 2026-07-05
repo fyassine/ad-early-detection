@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-split-hygiene",
+  "run_name": "jolly-meadow-3-d78a82d34-2026-06-24_09-44-08",
+  "state": "done",
+  "pid": 1789255,
+  "started_at": "2026-06-24T09:44:10",
+  "git_commit": "d78a82d34",
+  "git_dirty": true,
+  "notebook": "notebooks/SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb",
+  "finished_at": "2026-06-24T09:44:20",
+  "exit_code": 0,
+  "duration_seconds": 9.7
+}

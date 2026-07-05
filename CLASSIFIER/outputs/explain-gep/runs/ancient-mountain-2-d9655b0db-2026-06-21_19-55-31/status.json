@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-gep",
+  "run_name": "ancient-mountain-2-d9655b0db-2026-06-21_19-55-31",
+  "state": "done",
+  "pid": 934232,
+  "started_at": "2026-06-21T19:55:31",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T19:57:44",
+  "exit_code": 0,
+  "duration_seconds": 132.7
+}

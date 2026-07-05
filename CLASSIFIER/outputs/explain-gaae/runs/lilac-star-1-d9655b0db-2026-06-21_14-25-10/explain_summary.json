@@ -1,0 +1,44 @@
+{
+  "experiment_id": "explain-gaae",
+  "adapter": "gaae",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/journey_6_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/journey_6_reconstruction.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/extra_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/extra_reconstruction.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/extra_gnnexplainer.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gaae/runs/lilac-star-1-d9655b0db-2026-06-21_14-25-10/figures/extra_gnnexplainer.pdf"
+  ],
+  "diagnostics": {
+    "recon_error_auc": 0.4928571428571429,
+    "mean_converter": 0.0786064767411777,
+    "mean_stable": 0.06926976907998324
+  },
+  "region_importance_by_network": {
+    "Vis": 0.7543175169106188,
+    "SomMot": 0.8693212219646999,
+    "DorsAttn": 0.7962159296640983,
+    "SalVentAttn": 0.7864440828561783,
+    "Limbic": 0.8302581558624903,
+    "Cont": 0.7735816856225332,
+    "Default": 0.824851507725923
+  }
+}

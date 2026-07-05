@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-gaae",
+  "run_name": "risen-grove-5-d9655b0db-2026-06-21_19-19-10",
+  "state": "done",
+  "pid": 906605,
+  "started_at": "2026-06-21T19:19:11",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T19:20:53",
+  "exit_code": 0,
+  "duration_seconds": 101.9
+}

@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-visit-confound-gegru",
+  "run_name": "leafy-canyon-1-d9655b0db-2026-06-21_02-06-23",
+  "state": "done",
+  "pid": 631019,
+  "started_at": "2026-06-21T02:06:23",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb",
+  "finished_at": "2026-06-21T02:06:42",
+  "exit_code": 0,
+  "duration_seconds": 18.1
+}

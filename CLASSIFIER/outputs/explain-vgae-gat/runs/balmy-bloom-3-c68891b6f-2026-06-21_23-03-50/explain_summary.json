@@ -1,0 +1,56 @@
+{
+  "experiment_id": "explain-vgae-gat",
+  "adapter": "vgae",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/journey_5b_recon_compare.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/journey_5b_recon_compare.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/extra_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/balmy-bloom-3-c68891b6f-2026-06-21_23-03-50/figures/extra_reconstruction.pdf"
+  ],
+  "diagnostics": {
+    "recon_error_auc": 0.3964285714285714,
+    "mean_converter": 0.25041657257686595,
+    "mean_stable": 0.25049317939217486,
+    "fidelity_median": 0.12174523407113877,
+    "fidelity_iqr": [
+      0.09760518400651136,
+      0.1417092757425038
+    ]
+  },
+  "reconstruction_fidelity": {
+    "mse": 0.25016889965958505,
+    "rmse": 0.5001688711421224,
+    "mae": 0.5001686393797398,
+    "nrmse": 1.6336500338465838,
+    "pearson_r": 0.3091878939620812,
+    "r2": -1.668812433086944,
+    "quality": "poor"
+  },
+  "region_importance_by_network": {
+    "Vis": 0.7543174747763008,
+    "SomMot": 0.8693211589540754,
+    "DorsAttn": 0.7962158689132104,
+    "SalVentAttn": 0.7864440557631579,
+    "Limbic": 0.8302580614884695,
+    "Cont": 0.773581650853157,
+    "Default": 0.8248514546000439
+  }
+}

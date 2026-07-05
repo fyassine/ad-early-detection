@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gaae-latent-experiment",
+  "run_name": "ruby-mist-5-nogit-2026-06-25_11-21-17",
+  "state": "done",
+  "pid": 1961193,
+  "started_at": "2026-06-25T11:21:19",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/STATIC/GAAE_LATENT_SPACE_VISUALIZER.ipynb",
+  "finished_at": "2026-06-25T11:22:13",
+  "exit_code": 0,
+  "duration_seconds": 54.1
+}

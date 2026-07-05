@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-visit-confound-gec",
+  "run_name": "polar-sky-2-d9655b0db-2026-06-21_02-05-36",
+  "state": "done",
+  "pid": 630010,
+  "started_at": "2026-06-21T02:05:36",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/SANITY/SANITY_VISIT_COUNT_CONFOUND.ipynb",
+  "finished_at": "2026-06-21T02:05:54",
+  "exit_code": 0,
+  "duration_seconds": 17.0
+}

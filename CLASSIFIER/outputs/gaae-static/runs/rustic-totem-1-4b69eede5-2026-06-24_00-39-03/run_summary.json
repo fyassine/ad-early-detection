@@ -1,0 +1,34 @@
+{
+  "experiment_id": "gaae-static",
+  "timestamp": "2026-06-24T00:47:44",
+  "model_config": {
+    "model_type": "GraphAttentionAutoencoderConditioned",
+    "in_features": 200,
+    "hidden_dim": 128,
+    "latent_dim": 64,
+    "cond_dim": 2,
+    "num_heads": 2,
+    "dropout": 0.3
+  },
+  "training_config": {
+    "seed": 100,
+    "batch_size": 64,
+    "learning_rate": 0.001,
+    "weight_decay": 0.001,
+    "adj_loss_weight": 0.2,
+    "epochs": 500,
+    "early_stopping_patience": 25,
+    "latent_dim": 64,
+    "hidden_dim": 128,
+    "num_heads": 2,
+    "cond_dim": 2,
+    "dropout": 0.3,
+    "adjacency_k": 16,
+    "num_workers": 8,
+    "file_variant": "z_transformed"
+  },
+  "checkpoint": "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/notebooks/checkpoints/checkpoints_gaae_whole_brain/rustic-totem-1-gaae-static-2026-06-24_00-39-03_2026-06-24_00-47-44/model_rustic-totem-1-gaae-static-2026-06-24_00-39-03_2026-06-24_00-47-44.pth",
+  "metrics": {
+    "best_val_loss": 0.024994499515742064
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-vgae-gcn",
+  "run_name": "winter-creek-12-bd6a29e3c-2026-06-23_21-33-32",
+  "state": "done",
+  "pid": 1465452,
+  "started_at": "2026-06-23T21:33:33",
+  "git_commit": "bd6a29e3c",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-23T21:35:01",
+  "exit_code": 0,
+  "duration_seconds": 88.3
+}

@@ -1,0 +1,205 @@
+{
+  "experiment_id": "sanity-visit-confound-gec",
+  "source_experiment": "gec-trajectory-whole-brain",
+  "source_run_dir": "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/gec-trajectory-whole-brain/runs/dainty-totem-7-eb1a07a3a-2026-06-21_01-07-28",
+  "model": "GECAdapter",
+  "threshold": 0.6535908579826355,
+  "visit_counts_all": [
+    {
+      "group": "converter",
+      "n": 68,
+      "mean": 3.426470588235294,
+      "median": 3.0,
+      "std": 1.4590548614340297,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.002203561369249296
+    },
+    {
+      "group": "non_converter",
+      "n": 99,
+      "mean": 2.7373737373737375,
+      "median": 2.0,
+      "std": 1.6199386394643986,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.002203561369249296
+    },
+    {
+      "group": "overall",
+      "n": 167,
+      "mean": 3.0179640718562872,
+      "median": 3.0,
+      "std": 1.5886383268828532,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.002203561369249296
+    }
+  ],
+  "visit_counts_test": [
+    {
+      "group": "converter",
+      "n": 14,
+      "mean": 3.7142857142857144,
+      "median": 3.5,
+      "std": 1.489892687336984,
+      "min": 2,
+      "max": 6,
+      "mwu_pvalue": 0.011001737015934675
+    },
+    {
+      "group": "non_converter",
+      "n": 20,
+      "mean": 2.35,
+      "median": 2.0,
+      "std": 1.1821033884786183,
+      "min": 1,
+      "max": 4,
+      "mwu_pvalue": 0.011001737015934675
+    },
+    {
+      "group": "overall",
+      "n": 34,
+      "mean": 2.911764705882353,
+      "median": 3.0,
+      "std": 1.464067539815298,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.011001737015934675
+    }
+  ],
+  "cohort_composition": [
+    {
+      "n_visits": 1,
+      "n_subjects": 34,
+      "n_converters": 14,
+      "n_nonconverters": 20,
+      "frac_converter": 0.4117647058823529
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 28,
+      "n_converters": 14,
+      "n_nonconverters": 14,
+      "frac_converter": 0.5
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 18,
+      "n_converters": 10,
+      "n_nonconverters": 8,
+      "frac_converter": 0.5555555555555556
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "n_converters": 7,
+      "n_nonconverters": 5,
+      "frac_converter": 0.5833333333333334
+    },
+    {
+      "n_visits": 5,
+      "n_subjects": 5,
+      "n_converters": 5,
+      "n_nonconverters": 0,
+      "frac_converter": 1.0
+    },
+    {
+      "n_visits": 6,
+      "n_subjects": 2,
+      "n_converters": 2,
+      "n_nonconverters": 0,
+      "frac_converter": 1.0
+    }
+  ],
+  "early_detection_variable": [
+    {
+      "n_visits": 1,
+      "n_subjects": 34,
+      "auc": 0.5642857142857143,
+      "sensitivity": 0.14285714285714285,
+      "specificity": 0.85
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 28,
+      "auc": 0.9285714285714286,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 0.7142857142857143
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 18,
+      "auc": 0.95,
+      "sensitivity": 0.9,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "auc": 0.9142857142857143,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 1.0
+    }
+  ],
+  "early_detection_fixed": [],
+  "prob_vs_visit_count_spearman": {
+    "overall": {
+      "r": 0.16887434116646094,
+      "p": 0.339705563652448,
+      "n": 34
+    },
+    "converter": {
+      "r": 0.10114913821769637,
+      "p": 0.7307982660837846,
+      "n": 14
+    },
+    "non_converter": {
+      "r": -0.4804471884992231,
+      "p": 0.03201901269597686,
+      "n": 20
+    }
+  },
+  "prob_spread_final": {
+    "converter": {
+      "n": 14,
+      "mean": 0.8586438596248627,
+      "std": 0.1597619926843057,
+      "iqr": 0.10626834630966187
+    },
+    "non_converter": {
+      "n": 20,
+      "mean": 0.3285020854324102,
+      "std": 0.22636445498115468,
+      "iqr": 0.32235685735940933
+    },
+    "overall": {
+      "n": 34,
+      "mean": 0.5467957571587142,
+      "std": 0.3312016220847924,
+      "iqr": 0.673743300139904
+    },
+    "separation": 0.5301417741924525
+  },
+  "prob_spread_trajectory": {
+    "converter": {
+      "n": 52,
+      "mean": 0.7230607456026169,
+      "std": 0.2643418628225559,
+      "iqr": 0.39131754636764526
+    },
+    "non_converter": {
+      "n": 41,
+      "mean": 0.3597485544841464,
+      "std": 0.228773151858415,
+      "iqr": 0.3299693316221237
+    },
+    "overall": {
+      "n": 93,
+      "mean": 0.562890854894474,
+      "std": 0.30721683476896766,
+      "iqr": 0.5786325931549072
+    },
+    "separation": 0.3633121911184705
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gec-trajectory-whole-brain",
+  "run_name": "cosmic-shape-8-d9655b0db-2026-06-21_13-46-02",
+  "state": "done",
+  "pid": 822631,
+  "started_at": "2026-06-21T13:46:03",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T13:46:32",
+  "exit_code": 0,
+  "duration_seconds": 28.7
+}

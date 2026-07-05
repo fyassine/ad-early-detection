@@ -1,0 +1,27 @@
+{
+  "source_experiment": "gegru-trajectory-whole-brain",
+  "baseline": {
+    "auc": 0.8321428571428572,
+    "sensitivity": 0.6428571428571429,
+    "specificity": 0.75,
+    "f1": 0.6428571428571429
+  },
+  "calibrated_levels": {
+    "adni_like": 1.3710879859180374,
+    "oasis3_like": 1.3482769762588567
+  },
+  "calibrated_metrics": {
+    "adni_like": {
+      "auc": 0.7,
+      "sensitivity": 0.07142857142857142,
+      "specificity": 1.0,
+      "f1": 0.13333333333333333
+    },
+    "oasis3_like": {
+      "auc": 0.7214285714285714,
+      "sensitivity": 0.07142857142857142,
+      "specificity": 1.0,
+      "f1": 0.13333333333333333
+    }
+  }
+}

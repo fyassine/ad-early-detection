@@ -1,0 +1,13 @@
+{
+  "experiment_id": "vgae-gcn-static-anticollapse",
+  "run_name": "icy-oasis-8-9e551b726-2026-06-24_03-11-53",
+  "state": "done",
+  "pid": 1651711,
+  "started_at": "2026-06-24T03:11:54",
+  "git_commit": "9e551b726",
+  "git_dirty": false,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-24T03:17:17",
+  "exit_code": 0,
+  "duration_seconds": 322.9
+}

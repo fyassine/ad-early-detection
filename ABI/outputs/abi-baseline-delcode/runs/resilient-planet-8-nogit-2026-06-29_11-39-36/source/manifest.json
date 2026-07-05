@@ -1,0 +1,40 @@
+{
+  "copied": [
+    "ABI/common/__init__.py",
+    "ABI/common/experiment_utils.py",
+    "ABI/run_experiment.py",
+    "ABI/experiments.yaml",
+    "ABI/configs/baseline_delcode_whole_brain.json",
+    "ABI/configs/longitudinal_delcode_whole_brain.json",
+    "SHARED/__init__.py",
+    "SHARED/provenance.py",
+    "SHARED/run_naming.py",
+    "SHARED/runner_io.py",
+    "SHARED/sanity.py",
+    "SHARED/seeding.py",
+    "SHARED/tracking.py"
+  ],
+  "missing": [],
+  "roots": [
+    "ABI/common",
+    "ABI/run_experiment.py",
+    "ABI/experiments.yaml",
+    "ABI/configs",
+    "SHARED"
+  ],
+  "patterns": [
+    ".py",
+    ".yaml",
+    ".yml",
+    ".json",
+    ".txt",
+    ".cfg",
+    ".toml"
+  ],
+  "git": {
+    "commit": "d78a82d34570c674f91e7119fed92e01d4a125d6",
+    "short_commit": "d78a82d34",
+    "branch": "main",
+    "dirty": true
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-gelstm",
+  "run_name": "dainty-voice-4-d78a82d34-2026-06-24_11-00-21",
+  "state": "done",
+  "pid": 1836007,
+  "started_at": "2026-06-24T11:00:23",
+  "git_commit": "d78a82d34",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-24T11:02:22",
+  "exit_code": 0,
+  "duration_seconds": 118.8
+}

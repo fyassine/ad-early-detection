@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-vgae-gat",
+  "run_name": "trim-water-1-c68891b6f-2026-06-21_22-16-12",
+  "state": "done",
+  "pid": 997763,
+  "started_at": "2026-06-21T22:16:13",
+  "git_commit": "c68891b6f",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T22:17:43",
+  "exit_code": 0,
+  "duration_seconds": 89.8
+}

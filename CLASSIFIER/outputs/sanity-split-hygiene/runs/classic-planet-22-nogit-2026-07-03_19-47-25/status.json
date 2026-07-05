@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-split-hygiene",
+  "run_name": "classic-planet-22-nogit-2026-07-03_19-47-25",
+  "state": "done",
+  "pid": 2471162,
+  "started_at": "2026-07-03T19:47:26",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb",
+  "finished_at": "2026-07-03T19:47:38",
+  "exit_code": 0,
+  "duration_seconds": 11.6
+}

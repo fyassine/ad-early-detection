@@ -1,0 +1,15 @@
+{
+  "experiment_id": "km-baseline",
+  "run_name": "radiant-silence-3-d9655b0db-2026-06-21_13-29-45",
+  "state": "done",
+  "pid": 817201,
+  "started_at": "2026-06-21T13:29:45",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "method": "km",
+  "network_combo": "dmn_hippo",
+  "notebook": "notebooks/PROGNOSER_RUNNER.ipynb",
+  "finished_at": "2026-06-21T13:29:56",
+  "exit_code": 0,
+  "duration_seconds": 10.0
+}

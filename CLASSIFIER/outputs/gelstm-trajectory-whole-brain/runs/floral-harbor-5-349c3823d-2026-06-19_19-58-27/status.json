@@ -1,0 +1,10 @@
+{
+  "experiment_id": "gelstm-trajectory-whole-brain",
+  "run_name": "floral-harbor-5-349c3823d-2026-06-19_19-58-27",
+  "state": "running",
+  "pid": 279858,
+  "started_at": "2026-06-19T19:58:27",
+  "git_commit": "349c3823d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb"
+}

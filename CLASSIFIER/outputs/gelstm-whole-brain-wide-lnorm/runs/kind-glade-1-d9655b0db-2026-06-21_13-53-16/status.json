@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gelstm-whole-brain-wide-lnorm",
+  "run_name": "kind-glade-1-d9655b0db-2026-06-21_13-53-16",
+  "state": "done",
+  "pid": 825557,
+  "started_at": "2026-06-21T13:53:17",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T13:56:52",
+  "exit_code": 0,
+  "duration_seconds": 214.5
+}

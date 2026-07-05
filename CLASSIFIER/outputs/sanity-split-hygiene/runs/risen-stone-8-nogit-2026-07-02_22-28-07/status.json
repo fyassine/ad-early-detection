@@ -1,0 +1,15 @@
+{
+  "experiment_id": "sanity-split-hygiene",
+  "run_name": "risen-stone-8-nogit-2026-07-02_22-28-07",
+  "state": "failed",
+  "pid": 2243187,
+  "started_at": "2026-07-02T22:28:08",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb",
+  "finished_at": "2026-07-02T22:28:11",
+  "duration_seconds": 2.4,
+  "error": "ModuleNotFoundError: No module named 'DATA.src'",
+  "cell": "In [4]",
+  "notebook_traceback": "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m\n\u001b[0;31mModuleNotFoundError\u001b[0m                       Traceback (most recent call last)\nCell \u001b[0;32mIn[4], line 4\u001b[0m\n\u001b[1;32m      2\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;124m'\u001b[39m\u001b[38;5;124m/mnt/e/fyassine/ad-early-detection\u001b[39m\u001b[38;5;124m'\u001b[39m \u001b[38;5;129;01mnot\u001b[39;00m \u001b[38;5;129;01min\u001b[39;00m sys\u001b[38;5;241m.\u001b[39mpath:\n\u001b[1;32m      3\u001b[0m     sys\u001b[38;5;241m.\u001b[39mpath\u001b[38;5;241m.\u001b[39minsert(\u001b[38;5;241m0\u001b[39m, \u001b[38;5;124m'\u001b[39m\u001b[38;5;124m/mnt/e/fyassine/ad-early-detection\u001b[39m\u001b[38;5;124m'\u001b[39m)\n\u001b[0;32m----> 4\u001b[0m \u001b[38;5;28;01mfrom\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mDATA\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01msrc\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01msplitting\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01mload_splits\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;28;01mimport\u001b[39;00m splits_dir, split_csv_paths\n\u001b[1;32m      6\u001b[0m DATA_VERSION   \u001b[38;5;241m=\u001b[39m \u001b[38;5;124m'\u001b[39m\u001b[38;5;124m__fc_wholebrain_sch200_flat__\u001b[39m\u001b[38;5;124m'\u001b[39m\n\u001b[1;32m      7\u001b[0m DATA_ROOT      \u001b[38;5;241m=\u001b[39m Path(\u001b[38;5;124m'\u001b[39m\u001b[38;5;124m/mnt/e/fyassine/ad-early-detection/DATA/DELCODE\u001b[39m\u001b[38;5;124m'\u001b[39m) \u001b[38;5;241m/\u001b[39m DATA_VERSION\n\n\u001b[0;31mModuleNotFoundError\u001b[0m: No module named 'DATA.src'"
+}

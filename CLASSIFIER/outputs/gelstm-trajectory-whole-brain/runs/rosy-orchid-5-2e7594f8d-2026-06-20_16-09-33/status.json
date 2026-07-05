@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gelstm-trajectory-whole-brain",
+  "run_name": "rosy-orchid-5-2e7594f8d-2026-06-20_16-09-33",
+  "state": "done",
+  "pid": 402285,
+  "started_at": "2026-06-20T16:09:33",
+  "git_commit": "2e7594f8d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb",
+  "finished_at": "2026-06-20T16:13:57",
+  "exit_code": 0,
+  "duration_seconds": 263.6
+}

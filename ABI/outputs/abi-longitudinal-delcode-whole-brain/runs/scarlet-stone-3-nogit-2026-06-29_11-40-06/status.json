@@ -1,0 +1,14 @@
+{
+  "experiment_id": "abi-longitudinal-delcode-whole-brain",
+  "run_name": "scarlet-stone-3-nogit-2026-06-29_11-40-06",
+  "kind": "longitudinal",
+  "state": "done",
+  "pid": 2000860,
+  "started_at": "2026-06-29T11:40:07",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/ABI_LONGITUDINAL_DELCODE_WHOLE_BRAIN.ipynb",
+  "finished_at": "2026-06-29T11:40:17",
+  "exit_code": 0,
+  "duration_seconds": 9.8
+}

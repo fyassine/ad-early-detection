@@ -1,0 +1,24 @@
+{
+  "delcode": {
+    "status": "real",
+    "n_subjects": 34,
+    "auc": 0.8321428571428572,
+    "sensitivity": 0.6428571428571429,
+    "specificity": 0.75,
+    "f1": 0.6428571428571429
+  },
+  "adni": {
+    "status": "pending_preprocessing",
+    "scanner_manufacturers": {
+      "SIEMENS": 14056,
+      "Philips": 2416,
+      "GE MEDICAL SYSTEMS": 2144
+    }
+  },
+  "oasis3": {
+    "status": "pending_preprocessing",
+    "scanner_manufacturers": {
+      "Siemens": 30339
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-split-hygiene",
+  "run_name": "brave-dune-11-nogit-2026-07-02_22-41-10",
+  "state": "done",
+  "pid": 2249376,
+  "started_at": "2026-07-02T22:41:11",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb",
+  "finished_at": "2026-07-02T22:41:20",
+  "exit_code": 0,
+  "duration_seconds": 8.1
+}

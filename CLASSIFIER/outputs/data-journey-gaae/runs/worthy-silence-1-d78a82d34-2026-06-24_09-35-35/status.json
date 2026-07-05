@@ -1,0 +1,13 @@
+{
+  "experiment_id": "data-journey-gaae",
+  "run_name": "worthy-silence-1-d78a82d34-2026-06-24_09-35-35",
+  "state": "done",
+  "pid": 1782858,
+  "started_at": "2026-06-24T09:35:36",
+  "git_commit": "d78a82d34",
+  "git_dirty": true,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DATA_JOURNEY_DELCODE.ipynb",
+  "finished_at": "2026-06-24T09:41:28",
+  "exit_code": 0,
+  "duration_seconds": 352.0
+}

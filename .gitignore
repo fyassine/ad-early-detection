@@ -12,6 +12,10 @@ CLASSIFIER/outputs/**
 !CLASSIFIER/outputs/**/.gitkeep
 !CLASSIFIER/outputs/**/*.ipynb
 !CLASSIFIER/outputs/**/latest
+!CLASSIFIER/outputs/**/*.py
+!CLASSIFIER/outputs/**/*.sh
+!CLASSIFIER/outputs/**/*.json
+!CLASSIFIER/outputs/**/*.split
 
 # --- PROGNOSER outputs ---
 PROGNOSER/outputs/**
@@ -19,6 +23,10 @@ PROGNOSER/outputs/**
 !PROGNOSER/outputs/**/.gitkeep
 !PROGNOSER/outputs/**/*.ipynb
 !PROGNOSER/outputs/**/latest
+!PROGNOSER/outputs/**/*.py
+!PROGNOSER/outputs/**/*.sh
+!PROGNOSER/outputs/**/*.json
+!PROGNOSER/outputs/**/*.split
 
 # --- ABI outputs ---
 ABI/outputs/**
@@ -26,11 +34,18 @@ ABI/outputs/**
 !ABI/outputs/**/.gitkeep
 !ABI/outputs/**/*.ipynb
 !ABI/outputs/**/latest
+!ABI/outputs/**/*.py
+!ABI/outputs/**/*.sh
+!ABI/outputs/**/*.json
+!ABI/outputs/**/*.split
 
 
 *.log
 **/*.pkl
 **/*.npz
+**/*.csv
+**/*.xlsx
+**/*.xls
 .ipynb_checkpoints/
 .vscode/*
 !.vscode/tasks.json

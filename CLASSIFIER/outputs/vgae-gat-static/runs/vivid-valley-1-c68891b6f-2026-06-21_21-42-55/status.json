@@ -1,0 +1,13 @@
+{
+  "experiment_id": "vgae-gat-static",
+  "run_name": "vivid-valley-1-c68891b6f-2026-06-21_21-42-55",
+  "state": "done",
+  "pid": 981871,
+  "started_at": "2026-06-21T21:42:55",
+  "git_commit": "c68891b6f",
+  "git_dirty": true,
+  "notebook": "notebooks/STATIC/STATIC_VGAE_DELCODE_WHOLE_BRAIN.ipynb",
+  "finished_at": "2026-06-21T21:46:30",
+  "exit_code": 0,
+  "duration_seconds": 215.0
+}

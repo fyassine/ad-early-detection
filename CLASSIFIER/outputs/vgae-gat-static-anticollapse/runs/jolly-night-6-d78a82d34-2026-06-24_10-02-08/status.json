@@ -1,0 +1,13 @@
+{
+  "experiment_id": "vgae-gat-static-anticollapse",
+  "run_name": "jolly-night-6-d78a82d34-2026-06-24_10-02-08",
+  "state": "done",
+  "pid": 1800434,
+  "started_at": "2026-06-24T10:02:09",
+  "git_commit": "d78a82d34",
+  "git_dirty": true,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-24T10:05:08",
+  "exit_code": 0,
+  "duration_seconds": 178.1
+}

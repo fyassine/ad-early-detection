@@ -152,12 +152,15 @@ def plot_cohort_errors(
     palette_name: str = "Blues",
     wandb_project: str = "",
     run_name: str = "",
-) -> None:
-    """Swarmplot + boxplot of per-cohort reconstruction errors."""
+) -> plt.Figure:
+    """Swarmplot + boxplot of per-cohort reconstruction errors.
+
+    Returns the Figure so callers can attach footnotes before displaying.
+    """
     matplotlib.rcParams["pdf.fonttype"] = 42
     matplotlib.rcParams["ps.fonttype"] = 42
 
-    plt.figure(figsize=(10, 7))
+    fig = plt.figure(figsize=(10, 7))
     ax = plt.gca()
 
     sns.swarmplot(
@@ -207,7 +210,7 @@ def plot_cohort_errors(
             ha="right", va="bottom", fontsize=6, alpha=0.5,
         )
     plt.tight_layout(rect=[0, 0.03, 1, 1])
-    plt.show()
+    return fig
 
 
 def plot_robustness_sweep(
@@ -215,8 +218,13 @@ def plot_robustness_sweep(
     cohorts_to_analyze: list[str],
     cohort_thresholds: dict,
     noise_methods: list[str],
-) -> None:
-    """Error drift + decision-stability plots for each cohort."""
+) -> list[plt.Figure]:
+    """Error drift + decision-stability plots for each cohort.
+
+    Returns the list of Figures (one per cohort) so callers can attach
+    footnotes before displaying.
+    """
+    figs: list[plt.Figure] = []
     for cohort_name in cohorts_to_analyze:
         cohort_summary = summary_df[summary_df["SelectionCohort"] == cohort_name]
         if cohort_summary.empty:
@@ -245,4 +253,5 @@ def plot_robustness_sweep(
         axes[1].legend()
 
         plt.tight_layout()
-        plt.show()
+        figs.append(fig)
+    return figs

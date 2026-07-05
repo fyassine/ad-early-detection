@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gegru-trajectory-whole-brain",
+  "run_name": "upbeat-water-2-d9655b0db-2026-06-21_01-14-35",
+  "state": "done",
+  "pid": 570698,
+  "started_at": "2026-06-21T01:14:35",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T01:18:08",
+  "exit_code": 0,
+  "duration_seconds": 213.1
+}

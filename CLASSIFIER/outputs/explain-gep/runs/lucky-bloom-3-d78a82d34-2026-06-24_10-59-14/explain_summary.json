@@ -1,0 +1,107 @@
+{
+  "experiment_id": "explain-gep",
+  "adapter": "gep",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/latent_dim_distributions.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/latent_dim_distributions.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/logreg_probe_roc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/logreg_probe_roc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/latent_space_3d.html",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/disease_axis.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/disease_axis.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/disease_axis_3d.html",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/journey_6_prediction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/journey_6_prediction.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/extra_trajectory.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/extra_trajectory.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/extra_early_detection.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/lucky-bloom-3-d78a82d34-2026-06-24_10-59-14/figures/extra_early_detection.pdf"
+  ],
+  "latent_separability": {
+    "silhouette": 0.07489892604778892,
+    "top5_dims": [
+      50,
+      47,
+      46,
+      58,
+      39
+    ]
+  },
+  "logreg_probe": {
+    "mean_auc": 0.8033314054366686,
+    "oof_auc": 0.7857991681521094
+  },
+  "diagnostics": {
+    "auc": 0.7285714285714285,
+    "sensitivity": 0.7142857142857143,
+    "specificity": 0.65,
+    "f1": 0.6451612903225806,
+    "ece": 0.16333790452164765,
+    "threshold": 0.46247991919517517,
+    "saved_auc": 0.7285714285714285
+  },
+  "walkthrough": {
+    "prob": 0.45387741923332214,
+    "pred": 0,
+    "true": 1,
+    "threshold": 0.46247991919517517,
+    "subject_id": "ae818e1d7"
+  },
+  "region_importance_by_network": {
+    "Vis": 0.7543175117722873,
+    "SomMot": 0.8693212219646999,
+    "DorsAttn": 0.7962159262253687,
+    "SalVentAttn": 0.7864440869201313,
+    "Limbic": 0.8302581260601679,
+    "Cont": 0.7735816856225332,
+    "Default": 0.8248515025429104
+  },
+  "early_detection": [
+    {
+      "n_visits": 1,
+      "n_subjects": 34,
+      "auc": 0.5035714285714286,
+      "sensitivity": 0.7142857142857143,
+      "specificity": 0.2
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 28,
+      "auc": 0.7551020408163266,
+      "sensitivity": 0.7142857142857143,
+      "specificity": 0.7142857142857143
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 18,
+      "auc": 0.8250000000000001,
+      "sensitivity": 0.8,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "auc": 0.8857142857142857,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 1.0
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "experiment_id": "vgae-gat-static",
+  "timestamp": "2026-06-23T21:21:58",
+  "model_config": {
+    "model_type": "VariationalGraphAutoencoder",
+    "in_features": 200,
+    "hidden_dim": 128,
+    "latent_dim": 64,
+    "conv_type": "gat",
+    "num_heads": 2,
+    "dropout": 0.3,
+    "beta": 1.0,
+    "beta_warmup_epochs": 0,
+    "free_bits": 0.0,
+    "feature_decoder": false,
+    "feature_loss_weight": 0.0
+  },
+  "training_config": {
+    "seed": 100,
+    "batch_size": 64,
+    "learning_rate": 0.001,
+    "weight_decay": 0.001,
+    "beta": 1.0,
+    "epochs": 500,
+    "early_stopping_patience": 25,
+    "latent_dim": 64,
+    "hidden_dim": 128,
+    "conv_type": "gat",
+    "num_heads": 2,
+    "dropout": 0.3,
+    "adjacency_k": 16,
+    "num_workers": 8,
+    "file_variant": "z_transformed"
+  },
+  "vgae_checkpoint": "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/notebooks/checkpoints/checkpoints_vgae_whole_brain/vgae-gat-static_2026-06-23_21-21-58/model_vgae-gat-static_2026-06-23_21-21-58.pth",
+  "metrics": {
+    "best_val_loss": 0.8062317818403244
+  }
+}

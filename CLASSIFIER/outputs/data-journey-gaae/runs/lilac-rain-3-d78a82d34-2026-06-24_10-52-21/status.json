@@ -1,0 +1,13 @@
+{
+  "experiment_id": "data-journey-gaae",
+  "run_name": "lilac-rain-3-d78a82d34-2026-06-24_10-52-21",
+  "state": "done",
+  "pid": 1830008,
+  "started_at": "2026-06-24T10:52:22",
+  "git_commit": "d78a82d34",
+  "git_dirty": true,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DATA_JOURNEY_DELCODE.ipynb",
+  "finished_at": "2026-06-24T10:57:33",
+  "exit_code": 0,
+  "duration_seconds": 311.4
+}

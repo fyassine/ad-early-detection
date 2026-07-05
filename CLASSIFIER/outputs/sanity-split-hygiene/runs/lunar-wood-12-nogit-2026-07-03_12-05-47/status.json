@@ -1,0 +1,13 @@
+{
+  "experiment_id": "sanity-split-hygiene",
+  "run_name": "lunar-wood-12-nogit-2026-07-03_12-05-47",
+  "state": "done",
+  "pid": 2274183,
+  "started_at": "2026-07-03T12:05:48",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb",
+  "finished_at": "2026-07-03T12:05:57",
+  "exit_code": 0,
+  "duration_seconds": 8.1
+}

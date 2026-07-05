@@ -1,0 +1,275 @@
+{
+  "experiment_id": "sanity-visit-confound-gegru",
+  "source_experiment": "gegru-trajectory-whole-brain",
+  "source_run_dir": "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/gegru-trajectory-whole-brain/runs/lucky-harbor-3-d9655b0db-2026-06-21_13-50-00",
+  "model": "GELSTMAdapter",
+  "threshold": 0.6593547463417053,
+  "temperature": 0.742193694373845,
+  "visit_counts_all": [
+    {
+      "group": "converter",
+      "n": 68,
+      "mean": 3.426470588235294,
+      "median": 3.0,
+      "std": 1.4590548614340297,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.002203561369249296
+    },
+    {
+      "group": "non_converter",
+      "n": 99,
+      "mean": 2.7373737373737375,
+      "median": 2.0,
+      "std": 1.6199386394643986,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.002203561369249296
+    },
+    {
+      "group": "overall",
+      "n": 167,
+      "mean": 3.0179640718562872,
+      "median": 3.0,
+      "std": 1.5886383268828532,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.002203561369249296
+    }
+  ],
+  "visit_counts_test": [
+    {
+      "group": "converter",
+      "n": 14,
+      "mean": 3.7142857142857144,
+      "median": 3.5,
+      "std": 1.489892687336984,
+      "min": 2,
+      "max": 6,
+      "mwu_pvalue": 0.011001737015934675
+    },
+    {
+      "group": "non_converter",
+      "n": 20,
+      "mean": 2.35,
+      "median": 2.0,
+      "std": 1.1821033884786183,
+      "min": 1,
+      "max": 4,
+      "mwu_pvalue": 0.011001737015934675
+    },
+    {
+      "group": "overall",
+      "n": 34,
+      "mean": 2.911764705882353,
+      "median": 3.0,
+      "std": 1.464067539815298,
+      "min": 1,
+      "max": 6,
+      "mwu_pvalue": 0.011001737015934675
+    }
+  ],
+  "cohort_composition": [
+    {
+      "n_visits": 1,
+      "n_subjects": 34,
+      "n_converters": 14,
+      "n_nonconverters": 20,
+      "frac_converter": 0.4117647058823529
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 28,
+      "n_converters": 14,
+      "n_nonconverters": 14,
+      "frac_converter": 0.5
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 18,
+      "n_converters": 10,
+      "n_nonconverters": 8,
+      "frac_converter": 0.5555555555555556
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "n_converters": 7,
+      "n_nonconverters": 5,
+      "frac_converter": 0.5833333333333334
+    },
+    {
+      "n_visits": 5,
+      "n_subjects": 5,
+      "n_converters": 5,
+      "n_nonconverters": 0,
+      "frac_converter": 1.0
+    },
+    {
+      "n_visits": 6,
+      "n_subjects": 2,
+      "n_converters": 2,
+      "n_nonconverters": 0,
+      "frac_converter": 1.0
+    }
+  ],
+  "early_detection_variable": [
+    {
+      "n_visits": 1,
+      "n_subjects": 34,
+      "auc": 0.6071428571428571,
+      "sensitivity": 0.6428571428571429,
+      "specificity": 0.4
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 28,
+      "auc": 0.8316326530612245,
+      "sensitivity": 0.7142857142857143,
+      "specificity": 0.7857142857142857
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 18,
+      "auc": 0.925,
+      "sensitivity": 0.6,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "auc": 0.9428571428571428,
+      "sensitivity": 0.5714285714285714,
+      "specificity": 1.0
+    }
+  ],
+  "early_detection_fixed": [
+    {
+      "n_visits": 1,
+      "n_subjects": 12,
+      "auc": 0.6285714285714286,
+      "sensitivity": 0.5714285714285714,
+      "specificity": 0.4
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 12,
+      "auc": 0.8,
+      "sensitivity": 0.7142857142857143,
+      "specificity": 0.8
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 12,
+      "auc": 0.8857142857142857,
+      "sensitivity": 0.5714285714285714,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "auc": 0.9428571428571428,
+      "sensitivity": 0.5714285714285714,
+      "specificity": 1.0
+    }
+  ],
+  "prob_vs_visit_count_spearman": {
+    "overall": {
+      "r": -0.07552435813277837,
+      "p": 0.671190957581147,
+      "n": 34
+    },
+    "converter": {
+      "r": 0.10789241409887614,
+      "p": 0.7135198618213761,
+      "n": 14
+    },
+    "non_converter": {
+      "r": -0.680893499285425,
+      "p": 0.0009506301833325007,
+      "n": 20
+    }
+  },
+  "within_subject_slopes": {
+    "overall": {
+      "n": 28,
+      "median_slope": -0.008492231741547566,
+      "frac_negative": 0.5
+    },
+    "converter": {
+      "n": 14,
+      "median_slope": 0.06420592963695516,
+      "frac_negative": 0.14285714285714285
+    },
+    "non_converter": {
+      "n": 14,
+      "median_slope": -0.19828963521867993,
+      "frac_negative": 0.8571428571428571
+    }
+  },
+  "prob_spread_final": {
+    "converter": {
+      "n": 14,
+      "mean": 0.6968751272984913,
+      "std": 0.28359609354329574,
+      "iqr": 0.3401344418525696
+    },
+    "non_converter": {
+      "n": 20,
+      "mean": 0.35901672737672924,
+      "std": 0.314031569470612,
+      "iqr": 0.5790972542017698
+    },
+    "overall": {
+      "n": 34,
+      "mean": 0.498134892050396,
+      "std": 0.341977014633516,
+      "iqr": 0.6699345447123051
+    },
+    "separation": 0.3378583999217621
+  },
+  "prob_spread_final_cal": {
+    "converter": {
+      "n": 14,
+      "mean": 0.7224733548197714,
+      "std": 0.3268918251139008,
+      "iqr": 0.37344213561760653
+    },
+    "non_converter": {
+      "n": 20,
+      "mean": 0.35790650306104166,
+      "std": 0.3624807443738872,
+      "iqr": 0.6727662204575315
+    },
+    "overall": {
+      "n": 34,
+      "mean": 0.5080222655499302,
+      "std": 0.38847626106778016,
+      "iqr": 0.7945622131031219
+    },
+    "separation": 0.3645668517587297
+  },
+  "prob_spread_trajectory": {
+    "converter": {
+      "n": 52,
+      "mean": 0.6558402273803949,
+      "std": 0.2679190267322569,
+      "iqr": 0.30775152146816254
+    },
+    "non_converter": {
+      "n": 41,
+      "mean": 0.35497555191197044,
+      "std": 0.290347523894147,
+      "iqr": 0.5777388289570808
+    },
+    "overall": {
+      "n": 93,
+      "mean": 0.5232009618513046,
+      "std": 0.3146429075407859,
+      "iqr": 0.6375377029180527
+    },
+    "separation": 0.3008646754684245
+  },
+  "ece_raw": 0.23590722313041199,
+  "ece_cal": 0.2692503062147235
+}

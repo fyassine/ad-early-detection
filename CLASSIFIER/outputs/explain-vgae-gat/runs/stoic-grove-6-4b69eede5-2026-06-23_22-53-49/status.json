@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-vgae-gat",
+  "run_name": "stoic-grove-6-4b69eede5-2026-06-23_22-53-49",
+  "state": "done",
+  "pid": 1521343,
+  "started_at": "2026-06-23T22:53:50",
+  "git_commit": "4b69eede5",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-23T22:55:31",
+  "exit_code": 0,
+  "duration_seconds": 100.7
+}

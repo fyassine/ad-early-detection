@@ -1,0 +1,13 @@
+{
+  "experiment_id": "comparison-cross-region-survival",
+  "run_name": "resilient-snow-1-nogit-2026-06-25_11-06-33",
+  "state": "done",
+  "pid": 1951774,
+  "started_at": "2026-06-25T11:06:35",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/COMPARISON/COMPARISON_CROSS_REGION_SURVIVAL.ipynb",
+  "finished_at": "2026-06-25T11:08:16",
+  "exit_code": 0,
+  "duration_seconds": 101.3
+}

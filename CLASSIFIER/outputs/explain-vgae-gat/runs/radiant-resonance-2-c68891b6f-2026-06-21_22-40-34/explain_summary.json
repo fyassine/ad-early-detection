@@ -1,0 +1,45 @@
+{
+  "experiment_id": "explain-vgae-gat",
+  "adapter": "vgae",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/extra_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/radiant-resonance-2-c68891b6f-2026-06-21_22-40-34/figures/extra_reconstruction.pdf"
+  ],
+  "diagnostics": {
+    "recon_error_auc": 0.3964285714285714,
+    "mean_converter": 0.2504165725777683,
+    "mean_stable": 0.25049317939265586,
+    "fidelity_median": 0.12174523363655178,
+    "fidelity_iqr": [
+      0.09760519315232544,
+      0.1417092653483597
+    ]
+  },
+  "region_importance_by_network": {
+    "Vis": 0.7543175220489502,
+    "SomMot": 0.8693212253706796,
+    "DorsAttn": 0.796215927371612,
+    "SalVentAttn": 0.7864440896294334,
+    "Limbic": 0.8302581161260605,
+    "Cont": 0.7735816955566406,
+    "Default": 0.8248515057822933
+  }
+}

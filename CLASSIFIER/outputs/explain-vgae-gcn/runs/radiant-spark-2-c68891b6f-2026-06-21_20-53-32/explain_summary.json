@@ -1,0 +1,45 @@
+{
+  "experiment_id": "explain-vgae-gcn",
+  "adapter": "vgae",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/extra_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/radiant-spark-2-c68891b6f-2026-06-21_20-53-32/figures/extra_reconstruction.pdf"
+  ],
+  "diagnostics": {
+    "recon_error_auc": 0.5107142857142857,
+    "mean_converter": 0.2501354759043457,
+    "mean_stable": 0.25008026703942726,
+    "fidelity_median": 0.3249840385624342,
+    "fidelity_iqr": [
+      0.26883797474947313,
+      0.3654214943759481
+    ]
+  },
+  "region_importance_by_network": {
+    "Vis": 0.0,
+    "SomMot": 0.0,
+    "DorsAttn": 0.0,
+    "SalVentAttn": 0.0,
+    "Limbic": 0.0,
+    "Cont": 0.0,
+    "Default": 0.0
+  }
+}

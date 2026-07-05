@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-vgae-gcn-anticollapse",
+  "run_name": "hardy-mountain-5-d78a82d34-2026-06-24_10-39-20",
+  "state": "done",
+  "pid": 1821847,
+  "started_at": "2026-06-24T10:39:21",
+  "git_commit": "d78a82d34",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-24T10:41:07",
+  "exit_code": 0,
+  "duration_seconds": 105.8
+}

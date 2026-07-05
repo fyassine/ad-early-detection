@@ -1,0 +1,35 @@
+{
+  "network_combo": "dmn_hippo",
+  "data_version": "__fc_dmn-hippo_sch200-tian2_flat__",
+  "file_suffix": "_dmn_hippo_correlation_matrix_z_transformed.npz",
+  "method": "km",
+  "feature_set": "none",
+  "embedding_strategy": "last",
+  "longitudinal_features": [
+    "mmstot",
+    "cdrglobal"
+  ],
+  "longitudinal_aggs": [
+    "baseline",
+    "last",
+    "slope",
+    "delta"
+  ],
+  "eval_times": [
+    12,
+    24,
+    36,
+    48,
+    60,
+    72
+  ],
+  "penalizer": 0.05,
+  "pca_components": 16,
+  "rsf_n_estimators": 200,
+  "rsf_min_samples_leaf": 5,
+  "lstm_n_time_bins": 12,
+  "lstm_max_horizon_months": 72,
+  "lstm_hidden_dim": 64,
+  "lstm_epochs": 100,
+  "random_state": 42
+}

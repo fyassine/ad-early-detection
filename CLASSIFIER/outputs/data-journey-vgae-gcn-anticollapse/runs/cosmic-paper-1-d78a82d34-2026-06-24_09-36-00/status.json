@@ -1,0 +1,13 @@
+{
+  "experiment_id": "data-journey-vgae-gcn-anticollapse",
+  "run_name": "cosmic-paper-1-d78a82d34-2026-06-24_09-36-00",
+  "state": "done",
+  "pid": 1783642,
+  "started_at": "2026-06-24T09:36:02",
+  "git_commit": "d78a82d34",
+  "git_dirty": true,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DATA_JOURNEY_DELCODE.ipynb",
+  "finished_at": "2026-06-24T09:41:46",
+  "exit_code": 0,
+  "duration_seconds": 343.4
+}

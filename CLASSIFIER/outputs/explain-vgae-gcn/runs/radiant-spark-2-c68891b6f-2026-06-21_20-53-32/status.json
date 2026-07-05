@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-vgae-gcn",
+  "run_name": "radiant-spark-2-c68891b6f-2026-06-21_20-53-32",
+  "state": "done",
+  "pid": 968374,
+  "started_at": "2026-06-21T20:53:32",
+  "git_commit": "c68891b6f",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T20:54:59",
+  "exit_code": 0,
+  "duration_seconds": 86.5
+}

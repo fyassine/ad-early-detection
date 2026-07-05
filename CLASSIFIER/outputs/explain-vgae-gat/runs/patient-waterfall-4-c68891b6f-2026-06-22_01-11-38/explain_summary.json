@@ -1,0 +1,56 @@
+{
+  "experiment_id": "explain-vgae-gat",
+  "adapter": "vgae",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/journey_5b_recon_compare.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/journey_5b_recon_compare.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/extra_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/patient-waterfall-4-c68891b6f-2026-06-22_01-11-38/figures/extra_reconstruction.pdf"
+  ],
+  "diagnostics": {
+    "recon_error_auc": 0.5107142857142857,
+    "mean_converter": 0.2503235769380276,
+    "mean_stable": 0.25030894188354713,
+    "fidelity_median": 0.1561287153448272,
+    "fidelity_iqr": [
+      0.13304211590963252,
+      0.19639432474220359
+    ]
+  },
+  "reconstruction_fidelity": {
+    "mse": 0.25015468532669655,
+    "rmse": 0.5001546614065459,
+    "mae": 0.5001541623711586,
+    "nrmse": 1.6336036220517982,
+    "pearson_r": 0.1591947478245529,
+    "r2": -1.668660793980755,
+    "quality": "poor"
+  },
+  "region_importance_by_network": {
+    "Vis": 0.7543175970685894,
+    "SomMot": 0.8693212781633649,
+    "DorsAttn": 0.796215989268743,
+    "SalVentAttn": 0.7864441546526822,
+    "Limbic": 0.8302582154671351,
+    "Cont": 0.7735817323128382,
+    "Default": 0.824851569922074
+  }
+}

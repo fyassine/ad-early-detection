@@ -1,0 +1,45 @@
+{
+  "experiment_id": "explain-vgae-gat",
+  "adapter": "vgae",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/extra_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/trim-water-1-c68891b6f-2026-06-21_22-16-12/figures/extra_reconstruction.pdf"
+  ],
+  "diagnostics": {
+    "recon_error_auc": 0.3964285714285714,
+    "mean_converter": 0.25041657256926564,
+    "mean_stable": 0.25049317940081345,
+    "fidelity_median": 0.1217452432916378,
+    "fidelity_iqr": [
+      0.0976051938854802,
+      0.1417092957742911
+    ]
+  },
+  "region_importance_by_network": {
+    "Vis": 0.7543175107446211,
+    "SomMot": 0.8693212304796492,
+    "DorsAttn": 0.7962159227866393,
+    "SalVentAttn": 0.7864440936933864,
+    "Limbic": 0.8302581260601679,
+    "Cont": 0.7735816955566406,
+    "Default": 0.8248515109653058
+  }
+}

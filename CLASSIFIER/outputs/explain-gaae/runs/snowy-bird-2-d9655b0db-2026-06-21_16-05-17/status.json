@@ -1,0 +1,13 @@
+{
+  "experiment_id": "explain-gaae",
+  "run_name": "snowy-bird-2-d9655b0db-2026-06-21_16-05-17",
+  "state": "done",
+  "pid": 856579,
+  "started_at": "2026-06-21T16:05:18",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-06-21T16:06:53",
+  "exit_code": 0,
+  "duration_seconds": 94.7
+}

@@ -1,0 +1,43 @@
+{
+  "experiment_id": "explain-vgae-gcn",
+  "adapter": "vgae",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/journey_5b_recon_compare.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/journey_5b_recon_compare.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/extra_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gcn/runs/proud-haze-4-c68891b6f-2026-06-21_23-02-08/figures/extra_reconstruction.pdf"
+  ],
+  "diagnostics": {
+    "recon_error_auc": 0.5107142857142857,
+    "mean_converter": 0.25013547590594903,
+    "mean_stable": 0.2500802670368132,
+    "fidelity_median": 0.3249841389000385,
+    "fidelity_iqr": [
+      0.26883795903996377,
+      0.36542152243581383
+    ]
+  },
+  "reconstruction_fidelity": {
+    "mse": 0.2500251123912318,
+    "rmse": 0.5000251117606312,
+    "mae": 0.5000251095592976,
+    "nrmse": 1.6331804873953972,
+    "pearson_r": 0.2968066663719557,
+    "r2": -1.6672785044090679,
+    "quality": "poor"
+  }
+}

@@ -1,0 +1,16 @@
+{
+    "top_k": 15,
+    "max_visits": null,
+    "mlp_hidden_layers": [256, 128, 64],
+    "mlp_dropout": 0.4,
+    "use_time_delta": true,
+    "append_visit_mask": true,
+    "learning_rate": 0.001,
+    "epochs": 80,
+    "early_stopping_patience": 20,
+    "batch_size": 32,
+    "grad_clip": 1.0,
+    "n_folds": 5,
+    "adjacency_k": 8,
+    "file_variant": "z_transformed"
+}

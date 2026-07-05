@@ -83,6 +83,36 @@ layer (GEC/GELSTM/GEGRU). Key routines:
   any real fixed-cohort gain is evidence accumulation and not the model keying on
   sequence length itself.
 
+## GEGRU: same cohort confound, independent architecture
+
+`sanity-visit-confound-gegru` (source run `gegru-trajectory-whole-brain/lucky-harbor-3`)
+exercises the identical downstream test split as the GELSTM numbers above — its
+`cohort_composition` block matches the table in part 1 exactly (34/28/18/12/5/2 subjects,
+same converter counts at every N). That's expected (same `SPLITS/downstream/test.csv`,
+same `require_full_window` machinery), but it's a useful cross-check: the composition
+confound is a property of the cohort, not of any one model architecture.
+
+GEGRU's own raw AUC-vs-N (`GELSTMAdapter` with `rnn_type: "gru"`) reproduces the same
+shape as GELSTM's, with different absolute numbers (different recurrent cell):
+
+| N (visits) | n subjects | raw AUC (variable cohort) | fixed-cohort AUC (n=12 throughout) |
+|---|---|---|---|
+| 1 | 34 | 0.607 | 0.629 |
+| 2 | 28 | 0.832 | 0.800 |
+| 3 | 18 | 0.925 | 0.886 |
+| 4 | 12 | 0.943 | 0.943 |
+
+Compare to GELSTM's own fixed-cohort numbers from the same tooling
+(`sanity-visit-confound-gelstm/sunny-hill-2`): 0.486 → 0.829 → 0.886 → 0.971. Both models
+show the bulk of the raw N=1→2 jump surviving in the fixed-cohort version too (GEGRU:
+0.629→0.800; GELSTM: 0.486→0.829) — so for both architectures, part of the N=1→2 gap is
+genuine added-visit signal, not purely the cohort-composition artifact from part 1. The
+`within_subject_slopes` diagnostic for GEGRU shows the same evidence-accumulation pattern
+used to sanity-check this: non-converters trend negative (`median_slope=-0.198`,
+86% of subjects with a negative slope) while converters trend flat/slightly positive
+(`median_slope=+0.064`) — consistent with "probability drifts down as more clean visits
+accumulate for stable subjects," not the model just keying on sequence length.
+
 ## Follow-up added this cycle
 
 Added a "visit-count confound" check to

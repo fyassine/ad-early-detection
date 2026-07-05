@@ -1,0 +1,14 @@
+{
+  "experiment_id": "abi-baseline-delcode",
+  "run_name": "rosy-pond-6-nogit-2026-06-25_16-04-12",
+  "kind": "baseline",
+  "state": "done",
+  "pid": 1969564,
+  "started_at": "2026-06-25T16:04:13",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/ABI_BASELINE.ipynb",
+  "finished_at": "2026-06-25T16:04:26",
+  "exit_code": 0,
+  "duration_seconds": 12.2
+}

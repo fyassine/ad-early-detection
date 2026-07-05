@@ -1,0 +1,12 @@
+{
+  "experiment_id": "gelstm-trajectory-whole-brain",
+  "run_name": "copper-river-6-349c3823d-2026-06-19_23-38-25",
+  "state": "done",
+  "pid": 299636,
+  "started_at": "2026-06-19T23:38:25",
+  "git_commit": "349c3823d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb",
+  "finished_at": "2026-06-19T23:42:51",
+  "exit_code": 0
+}

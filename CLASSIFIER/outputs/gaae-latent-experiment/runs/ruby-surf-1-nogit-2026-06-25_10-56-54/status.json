@@ -1,0 +1,15 @@
+{
+  "experiment_id": "gaae-latent-experiment",
+  "run_name": "ruby-surf-1-nogit-2026-06-25_10-56-54",
+  "state": "failed",
+  "pid": 1941728,
+  "started_at": "2026-06-25T10:56:56",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/STATIC/GAAE_LATENT_SPACE_VISUALIZER.ipynb",
+  "finished_at": "2026-06-25T10:57:03",
+  "duration_seconds": 6.6,
+  "error": "ModuleNotFoundError: No module named 'SHARED'",
+  "cell": "In [3]",
+  "notebook_traceback": "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m\n\u001b[0;31mModuleNotFoundError\u001b[0m                       Traceback (most recent call last)\nCell \u001b[0;32mIn[3], line 17\u001b[0m\n\u001b[1;32m     15\u001b[0m \u001b[38;5;28;01mfrom\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mmodel\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01mGAAE\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01mdataset\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;28;01mimport\u001b[39;00m GraphDatasetInMemoryFiltered\n\u001b[1;32m     16\u001b[0m \u001b[38;5;28;01mfrom\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mmodel\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01mGAAE\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01mutils\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;28;01mimport\u001b[39;00m knn_binary_adjacency_matrix_no_diag\n\u001b[0;32m---> 17\u001b[0m \u001b[38;5;28;01mfrom\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mSHARED\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01mseeding\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;28;01mimport\u001b[39;00m set_seed, make_rng, make_torch_generator, seed_worker\n\u001b[1;32m     18\u001b[0m \u001b[38;5;28;01mfrom\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mSHARED\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01mprovenance\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;28;01mimport\u001b[39;00m region_from_data_root\n\u001b[1;32m     20\u001b[0m \u001b[38;5;28mprint\u001b[39m(\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mImports OK\u001b[39m\u001b[38;5;124m'\u001b[39m)\n\n\u001b[0;31mModuleNotFoundError\u001b[0m: No module named 'SHARED'"
+}

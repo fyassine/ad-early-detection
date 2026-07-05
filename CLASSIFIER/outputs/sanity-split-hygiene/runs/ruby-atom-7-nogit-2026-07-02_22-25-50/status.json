@@ -1,0 +1,15 @@
+{
+  "experiment_id": "sanity-split-hygiene",
+  "run_name": "ruby-atom-7-nogit-2026-07-02_22-25-50",
+  "state": "failed",
+  "pid": 2241914,
+  "started_at": "2026-07-02T22:25:52",
+  "git_commit": null,
+  "git_dirty": null,
+  "notebook": "notebooks/SANITY/SANITY_SPLIT_HYGIENE_DELCODE.ipynb",
+  "finished_at": "2026-07-02T22:25:55",
+  "duration_seconds": 2.4,
+  "error": "ModuleNotFoundError: No module named 'SHARED'",
+  "cell": "In [3]",
+  "notebook_traceback": "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m\n\u001b[0;31mModuleNotFoundError\u001b[0m                       Traceback (most recent call last)\nCell \u001b[0;32mIn[3], line 10\u001b[0m\n\u001b[1;32m      7\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;28mstr\u001b[39m(V2_ROOT) \u001b[38;5;129;01mnot\u001b[39;00m \u001b[38;5;129;01min\u001b[39;00m sys\u001b[38;5;241m.\u001b[39mpath:\n\u001b[1;32m      8\u001b[0m     sys\u001b[38;5;241m.\u001b[39mpath\u001b[38;5;241m.\u001b[39minsert(\u001b[38;5;241m0\u001b[39m, \u001b[38;5;28mstr\u001b[39m(V2_ROOT))\n\u001b[0;32m---> 10\u001b[0m \u001b[38;5;28;01mfrom\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mSHARED\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01msanity\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;28;01mimport\u001b[39;00m (\n\u001b[1;32m     11\u001b[0m     assert_splits_clean,\n\u001b[1;32m     12\u001b[0m     assert_no_duplicate_matrices,\n\u001b[1;32m     13\u001b[0m     audit_groupkfold,\n\u001b[1;32m     14\u001b[0m     assert_cohort_policy,\n\u001b[1;32m     15\u001b[0m )\n\u001b[1;32m     16\u001b[0m \u001b[38;5;28mprint\u001b[39m(\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mSanity utilities loaded\u001b[39m\u001b[38;5;124m'\u001b[39m)\n\n\u001b[0;31mModuleNotFoundError\u001b[0m: No module named 'SHARED'"
+}

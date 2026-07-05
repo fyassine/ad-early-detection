@@ -1,0 +1,85 @@
+{
+  "experiment_id": "explain-gep",
+  "adapter": "gep",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/journey_6_prediction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/journey_6_prediction.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/extra_trajectory.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/extra_trajectory.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/extra_early_detection.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gep/runs/ancient-mountain-2-d9655b0db-2026-06-21_19-55-31/figures/extra_early_detection.pdf"
+  ],
+  "diagnostics": {
+    "auc": 0.7285714285714285,
+    "sensitivity": 0.7142857142857143,
+    "specificity": 0.65,
+    "f1": 0.6451612903225806,
+    "ece": 0.1633379014537615,
+    "threshold": 0.46247991919517517,
+    "saved_auc": 0.7285714285714285
+  },
+  "walkthrough": {
+    "prob": 0.45387741923332214,
+    "pred": 0,
+    "true": 1,
+    "threshold": 0.46247991919517517,
+    "subject_id": "ae818e1d7"
+  },
+  "region_importance_by_network": {
+    "Vis": 0.7543175261596153,
+    "SomMot": 0.86932122026171,
+    "DorsAttn": 0.7962159250791256,
+    "SalVentAttn": 0.7864440679550171,
+    "Limbic": 0.8302581459283829,
+    "Cont": 0.7735816876093546,
+    "Default": 0.8248514986556509
+  },
+  "early_detection": [
+    {
+      "n_visits": 1,
+      "n_subjects": 34,
+      "auc": 0.5035714285714286,
+      "sensitivity": 0.7142857142857143,
+      "specificity": 0.2
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 28,
+      "auc": 0.7551020408163266,
+      "sensitivity": 0.7142857142857143,
+      "specificity": 0.7142857142857143
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 18,
+      "auc": 0.8250000000000001,
+      "sensitivity": 0.8,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 12,
+      "auc": 0.8857142857142857,
+      "sensitivity": 0.8571428571428571,
+      "specificity": 1.0
+    }
+  ]
+}

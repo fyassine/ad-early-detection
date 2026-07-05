@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gelstm-trajectory-whole-brain",
+  "run_name": "divine-galaxy-6-2e7594f8d-2026-06-20_16-45-20",
+  "state": "done",
+  "pid": 410250,
+  "started_at": "2026-06-20T16:45:20",
+  "git_commit": "2e7594f8d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb",
+  "finished_at": "2026-06-20T16:49:48",
+  "exit_code": 0,
+  "duration_seconds": 267.7
+}

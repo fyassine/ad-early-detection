@@ -1,0 +1,15 @@
+{
+  "experiment_id": "km-baseline",
+  "run_name": "kind-rain-2-d9655b0db-2026-06-21_01-42-36",
+  "state": "done",
+  "pid": 614970,
+  "started_at": "2026-06-21T01:42:37",
+  "git_commit": "d9655b0db",
+  "git_dirty": true,
+  "method": "km",
+  "network_combo": "dmn_hippo",
+  "notebook": "notebooks/PROGNOSER_RUNNER.ipynb",
+  "finished_at": "2026-06-21T01:42:51",
+  "exit_code": 0,
+  "duration_seconds": 13.9
+}

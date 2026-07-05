@@ -1,0 +1,56 @@
+{
+  "experiment_id": "explain-vgae-gat",
+  "adapter": "vgae",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/journey_5b_recon_compare.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/journey_5b_recon_compare.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/extra_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-vgae-gat/runs/fallen-dream-7-4b69eede5-2026-06-23_23-07-49/figures/extra_reconstruction.pdf"
+  ],
+  "diagnostics": {
+    "recon_error_auc": 0.3785714285714286,
+    "mean_converter": 0.38823495925274676,
+    "mean_stable": 0.4078822044198301,
+    "fidelity_median": 0.11059395178530113,
+    "fidelity_iqr": [
+      0.080839104873431,
+      0.13024939401782093
+    ]
+  },
+  "reconstruction_fidelity": {
+    "mse": 0.4050037162722274,
+    "rmse": 0.6363990228404091,
+    "mae": 0.622118150421977,
+    "nrmse": 2.078604537761709,
+    "pearson_r": 0.10719671927820178,
+    "r2": -3.320596824403567,
+    "quality": "poor"
+  },
+  "region_importance_by_network": {
+    "Vis": 0.7543175189659513,
+    "SomMot": 0.86932122026171,
+    "DorsAttn": 0.7962159457115027,
+    "SalVentAttn": 0.7864440760829232,
+    "Limbic": 0.8302581210931143,
+    "Cont": 0.7735817005236943,
+    "Default": 0.8248515142046887
+  }
+}
