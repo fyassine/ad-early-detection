@@ -1,4 +1,5 @@
 """Tests for CLASSIFIER.common.runner_io (terminal helpers for the runners)."""
+
 from __future__ import annotations
 
 import io
@@ -48,6 +49,7 @@ def test_no_color_env_disables(monkeypatch):
 
 def test_format_metric_summary():
     from SHARED.runner_io import format_metric_summary
+
     out = format_metric_summary({"test_auc": 0.532, "threshold_method": "oof_f1"})
     assert "test_auc 0.532" in out
     assert "threshold_method oof_f1" in out
@@ -55,11 +57,15 @@ def test_format_metric_summary():
 
 def test_format_cv_summary():
     from SHARED.runner_io import format_cv_summary
+
     cv = {
         "n_folds": 5,
-        "val_auc_mean": 0.9816, "val_auc_std": 0.0107,
-        "val_f1_mean": 0.9351, "val_f1_std": 0.0237,
-        "best_fold": 4, "best_val_auc": 0.9938,
+        "val_auc_mean": 0.9816,
+        "val_auc_std": 0.0107,
+        "val_f1_mean": 0.9351,
+        "val_f1_std": 0.0237,
+        "best_fold": 4,
+        "best_val_auc": 0.9938,
     }
     out = format_cv_summary(cv)
     assert out.startswith("5 folds —")
@@ -69,4 +75,5 @@ def test_format_cv_summary():
 
 def test_format_cv_summary_empty():
     from SHARED.runner_io import format_cv_summary
+
     assert format_cv_summary({}) == ""

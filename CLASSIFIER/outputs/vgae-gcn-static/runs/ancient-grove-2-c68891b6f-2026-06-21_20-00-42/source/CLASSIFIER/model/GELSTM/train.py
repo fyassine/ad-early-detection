@@ -11,6 +11,7 @@ Reproducibility contract: callers should pass an explicit ``rng`` (e.g.
 ``make_rng(SEED)`` from ``CLASSIFIER.common.seeding``) into ``make_batches``
 and ``train_model``. Falling back to global ``np.random`` is deprecated.
 """
+
 from __future__ import annotations
 
 import copy
@@ -34,13 +35,13 @@ def _eval_cfg(eval_cfg: Optional[EvalConfig]) -> EvalConfig:
 def _eval_cfg_to_dict(eval_cfg: EvalConfig) -> Dict:
     """Serialize EvalConfig for checkpoint storage, skipping the live RNG object."""
     return {
-        "use_time_delta":   eval_cfg.use_time_delta,
-        "zero_time_delta":  eval_cfg.zero_time_delta,
-        "graph_pool":       eval_cfg.graph_pool,
-        "dim_filter":       eval_cfg.dim_filter,
-        "shuffle_order":    eval_cfg.shuffle_order,
-        "threshold_mode":   eval_cfg.threshold_mode,
-        "fixed_threshold":  eval_cfg.fixed_threshold,
+        "use_time_delta": eval_cfg.use_time_delta,
+        "zero_time_delta": eval_cfg.zero_time_delta,
+        "graph_pool": eval_cfg.graph_pool,
+        "dim_filter": eval_cfg.dim_filter,
+        "shuffle_order": eval_cfg.shuffle_order,
+        "threshold_mode": eval_cfg.threshold_mode,
+        "fixed_threshold": eval_cfg.fixed_threshold,
     }
 
 
@@ -81,15 +82,17 @@ def train_epoch(
 
     for batch in batch_list:
         packed, labels, _ = encode_batch_sequences(
-            batch, model, device,
+            batch,
+            model,
+            device,
             use_time_delta=cfg.use_time_delta,
             zero_time_delta=cfg.zero_time_delta,
             graph_pool=cfg.graph_pool,
             dim_filter=cfg.dim_filter,
         )
 
-        logits = model(packed)            # (B,)
-        loss   = criterion(logits, labels)
+        logits = model(packed)  # (B,)
+        loss = criterion(logits, labels)
 
         optimizer.zero_grad()
         loss.backward()
@@ -131,26 +134,47 @@ def evaluate(
     given value. Prefer ``eval_cfg=EvalConfig(...)``.
     """
     cfg = _eval_cfg(eval_cfg)
-    if any(x is not None for x in (use_time_delta, zero_time_delta, graph_pool,
-                                   threshold, shuffle_order, shuffle_rng, dim_filter)):
+    if any(
+        x is not None
+        for x in (
+            use_time_delta,
+            zero_time_delta,
+            graph_pool,
+            threshold,
+            shuffle_order,
+            shuffle_rng,
+            dim_filter,
+        )
+    ):
         overrides = {}
-        if use_time_delta is not None:  overrides["use_time_delta"]  = use_time_delta
-        if zero_time_delta is not None: overrides["zero_time_delta"] = zero_time_delta
-        if graph_pool is not None:      overrides["graph_pool"]      = graph_pool
-        if shuffle_order is not None:   overrides["shuffle_order"]   = shuffle_order
-        if shuffle_rng is not None:     overrides["shuffle_rng"]     = shuffle_rng
-        if dim_filter is not None:      overrides["dim_filter"]      = dim_filter
+        if use_time_delta is not None:
+            overrides["use_time_delta"] = use_time_delta
+        if zero_time_delta is not None:
+            overrides["zero_time_delta"] = zero_time_delta
+        if graph_pool is not None:
+            overrides["graph_pool"] = graph_pool
+        if shuffle_order is not None:
+            overrides["shuffle_order"] = shuffle_order
+        if shuffle_rng is not None:
+            overrides["shuffle_rng"] = shuffle_rng
+        if dim_filter is not None:
+            overrides["dim_filter"] = dim_filter
         if threshold is not None:
-            overrides["threshold_mode"]  = "fixed"
+            overrides["threshold_mode"] = "fixed"
             overrides["fixed_threshold"] = threshold
-        cfg = EvalConfig(**{**_eval_cfg_to_dict(cfg), **overrides,
-                            "shuffle_rng": overrides.get("shuffle_rng", cfg.shuffle_rng)})
+        cfg = EvalConfig(
+            **{
+                **_eval_cfg_to_dict(cfg),
+                **overrides,
+                "shuffle_rng": overrides.get("shuffle_rng", cfg.shuffle_rng),
+            }
+        )
     model.eval()
 
-    all_probs:   List[float] = []
-    all_targets: List[int]   = []
-    all_sids:    List[str]   = []
-    all_nscans:  List[int]   = []
+    all_probs: List[float] = []
+    all_targets: List[int] = []
+    all_sids: List[str] = []
+    all_nscans: List[int] = []
 
     for batch in batch_list:
         sorted_batch = sorted(batch, key=lambda b: len(b["graphs"]), reverse=True)
@@ -158,7 +182,9 @@ def evaluate(
         all_nscans.extend([len(b["graphs"]) for b in sorted_batch])
 
         packed, labels, _ = encode_batch_sequences(
-            batch, model, device,
+            batch,
+            model,
+            device,
             use_time_delta=cfg.use_time_delta,
             zero_time_delta=cfg.zero_time_delta,
             graph_pool=cfg.graph_pool,
@@ -167,11 +193,11 @@ def evaluate(
             shuffle_rng=cfg.shuffle_rng,
         )
         logits = model(packed)
-        probs  = torch.sigmoid(logits).cpu().numpy()
+        probs = torch.sigmoid(logits).cpu().numpy()
         all_probs.extend(probs.tolist())
         all_targets.extend(labels.cpu().numpy().astype(int).tolist())
 
-    probs_arr   = np.array(all_probs)
+    probs_arr = np.array(all_probs)
     targets_arr = np.array(all_targets)
     has_both_classes = len(np.unique(targets_arr)) > 1
 
@@ -198,20 +224,20 @@ def evaluate(
 
     sens = tp / (tp + fn) if (tp + fn) > 0 else 0.0
     spec = tn / (tn + fp) if (tn + fp) > 0 else 0.0
-    f1   = f1_score(targets_arr, preds_arr, zero_division=0)
+    f1 = f1_score(targets_arr, preds_arr, zero_division=0)
 
     return {
-        "auc":             float(auc),
-        "sensitivity":     float(sens),
-        "specificity":     float(spec),
-        "f1":              float(f1),
-        "best_threshold":  float(best_thr),
-        "threshold_used":  float(threshold_used),
-        "probs":           probs_arr,
-        "targets":         targets_arr,
-        "preds":           preds_arr,
-        "subject_ids":     np.array(all_sids),
-        "n_scans":         np.array(all_nscans),
+        "auc": float(auc),
+        "sensitivity": float(sens),
+        "specificity": float(spec),
+        "f1": float(f1),
+        "best_threshold": float(best_thr),
+        "threshold_used": float(threshold_used),
+        "probs": probs_arr,
+        "targets": targets_arr,
+        "preds": preds_arr,
+        "subject_ids": np.array(all_sids),
+        "n_scans": np.array(all_nscans),
     }
 
 
@@ -241,7 +267,7 @@ def make_batches(
         else:
             idx = rng.permutation(len(items))
         items = [items[i] for i in idx]
-    return [items[i:i + batch_size] for i in range(0, len(items), batch_size)]
+    return [items[i : i + batch_size] for i in range(0, len(items), batch_size)]
 
 
 def train_model(
@@ -285,12 +311,23 @@ def train_model(
     best_epoch = -1
     best_threshold = cfg.fixed_threshold
     epochs_no_improve = 0
-    history = {"train_loss": [], "val_auc": [], "val_f1": [], "learning_rate": [], "best_threshold": []}
+    history = {
+        "train_loss": [],
+        "val_auc": [],
+        "val_f1": [],
+        "learning_rate": [],
+        "best_threshold": [],
+    }
 
     for epoch in range(cfg.epochs):
         train_loss = train_epoch(
-            model, train_batches, optimizer, criterion, device,
-            eval_cfg=eval_cfg, grad_clip=cfg.grad_clip,
+            model,
+            train_batches,
+            optimizer,
+            criterion,
+            device,
+            eval_cfg=eval_cfg,
+            grad_clip=cfg.grad_clip,
         )
         val_metrics = evaluate(model, val_batches, device, eval_cfg=eval_cfg)
 
@@ -301,10 +338,25 @@ def train_model(
         history["best_threshold"].append(val_metrics["best_threshold"])
 
         if log_fn is not None:
-            log_fn({"epoch": epoch, "train_loss": train_loss, **{
-                k: v for k, v in val_metrics.items()
-                if k in ("auc", "f1", "sensitivity", "specificity", "best_threshold", "threshold_used")
-            }})
+            log_fn(
+                {
+                    "epoch": epoch,
+                    "train_loss": train_loss,
+                    **{
+                        k: v
+                        for k, v in val_metrics.items()
+                        if k
+                        in (
+                            "auc",
+                            "f1",
+                            "sensitivity",
+                            "specificity",
+                            "best_threshold",
+                            "threshold_used",
+                        )
+                    },
+                }
+            )
 
         if scheduler is not None:
             scheduler.step(val_metrics["auc"])
@@ -322,7 +374,9 @@ def train_model(
             break
 
     checkpoint = {
-        "model_state_dict": best_state if best_state is not None else copy.deepcopy(model.state_dict()),
+        "model_state_dict": best_state
+        if best_state is not None
+        else copy.deepcopy(model.state_dict()),
         "optimizer_state_dict": optimizer.state_dict(),
         "scheduler_state_dict": scheduler.state_dict() if scheduler is not None else None,
         "epoch": best_epoch,

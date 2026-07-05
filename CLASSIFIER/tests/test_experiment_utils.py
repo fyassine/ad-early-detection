@@ -1,4 +1,5 @@
 """Unit tests for the experiment-runner registry helpers."""
+
 from __future__ import annotations
 
 import json
@@ -43,30 +44,38 @@ def test_load_experiment_unknown_id_raises(tmp_path):
 
 
 def test_missing_required_field_fails_loudly(tmp_path):
-    reg = _write_registry(tmp_path, """
+    reg = _write_registry(
+        tmp_path,
+        """
     experiments:
       - id: broken
         mode: static
         model: GAAE
         dataset: X
         notebook: foo.ipynb
-    """)  # missing seed
+    """,
+    )  # missing seed
     with pytest.raises(ValueError, match="missing required field"):
         eu.load_registry(reg)
 
 
 def test_duplicate_ids_fail(tmp_path):
-    reg = _write_registry(tmp_path, """
+    reg = _write_registry(
+        tmp_path,
+        """
     experiments:
       - {id: dup, mode: static, model: GAAE, dataset: X, seed: 1, notebook: a.ipynb}
       - {id: dup, mode: static, model: GAAE, dataset: X, seed: 1, notebook: b.ipynb}
-    """)
+    """,
+    )
     with pytest.raises(ValueError, match="Duplicate experiment id"):
         eu.load_registry(reg)
 
 
 def test_fixed_threshold_requires_value(tmp_path):
-    reg = _write_registry(tmp_path, """
+    reg = _write_registry(
+        tmp_path,
+        """
     experiments:
       - id: f
         mode: static
@@ -75,13 +84,16 @@ def test_fixed_threshold_requires_value(tmp_path):
         seed: 1
         notebook: a.ipynb
         threshold_mode: fixed
-    """)
+    """,
+    )
     with pytest.raises(ValueError, match="requires 'fixed_threshold'"):
         eu.load_registry(reg)
 
 
 def test_invalid_threshold_mode_fails(tmp_path):
-    reg = _write_registry(tmp_path, """
+    reg = _write_registry(
+        tmp_path,
+        """
     experiments:
       - id: f
         mode: static
@@ -90,7 +102,8 @@ def test_invalid_threshold_mode_fails(tmp_path):
         seed: 1
         notebook: a.ipynb
         threshold_mode: bogus
-    """)
+    """,
+    )
     with pytest.raises(ValueError, match="threshold_mode"):
         eu.load_registry(reg)
 
@@ -101,21 +114,30 @@ def test_build_config_merge_order(tmp_path):
     configs.mkdir()
     (configs / "c.json").write_text(json.dumps({"epochs": 50, "lstm_hidden": 128}))
     exp = {
-        "id": "x", "model": "GELSTM",
+        "id": "x",
+        "model": "GELSTM",
         "config_path": "configs/c.json",
         "hyperparams": {"epochs": 7},  # overrides JSON
     }
     cfg = eu.build_config(exp, tmp_path)
-    assert cfg["epochs"] == 7          # hyperparams wins
-    assert cfg["lstm_hidden"] == 128   # from JSON
-    assert cfg["lr"] == 1e-3           # untouched dataclass default
+    assert cfg["epochs"] == 7  # hyperparams wins
+    assert cfg["lstm_hidden"] == 128  # from JSON
+    assert cfg["lr"] == 1e-3  # untouched dataclass default
 
 
 def test_build_parameter_dict_keys(tmp_path):
     exp = eu.load_experiment(_write_registry(tmp_path, VALID), "gelstm-test")
     params = eu.build_parameter_dict(exp, tmp_path)
-    for key in ("EXPERIMENT_ID", "SEED", "THRESHOLD_MODE", "WANDB_ENABLED",
-                "OUTPUT_DIR", "RESOLVED_CONFIG", "RUN_DIR", "RUN_NAME"):
+    for key in (
+        "EXPERIMENT_ID",
+        "SEED",
+        "THRESHOLD_MODE",
+        "WANDB_ENABLED",
+        "OUTPUT_DIR",
+        "RESOLVED_CONFIG",
+        "RUN_DIR",
+        "RUN_NAME",
+    ):
         assert key in params
     assert params["THRESHOLD_MODE"] == "best-f1"
     assert params["RESOLVED_CONFIG"]["epochs"] == 7
@@ -125,12 +147,16 @@ def test_build_parameter_dict_keys(tmp_path):
 def test_collect_results_writes_ledger(tmp_path):
     run_dir = tmp_path / "exp-a" / "runs" / "2026-01-01_00-00-00"
     run_dir.mkdir(parents=True)
-    (run_dir / "run_summary.json").write_text(json.dumps({
-        "experiment_id": "exp-a",
-        "timestamp": "2026-01-01_00-00-00",
-        "git": {"short_commit": "abc123def", "dirty": False},
-        "metrics": {"test_auc": 0.81, "test_f1": 0.7},
-    }))
+    (run_dir / "run_summary.json").write_text(
+        json.dumps(
+            {
+                "experiment_id": "exp-a",
+                "timestamp": "2026-01-01_00-00-00",
+                "git": {"short_commit": "abc123def", "dirty": False},
+                "metrics": {"test_auc": 0.81, "test_f1": 0.7},
+            }
+        )
+    )
     rows = eu.collect_results(tmp_path)
     assert len(rows) == 1
     assert rows[0]["metric.test_auc"] == 0.81
@@ -174,8 +200,9 @@ def test_collect_results_no_cv_block(tmp_path):
     """Runs without cv_results get no cv.* columns (sanity/comparison notebooks)."""
     run_dir = tmp_path / "sanity" / "runs" / "calm-lake-1"
     run_dir.mkdir(parents=True)
-    (run_dir / "run_summary.json").write_text(json.dumps(
-        {"experiment_id": "sanity", "metrics": {"test_auc": 0.7}}))
+    (run_dir / "run_summary.json").write_text(
+        json.dumps({"experiment_id": "sanity", "metrics": {"test_auc": 0.7}})
+    )
     rows = eu.collect_results(tmp_path)
     row = next(r for r in rows if r["experiment_id"] == "sanity")
     assert not any(k.startswith("cv.") for k in row)

@@ -6,6 +6,7 @@ documents the attributes a batch must expose (it's a contract — at
 runtime PyG ``Data`` / ``Batch`` objects are passed; this dataclass
 is used purely for type hints and documentation).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -37,6 +38,7 @@ class GECBatch:
     Real call sites pass PyG ``Batch`` objects; this dataclass exists
     purely to document the expected fields.
     """
+
     x: Any
     edge_index: Any
     batch: Any

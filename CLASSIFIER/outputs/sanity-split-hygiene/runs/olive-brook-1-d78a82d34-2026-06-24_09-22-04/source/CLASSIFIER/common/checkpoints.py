@@ -33,9 +33,7 @@ def select_gaae_checkpoint(
         key=lambda x: x[0],
     )
     if not candidates:
-        raise FileNotFoundError(
-            f"No GAAE checkpoints found in: {[str(d) for d in search_dirs]}"
-        )
+        raise FileNotFoundError(f"No GAAE checkpoints found in: {[str(d) for d in search_dirs]}")
 
     if checkpoint_path is not None:
         target = Path(checkpoint_path).resolve()
@@ -56,6 +54,7 @@ def select_gaae_checkpoint(
     run_name, ckpt_path, run_dir = candidates[idx]
     print(f"\nSelected: {run_name}")
     return run_name, ckpt_path, run_dir
+
 
 def update_latest_checkpoint(
     ckpt_root: str | Path,

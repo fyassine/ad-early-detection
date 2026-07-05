@@ -29,6 +29,7 @@ def _visit_months(visit) -> int | None:
     m = _VISIT_MONTH_RE.match(str(visit).strip())
     return int(m.group(1)) if m else None
 
+
 router = APIRouter()
 
 
@@ -37,7 +38,9 @@ async def api_patient_trajectory(
     subject_id: str,
     request: Request,
     scan_folders: str = Query(..., description="Comma-separated relative folder paths"),
-    prioritize_visit: str | None = Query(default=None, description="Optional visit code to process first"),
+    prioritize_visit: str | None = Query(
+        default=None, description="Optional visit code to process first"
+    ),
 ):
     """
     Stream longitudinal fMRI biomarker trajectory as NDJSON.
@@ -76,6 +79,7 @@ def api_patient_clinical(
     # A/T/N classification per visit
     try:
         from ..services.atn import classify_visits
+
         result["atn"] = classify_visits(result)
     except Exception as e:
         result["atn"] = []
@@ -143,11 +147,18 @@ def api_patient_staging(
         if rec is not None:
             try:
                 from ..biomarkers import compute_fmri_biomarkers, load_correlation_matrix
+
                 matrix = load_correlation_matrix(rec["abs_path"])
                 is_dmn = matrix.shape[0] <= 50
                 bms = compute_fmri_biomarkers(matrix, is_dmn_only=is_dmn)
-                for k in ("global_fc", "dmn_fc", "modularity", "density",
-                          "pos_fc_ratio", "system_segregation"):
+                for k in (
+                    "global_fc",
+                    "dmn_fc",
+                    "modularity",
+                    "density",
+                    "pos_fc_ratio",
+                    "system_segregation",
+                ):
                     if bms.get(k) is not None:
                         merged[k] = bms[k]
                 if bms.get("network_fc"):
@@ -170,8 +181,11 @@ def api_patient_staging(
             try:
                 idx = clinical["visits"].index(v)
                 cog = clinical.get("cognitive", {}) or {}
-                for col_key, alias in (("mmse", "mmse_total"), ("cdr", "cdr_global"),
-                                       ("pacc5", "pacc5")):
+                for col_key, alias in (
+                    ("mmse", "mmse_total"),
+                    ("cdr", "cdr_global"),
+                    ("pacc5", "pacc5"),
+                ):
                     arr = cog.get(col_key) or []
                     if idx < len(arr) and arr[idx] is not None:
                         merged[alias] = arr[idx]
@@ -188,25 +202,25 @@ def api_patient_staging(
     time_shift_payload = {"tau_months": None, "n_obs": 0}
     if stats.time_shift_model is not None:
         try:
-            time_shift_payload = estimate_patient_time_shift(
-                stats.time_shift_model, visits_payload
-            )
+            time_shift_payload = estimate_patient_time_shift(stats.time_shift_model, visits_payload)
         except Exception:
             pass
 
-    return JSONResponse({
-        "subject_id": subject_id,
-        "age": age,
-        "visits": visits_payload,
-        "time_shift": time_shift_payload,
-        "ebm_sequence": (ebm.get("sequence") or []),
-        "brain_age_summary": {
-            "available": brain_age_model is not None,
-            "cv_mae": getattr(brain_age_model, "cv_mae", None),
-            "cv_r2": getattr(brain_age_model, "cv_r2", None),
-            "n_train": getattr(brain_age_model, "n_train", 0),
-        },
-    })
+    return JSONResponse(
+        {
+            "subject_id": subject_id,
+            "age": age,
+            "visits": visits_payload,
+            "time_shift": time_shift_payload,
+            "ebm_sequence": (ebm.get("sequence") or []),
+            "brain_age_summary": {
+                "available": brain_age_model is not None,
+                "cv_mae": getattr(brain_age_model, "cv_mae", None),
+                "cv_r2": getattr(brain_age_model, "cv_r2", None),
+                "n_train": getattr(brain_age_model, "n_train", 0),
+            },
+        }
+    )
 
 
 @router.get("/api/patient/{subject_id}/manifold")
@@ -238,16 +252,25 @@ def api_patient_manifold(
     for i, visit in enumerate(visits):
         cached = coords_table.get(visit)
         if cached and cached.get("x") is not None:
-            trajectory.append({
-                "visit": visit, "file": files[i],
-                "x": cached.get("x"), "y": cached.get("y"),
-                "conversion_score": cached.get("conversion_score"),
-            })
+            trajectory.append(
+                {
+                    "visit": visit,
+                    "file": files[i],
+                    "x": cached.get("x"),
+                    "y": cached.get("y"),
+                    "conversion_score": cached.get("conversion_score"),
+                }
+            )
         else:
-            trajectory.append({
-                "visit": visit, "file": files[i],
-                "x": None, "y": None, "conversion_score": None,
-            })
+            trajectory.append(
+                {
+                    "visit": visit,
+                    "file": files[i],
+                    "x": None,
+                    "y": None,
+                    "conversion_score": None,
+                }
+            )
             missing_indices.append(i)
 
     if missing_indices:
@@ -258,19 +281,23 @@ def api_patient_manifold(
                 matrices[i] = None
         projections = project_visits(stats, matrices)
         for i in missing_indices:
-            trajectory[i].update({
-                "x": projections[i].get("x"),
-                "y": projections[i].get("y"),
-                "conversion_score": projections[i].get("conversion_score"),
-            })
+            trajectory[i].update(
+                {
+                    "x": projections[i].get("x"),
+                    "y": projections[i].get("y"),
+                    "conversion_score": projections[i].get("conversion_score"),
+                }
+            )
 
-    return JSONResponse({
-        "subject_id": subject_id,
-        "trajectory": trajectory,
-        "centroids": stats.centroids,
-        "conversion_axis": stats.conversion_axis,
-        "n_rois": stats.n_rois,
-    })
+    return JSONResponse(
+        {
+            "subject_id": subject_id,
+            "trajectory": trajectory,
+            "centroids": stats.centroids,
+            "conversion_axis": stats.conversion_axis,
+            "n_rois": stats.n_rois,
+        }
+    )
 
 
 @router.get("/api/patient/{subject_id}/matrix")
@@ -302,19 +329,18 @@ def api_patient_matrix(
 
     n = matrix.shape[0]
     is_dmn_only = n <= 50
-    dmn_indices = (
-        list(range(n)) if is_dmn_only
-        else [i for i in SCHAEFER_200_DMN_INDICES if i < n]
-    )
+    dmn_indices = list(range(n)) if is_dmn_only else [i for i in SCHAEFER_200_DMN_INDICES if i < n]
 
-    return JSONResponse({
-        "subject_id": subject_id,
-        "visit": target["visit"],
-        "file": target["rel_path"],
-        "n_rois": int(n),
-        "matrix": _safe_round_matrix(matrix),
-        "dmn_indices": dmn_indices,
-    })
+    return JSONResponse(
+        {
+            "subject_id": subject_id,
+            "visit": target["visit"],
+            "file": target["rel_path"],
+            "n_rois": int(n),
+            "matrix": _safe_round_matrix(matrix),
+            "dmn_indices": dmn_indices,
+        }
+    )
 
 
 @router.get("/api/patient/{subject_id}/scan")
@@ -378,13 +404,15 @@ def api_patient_scans(
     """List a patient's available .nii.gz volumes (visit + filename)."""
     folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
     records = find_subject_nifti_files(DATA_ROOT, folder_list, subject_id)
-    return JSONResponse({
-        "subject_id": subject_id,
-        "scans": [
-            {"visit": r["visit"], "filename": r["filename"], "file": r["rel_path"]}
-            for r in records
-        ],
-    })
+    return JSONResponse(
+        {
+            "subject_id": subject_id,
+            "scans": [
+                {"visit": r["visit"], "filename": r["filename"], "file": r["rel_path"]}
+                for r in records
+            ],
+        }
+    )
 
 
 @router.get("/api/patient/{subject_id}/conversion-risk")
@@ -437,24 +465,25 @@ def api_patient_conversion_risk(
         label = "All at-risk"
 
     kmf = KaplanMeierFitter()
-    kmf.fit(durations=sub["duration"].values,
-            event_observed=sub["event_observed"].values)
+    kmf.fit(durations=sub["duration"].values, event_observed=sub["event_observed"].values)
 
     def _risk_at(months: int) -> float:
         sf = kmf.survival_function_at_times([months]).iloc[0]
         return round(float(1 - sf), 3)
 
-    return JSONResponse({
-        "available": True,
-        "subject_id": subject_id,
-        "stratum": label,
-        "n_stratum": int(len(sub)),
-        "patient_followup_months": int(patient_duration),
-        "risk_1yr": _risk_at(12),
-        "risk_3yr": _risk_at(36),
-        "risk_5yr": _risk_at(60),
-        "note": "Derived from cohort KM curve — not a validated clinical prediction.",
-    })
+    return JSONResponse(
+        {
+            "available": True,
+            "subject_id": subject_id,
+            "stratum": label,
+            "n_stratum": int(len(sub)),
+            "patient_followup_months": int(patient_duration),
+            "risk_1yr": _risk_at(12),
+            "risk_3yr": _risk_at(36),
+            "risk_5yr": _risk_at(60),
+            "note": "Derived from cohort KM curve — not a validated clinical prediction.",
+        }
+    )
 
 
 @router.get("/api/patient/{subject_id}/risk")
@@ -477,33 +506,39 @@ def api_patient_risk(
 
     service = get_gelstm_service()
     if not service.is_available():
-        return JSONResponse({
-            "available": False,
-            "subject_id": subject_id,
-            "note": "GELSTM ensemble not deployed (no checkpoints at $GELSTM_CHECKPOINT_DIR).",
-        })
+        return JSONResponse(
+            {
+                "available": False,
+                "subject_id": subject_id,
+                "note": "GELSTM ensemble not deployed (no checkpoints at $GELSTM_CHECKPOINT_DIR).",
+            }
+        )
 
     folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
     records = find_subject_npz_files(DATA_ROOT, folder_list, subject_id)
     if not records:
-        return JSONResponse({
-            "available": True,
-            "subject_id": subject_id,
-            "prob": None,
-            "note": "No .npz scans found for this subject in the selected folders.",
-        })
+        return JSONResponse(
+            {
+                "available": True,
+                "subject_id": subject_id,
+                "prob": None,
+                "note": "No .npz scans found for this subject in the selected folders.",
+            }
+        )
 
     ordered = sorted(
         (r for r in records if _visit_months(r.get("visit")) is not None),
         key=lambda r: _visit_months(r["visit"]),
     )
     if not ordered:
-        return JSONResponse({
-            "available": True,
-            "subject_id": subject_id,
-            "prob": None,
-            "note": "Subject visits have no M### code; sequence ordering failed.",
-        })
+        return JSONResponse(
+            {
+                "available": True,
+                "subject_id": subject_id,
+                "prob": None,
+                "note": "Subject visits have no M### code; sequence ordering failed.",
+            }
+        )
 
     matrices: list = []
     visits: list = []
@@ -516,12 +551,14 @@ def api_patient_risk(
             print(f"[risk] failed to load {rec.get('abs_path')}: {e!r}")
             continue
     if not matrices:
-        return JSONResponse({
-            "available": True,
-            "subject_id": subject_id,
-            "prob": None,
-            "note": "All matrix loads failed.",
-        })
+        return JSONResponse(
+            {
+                "available": True,
+                "subject_id": subject_id,
+                "prob": None,
+                "note": "All matrix loads failed.",
+            }
+        )
 
     months = [_visit_months(v) for v in visits]
     delta_t = [0.0]
@@ -576,11 +613,13 @@ def api_patient_graph_trajectory(
     global_efficiency, domirank_top_k}`` ordered by visit month.
     """
     import numpy as np
+
     abs_csv = os.path.join(DATA_ROOT, csv_path)
     if not os.path.exists(abs_csv):
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
 
     from ..services.graph_metrics import _HAS_NX, subject_graph_metrics
+
     if not _HAS_NX:
         return JSONResponse({"available": False, "note": "networkx not installed"})
 
@@ -604,12 +643,14 @@ def api_patient_graph_trajectory(
         res["month"] = _visit_months(rec.get("visit"))
         visits_out.append(res)
 
-    return JSONResponse({
-        "available": True,
-        "subject_id": subject_id,
-        "density": density,
-        "visits": visits_out,
-    })
+    return JSONResponse(
+        {
+            "available": True,
+            "subject_id": subject_id,
+            "density": density,
+            "visits": visits_out,
+        }
+    )
 
 
 @router.get("/api/patient/{subject_id}/network-trajectory")
@@ -624,6 +665,7 @@ def api_patient_network_trajectory(
     drawn from the active cohort's network_fc_stats.
     """
     import numpy as np
+
     abs_csv = os.path.join(DATA_ROOT, csv_path)
     if not os.path.exists(abs_csv):
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
@@ -634,8 +676,9 @@ def api_patient_network_trajectory(
 
     records = find_subject_npz_files(DATA_ROOT, folder_list, subject_id)
     if not records:
-        return JSONResponse({"available": True, "subject_id": subject_id, "visits": [],
-                             "normative": {}})
+        return JSONResponse(
+            {"available": True, "subject_id": subject_id, "visits": [], "normative": {}}
+        )
 
     ordered = sorted(
         (r for r in records if _visit_months(r.get("visit")) is not None),
@@ -648,20 +691,24 @@ def api_patient_network_trajectory(
         except Exception:
             continue
         nfc = per_network_fc(m, n_parcels=m.shape[0])
-        visits_out.append({
-            "visit": rec.get("visit"),
-            "month": _visit_months(rec.get("visit")),
-            "network_fc": nfc,
-        })
+        visits_out.append(
+            {
+                "visit": rec.get("visit"),
+                "month": _visit_months(rec.get("visit")),
+                "network_fc": nfc,
+            }
+        )
 
     # Normative reference: prefer healthy CN; fall back to MCI non-converter.
     ref = (stats.network_fc_stats or {}).get("healthy") or {}
     if not ref:
         ref = (stats.network_fc_stats or {}).get("mci") or {}
 
-    return JSONResponse({
-        "available": True,
-        "subject_id": subject_id,
-        "visits": visits_out,
-        "normative": ref,
-    })
+    return JSONResponse(
+        {
+            "available": True,
+            "subject_id": subject_id,
+            "visits": visits_out,
+            "normative": ref,
+        }
+    )

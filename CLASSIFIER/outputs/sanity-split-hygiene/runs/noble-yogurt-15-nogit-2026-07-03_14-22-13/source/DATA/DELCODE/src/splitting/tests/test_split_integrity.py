@@ -4,6 +4,7 @@ Split integrity and leakage tests for DATA/DELCODE/src/splitting/.
 Section A — Unit tests: pure logic, synthetic DataFrames, no filesystem access.
 Section B — Integration tests: validate on-disk CSVs; auto-skip when files absent.
 """
+
 from __future__ import annotations
 
 import sys
@@ -35,6 +36,7 @@ from SHARED.sanity import run_full_audit
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _cohort(rows: list[tuple[str, str]]) -> pd.DataFrame:
     """Build a minimal cohorts DataFrame from [(Pseudonym, diagnosis), ...]."""
     return pd.DataFrame(rows, columns=["Pseudonym", "diagnosis"])
@@ -42,15 +44,16 @@ def _cohort(rows: list[tuple[str, str]]) -> pd.DataFrame:
 
 def _fake_split_data(train=("A", "B"), val=("C",), test=("D",)) -> dict:
     return {
-        "train":      {p: {} for p in train},
+        "train": {p: {} for p in train},
         "validation": {p: {} for p in val},
-        "test":       {p: {} for p in test},
+        "test": {p: {} for p in test},
     }
 
 
 # ---------------------------------------------------------------------------
 # Section A — Unit tests
 # ---------------------------------------------------------------------------
+
 
 class TestDownstreamPatientGroups:
     def test_converter_wins_over_mci(self):
@@ -84,11 +87,14 @@ class TestDownstreamPatientGroups:
         assert result["P1"] == "mci"
 
     def test_multiple_patients(self):
-        df = _cohort([
-            ("A", "mci"), ("A", "converter"),
-            ("B", "mci"),
-            ("C", "healthy"),
-        ])
+        df = _cohort(
+            [
+                ("A", "mci"),
+                ("A", "converter"),
+                ("B", "mci"),
+                ("C", "healthy"),
+            ]
+        )
         result = _downstream_groups(df)
         assert result["A"] == "converter"
         assert result["B"] == "mci"
@@ -192,6 +198,7 @@ class TestLoadSplitsPathApi:
 # Section B — Integration tests (auto-skip when CSVs not generated)
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="module")
 def downstream_splits():
     paths = split_csv_paths("downstream")
@@ -212,9 +219,15 @@ def pretrain_splits():
 
 # ── Schema ────────────────────────────────────────────────────────────────────
 
+
 def test_downstream_required_columns(downstream_splits):
     required = {
-        "Pseudonym", "diagnosis", "converter_status", "sex", "age", "n_scans",
+        "Pseudonym",
+        "diagnosis",
+        "converter_status",
+        "sex",
+        "age",
+        "n_scans",
         "allowed_months",
     }
     for split_name, df in downstream_splits.items():
@@ -283,18 +296,20 @@ def test_no_zero_scan_patients_pretrain(pretrain_splits):
 def test_downstream_converter_status_binary(downstream_splits):
     for split_name, df in downstream_splits.items():
         vals = set(df["converter_status"].unique())
-        assert vals <= {0, 1}, f"Downstream {split_name} converter_status has unexpected values: {vals}"
+        assert vals <= {
+            0,
+            1,
+        }, f"Downstream {split_name} converter_status has unexpected values: {vals}"
         # consistency: converter_status=1 ↔ diagnosis='converter'
         mismatch = df[
-            ((df["diagnosis"] == "converter") & (df["converter_status"] != 1)) |
-            ((df["diagnosis"] != "converter") & (df["converter_status"] != 0))
+            ((df["diagnosis"] == "converter") & (df["converter_status"] != 1))
+            | ((df["diagnosis"] != "converter") & (df["converter_status"] != 0))
         ]
-        assert mismatch.empty, (
-            f"Downstream {split_name}: {len(mismatch)} rows with mismatched diagnosis/converter_status"
-        )
+        assert mismatch.empty, f"Downstream {split_name}: {len(mismatch)} rows with mismatched diagnosis/converter_status"
 
 
 # ── Uniqueness within each CSV ────────────────────────────────────────────────
+
 
 def test_downstream_no_intra_split_duplicates(downstream_splits):
     for split_name, df in downstream_splits.items():
@@ -310,6 +325,7 @@ def test_pretrain_no_intra_split_duplicates(pretrain_splits):
 
 # ── Pairwise-disjoint ─────────────────────────────────────────────────────────
 
+
 def _check_pairwise_disjoint(splits: dict, label: str) -> None:
     pairs = [("train", "val"), ("train", "test"), ("val", "test")]
     for a, b in pairs:
@@ -317,8 +333,7 @@ def _check_pairwise_disjoint(splits: dict, label: str) -> None:
         ids_b = set(splits[b]["Pseudonym"])
         shared = ids_a & ids_b
         assert not shared, (
-            f"{label} {a}∩{b}: {len(shared)} shared patients — "
-            f"examples: {sorted(shared)[:5]}"
+            f"{label} {a}∩{b}: {len(shared)} shared patients — " f"examples: {sorted(shared)[:5]}"
         )
 
 
@@ -331,6 +346,7 @@ def test_pretrain_pairwise_disjoint(pretrain_splits):
 
 
 # ── Diagnosis scope ───────────────────────────────────────────────────────────
+
 
 def test_downstream_diagnosis_scope(downstream_splits):
     allowed = {"mci", "converter"}
@@ -360,9 +376,10 @@ def test_no_scd_in_pretrain(pretrain_splits):
 
 # ── Downstream leakage rule — 5 independent assertions ────────────────────────
 
+
 def test_pretrain_train_disjoint_from_downstream_val(pretrain_splits, downstream_splits):
-    pretrain_train  = set(pretrain_splits["train"]["Pseudonym"])
-    downstream_val  = set(downstream_splits["val"]["Pseudonym"])
+    pretrain_train = set(pretrain_splits["train"]["Pseudonym"])
+    downstream_val = set(downstream_splits["val"]["Pseudonym"])
     shared = pretrain_train & downstream_val
     assert not shared, (
         f"LEAK: {len(shared)} downstream-val patients appear in pretrain-train — "
@@ -371,7 +388,7 @@ def test_pretrain_train_disjoint_from_downstream_val(pretrain_splits, downstream
 
 
 def test_pretrain_train_disjoint_from_downstream_test(pretrain_splits, downstream_splits):
-    pretrain_train  = set(pretrain_splits["train"]["Pseudonym"])
+    pretrain_train = set(pretrain_splits["train"]["Pseudonym"])
     downstream_test = set(downstream_splits["test"]["Pseudonym"])
     shared = pretrain_train & downstream_test
     assert not shared, (
@@ -381,7 +398,7 @@ def test_pretrain_train_disjoint_from_downstream_test(pretrain_splits, downstrea
 
 
 def test_pretrain_val_disjoint_from_downstream_test(pretrain_splits, downstream_splits):
-    pretrain_val    = set(pretrain_splits["val"]["Pseudonym"])
+    pretrain_val = set(pretrain_splits["val"]["Pseudonym"])
     downstream_test = set(downstream_splits["test"]["Pseudonym"])
     shared = pretrain_val & downstream_test
     assert not shared, (
@@ -391,7 +408,7 @@ def test_pretrain_val_disjoint_from_downstream_test(pretrain_splits, downstream_
 
 
 def test_downstream_test_subset_of_pretrain_test(pretrain_splits, downstream_splits):
-    pretrain_test   = set(pretrain_splits["test"]["Pseudonym"])
+    pretrain_test = set(pretrain_splits["test"]["Pseudonym"])
     downstream_test = set(downstream_splits["test"]["Pseudonym"])
     missing = downstream_test - pretrain_test
     assert not missing, (
@@ -401,7 +418,7 @@ def test_downstream_test_subset_of_pretrain_test(pretrain_splits, downstream_spl
 
 
 def test_downstream_val_subset_of_pretrain_val(pretrain_splits, downstream_splits):
-    pretrain_val   = set(pretrain_splits["val"]["Pseudonym"])
+    pretrain_val = set(pretrain_splits["val"]["Pseudonym"])
     downstream_val = set(downstream_splits["val"]["Pseudonym"])
     missing = downstream_val - pretrain_val
     assert not missing, (
@@ -411,6 +428,7 @@ def test_downstream_val_subset_of_pretrain_val(pretrain_splits, downstream_split
 
 
 # ── Stratification balance (60/20/20 ± 10 pp per cohort) ─────────────────────
+
 
 def _check_balance(splits: dict, diagnoses: list[str], label: str) -> None:
     for diagnosis in diagnoses:
@@ -440,6 +458,7 @@ def test_pretrain_stratification_balance_free_split(pretrain_splits, downstream_
 
 # ── _all_splits_patient_info.csv coverage ────────────────────────────────────
 
+
 def test_patient_info_covers_all_downstream(downstream_splits):
     info_path = splits_dir("downstream") / "_all_splits_patient_info.csv"
     if not info_path.exists():
@@ -467,6 +486,7 @@ def test_patient_info_covers_all_pretrain(pretrain_splits):
 
 
 # ── Smoke — run_full_audit ────────────────────────────────────────────────────
+
 
 def test_run_full_audit_downstream(downstream_splits):  # noqa: ARG001 — fixture triggers skip if absent
     run_full_audit(split_csv_paths("downstream"), verbose=False)

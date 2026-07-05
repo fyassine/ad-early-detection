@@ -1,4 +1,5 @@
 """Tests for fail-loud error paths and edge cases across CLASSIFIER utilities."""
+
 import tempfile
 import warnings
 
@@ -13,8 +14,10 @@ from CLASSIFIER.model.GELSTM.utils import encode_batch_sequences
 
 # ── encode_batch_sequences ────────────────────────────────────────────────────
 
+
 class _MinimalEncoder(torch.nn.Module):
     """Minimal stub that satisfies encode_visit()."""
+
     def encode_visit(self, x, edge_index, edge_attr=None, pool="mean"):
         return torch.zeros(2)  # 2-dim fake embedding
 
@@ -34,8 +37,9 @@ def test_encode_batch_sequences_single_item_ok():
         edge_index=torch.zeros(2, 0, dtype=torch.long),
         edge_attr=None,
     )
-    batch = [{"subject_id": "s1", "graphs": [g], "delta_t": [0.0],
-              "visit_months": [0.0], "label": 0.0}]
+    batch = [
+        {"subject_id": "s1", "graphs": [g], "delta_t": [0.0], "visit_months": [0.0], "label": 0.0}
+    ]
     packed, labels, lengths = encode_batch_sequences(
         batch, enc, device=torch.device("cpu"), use_time_delta=False
     )
@@ -43,6 +47,7 @@ def test_encode_batch_sequences_single_item_ok():
 
 
 # ── compute_class_weights ─────────────────────────────────────────────────────
+
 
 def test_compute_class_weights_normal():
     labels = [0, 0, 0, 1, 1]
@@ -68,6 +73,7 @@ def test_compute_class_weights_all_negative_warns():
 
 # ── compute_class_cost_weights ────────────────────────────────────────────────
 
+
 def test_compute_class_cost_weights_normal():
     labels = [0, 0, 0, 1, 1]
     w = compute_class_cost_weights(labels)
@@ -89,6 +95,7 @@ def test_compute_class_cost_weights_single_class_warns():
 
 
 # ── load_frozen_encoder_from_gaae ─────────────────────────────────────────────
+
 
 def test_load_frozen_encoder_mismatched_dims_raises(tmp_path):
     """A checkpoint whose encoder dims don't match the GEC model must raise ValueError."""

@@ -24,6 +24,7 @@ papermill param (which defaults to the experiment's `MODEL`). FDR / GRU variants
 are config flags (`use_fdr`, `rnn_type`) on the GEC / GELSTM adapters, not separate
 adapters.
 """
+
 from __future__ import annotations
 
 import sys
@@ -61,8 +62,7 @@ def get_adapter(name: str) -> type:
     """
     if not name:
         raise ValueError(
-            f"get_adapter() requires a non-empty adapter name; known keys: "
-            f"{sorted(_REGISTRY)}"
+            f"get_adapter() requires a non-empty adapter name; known keys: " f"{sorted(_REGISTRY)}"
         )
     key = str(name).strip().lower()
     target = _REGISTRY.get(key)
@@ -199,7 +199,9 @@ class LongitudinalAdapter:
         self.gaae_cond_dim = gaae_hp.get("cond_dim", 2)
         self.gaae_dropout = gaae_hp.get("dropout", 0.3)
         self.adjacency_k = gaae_hp.get("adjacency_k", self.cfg.get("adjacency_k", 8))
-        self.file_variant = gaae_hp.get("file_variant", self.cfg.get("file_variant", "z_transformed"))
+        self.file_variant = gaae_hp.get(
+            "file_variant", self.cfg.get("file_variant", "z_transformed")
+        )
 
         self.use_fdr = bool(self.cfg.get("use_fdr", False))
         self.top_k = int(self.cfg.get("top_k", self.gaae_latent))

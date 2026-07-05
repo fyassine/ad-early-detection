@@ -9,6 +9,7 @@ seeing results would inflate the family-wise error rate.
 Region keys must match the DELCODE folder slugs (without the `__fc_` prefix
 or `_flat__` suffix) used by the comparison notebooks.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

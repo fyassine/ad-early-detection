@@ -52,7 +52,7 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
         pre_transform=None,
     ):
         if adjacency_args is None:
-            adjacency_args = {'k': 16}
+            adjacency_args = {"k": 16}
         self.adjacency_function = adjacency_function
         self.adjacency_args = adjacency_args or {}
         self.filter_csv_path = filter_csv_path
@@ -93,14 +93,16 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
         sex_tensor = torch.tensor(1 if sex == "m" else 0, dtype=torch.long)
 
         age = patient_row.get("age")
-        age_tensor = torch.tensor(min(max(float(age) / 100.0, 0.0), 1.0) if age is not None else 0.5, dtype=torch.float)
+        age_tensor = torch.tensor(
+            min(max(float(age) / 100.0, 0.0), 1.0) if age is not None else 0.5, dtype=torch.float
+        )
 
         return sex_tensor, age_tensor
 
     def process(self):
         data_list = []
         for raw_path in self.raw_paths:
-            feature_matrix = np.load(raw_path)['array']
+            feature_matrix = np.load(raw_path)["array"]
             feature_matrix = np.nan_to_num(feature_matrix, nan=0.0, posinf=0.0, neginf=0.0)
             feature_matrix = torch.tensor(feature_matrix, dtype=torch.float)
             abs_feature_matrix = torch.abs(torch.clone(feature_matrix))
@@ -111,7 +113,7 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
 
             edge_index, edge_weight = dense_to_sparse(adjacency_matrix)
             raw_filename = os.path.basename(raw_path)
-            patient_id = raw_filename.split('_')[0].replace('sub-', '')
+            patient_id = raw_filename.split("_")[0].replace("sub-", "")
 
             data = Data(x=feature_matrix, edge_index=edge_index, edge_attr=edge_weight)
             data.patient_id = patient_id
@@ -133,7 +135,7 @@ class GraphDatasetInMemoryFiltered(InMemoryDataset):
 
     @property
     def raw_file_names(self):
-        all_npz_files = sorted([f for f in os.listdir(self.raw_dir) if f.endswith('.npz')])
+        all_npz_files = sorted([f for f in os.listdir(self.raw_dir) if f.endswith(".npz")])
 
         if self.file_suffix:
             all_files = [f for f in all_npz_files if f.endswith(self.file_suffix)]
@@ -171,7 +173,7 @@ class GraphDMNDatasetInMemoryFiltered(GraphDatasetInMemoryFiltered):
 
     @property
     def raw_file_names(self):
-        all_npz_files = sorted([f for f in os.listdir(self.raw_dir) if f.endswith('.npz')])
+        all_npz_files = sorted([f for f in os.listdir(self.raw_dir) if f.endswith(".npz")])
 
         if self.file_suffix:
             all_files = [f for f in all_npz_files if f.endswith(self.file_suffix)]

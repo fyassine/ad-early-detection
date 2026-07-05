@@ -14,6 +14,7 @@ Per-fold ``StandardScaler`` standardisation of the pooled GAAE embeddings
 dim-filter both ride inside the returned composite ``state`` so the winning fold's
 statistics survive into the test / early-detection / trajectory hooks.
 """
+
 from __future__ import annotations
 
 import copy
@@ -70,12 +71,18 @@ class GELSTMAdapter(LongitudinalAdapter):
     # ── arch ────────────────────────────────────────────────────────────────
     def _build_model(self) -> GELSTMClassifier:
         m = GELSTMClassifier(
-            in_features=self.in_features, gaae_hidden=self.gaae_hidden,
-            gaae_latent=self.gaae_latent, gaae_heads=self.gaae_heads,
-            gaae_cond_dim=self.gaae_cond_dim, gaae_dropout=self.gaae_dropout,
-            lstm_hidden=self.lstm_hidden, lstm_layers=self.lstm_layers,
-            lstm_dropout=self.lstm_dropout, use_time_delta=self.use_time_delta,
-            classifier_hidden=self.classifier_hidden, rnn_type=self.rnn_type,
+            in_features=self.in_features,
+            gaae_hidden=self.gaae_hidden,
+            gaae_latent=self.gaae_latent,
+            gaae_heads=self.gaae_heads,
+            gaae_cond_dim=self.gaae_cond_dim,
+            gaae_dropout=self.gaae_dropout,
+            lstm_hidden=self.lstm_hidden,
+            lstm_layers=self.lstm_layers,
+            lstm_dropout=self.lstm_dropout,
+            use_time_delta=self.use_time_delta,
+            classifier_hidden=self.classifier_hidden,
+            rnn_type=self.rnn_type,
             classifier_norm=self.classifier_norm,
         ).to(self.device)
         m.load_gaae_weights(self.gaae_ckpt_path, device=self.device)
@@ -96,14 +103,18 @@ class GELSTMAdapter(LongitudinalAdapter):
         lstm_in = self.top_k + (1 if self.use_time_delta else 0)
         rnn_cls = nn.GRU if str(self.rnn_type).lower() == "gru" else nn.LSTM
         m.lstm = rnn_cls(
-            input_size=lstm_in, hidden_size=self.lstm_hidden,
-            num_layers=self.lstm_layers, batch_first=True,
+            input_size=lstm_in,
+            hidden_size=self.lstm_hidden,
+            num_layers=self.lstm_layers,
+            batch_first=True,
             dropout=self.lstm_dropout if self.lstm_layers > 1 else 0.0,
         ).to(self.device)
         from model.GELSTM.models import build_classifier_head
 
         m.classifier = build_classifier_head(
-            self.lstm_hidden, self.classifier_hidden, self.lstm_dropout,
+            self.lstm_hidden,
+            self.classifier_hidden,
+            self.lstm_dropout,
             self.classifier_norm,
         ).to(self.device)
 
@@ -133,7 +144,9 @@ class GELSTMAdapter(LongitudinalAdapter):
                 for g in item["graphs"]:
                     ea = g.edge_attr.to(self.device) if g.edge_attr is not None else None
                     z = model.encode_visit(
-                        g.x.to(self.device), g.edge_index.to(self.device), ea,
+                        g.x.to(self.device),
+                        g.edge_index.to(self.device),
+                        ea,
                         pool=self.graph_pool,
                     )
                     embs.append(z.cpu().numpy())
@@ -143,19 +156,26 @@ class GELSTMAdapter(LongitudinalAdapter):
     def _eval_cfg(self, dim_filter, threshold: Optional[float] = None) -> EvalConfig:
         if threshold is None:
             return EvalConfig(
-                use_time_delta=self.use_time_delta, graph_pool=self.graph_pool,
+                use_time_delta=self.use_time_delta,
+                graph_pool=self.graph_pool,
                 dim_filter=dim_filter,
             )
         return EvalConfig(
-            use_time_delta=self.use_time_delta, graph_pool=self.graph_pool,
-            dim_filter=dim_filter, threshold_mode="fixed", fixed_threshold=threshold,
+            use_time_delta=self.use_time_delta,
+            graph_pool=self.graph_pool,
+            dim_filter=dim_filter,
+            threshold_mode="fixed",
+            fixed_threshold=threshold,
         )
 
     # ── data ────────────────────────────────────────────────────────────────
     def prepare_data(self, df) -> Bundle:
         ds = LongitudinalSubjectDataset(
-            self.data_root, df, self.cohorts_csv,
-            adjacency_k=self.adjacency_k, file_variant=self.file_variant,
+            self.data_root,
+            df,
+            self.cohorts_csv,
+            adjacency_k=self.adjacency_k,
+            file_variant=self.file_variant,
         )
         items = [ds[i] for i in range(len(ds))]
         return Bundle(ds.get_labels(), ds.get_subject_ids(), items)
@@ -178,7 +198,9 @@ class GELSTMAdapter(LongitudinalAdapter):
             model.set_feature_norm(scaler.mean_, scaler.scale_)
 
         if self.use_class_cost_weights:
-            criterion = nn.BCEWithLogitsLoss(pos_weight=compute_class_weights(tr_labels, device=device))
+            criterion = nn.BCEWithLogitsLoss(
+                pos_weight=compute_class_weights(tr_labels, device=device)
+            )
         else:
             criterion = nn.BCEWithLogitsLoss()
 
@@ -194,8 +216,15 @@ class GELSTMAdapter(LongitudinalAdapter):
         for _epoch in range(self.epochs):
             tr_batches = make_batches(tr_items, self.batch_size, shuffle=True, rng=rng)
             va_batches = make_batches(va_items, self.batch_size, shuffle=False)
-            train_epoch(model, tr_batches, optimizer, criterion, device,
-                        grad_clip=self.grad_clip, eval_cfg=eval_cfg)
+            train_epoch(
+                model,
+                tr_batches,
+                optimizer,
+                criterion,
+                device,
+                grad_clip=self.grad_clip,
+                eval_cfg=eval_cfg,
+            )
             va = evaluate(model, va_batches, device, eval_cfg=eval_cfg)
             scheduler.step(va["auc"])
             if va["auc"] > best_auc:
@@ -207,8 +236,10 @@ class GELSTMAdapter(LongitudinalAdapter):
 
         model.load_state_dict(best_state)
         final_va = evaluate(
-            model, make_batches(va_items, self.batch_size, shuffle=False),
-            device, eval_cfg=eval_cfg,
+            model,
+            make_batches(va_items, self.batch_size, shuffle=False),
+            device,
+            eval_cfg=eval_cfg,
         )
         state = {
             "model_state": best_state,
@@ -239,17 +270,21 @@ class GELSTMAdapter(LongitudinalAdapter):
     def eval_split(self, state, bundle, threshold, *, device) -> Dict[str, Any]:
         model = self._model_for_state(state)
         batches = make_batches(bundle.items, self.batch_size, shuffle=False)
-        return evaluate(model, batches, device,
-                        eval_cfg=self._eval_cfg(state.get("dim_filter"), threshold))
+        return evaluate(
+            model, batches, device, eval_cfg=self._eval_cfg(state.get("dim_filter"), threshold)
+        )
 
     def truncate_to_n_visits(self, bundle, n) -> Bundle:
         items = [
-            {**it,
-             "graphs": it["graphs"][:n],
-             "delta_t": it["delta_t"][:n],
-             "visit_months": it["visit_months"][:n],
-             "n_scans": n}
-            for it in bundle.items if it["n_scans"] >= n
+            {
+                **it,
+                "graphs": it["graphs"][:n],
+                "delta_t": it["delta_t"][:n],
+                "visit_months": it["visit_months"][:n],
+                "n_scans": n,
+            }
+            for it in bundle.items
+            if it["n_scans"] >= n
         ]
         return Bundle([it["label"] for it in items], [it["subject_id"] for it in items], items)
 
@@ -261,12 +296,19 @@ class GELSTMAdapter(LongitudinalAdapter):
         out = []
         with torch.no_grad():
             for t in range(1, item["n_scans"] + 1):
-                sub = {**item, "graphs": item["graphs"][:t],
-                       "delta_t": item["delta_t"][:t],
-                       "visit_months": item["visit_months"][:t], "n_scans": t}
+                sub = {
+                    **item,
+                    "graphs": item["graphs"][:t],
+                    "delta_t": item["delta_t"][:t],
+                    "visit_months": item["visit_months"][:t],
+                    "n_scans": t,
+                }
                 packed, _, _ = encode_batch_sequences(
-                    [sub], model, device,
-                    use_time_delta=self.use_time_delta, graph_pool=self.graph_pool,
+                    [sub],
+                    model,
+                    device,
+                    use_time_delta=self.use_time_delta,
+                    graph_pool=self.graph_pool,
                     dim_filter=np.asarray(dim_filter) if dim_filter is not None else None,
                 )
                 prob = torch.sigmoid(model(packed)).item()
@@ -278,17 +320,23 @@ class GELSTMAdapter(LongitudinalAdapter):
         return {
             "model_type": "GELSTMClassifier",
             "in_features": self.in_features,
-            "gaae_hidden": self.gaae_hidden, "gaae_latent": self.gaae_latent,
-            "gaae_heads": self.gaae_heads, "gaae_cond_dim": self.gaae_cond_dim,
+            "gaae_hidden": self.gaae_hidden,
+            "gaae_latent": self.gaae_latent,
+            "gaae_heads": self.gaae_heads,
+            "gaae_cond_dim": self.gaae_cond_dim,
             "gaae_dropout": self.gaae_dropout,
-            "rnn_type": self.rnn_type, "lstm_hidden": self.lstm_hidden,
-            "lstm_layers": self.lstm_layers, "lstm_dropout": self.lstm_dropout,
+            "rnn_type": self.rnn_type,
+            "lstm_hidden": self.lstm_hidden,
+            "lstm_layers": self.lstm_layers,
+            "lstm_dropout": self.lstm_dropout,
             "classifier_hidden": self.classifier_hidden,
             "classifier_norm": self.classifier_norm,
-            "use_time_delta": self.use_time_delta, "graph_pool": self.graph_pool,
+            "use_time_delta": self.use_time_delta,
+            "graph_pool": self.graph_pool,
             "freeze_encoder": self.freeze_encoder,
             "standardize_features": self.standardize_features,
-            "use_fdr": self.use_fdr, "top_k": self.top_k if self.use_fdr else self.gaae_latent,
+            "use_fdr": self.use_fdr,
+            "top_k": self.top_k if self.use_fdr else self.gaae_latent,
         }
 
     def source_files(self):

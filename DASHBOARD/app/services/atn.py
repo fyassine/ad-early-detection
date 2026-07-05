@@ -27,11 +27,11 @@ from typing import Optional
 # cutoffs (Innogenetics/Lumipulse style); plasma cutoffs differ.
 ATN_CUTOFFS = {
     # Aβ42: lower => more abnormal (amyloid plaques sequester Aβ42 from CSF).
-    "abeta42_low":   600.0,    # pg/mL — A+ if value <= cutoff
+    "abeta42_low": 600.0,  # pg/mL — A+ if value <= cutoff
     # p-Tau181: higher => more abnormal.
-    "ptau181_high":   27.0,    # pg/mL — T+ if value >= cutoff
+    "ptau181_high": 27.0,  # pg/mL — T+ if value >= cutoff
     # Total tau: higher => more abnormal (proxy for neurodegeneration).
-    "ttau_high":     400.0,    # pg/mL — N+ if value >= cutoff
+    "ttau_high": 400.0,  # pg/mL — N+ if value >= cutoff
 }
 
 
@@ -96,9 +96,14 @@ def classify_atn(
         stage = None
 
     return {
-        "a": a, "t": t, "n": n,
-        "abeta42": a_val, "p_tau": t_val, "total_tau": n_val,
-        "label": label, "stage": stage,
+        "a": a,
+        "t": t,
+        "n": n,
+        "abeta42": a_val,
+        "p_tau": t_val,
+        "total_tau": n_val,
+        "label": label,
+        "stage": stage,
     }
 
 

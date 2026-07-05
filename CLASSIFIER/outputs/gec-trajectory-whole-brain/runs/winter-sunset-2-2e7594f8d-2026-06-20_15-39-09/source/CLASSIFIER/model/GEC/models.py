@@ -4,6 +4,7 @@ Two variants:
 - GraphEncoderClassifier       — mean-pool graph embedding
 - GraphEncoderClassifierAttention — learned attention pool
 """
+
 from __future__ import annotations
 
 import torch
@@ -47,10 +48,14 @@ class GraphEncoderClassifier(nn.Module):
         self.dropout = dropout
 
         self.encoder_gat1 = GATv2Conv(in_features, hidden_dim, heads=num_heads, concat=True)
-        self.encoder_bn1  = BatchNorm(hidden_dim * num_heads)
-        self.encoder_gat2 = GATv2Conv(hidden_dim * num_heads, hidden_dim, heads=num_heads, concat=True)
-        self.encoder_bn2  = BatchNorm(hidden_dim * num_heads)
-        self.encoder_gat3 = GATv2Conv(hidden_dim * num_heads, latent_dim, heads=num_heads, concat=False)
+        self.encoder_bn1 = BatchNorm(hidden_dim * num_heads)
+        self.encoder_gat2 = GATv2Conv(
+            hidden_dim * num_heads, hidden_dim, heads=num_heads, concat=True
+        )
+        self.encoder_bn2 = BatchNorm(hidden_dim * num_heads)
+        self.encoder_gat3 = GATv2Conv(
+            hidden_dim * num_heads, latent_dim, heads=num_heads, concat=False
+        )
 
         self.film_gamma = nn.Sequential(
             nn.Linear(cond_dim, latent_dim), nn.ReLU(), nn.Linear(latent_dim, latent_dim)
@@ -79,7 +84,7 @@ class GraphEncoderClassifier(nn.Module):
     ) -> torch.Tensor:
         """Apply FiLM conditioning: z ← γ(cond)·z + β(cond)."""
         gamma = self.film_gamma(cond_vec)[batch_mask]
-        beta  = self.film_beta(cond_vec)[batch_mask]
+        beta = self.film_beta(cond_vec)[batch_mask]
         return gamma * z + beta
 
     def forward(
@@ -98,10 +103,13 @@ class GraphEncoderClassifier(nn.Module):
 
     def _encoder_modules(self) -> list[nn.Module]:
         return [
-            self.encoder_gat1, self.encoder_bn1,
-            self.encoder_gat2, self.encoder_bn2,
+            self.encoder_gat1,
+            self.encoder_bn1,
+            self.encoder_gat2,
+            self.encoder_bn2,
             self.encoder_gat3,
-            self.film_gamma, self.film_beta,
+            self.film_gamma,
+            self.film_beta,
         ]
 
     def freeze_encoder(self) -> None:
@@ -133,10 +141,14 @@ class GraphEncoderClassifierAttention(nn.Module):
         self.dropout = dropout
 
         self.encoder_gat1 = GATv2Conv(in_features, hidden_dim, heads=num_heads, concat=True)
-        self.encoder_bn1  = BatchNorm(hidden_dim * num_heads)
-        self.encoder_gat2 = GATv2Conv(hidden_dim * num_heads, hidden_dim, heads=num_heads, concat=True)
-        self.encoder_bn2  = BatchNorm(hidden_dim * num_heads)
-        self.encoder_gat3 = GATv2Conv(hidden_dim * num_heads, latent_dim, heads=num_heads, concat=False)
+        self.encoder_bn1 = BatchNorm(hidden_dim * num_heads)
+        self.encoder_gat2 = GATv2Conv(
+            hidden_dim * num_heads, hidden_dim, heads=num_heads, concat=True
+        )
+        self.encoder_bn2 = BatchNorm(hidden_dim * num_heads)
+        self.encoder_gat3 = GATv2Conv(
+            hidden_dim * num_heads, latent_dim, heads=num_heads, concat=False
+        )
 
         self.film_gamma = nn.Sequential(
             nn.Linear(cond_dim, latent_dim), nn.ReLU(), nn.Linear(latent_dim, latent_dim)
@@ -168,7 +180,7 @@ class GraphEncoderClassifierAttention(nn.Module):
         self, z: torch.Tensor, cond_vec: torch.Tensor, batch_mask: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor]:
         gamma = self.film_gamma(cond_vec)[batch_mask]
-        beta  = self.film_beta(cond_vec)[batch_mask]
+        beta = self.film_beta(cond_vec)[batch_mask]
         return gamma * z + beta
 
     def forward(
@@ -186,10 +198,13 @@ class GraphEncoderClassifierAttention(nn.Module):
 
     def _encoder_modules(self) -> list[nn.Module]:
         return [
-            self.encoder_gat1, self.encoder_bn1,
-            self.encoder_gat2, self.encoder_bn2,
+            self.encoder_gat1,
+            self.encoder_bn1,
+            self.encoder_gat2,
+            self.encoder_bn2,
             self.encoder_gat3,
-            self.film_gamma, self.film_beta,
+            self.film_gamma,
+            self.film_beta,
         ]
 
     def freeze_encoder(self) -> None:

@@ -82,18 +82,30 @@ def perturb_graph(
 
     elif method == "conditioning_noise":
         if hasattr(d, "patient_age") and d.patient_age is not None:
-            age = float(d.patient_age.item()) if torch.is_tensor(d.patient_age) else float(d.patient_age)
-            delta = float(rng.normal(0.0, noise_level * 0.05) if rng is not None
-                          else np.random.normal(0.0, noise_level * 0.05))
+            age = (
+                float(d.patient_age.item())
+                if torch.is_tensor(d.patient_age)
+                else float(d.patient_age)
+            )
+            delta = float(
+                rng.normal(0.0, noise_level * 0.05)
+                if rng is not None
+                else np.random.normal(0.0, noise_level * 0.05)
+            )
             d.patient_age = torch.tensor(age + delta, dtype=torch.float32)
 
         if hasattr(d, "patient_sex") and d.patient_sex is not None:
-            sex = float(d.patient_sex.item()) if torch.is_tensor(d.patient_sex) else float(d.patient_sex)
-            delta = float(rng.normal(0.0, noise_level * 0.1) if rng is not None
-                          else np.random.normal(0.0, noise_level * 0.1))
-            d.patient_sex = torch.tensor(
-                float(np.clip(sex + delta, 0.0, 1.0)), dtype=torch.float32
+            sex = (
+                float(d.patient_sex.item())
+                if torch.is_tensor(d.patient_sex)
+                else float(d.patient_sex)
             )
+            delta = float(
+                rng.normal(0.0, noise_level * 0.1)
+                if rng is not None
+                else np.random.normal(0.0, noise_level * 0.1)
+            )
+            d.patient_sex = torch.tensor(float(np.clip(sex + delta, 0.0, 1.0)), dtype=torch.float32)
 
     else:
         raise ValueError(

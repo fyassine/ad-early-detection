@@ -17,6 +17,7 @@ consuming a frozen, already-pretrained encoder (GELSTM/GEC/GEP); this one is for
 inputs, hook signatures, save-state shape) that conflating them under one
 registry would blur which contract a given adapter actually satisfies.
 """
+
 from __future__ import annotations
 
 import sys
@@ -93,7 +94,9 @@ class StaticAdapter:
         """Train one model to convergence. Returns (best_state_dict, history)."""
         raise NotImplementedError
 
-    def compute_sample_error(self, sample, model) -> Union[float, Dict[str, float]]:  # pragma: no cover
+    def compute_sample_error(
+        self, sample, model
+    ) -> Union[float, Dict[str, float]]:  # pragma: no cover
         """Per-sample reconstruction error: float (Total Error) or a dict with 'total_error'."""
         raise NotImplementedError
 
@@ -139,7 +142,11 @@ class GAAEStaticAdapter(StaticAdapter):
 
         c = self.cfg
         return train_model_with_val_notebook_train_loss(
-            model, train_loader, val_loader, optimizer, self.device,
+            model,
+            train_loader,
+            val_loader,
+            optimizer,
+            self.device,
             batch_size=c.get("batch_size", 64),
             learning_rate=c.get("learning_rate", 1e-3),
             model_config={},
@@ -208,7 +215,11 @@ class VGAEStaticAdapter(StaticAdapter):
 
         c = self.cfg
         return train_vgae_with_val(
-            model, train_loader, val_loader, optimizer, self.device,
+            model,
+            train_loader,
+            val_loader,
+            optimizer,
+            self.device,
             beta=c.get("beta", 1.0),
             beta_warmup_epochs=c.get("beta_warmup_epochs", 0),
             free_bits=c.get("free_bits", 0.0),
@@ -223,13 +234,18 @@ class VGAEStaticAdapter(StaticAdapter):
 
         c = self.cfg
         recon_err, kl_err, feat_err, total_err = compute_sample_reconstruction_error(
-            sample, model, self.device, c.get("beta", 1.0),
+            sample,
+            model,
+            self.device,
+            c.get("beta", 1.0),
             free_bits=c.get("free_bits", 0.0),
             feature_loss_weight=c.get("feature_loss_weight", 0.0),
         )
         return {
-            "recon_error": recon_err, "kl_error": kl_err,
-            "feat_error": feat_err, "total_error": total_err,
+            "recon_error": recon_err,
+            "kl_error": kl_err,
+            "feat_error": feat_err,
+            "total_error": total_err,
         }
 
     def latest_checkpoint_tag(self) -> str:

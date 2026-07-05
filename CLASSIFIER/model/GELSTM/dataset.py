@@ -17,6 +17,7 @@ Each item is one subject's longitudinal sequence:
         'age':           float,        # normalised age [0,1]
     }
 """
+
 from __future__ import annotations
 
 import glob
@@ -74,7 +75,7 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
 
     _VARIANT_SUFFIX: Dict[str, str] = {
         "z_transformed": "_whole_brain_correlation_matrix_z_transformed.npz",
-        "raw":           "_whole_brain_correlation_matrix.npz",
+        "raw": "_whole_brain_correlation_matrix.npz",
     }
 
     def __init__(
@@ -87,36 +88,34 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
         max_visits: Optional[int] = None,
         require_full_window: bool = False,
     ):
-        self.matrices_dir       = matrices_dir
-        self.adjacency_k        = adjacency_k
-        self.file_variant       = file_variant
-        self.max_visits         = max_visits
+        self.matrices_dir = matrices_dir
+        self.adjacency_k = adjacency_k
+        self.file_variant = file_variant
+        self.max_visits = max_visits
         self.require_full_window = require_full_window
-        self.suffix             = self._VARIANT_SUFFIX.get(
-            file_variant, self._VARIANT_SUFFIX["z_transformed"]
-        )
+        self.suffix = self._VARIANT_SUFFIX.get(file_variant, self._VARIANT_SUFFIX["z_transformed"])
 
         if require_full_window and max_visits is None:
             raise ValueError("require_full_window=True requires max_visits to be set")
 
         allowed = {"mci", "converter"}
-        sub_df  = subject_df[subject_df["diagnosis"].isin(allowed)].copy()
+        sub_df = subject_df[subject_df["diagnosis"].isin(allowed)].copy()
         sub_df["Pseudonym"] = sub_df["Pseudonym"].astype(str)
 
         cohorts = pd.read_csv(cohorts_csv)
-        id_col  = "Pseudonym"
-        cohorts[id_col]    = cohorts[id_col].astype(str)
+        id_col = "Pseudonym"
+        cohorts[id_col] = cohorts[id_col].astype(str)
         cohorts["visit_m"] = cohorts["visit"].str.replace("M", "", regex=False).astype(float)
 
         self.subjects: List[Dict] = []
         n_dropped_full_window = 0
         has_allowed_months = "allowed_months" in sub_df.columns
         for _, row in sub_df.iterrows():
-            pid   = str(row["Pseudonym"])
+            pid = str(row["Pseudonym"])
             label = 1 if row["diagnosis"] == "converter" else 0
-            sex   = 1 if str(row.get("sex", "f")).lower() == "m" else 0
+            sex = 1 if str(row.get("sex", "f")).lower() == "m" else 0
             age_raw = row.get("age", 50.0)
-            age   = float(min(max(float(age_raw) / 100.0, 0.0), 1.0))
+            age = float(min(max(float(age_raw) / 100.0, 0.0), 1.0))
 
             allowed_months = (
                 parse_allowed_months(row["allowed_months"]) if has_allowed_months else None
@@ -132,23 +131,25 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
                     continue
                 visit_files = visit_files[:max_visits]
 
-            months  = [m for m, _ in visit_files]
-            fpaths  = [f for _, f in visit_files]
+            months = [m for m, _ in visit_files]
+            fpaths = [f for _, f in visit_files]
 
-            deltas  = [0.0]
+            deltas = [0.0]
             for i in range(1, len(months)):
                 deltas.append((months[i] - months[i - 1]) / MAX_INTERVAL_MONTHS)
 
-            self.subjects.append({
-                "subject_id":   pid,
-                "label":        label,
-                "visit_months": months,
-                "delta_t":      deltas,
-                "file_paths":   fpaths,
-                "sex":          sex,
-                "age":          age,
-                "n_scans":      len(months),
-            })
+            self.subjects.append(
+                {
+                    "subject_id": pid,
+                    "label": label,
+                    "visit_months": months,
+                    "delta_t": deltas,
+                    "file_paths": fpaths,
+                    "sex": sex,
+                    "age": age,
+                    "n_scans": len(months),
+                }
+            )
 
         n_pos = sum(s["label"] for s in self.subjects)
         n_neg = len(self.subjects) - n_pos
@@ -166,12 +167,10 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
             ns = [s["n_scans"] for s in self.subjects]
             print(f"  Scans per subject: min={min(ns)}  max={max(ns)}  mean={np.mean(ns):.1f}")
 
-    def _find_visit_files(
-        self, pid: str, allowed_months: Optional[set] = None
-    ) -> List[tuple]:
+    def _find_visit_files(self, pid: str, allowed_months: Optional[set] = None) -> List[tuple]:
         pattern = os.path.join(self.matrices_dir, f"sub-{pid}_*{self.suffix}")
-        files   = glob.glob(pattern)
-        result  = []
+        files = glob.glob(pattern)
+        result = []
         for f in files:
             month = parse_month(os.path.basename(f))
             if month is None:
@@ -185,7 +184,7 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
         arr = np.load(filepath)["array"]
         arr = np.nan_to_num(arr, nan=0.0, posinf=0.0, neginf=0.0)
         feat = torch.tensor(arr, dtype=torch.float)
-        adj  = knn_binary_adjacency_matrix_no_diag(torch.abs(feat), k=self.adjacency_k)
+        adj = knn_binary_adjacency_matrix_no_diag(torch.abs(feat), k=self.adjacency_k)
         if isinstance(adj, np.ndarray):
             adj = torch.tensor(adj, dtype=torch.float32)
         ei, ew = dense_to_sparse(adj)
@@ -195,17 +194,17 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
         return len(self.subjects)
 
     def __getitem__(self, idx: int) -> Dict:
-        sub  = self.subjects[idx]
+        sub = self.subjects[idx]
         graphs = [self._load_graph(fp) for fp in sub["file_paths"]]
         return {
-            "subject_id":   sub["subject_id"],
-            "label":        sub["label"],
+            "subject_id": sub["subject_id"],
+            "label": sub["label"],
             "visit_months": sub["visit_months"],
-            "delta_t":      sub["delta_t"],
-            "graphs":       graphs,
-            "sex":          sub["sex"],
-            "age":          sub["age"],
-            "n_scans":      sub["n_scans"],
+            "delta_t": sub["delta_t"],
+            "graphs": graphs,
+            "sex": sub["sex"],
+            "age": sub["age"],
+            "n_scans": sub["n_scans"],
         }
 
     def get_labels(self) -> List[int]:

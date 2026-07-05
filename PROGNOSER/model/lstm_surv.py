@@ -82,12 +82,14 @@ def _discrete_surv_nll(
 
     # Log-likelihood
     log_surv_prev = torch.log(
-        torch.gather(torch.cat([torch.ones(surv.size(0), 1, device=surv.device), surv[:, :-1]], dim=1),
-                     1, bin_idx.unsqueeze(1)).squeeze(1) + 1e-8
+        torch.gather(
+            torch.cat([torch.ones(surv.size(0), 1, device=surv.device), surv[:, :-1]], dim=1),
+            1,
+            bin_idx.unsqueeze(1),
+        ).squeeze(1)
+        + 1e-8
     )
-    log_haz_at_event = torch.log(
-        torch.gather(hazards, 1, bin_idx.unsqueeze(1)).squeeze(1) + 1e-8
-    )
+    log_haz_at_event = torch.log(torch.gather(hazards, 1, bin_idx.unsqueeze(1)).squeeze(1) + 1e-8)
     ll = E * (log_surv_prev + log_haz_at_event) + (1 - E) * torch.log(
         torch.gather(surv, 1, bin_idx.unsqueeze(1)).squeeze(1) + 1e-8
     )
@@ -113,7 +115,7 @@ class LSTMSurvWrapper(SurvivalModel):
         early_stopping_patience: int = 15,
         scale_features: bool = True,
         random_state: int = 42,
-        device: str = 'cuda',
+        device: str = "cuda",
     ):
         self.feature_columns = list(feature_columns)
         self.n_time_bins = int(n_time_bins)
@@ -127,7 +129,7 @@ class LSTMSurvWrapper(SurvivalModel):
         self.early_stopping_patience = int(early_stopping_patience)
         self.scale_features = bool(scale_features)
         self.random_state = int(random_state)
-        self._device_str = device if (device == 'cpu' or torch.cuda.is_available()) else 'cpu'
+        self._device_str = device if (device == "cpu" or torch.cuda.is_available()) else "cpu"
         self.device = torch.device(self._device_str)
 
         self.scaler_: StandardScaler | None = None
@@ -177,7 +179,7 @@ class LSTMSurvWrapper(SurvivalModel):
             flat_mask = np.zeros(len(flat), dtype=bool)
             idx = 0
             for length in lengths:
-                flat_mask[idx:idx + length] = True
+                flat_mask[idx : idx + length] = True
                 idx += length
             self.scaler_ = StandardScaler().fit(flat[flat_mask])
             seq_scaled = sequences.copy()
@@ -214,7 +216,7 @@ class LSTMSurvWrapper(SurvivalModel):
             train_loss = 0.0
             n_batches = 0
             for start in range(0, n_subj, self.batch_size):
-                idx = perm[start: start + self.batch_size]
+                idx = perm[start : start + self.batch_size]
                 xb = seq_t[idx].to(self.device)
                 lb = len_t[idx]
                 Tb = T_t[idx].to(self.device)
@@ -246,7 +248,7 @@ class LSTMSurvWrapper(SurvivalModel):
             else:
                 patience_count += 1
                 if patience_count >= self.early_stopping_patience:
-                    print(f'Early stopping at epoch {epoch + 1} (val_loss={val_loss:.4f})')
+                    print(f"Early stopping at epoch {epoch + 1} (val_loss={val_loss:.4f})")
                     break
 
         if best_state is not None:
@@ -255,7 +257,11 @@ class LSTMSurvWrapper(SurvivalModel):
         return self
 
     def _compute_loss(
-        self, seq: np.ndarray, lengths: np.ndarray, T: np.ndarray, E: np.ndarray,
+        self,
+        seq: np.ndarray,
+        lengths: np.ndarray,
+        T: np.ndarray,
+        E: np.ndarray,
         bin_edges_t: torch.Tensor,
     ) -> float:
         if self.scale_features and self.scaler_ is not None:

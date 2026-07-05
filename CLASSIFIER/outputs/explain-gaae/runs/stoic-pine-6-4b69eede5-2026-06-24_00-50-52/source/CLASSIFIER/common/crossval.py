@@ -15,6 +15,7 @@ model, loaders and class weights itself and imported ``wandb`` directly). This
 version inverts that: the caller supplies a ``train_fold`` callable and an
 optional ``log_fn`` sink, keeping the loop reusable and W&B-free.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -13,6 +13,7 @@ the TRAINING partition only — never the validation or test rows. Selecting
 dimensions on the full pool (or with test data included) inflates the estimate.
 The caller is responsible for slicing to the training fold before calling.
 """
+
 from __future__ import annotations
 
 from typing import Tuple
@@ -41,9 +42,7 @@ def compute_fdr_scores(embs: np.ndarray, labels: np.ndarray, eps: float = 1e-8) 
     if embs.ndim != 2:
         raise ValueError(f"embs must be 2-D (N, D); got shape {embs.shape}")
     if labels.shape[0] != embs.shape[0]:
-        raise ValueError(
-            f"labels length {labels.shape[0]} != n_rows {embs.shape[0]}"
-        )
+        raise ValueError(f"labels length {labels.shape[0]} != n_rows {embs.shape[0]}")
     classes = np.unique(labels)
     if not np.array_equal(classes, np.array([0, 1])):
         raise ValueError(

@@ -69,15 +69,17 @@ def compute_errors_for_dataset(
         x_err, adj_err, total_err = compute_sample_reconstruction_error(
             d, model, device, adj_loss_weight
         )
-        records.append({
-            "Split": split_name,
-            "DatasetIndex": i,
-            "PatientID": patient_id,
-            "Cohort": cohort,
-            "X Error": float(x_err),
-            "Adj Error": float(adj_err),
-            "Total Error": float(total_err),
-        })
+        records.append(
+            {
+                "Split": split_name,
+                "DatasetIndex": i,
+                "PatientID": patient_id,
+                "Cohort": cohort,
+                "X Error": float(x_err),
+                "Adj Error": float(adj_err),
+                "Total Error": float(total_err),
+            }
+        )
 
     if allowed_cohorts is not None and unknown_ids:
         unique_unknown = sorted(set(unknown_ids))
@@ -109,8 +111,10 @@ def compute_one_vs_rest_thresholds(
         y = (val["Cohort"] == cohort_name).astype(int).values
         if y.sum() == 0 or y.sum() == len(y):
             out[cohort_name] = {
-                "direction": "low", "auc": float("nan"),
-                "threshold_error": float("nan"), "threshold_score": float("nan"),
+                "direction": "low",
+                "auc": float("nan"),
+                "threshold_error": float("nan"),
+                "threshold_score": float("nan"),
             }
             continue
 
@@ -124,9 +128,7 @@ def compute_one_vs_rest_thresholds(
         fpr, tpr, score_thresholds = roc_curve(y, scores)
         best_idx = int(np.argmax(tpr - fpr))
         threshold_score = float(score_thresholds[best_idx])
-        threshold_error = float(
-            threshold_score if direction == "high" else -threshold_score
-        )
+        threshold_error = float(threshold_score if direction == "high" else -threshold_score)
         out[cohort_name] = {
             "direction": direction,
             "auc": float(auc_used),
@@ -164,17 +166,29 @@ def plot_cohort_errors(
     ax = plt.gca()
 
     sns.swarmplot(
-        data=split_df, x="Cohort", y="Total Error", order=cohort_order,
-        color=".25", size=4, alpha=0.6, zorder=1, ax=ax,
+        data=split_df,
+        x="Cohort",
+        y="Total Error",
+        order=cohort_order,
+        color=".25",
+        size=4,
+        alpha=0.6,
+        zorder=1,
+        ax=ax,
     )
     boxplot = sns.boxplot(
-        data=split_df, x="Cohort", y="Total Error", order=cohort_order,
-        palette=palette_name, showcaps=True,
+        data=split_df,
+        x="Cohort",
+        y="Total Error",
+        order=cohort_order,
+        palette=palette_name,
+        showcaps=True,
         boxprops={"edgecolor": "black", "linewidth": 2},
         medianprops={"color": "red", "linewidth": 2.5},
         whiskerprops={"color": "black", "linewidth": 2},
         capprops={"color": "black", "linewidth": 2},
-        zorder=2, ax=ax,
+        zorder=2,
+        ax=ax,
     )
     for patch in boxplot.patches:
         fc = patch.get_facecolor()
@@ -191,9 +205,13 @@ def plot_cohort_errors(
             continue
         std = vals.std(ddof=1) if len(vals) > 1 else 0.0
         ax.text(
-            i, y_top + 0.12 * y_span,
+            i,
+            y_top + 0.12 * y_span,
             f"μ={vals.mean():.4f}\nσ={std:.4f}",
-            ha="center", va="top", fontsize=9, fontweight="bold",
+            ha="center",
+            va="top",
+            fontsize=9,
+            fontweight="bold",
             bbox=dict(boxstyle="round,pad=0.4", facecolor="white", edgecolor="gray", alpha=0.8),
         )
 
@@ -206,8 +224,13 @@ def plot_cohort_errors(
 
     if wandb_project or run_name:
         plt.figtext(
-            0.99, 0.01, f"Project: {wandb_project}, Run: {run_name}",
-            ha="right", va="bottom", fontsize=6, alpha=0.5,
+            0.99,
+            0.01,
+            f"Project: {wandb_project}, Run: {run_name}",
+            ha="right",
+            va="bottom",
+            fontsize=6,
+            alpha=0.5,
         )
     plt.tight_layout(rect=[0, 0.03, 1, 1])
     return fig
@@ -236,8 +259,13 @@ def plot_robustness_sweep(
         for method in noise_methods:
             m = cohort_summary[cohort_summary["Method"] == method]
             axes[0].plot(m["NoiseLevelPercent"], m["MeanTotalError"], marker="o", label=method)
-        axes[0].axhline(threshold_error, linestyle="--", color="black", alpha=0.6,
-                        label=f"{cohort_name} threshold")
+        axes[0].axhline(
+            threshold_error,
+            linestyle="--",
+            color="black",
+            alpha=0.6,
+            label=f"{cohort_name} threshold",
+        )
         axes[0].set_xlabel("Noise level (%)")
         axes[0].set_ylabel("Mean total reconstruction error")
         axes[0].set_title(f"Error drift under noise ({cohort_name})")

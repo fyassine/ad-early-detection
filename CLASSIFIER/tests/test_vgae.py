@@ -6,6 +6,7 @@ exercised end-to-end by the experiment runner, not here — but the early-stoppi
 *logic* inside ``train_vgae_with_val`` is pure control flow and is unit-tested
 below on tiny synthetic loaders.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -40,7 +41,9 @@ def _toy_graph(seed=0):
 @pytest.mark.parametrize("conv_type", ["gcn", "gat"])
 def test_forward_shapes(conv_type):
     x, ei, ea = _toy_graph()
-    model = VariationalGraphAutoencoder(IN_FEATURES, HIDDEN, LATENT, conv_type=conv_type, num_heads=2)
+    model = VariationalGraphAutoencoder(
+        IN_FEATURES, HIDDEN, LATENT, conv_type=conv_type, num_heads=2
+    )
     model.train()
     z, mu, logvar, adj_hat, x_hat = model(x, ei, ea)
     assert z.shape == (N_NODES, LATENT)
@@ -80,7 +83,9 @@ def test_encode_attention_present_for_gat_empty_for_gcn():
 def test_film_conditioning_changes_latent_but_keeps_shape(conv_type):
     """FiLM cond_vec modulates the latent; omitting it leaves the pooling path unchanged."""
     x, ei, ea = _toy_graph(5)
-    model = VariationalGraphAutoencoder(IN_FEATURES, HIDDEN, LATENT, conv_type=conv_type, num_heads=2)
+    model = VariationalGraphAutoencoder(
+        IN_FEATURES, HIDDEN, LATENT, conv_type=conv_type, num_heads=2
+    )
     model.eval()
     cond_vec = torch.tensor([[0.7, 1.0]], dtype=torch.float)  # one graph: (age, sex)
     batch_mask = torch.zeros(N_NODES, dtype=torch.long)
@@ -132,8 +137,11 @@ def test_free_bits_floors_per_dim_kl():
     assert torch.allclose(floored, torch.tensor(expected_per_dim * LATENT), atol=1e-3)
     # far above the floor, the shortfall term is zero and this matches the plain hard clamp.
     big = kl_divergence(torch.ones(N_NODES, LATENT) * 5, torch.zeros(N_NODES, LATENT))
-    assert torch.allclose(big, kl_divergence(torch.ones(N_NODES, LATENT) * 5,
-                                             torch.zeros(N_NODES, LATENT), free_bits=0.5), atol=1e-3)
+    assert torch.allclose(
+        big,
+        kl_divergence(torch.ones(N_NODES, LATENT) * 5, torch.zeros(N_NODES, LATENT), free_bits=0.5),
+        atol=1e-3,
+    )
 
 
 def test_free_bits_keeps_gradient_below_floor():
@@ -173,12 +181,16 @@ def test_raw_kl_stats_reports_pre_clamp_values_and_floor_fraction():
     can't tell you how collapsed the posterior really is — raw_kl_stats exposes the
     unclamped per-dim KL the clamp is hiding."""
     # Half the dims near-collapsed (raw KL ~0), half well above the floor.
-    mu = torch.cat([torch.full((N_NODES, LATENT // 2), 1e-3), torch.full((N_NODES, LATENT // 2), 5.0)], dim=1)
+    mu = torch.cat(
+        [torch.full((N_NODES, LATENT // 2), 1e-3), torch.full((N_NODES, LATENT // 2), 5.0)], dim=1
+    )
     logvar = torch.zeros(N_NODES, LATENT)
     stats = raw_kl_stats(mu, logvar, free_bits=0.5)
     assert stats["raw_kl_min"] < 0.5  # the near-collapsed half sits under the floor
     assert stats["raw_kl_max"] > 0.5  # the healthy half sits well above it
-    assert stats["raw_kl_mean"] == pytest.approx((stats["raw_kl_min"] + stats["raw_kl_max"]) / 2, rel=1e-3)
+    assert stats["raw_kl_mean"] == pytest.approx(
+        (stats["raw_kl_min"] + stats["raw_kl_max"]) / 2, rel=1e-3
+    )
     assert stats["frac_dims_at_floor"] == pytest.approx(0.5)
     # free_bits<=0 means there's no floor to sit at.
     assert raw_kl_stats(mu, logvar, free_bits=0.0)["frac_dims_at_floor"] == 0.0
@@ -210,8 +222,15 @@ def test_feature_decoder_adds_reconstruction_term():
     adj_true = to_dense_adj(ei, batch=batch_mask).squeeze(0)
     mask = create_mask(batch_mask)
     total, recon, kl, feat = vgae_total_loss(
-        adj_true, adj_hat, mask, mu, logvar, beta=0.5,
-        x_original=x, x_reconstructed=x_hat, feature_loss_weight=2.0,
+        adj_true,
+        adj_hat,
+        mask,
+        mu,
+        logvar,
+        beta=0.5,
+        x_original=x,
+        x_reconstructed=x_hat,
+        feature_loss_weight=2.0,
     )
     assert feat.item() > 0.0
     assert torch.allclose(total, recon + 2.0 * feat + 0.5 * kl)
@@ -239,11 +258,15 @@ def _toy_loader(num_graphs=2, seed=0):
     graphs = []
     for i in range(num_graphs):
         x, ei, ea = _toy_graph(seed + i)
-        graphs.append(Data(
-            x=x, edge_index=ei, edge_attr=ea,
-            patient_age=torch.tensor(rng.random(), dtype=torch.float),
-            patient_sex=torch.tensor(rng.integers(0, 2), dtype=torch.long),
-        ))
+        graphs.append(
+            Data(
+                x=x,
+                edge_index=ei,
+                edge_attr=ea,
+                patient_age=torch.tensor(rng.random(), dtype=torch.float),
+                patient_sex=torch.tensor(rng.integers(0, 2), dtype=torch.long),
+            )
+        )
     return DataLoader(graphs, batch_size=2, shuffle=False)
 
 
@@ -253,10 +276,18 @@ def _stub_run_epoch_factory(recon=1.0, kl=2.0, feat=0.0):
     this is the failure signature that the free-bits floor-pinning bug used to
     produce (recon/kl flatlining fast) before the Optuna-tuned hyperparameters
     fixed it; kept here purely to exercise the warmup/early-stopping control flow."""
-    def _stub(model, loader, optimizer, device, beta, *, train, free_bits=0.0,
-               feature_loss_weight=0.0):
-        kl_stats = {"raw_kl_min": kl, "raw_kl_mean": kl, "raw_kl_max": kl, "frac_dims_at_floor": 0.0}
+
+    def _stub(
+        model, loader, optimizer, device, beta, *, train, free_bits=0.0, feature_loss_weight=0.0
+    ):
+        kl_stats = {
+            "raw_kl_min": kl,
+            "raw_kl_mean": kl,
+            "raw_kl_max": kl,
+            "frac_dims_at_floor": 0.0,
+        }
         return recon + beta * kl + feature_loss_weight * feat, recon, kl, feat, kl_stats
+
     return _stub
 
 
@@ -271,6 +302,7 @@ def test_early_stopping_waits_for_beta_warmup(monkeypatch):
     epoch ~25-27 with beta_warmup_epochs=100, early_stopping_patience=25.
     """
     import CLASSIFIER.model.VGAE.train as vgae_train
+
     monkeypatch.setattr(vgae_train, "_run_epoch", _stub_run_epoch_factory())
 
     model = VariationalGraphAutoencoder(IN_FEATURES, HIDDEN, LATENT, conv_type="gcn")
@@ -281,8 +313,13 @@ def test_early_stopping_waits_for_beta_warmup(monkeypatch):
     beta_warmup_epochs = 10
     early_stopping_patience = 2  # deliberately much shorter than the warmup
     _best, history = train_vgae_with_val(
-        model, train_loader, val_loader, opt, torch.device("cpu"),
-        beta=1.0, beta_warmup_epochs=beta_warmup_epochs,
+        model,
+        train_loader,
+        val_loader,
+        opt,
+        torch.device("cpu"),
+        beta=1.0,
+        beta_warmup_epochs=beta_warmup_epochs,
         epochs=beta_warmup_epochs + early_stopping_patience + 2,
         early_stopping_patience=early_stopping_patience,
     )
@@ -298,6 +335,7 @@ def test_early_stopping_unaffected_when_no_warmup(monkeypatch):
     """beta_warmup_epochs=0 (the non-anticollapse default) keeps prior behaviour:
     patience is counted from epoch 0 since beta is constant throughout."""
     import CLASSIFIER.model.VGAE.train as vgae_train
+
     monkeypatch.setattr(vgae_train, "_run_epoch", _stub_run_epoch_factory())
 
     model = VariationalGraphAutoencoder(IN_FEATURES, HIDDEN, LATENT, conv_type="gcn")
@@ -307,9 +345,15 @@ def test_early_stopping_unaffected_when_no_warmup(monkeypatch):
 
     early_stopping_patience = 3
     _best, history = train_vgae_with_val(
-        model, train_loader, val_loader, opt, torch.device("cpu"),
-        beta=1.0, beta_warmup_epochs=0,
-        epochs=50, early_stopping_patience=early_stopping_patience,
+        model,
+        train_loader,
+        val_loader,
+        opt,
+        torch.device("cpu"),
+        beta=1.0,
+        beta_warmup_epochs=0,
+        epochs=50,
+        early_stopping_patience=early_stopping_patience,
     )
     # Flat val_loss from epoch 0 (beta constant) -> stops right after `patience`
     # epochs of no improvement, long before the 50-epoch cap.

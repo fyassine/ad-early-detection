@@ -1,4 +1,5 @@
 """Unit tests for the W&B tracking wrapper (no network / no wandb needed)."""
+
 from __future__ import annotations
 
 from SHARED import tracking

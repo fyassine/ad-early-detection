@@ -79,18 +79,31 @@ def pairwise_effect_sizes(
     Returns: list of ``{a, b, n_a, n_b, d, ci_lo, ci_hi}`` dicts.
     """
     out: list[dict] = []
-    cohorts = [c for c, v in cohort_values.items()
-               if v is not None and len([x for x in v if x is not None and math.isfinite(x)]) >= 2]
-    arrays = {c: np.asarray([v for v in cohort_values[c] if v is not None and math.isfinite(v)], dtype=np.float64)
-              for c in cohorts}
+    cohorts = [
+        c
+        for c, v in cohort_values.items()
+        if v is not None and len([x for x in v if x is not None and math.isfinite(x)]) >= 2
+    ]
+    arrays = {
+        c: np.asarray(
+            [v for v in cohort_values[c] if v is not None and math.isfinite(v)], dtype=np.float64
+        )
+        for c in cohorts
+    }
     for i, a in enumerate(cohorts):
-        for b in cohorts[i + 1:]:
+        for b in cohorts[i + 1 :]:
             xa, xb = arrays[a], arrays[b]
             d = cohens_d(xa, xb)
             ci_lo, ci_hi = bootstrap_ci(xa, xb, n_boot=n_boot, seed=seed)
-            out.append({
-                "a": a, "b": b,
-                "n_a": int(len(xa)), "n_b": int(len(xb)),
-                "d": d, "ci_lo": ci_lo, "ci_hi": ci_hi,
-            })
+            out.append(
+                {
+                    "a": a,
+                    "b": b,
+                    "n_a": int(len(xa)),
+                    "n_b": int(len(xb)),
+                    "d": d,
+                    "ci_lo": ci_lo,
+                    "ci_hi": ci_hi,
+                }
+            )
     return out

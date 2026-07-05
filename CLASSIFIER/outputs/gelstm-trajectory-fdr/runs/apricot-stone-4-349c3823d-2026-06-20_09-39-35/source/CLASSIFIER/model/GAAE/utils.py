@@ -11,6 +11,7 @@ from torch_geometric.utils import to_dense_adj
 if TYPE_CHECKING:
     from CLASSIFIER.model.GAAE.models import GraphAttentionAutoencoderConditioned
 
+
 def knn_binary_adjacency_matrix_no_diag(corr_matrix, k):
     """
     Generate a k-nearest neighbor binary adjacency matrix from a correlation matrix,
@@ -30,6 +31,7 @@ def knn_binary_adjacency_matrix_no_diag(corr_matrix, k):
 
     return binary_adjacency_matrix
 
+
 def calculate_dense_adjacency(data):
     """
     Converts sparse edge_index to dense adjacency matrix.
@@ -42,6 +44,7 @@ def calculate_dense_adjacency(data):
     """
     dense_adj = to_dense_adj(data.edge_index, max_num_nodes=data.x.shape[0]).squeeze(0)
     return dense_adj
+
 
 def create_mask(batch):
     """
@@ -65,12 +68,15 @@ def create_mask(batch):
     start_idx = 0
     for num_nodes in num_nodes_per_graph:
         if num_nodes > 0:
-            mask[start_idx:start_idx + num_nodes, start_idx:start_idx + num_nodes] = True
+            mask[start_idx : start_idx + num_nodes, start_idx : start_idx + num_nodes] = True
             start_idx += num_nodes
 
     return mask
 
-def save_run_config(run_name, timestamp, dataset_info, model_config, training_config, run_artifact_dir):
+
+def save_run_config(
+    run_name, timestamp, dataset_info, model_config, training_config, run_artifact_dir
+):
     """
     Saves the run configuration to a JSON file.
     """
@@ -79,14 +85,14 @@ def save_run_config(run_name, timestamp, dataset_info, model_config, training_co
         "timestamp": timestamp,
         "dataset_info": dataset_info,
         "model_config": model_config,
-        "training_config": training_config
+        "training_config": training_config,
     }
 
     # Helper to convert non-serializable objects (like device) to string
     def json_serial(obj):
         if isinstance(obj, (datetime, torch.device)):
             return str(obj)
-        raise TypeError (f"Type {type(obj)} not serializable")
+        raise TypeError(f"Type {type(obj)} not serializable")
 
     config_filename = "run_config.json"
     config_file = os.path.join(run_artifact_dir, config_filename)
@@ -134,4 +140,3 @@ def load_gaae_for_inference(
     for p in model.parameters():
         p.requires_grad_(False)
     return model
-

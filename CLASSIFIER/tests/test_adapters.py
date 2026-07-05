@@ -5,6 +5,7 @@ the registry, the shared metric helper, and the model-agnostic Bundle reshaping
 (``truncate_to_n_visits``, GEC flattening). The torch training paths are covered
 end-to-end by the experiment runner, not here.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -19,9 +20,12 @@ _GAAE_HP = {"latent_dim": 6, "hidden_dim": 16, "num_heads": 2, "cond_dim": 2, "d
 def _make(adapter_cls, train_config):
     return adapter_cls(
         gaae_ckpt_path="/nonexistent/model.pth",  # never loaded in these tests
-        gaae_hp=_GAAE_HP, train_config=train_config,
-        data_root="/nonexistent", cohorts_csv="/nonexistent/cohorts.csv",
-        device="cpu", rng=np.random.default_rng(0),
+        gaae_hp=_GAAE_HP,
+        train_config=train_config,
+        data_root="/nonexistent",
+        cohorts_csv="/nonexistent/cohorts.csv",
+        device="cpu",
+        rng=np.random.default_rng(0),
     )
 
 
@@ -32,8 +36,8 @@ def test_get_adapter_resolves_known_keys():
     from CLASSIFIER.adapters.gep import GEPAdapter
 
     assert get_adapter("gelstm") is GELSTMAdapter
-    assert get_adapter("GELSTM") is GELSTMAdapter   # case-insensitive
-    assert get_adapter("gegru") is GELSTMAdapter     # alias (rnn_type via config)
+    assert get_adapter("GELSTM") is GELSTMAdapter  # case-insensitive
+    assert get_adapter("gegru") is GELSTMAdapter  # alias (rnn_type via config)
     assert get_adapter("gec") is GECAdapter
     assert get_adapter("gep") is GEPAdapter
     assert issubclass(GELSTMAdapter, LongitudinalAdapter)
@@ -70,18 +74,24 @@ def _gec_items():
     rng = np.random.default_rng(1)
     items = []
     for i, ns in enumerate([3, 1, 2]):
-        items.append({
-            "subject_id": f"s{i}", "label": i % 2, "n_scans": ns,
-            "visit_months": [12 * t for t in range(ns)],
-            "zs": [rng.standard_normal(6).astype(np.float32) for _ in range(ns)],
-            "dts": [0.0] + [0.1] * (ns - 1),
-        })
+        items.append(
+            {
+                "subject_id": f"s{i}",
+                "label": i % 2,
+                "n_scans": ns,
+                "visit_months": [12 * t for t in range(ns)],
+                "zs": [rng.standard_normal(6).astype(np.float32) for _ in range(ns)],
+                "dts": [0.0] + [0.1] * (ns - 1),
+            }
+        )
     return items
 
 
 def test_gec_records_to_X_shape_and_mask():
-    adapter = _make(get_adapter("gec"),
-                    {"use_time_delta": True, "append_visit_mask": True, "mlp_hidden_layers": [8]})
+    adapter = _make(
+        get_adapter("gec"),
+        {"use_time_delta": True, "append_visit_mask": True, "mlp_hidden_layers": [8]},
+    )
     adapter.max_visits = 3  # normally locked during prepare_data on the CV pool
     items = _gec_items()
     X, y = adapter._records_to_X(items, np.arange(6), adapter.max_visits)
@@ -96,8 +106,11 @@ def test_gec_records_to_X_shape_and_mask():
 
 def test_gec_truncate_drops_short_and_slices():
     adapter = _make(get_adapter("gec"), {})
-    bundle = Bundle([it["label"] for it in _gec_items()],
-                    [it["subject_id"] for it in _gec_items()], _gec_items())
+    bundle = Bundle(
+        [it["label"] for it in _gec_items()],
+        [it["subject_id"] for it in _gec_items()],
+        _gec_items(),
+    )
     trunc = adapter.truncate_to_n_visits(bundle, 2)
     # s1 (1 visit) dropped; the rest capped at 2 visits.
     assert {it["subject_id"] for it in trunc.items} == {"s0", "s2"}
@@ -113,7 +126,7 @@ def test_gec_model_config_keys():
     cfg = adapter.model_config()
     assert cfg["model_type"] == "LongitudinalMLP"
     assert cfg["use_fdr"] is True
-    assert cfg["top_k"] == 4               # k == top_k under FDR
+    assert cfg["top_k"] == 4  # k == top_k under FDR
     assert cfg["max_visits"] == 5
 
 
@@ -121,9 +134,9 @@ def test_gec_model_config_keys():
 def test_gep_records_to_X_mean_pools_visits():
     adapter = _make(get_adapter("gep"), {"mlp_hidden_layers": [8]})
     assert adapter.latent == 6  # gaae_hp latent_dim
-    items = _gec_items()        # reuse: 6-dim zs, n_scans [3, 1, 2]
+    items = _gec_items()  # reuse: 6-dim zs, n_scans [3, 1, 2]
     X, y = adapter._records_to_X(items)
-    assert X.shape == (3, 6)    # one pooled vector per subject, no flattening
+    assert X.shape == (3, 6)  # one pooled vector per subject, no flattening
     assert list(y) == [0.0, 1.0, 0.0]
     # subject 0's pooled vector is the mean of its 3 visit embeddings.
     expected = np.stack(items[0]["zs"]).mean(0)
@@ -133,7 +146,7 @@ def test_gep_records_to_X_mean_pools_visits():
 def test_gep_records_to_X_respects_n_visits_cap():
     adapter = _make(get_adapter("gep"), {})
     items = _gec_items()
-    X1, _ = adapter._records_to_X(items[:1], n_visits=1)   # only first visit
+    X1, _ = adapter._records_to_X(items[:1], n_visits=1)  # only first visit
     assert np.allclose(X1[0], items[0]["zs"][0], atol=1e-6)
 
 
@@ -156,11 +169,18 @@ def test_gep_model_config_keys():
 
 
 def test_gep_vgae_encoder_arch_reads_config_dims():
-    adapter = _make(get_adapter("gep"),
-                    {"encoder_arch": "vgae", "latent_dim": 12, "hidden_dim": 24,
-                     "conv_type": "gat", "adjacency_k": 10})
+    adapter = _make(
+        get_adapter("gep"),
+        {
+            "encoder_arch": "vgae",
+            "latent_dim": 12,
+            "hidden_dim": 24,
+            "conv_type": "gat",
+            "adjacency_k": 10,
+        },
+    )
     assert adapter.encoder_arch == "vgae"
-    assert adapter.latent == 12            # from cfg, not gaae_hp
+    assert adapter.latent == 12  # from cfg, not gaae_hp
     assert adapter.enc_conv_type == "gat"
     assert adapter.adjacency_k == 10
     assert adapter.model_config()["encoder_arch"] == "vgae"
@@ -182,9 +202,11 @@ def test_gep_load_state_roundtrip(tmp_path):
     with open(tmp_path / "scaler.pkl", "wb") as f:
         pickle.dump(scaler, f)
     torch.save(
-        {"model_state_dict": mlp.state_dict(),
-         "model_config": {"latent": latent, "input_dim": latent},
-         "best_threshold": 0.37},
+        {
+            "model_state_dict": mlp.state_dict(),
+            "model_config": {"latent": latent, "input_dim": latent},
+            "best_threshold": 0.37,
+        },
         tmp_path / "checkpoint_test.pth",
     )
     state = adapter.load_state(tmp_path)
@@ -199,8 +221,9 @@ def test_gep_load_state_missing_scaler_raises(tmp_path):
     import torch
 
     adapter = _make(get_adapter("gep"), {})
-    torch.save({"model_state_dict": {}, "model_config": {"latent": 6}},
-               tmp_path / "checkpoint_test.pth")
+    torch.save(
+        {"model_state_dict": {}, "model_config": {"latent": 6}}, tmp_path / "checkpoint_test.pth"
+    )
     with pytest.raises(FileNotFoundError):
         adapter.load_state(tmp_path)
 
@@ -209,10 +232,22 @@ def test_gep_load_state_missing_scaler_raises(tmp_path):
 def test_gelstm_truncate_slices_visit_arrays():
     adapter = _make(get_adapter("gelstm"), {})
     items = [
-        {"subject_id": "a", "label": 1, "n_scans": 3,
-         "graphs": [0, 1, 2], "delta_t": [0.0, 0.1, 0.2], "visit_months": [0, 12, 24]},
-        {"subject_id": "b", "label": 0, "n_scans": 1,
-         "graphs": [0], "delta_t": [0.0], "visit_months": [0]},
+        {
+            "subject_id": "a",
+            "label": 1,
+            "n_scans": 3,
+            "graphs": [0, 1, 2],
+            "delta_t": [0.0, 0.1, 0.2],
+            "visit_months": [0, 12, 24],
+        },
+        {
+            "subject_id": "b",
+            "label": 0,
+            "n_scans": 1,
+            "graphs": [0],
+            "delta_t": [0.0],
+            "visit_months": [0],
+        },
     ]
     bundle = Bundle([1, 0], ["a", "b"], items)
     trunc = adapter.truncate_to_n_visits(bundle, 2)
@@ -235,7 +270,7 @@ def test_gelstm_model_config_reports_rnn_and_fdr():
 
 def test_gelstm_model_config_reports_classifier_norm():
     base = _make(get_adapter("gelstm"), {})
-    assert base.model_config()["classifier_norm"] == "none"   # back-compat default
+    assert base.model_config()["classifier_norm"] == "none"  # back-compat default
     ln = _make(get_adapter("gelstm"), {"classifier_norm": "layernorm"})
     assert ln.model_config()["classifier_norm"] == "layernorm"
 
@@ -263,9 +298,15 @@ def test_gec_load_state_roundtrip(tmp_path):
     from CLASSIFIER.adapters import read_run_threshold
     from CLASSIFIER.adapters.gec import LongitudinalMLP
 
-    adapter = _make(get_adapter("gec"),
-                    {"mlp_hidden_layers": [8], "mlp_dropout": 0.4,
-                     "use_time_delta": True, "append_visit_mask": True})
+    adapter = _make(
+        get_adapter("gec"),
+        {
+            "mlp_hidden_layers": [8],
+            "mlp_dropout": 0.4,
+            "use_time_delta": True,
+            "append_visit_mask": True,
+        },
+    )
     # k = gaae_latent = 6, max_visits = 3 -> feat_dim = 6*3 + 3 + 3 = 24
     feat_dim = 24
     mlp = LongitudinalMLP(feat_dim, [8], 0.4)
@@ -275,9 +316,11 @@ def test_gec_load_state_roundtrip(tmp_path):
     with open(tmp_path / "scaler.pkl", "wb") as f:
         pickle.dump(scaler, f)
     torch.save(
-        {"model_state_dict": mlp.state_dict(),
-         "model_config": {"input_dim": feat_dim, "max_visits": 3},
-         "best_threshold": 0.42},
+        {
+            "model_state_dict": mlp.state_dict(),
+            "model_config": {"input_dim": feat_dim, "max_visits": 3},
+            "best_threshold": 0.42,
+        },
         tmp_path / "checkpoint_test.pth",
     )
 
@@ -296,8 +339,10 @@ def test_gec_load_state_missing_artifact_raises(tmp_path):
     import torch
 
     adapter = _make(get_adapter("gec"), {})
-    torch.save({"model_state_dict": {}, "model_config": {"max_visits": 3}},
-               tmp_path / "checkpoint_test.pth")
+    torch.save(
+        {"model_state_dict": {}, "model_config": {"max_visits": 3}},
+        tmp_path / "checkpoint_test.pth",
+    )
     # scaler.pkl / dim_filter.npy absent -> loud failure, no silent fallback.
     with pytest.raises(FileNotFoundError):
         adapter.load_state(tmp_path)
@@ -309,12 +354,14 @@ def test_gelstm_load_state_reads_artifacts(tmp_path):
     from CLASSIFIER.adapters import read_run_threshold
 
     adapter = _make(get_adapter("gelstm"), {})
-    torch.save({"model_state_dict": {"w": torch.zeros(2)}, "best_threshold": 0.55},
-               tmp_path / "checkpoint_x.pth")
+    torch.save(
+        {"model_state_dict": {"w": torch.zeros(2)}, "best_threshold": 0.55},
+        tmp_path / "checkpoint_x.pth",
+    )
 
     state = adapter.load_state(tmp_path)
     assert "w" in state["model_state"]
-    assert state["dim_filter"] is None          # no dim_filter.npy -> non-FDR run
+    assert state["dim_filter"] is None  # no dim_filter.npy -> non-FDR run
 
     np.save(tmp_path / "dim_filter.npy", np.array([1, 3, 5]))
     assert adapter.load_state(tmp_path)["dim_filter"] == [1, 3, 5]

@@ -8,6 +8,7 @@ which inflates AUC when one subject's scans cluster together (easy or hard).
 This helper reduces scan-level (probs, labels) to one row per subject so that
 the reported AUC reflects subject-wise generalisation.
 """
+
 from __future__ import annotations
 
 from typing import Iterable, Tuple
@@ -52,11 +53,13 @@ def aggregate_scan_to_subject(
     if reduce not in _VALID_REDUCERS:
         raise ValueError(f"reduce must be one of {_VALID_REDUCERS}, got {reduce!r}")
 
-    df = pd.DataFrame({
-        "sid":   list(scan_subject_ids),
-        "prob":  np.asarray(probs, dtype=float),
-        "label": np.asarray(scan_labels, dtype=int),
-    })
+    df = pd.DataFrame(
+        {
+            "sid": list(scan_subject_ids),
+            "prob": np.asarray(probs, dtype=float),
+            "label": np.asarray(scan_labels, dtype=int),
+        }
+    )
     if reduce == "last":
         if scan_order is None:
             raise ValueError("reduce='last' requires scan_order")
@@ -77,26 +80,28 @@ def aggregate_scan_to_subject(
     elif reduce == "max":
         agg_prob = df.groupby("sid", sort=False)["prob"].max()
     else:
-        agg_prob = (
-            df.sort_values("order")
-              .groupby("sid", sort=False)["prob"]
-              .last()
-        )
+        agg_prob = df.sort_values("order").groupby("sid", sort=False)["prob"].last()
 
     label_per_sid = df.groupby("sid", sort=False)["label"].first()
 
-    sids   = agg_prob.index.to_numpy()
+    sids = agg_prob.index.to_numpy()
     return sids, agg_prob.to_numpy(), label_per_sid.loc[sids].to_numpy()
 
 
 def subject_level_auc(
-    probs, scan_subject_ids, scan_labels, reduce: str = "mean",
+    probs,
+    scan_subject_ids,
+    scan_labels,
+    reduce: str = "mean",
     scan_order=None,
 ) -> float:
     """One-shot helper: aggregate then compute AUC."""
     _, p, y = aggregate_scan_to_subject(
-        probs, scan_subject_ids, scan_labels,
-        reduce=reduce, scan_order=scan_order,
+        probs,
+        scan_subject_ids,
+        scan_labels,
+        reduce=reduce,
+        scan_order=scan_order,
     )
     if len(np.unique(y)) < 2:
         return float("nan")

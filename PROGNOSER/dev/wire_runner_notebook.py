@@ -24,6 +24,7 @@ What it does (each step skipped if already applied):
 Every code cell is `compile()`-checked after editing; the notebook is rejected
 (SystemExit) if a target anchor is missing or a cell no longer compiles.
 """
+
 from __future__ import annotations
 
 import sys
@@ -224,9 +225,7 @@ def wire_runner() -> None:
         )
         save.source = replace(
             save.source,
-            "    'metrics': metrics,\n"
-            "    'eval_times': EXPERIMENT['eval_times'],\n"
-            "}",
+            "    'metrics': metrics,\n" "    'eval_times': EXPERIMENT['eval_times'],\n" "}",
             "    'metrics': metrics,\n"
             "    'eval_times': EXPERIMENT['eval_times'],\n"
             "    'git': provenance.capture_git_provenance(),\n"

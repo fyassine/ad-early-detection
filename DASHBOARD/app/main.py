@@ -87,6 +87,7 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 for _router in [discovery, metadata, cohort, patient, atlas, health, population]:
     app.include_router(_router.router)
 
+
 @app.get("/")
 async def index():
     """Serve the dashboard frontend (built by Vite into static/dist/)."""

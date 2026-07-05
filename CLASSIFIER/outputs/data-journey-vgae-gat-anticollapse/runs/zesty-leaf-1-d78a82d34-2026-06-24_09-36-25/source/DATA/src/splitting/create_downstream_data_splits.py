@@ -7,6 +7,7 @@ A patient is MCI if they have MCI visits but never converted.
 Splits are at subject level with stratification by cohort (60/20/20 each).
 All scans from the same patient stay together.
 """
+
 from pathlib import Path
 
 import pandas as pd
@@ -29,6 +30,7 @@ def _patient_groups(cohorts: pd.DataFrame) -> pd.Series:
     - mci: had 'mci' visits, never a 'converter' visit
     Returns a Series indexed by Pseudonym; patients outside {mci, converter} are dropped.
     """
+
     def classify(g):
         d = set(g["diagnosis"])
         if "converter" in d:
@@ -66,10 +68,9 @@ def main():
     groups = _patient_groups(cohorts)
 
     # Demographics: take first (chronologically earliest) visit per patient.
-    first_visits = (
-        cohorts.drop_duplicates("Pseudonym", keep="first")
-        .set_index("Pseudonym")[["sex", "brthdat", "scan_date"]]
-    )
+    first_visits = cohorts.drop_duplicates("Pseudonym", keep="first").set_index("Pseudonym")[
+        ["sex", "brthdat", "scan_date"]
+    ]
 
     info: dict = {}
     if PATIENT_INFO_CSV.exists():
@@ -93,14 +94,16 @@ def main():
                 fv["brthdat"] if fv is not None else "",
                 fv["scan_date"] if fv is not None else "",
             )
-        rows.append({
-            "Pseudonym": pid,
-            "diagnosis": group,
-            "converter_status": 1 if group == "converter" else 0,
-            "sex": sex,
-            "age": age,
-            "n_scans": n,
-        })
+        rows.append(
+            {
+                "Pseudonym": pid,
+                "diagnosis": group,
+                "converter_status": 1 if group == "converter" else 0,
+                "sex": sex,
+                "age": age,
+                "n_scans": n,
+            }
+        )
 
     df = pd.DataFrame(rows)
     print(f"Patients with scans: {len(df)}")
@@ -130,7 +133,9 @@ def main():
         xf = len(test[test["diagnosis"] == cohort])
         total = tf + vf + xf
         if total > 0:
-            print(f"  {cohort:10}: train={tf} ({tf/total*100:.0f}%), val={vf} ({vf/total*100:.0f}%), test={xf} ({xf/total*100:.0f}%)")
+            print(
+                f"  {cohort:10}: train={tf} ({tf/total*100:.0f}%), val={vf} ({vf/total*100:.0f}%), test={xf} ({xf/total*100:.0f}%)"
+            )
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     train.to_csv(OUTPUT_DIR / "train.csv", index=False)
@@ -138,9 +143,11 @@ def main():
     test.to_csv(OUTPUT_DIR / "test.csv", index=False)
 
     # Merged sex/age lookup over all splits (consumed by GraphDatasetInMemoryFiltered).
-    pd.concat([train, val, test], ignore_index=True)[["Pseudonym", "diagnosis", "sex", "age"]] \
-        .drop_duplicates("Pseudonym").reset_index(drop=True) \
-        .to_csv(OUTPUT_DIR / "_all_splits_patient_info.csv", index=False)
+    pd.concat([train, val, test], ignore_index=True)[
+        ["Pseudonym", "diagnosis", "sex", "age"]
+    ].drop_duplicates("Pseudonym").reset_index(drop=True).to_csv(
+        OUTPUT_DIR / "_all_splits_patient_info.csv", index=False
+    )
 
     print(f"\nSaved to {OUTPUT_DIR}")
 

@@ -11,6 +11,7 @@ Idempotent: cells that already have an id are left untouched. Run once:
 
     python CLASSIFIER/dev/normalize_notebook_ids.py
 """
+
 from __future__ import annotations
 
 import glob

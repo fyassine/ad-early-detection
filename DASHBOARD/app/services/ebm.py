@@ -90,8 +90,10 @@ def fit_ebm(
         if g is None:
             continue
         biomarkers[key] = {
-            "mu_normal": mu_n, "sigma_normal": sd_n,
-            "mu_abnormal": mu_a, "sigma_abnormal": sd_a,
+            "mu_normal": mu_n,
+            "sigma_normal": sd_n,
+            "mu_abnormal": mu_a,
+            "sigma_abnormal": sd_a,
             "direction": "decrease" if mu_a < mu_n else "increase",
             "abs_g": float(abs(g)),
             "n_normal": int(len(x_norm)),

@@ -28,6 +28,7 @@ import numpy as np
 
 try:
     from sklearn.cluster import KMeans  # type: ignore
+
     _HAS_SKLEARN = True
 except Exception:
     KMeans = None  # type: ignore
@@ -63,7 +64,7 @@ def sliding_window_corr(
     iu = np.triu_indices(N, k=1)
     out: list[np.ndarray] = []
     for start in range(0, T - window + 1, step):
-        seg = timeseries[start:start + window]
+        seg = timeseries[start : start + window]
         # Avoid divide-by-zero on constant ROIs by adding tiny noise.
         sd = seg.std(axis=0)
         seg = seg + np.where(sd < 1e-9, 1e-6, 0.0)
@@ -133,6 +134,7 @@ def _get_schaefer_masker():
         return _MASKER
     from nilearn import datasets
     from nilearn.maskers import NiftiLabelsMasker
+
     schaefer = datasets.fetch_atlas_schaefer_2018(n_rois=200, yeo_networks=7)
     _MASKER = NiftiLabelsMasker(labels_img=schaefer.maps, standardize="zscore_sample")
     return _MASKER
@@ -153,6 +155,7 @@ def load_or_extract_timeseries(
 ) -> Optional[np.ndarray]:
     """Return cached (T, N) array for a subject/visit; parcellate + cache on miss."""
     from pathlib import Path
+
     cache_dir = Path(cache_root) / "timeseries"
     cache_dir.mkdir(parents=True, exist_ok=True)
     safe_visit = str(visit).replace("/", "_")
@@ -176,6 +179,7 @@ def load_or_extract_timeseries(
 # ──────────────────────────────────────────────────────────────────────────── #
 # Cohort-level aggregation                                                     #
 # ──────────────────────────────────────────────────────────────────────────── #
+
 
 def compute_cohort_dfc(
     timeseries_by_cohort: dict[str, list[np.ndarray]],
@@ -211,7 +215,10 @@ def compute_cohort_dfc(
 
     all_windows = np.concatenate([w for _, w in per_subject_windows], axis=0)
     if all_windows.shape[0] < k:
-        return {"available": False, "note": f"Only {all_windows.shape[0]} windows total (need ≥ {k})."}
+        return {
+            "available": False,
+            "note": f"Only {all_windows.shape[0]} windows total (need ≥ {k}).",
+        }
 
     km = KMeans(n_clusters=k, n_init=10, random_state=seed)
     global_labels = km.fit_predict(all_windows)
@@ -221,7 +228,7 @@ def compute_cohort_dfc(
     offset = 0
     for cohort, w in per_subject_windows:
         n = w.shape[0]
-        labels = global_labels[offset:offset + n].tolist()
+        labels = global_labels[offset : offset + n].tolist()
         offset += n
         d = dwell_and_transitions(labels, k=k)
         bucket = per_cohort.setdefault(cohort, {"dwell": [[] for _ in range(k)], "n": 0})
@@ -233,7 +240,7 @@ def compute_cohort_dfc(
     histograms: dict[str, dict] = {}
     for cohort, b in per_cohort.items():
         means = [float(np.mean(vals)) if vals else 0.0 for vals in b["dwell"]]
-        stds  = [float(np.std(vals, ddof=0)) if len(vals) > 1 else 0.0 for vals in b["dwell"]]
+        stds = [float(np.std(vals, ddof=0)) if len(vals) > 1 else 0.0 for vals in b["dwell"]]
         cohorts_out[cohort] = {"n": b["n"], "dwell_mean": means, "dwell_std": stds}
         histograms[cohort] = {
             "n": b["n"],
@@ -271,7 +278,7 @@ def subject_dynamic_fc(
         return {
             "available": False,
             "note": "Dynamic FC requires raw ROI time-series; only static "
-                    "correlation matrices are currently cached.",
+            "correlation matrices are currently cached.",
         }
     if timeseries.ndim != 2 or timeseries.shape[0] < window + 1:
         return {

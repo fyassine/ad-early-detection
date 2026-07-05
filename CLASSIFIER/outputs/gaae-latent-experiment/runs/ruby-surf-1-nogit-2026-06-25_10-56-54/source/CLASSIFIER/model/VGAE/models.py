@@ -16,6 +16,7 @@ Optional FiLM age/sex conditioning of ``mu`` (mirrors the GAAE's modulation) —
 pass ``cond_vec``/``batch_mask`` to ``encode``/``encode_dist``/``forward`` to
 enable it; omitting them leaves the plain textbook VGAE behavior unchanged.
 """
+
 from __future__ import annotations
 
 from typing import List
@@ -97,17 +98,29 @@ class VariationalGraphAutoencoder(nn.Module):
             self.conv_logvar = GCNConv(hidden_dim, latent_dim)
         else:  # gat
             self.shared = GATv2Conv(
-                in_features, hidden_dim, heads=num_heads, concat=True,
-                edge_dim=self.edge_dim, residual=True,
+                in_features,
+                hidden_dim,
+                heads=num_heads,
+                concat=True,
+                edge_dim=self.edge_dim,
+                residual=True,
             )
             self.bn = BatchNorm(hidden_dim * num_heads)
             self.conv_mu = GATv2Conv(
-                hidden_dim * num_heads, latent_dim, heads=num_heads, concat=False,
-                edge_dim=self.edge_dim, residual=True,
+                hidden_dim * num_heads,
+                latent_dim,
+                heads=num_heads,
+                concat=False,
+                edge_dim=self.edge_dim,
+                residual=True,
             )
             self.conv_logvar = GATv2Conv(
-                hidden_dim * num_heads, latent_dim, heads=num_heads, concat=False,
-                edge_dim=self.edge_dim, residual=True,
+                hidden_dim * num_heads,
+                latent_dim,
+                heads=num_heads,
+                concat=False,
+                edge_dim=self.edge_dim,
+                residual=True,
             )
 
     @staticmethod
@@ -146,7 +159,9 @@ class VariationalGraphAutoencoder(nn.Module):
             return out, a
         return conv(h, edge_index, edge_attr=ea), None
 
-    def encode_dist(self, x, edge_index, edge_attr=None, return_attention=False, cond_vec=None, batch_mask=None):
+    def encode_dist(
+        self, x, edge_index, edge_attr=None, return_attention=False, cond_vec=None, batch_mask=None
+    ):
         h, attn = self._shared(x, edge_index, edge_attr, return_attention=return_attention)
         mu, a_mu = self._head(self.conv_mu, h, edge_index, edge_attr, return_attention)
         logvar, _ = self._head(self.conv_logvar, h, edge_index, edge_attr, return_attention=False)
@@ -162,24 +177,34 @@ class VariationalGraphAutoencoder(nn.Module):
 
         return mu, logvar, mu_raw
 
-    def encode(self, x, edge_index, edge_attr=None, return_attention=False, cond_vec=None, batch_mask=None):
+    def encode(
+        self, x, edge_index, edge_attr=None, return_attention=False, cond_vec=None, batch_mask=None
+    ):
         if return_attention:
-            mu, _logvar, attn, _mu_raw = self.encode_dist(   # type: ignore[misc]
-                x, edge_index, edge_attr, return_attention=True,
-                cond_vec=cond_vec, batch_mask=batch_mask,
+            mu, _logvar, attn, _mu_raw = self.encode_dist(  # type: ignore[misc]
+                x,
+                edge_index,
+                edge_attr,
+                return_attention=True,
+                cond_vec=cond_vec,
+                batch_mask=batch_mask,
             )
             return mu, attn
-        mu, _logvar, _mu_raw = self.encode_dist(              # type: ignore[misc]
-            x, edge_index, edge_attr, cond_vec=cond_vec, batch_mask=batch_mask,
+        mu, _logvar, _mu_raw = self.encode_dist(  # type: ignore[misc]
+            x,
+            edge_index,
+            edge_attr,
+            cond_vec=cond_vec,
+            batch_mask=batch_mask,
         )
         return mu
 
     def condition_latent(self, z, cond_vec, batch_mask):
         """FiLM-modulate ``z`` with per-graph ``(age, sex)`` scale/shift (mirrors GAAE)."""
         gamma = self.film_gamma(cond_vec)  # [batch_size, latent_dim]
-        beta = self.film_beta(cond_vec)    # [batch_size, latent_dim]
+        beta = self.film_beta(cond_vec)  # [batch_size, latent_dim]
         gamma_per_node = gamma[batch_mask]  # [num_nodes, latent_dim]
-        beta_per_node = beta[batch_mask]    # [num_nodes, latent_dim]
+        beta_per_node = beta[batch_mask]  # [num_nodes, latent_dim]
         return gamma_per_node * z + beta_per_node
 
     @staticmethod
@@ -209,7 +234,7 @@ class VariationalGraphAutoencoder(nn.Module):
         mu, logvar, mu_raw = self.encode_dist(
             x, edge_index, edge_attr, cond_vec=cond_vec, batch_mask=batch_mask
         )
-        z = self.reparameterize(mu, logvar)   # decoding uses FiLM-conditioned mu
+        z = self.reparameterize(mu, logvar)  # decoding uses FiLM-conditioned mu
         adj_reconstructed = self.decode_all(z)
         x_reconstructed = self.decode_features(z)
         return z, mu_raw, logvar, adj_reconstructed, x_reconstructed

@@ -32,11 +32,13 @@ def _stats_pending_response(csv_path: str, folder_list: list[str]) -> JSONRespon
             note = f"Cohort warmup is still running ({stage})."
     else:
         note = "Cohort warmup has not finished for this dataset yet."
-    return JSONResponse({
-        "available": False,
-        "note": note,
-        "job": job if status != "unknown" else None,
-    })
+    return JSONResponse(
+        {
+            "available": False,
+            "note": note,
+            "job": job if status != "unknown" else None,
+        }
+    )
 
 
 @router.get("/api/cohort/warmup")
@@ -70,12 +72,14 @@ async def api_cohort_warmup(
         cache_root=DASHBOARD_CACHE_ROOT,
     )
     status = get_status(job_id, DASHBOARD_CACHE_ROOT)
-    return JSONResponse({
-        "status": "warming",
-        "job_id": job_id,
-        "already_running": already_running,
-        "job": status,
-    })
+    return JSONResponse(
+        {
+            "status": "warming",
+            "job_id": job_id,
+            "already_running": already_running,
+            "job": status,
+        }
+    )
 
 
 @router.get("/api/cohort/jobs")
@@ -113,16 +117,19 @@ def api_cohort_stats(
     folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
     stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
 
-    return JSONResponse({
-        "cohorts": COHORTS,
-        "biomarker_stats": stats.biomarker_stats,
-        "manifold": {
-            "points": stats.points,
-            "centroids": stats.centroids,
-            "conversion_axis": stats.conversion_axis,
-            "n_rois": stats.n_rois,
+    return JSONResponse(
+        {
+            "cohorts": COHORTS,
+            "biomarker_stats": stats.biomarker_stats,
+            "manifold": {
+                "points": stats.points,
+                "centroids": stats.centroids,
+                "conversion_axis": stats.conversion_axis,
+                "n_rois": stats.n_rois,
+            },
         },
-    }, headers=cache_headers(stats.fingerprint))
+        headers=cache_headers(stats.fingerprint),
+    )
 
 
 @router.get("/api/cohort/effect-sizes")
@@ -140,13 +147,21 @@ def api_cohort_effect_sizes(
     stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
 
     from ..services.effect_sizes import pairwise_effect_sizes
+
     out: dict = {}
-    for metric in ("global_fc", "dmn_fc", "modularity", "system_segregation",
-                   "density", "pos_fc_ratio"):
+    for metric in (
+        "global_fc",
+        "dmn_fc",
+        "modularity",
+        "system_segregation",
+        "density",
+        "pos_fc_ratio",
+    ):
         cohort_vals = {c: vals.get(metric, []) for c, vals in stats.biomarker_values.items()}
         out[metric] = pairwise_effect_sizes(cohort_vals)
-    return JSONResponse({"metrics": out, "cohorts": COHORTS},
-                        headers=cache_headers(stats.fingerprint))
+    return JSONResponse(
+        {"metrics": out, "cohorts": COHORTS}, headers=cache_headers(stats.fingerprint)
+    )
 
 
 @router.get("/api/cohort/survival")
@@ -161,6 +176,7 @@ def api_cohort_survival(
 
     from ..metadata_parser import load_metadata
     from ..services.survival import kaplan_meier
+
     df = load_metadata(abs_csv)
     stratum = stratify_by if stratify_by in ("apoe4", "atn", "none") else None
     if stratum == "none":
@@ -179,8 +195,9 @@ def api_cohort_ebm(
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
     folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
     stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
-    return JSONResponse(stats.ebm or {"sequence": [], "biomarkers": {}},
-                        headers=cache_headers(stats.fingerprint))
+    return JSONResponse(
+        stats.ebm or {"sequence": [], "biomarkers": {}}, headers=cache_headers(stats.fingerprint)
+    )
 
 
 @router.get("/api/cohort/brain-age")
@@ -197,17 +214,20 @@ def api_cohort_brain_age(
     m = stats.brain_age_model
     if m is None:
         return JSONResponse({"available": False}, headers=cache_headers(stats.fingerprint))
-    return JSONResponse({
-        "available": True,
-        "n_train": m.n_train,
-        "n_features": m.n_features,
-        "age_mean": m.age_mean,
-        "cv_mae": m.cv_mae,
-        "cv_r2": m.cv_r2,
-        "bias_slope": m.bias_slope,
-        "bias_intercept": m.bias_intercept,
-        "cohort_bag_cv": m.cohort_bag,
-    }, headers=cache_headers(stats.fingerprint))
+    return JSONResponse(
+        {
+            "available": True,
+            "n_train": m.n_train,
+            "n_features": m.n_features,
+            "age_mean": m.age_mean,
+            "cv_mae": m.cv_mae,
+            "cv_r2": m.cv_r2,
+            "bias_slope": m.bias_slope,
+            "bias_intercept": m.bias_intercept,
+            "cohort_bag_cv": m.cohort_bag,
+        },
+        headers=cache_headers(stats.fingerprint),
+    )
 
 
 @router.get("/api/cohort/network-stats")
@@ -221,11 +241,14 @@ def api_cohort_network_stats(
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
     folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
     stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
-    return JSONResponse({
-        "cohorts": COHORTS,
-        "network_fc_stats": stats.network_fc_stats,
-        "biomarker_percentiles": stats.biomarker_percentiles,
-    }, headers=cache_headers(stats.fingerprint))
+    return JSONResponse(
+        {
+            "cohorts": COHORTS,
+            "network_fc_stats": stats.network_fc_stats,
+            "biomarker_percentiles": stats.biomarker_percentiles,
+        },
+        headers=cache_headers(stats.fingerprint),
+    )
 
 
 @router.get("/api/cohort/reference")
@@ -250,12 +273,14 @@ def api_cohort_reference(
             {"error": f"No baseline subjects with .npz found for cohort '{cohort}'."},
             status_code=404,
         )
-    return JSONResponse({
-        "cohort": cohort,
-        "n_rois": int(matrix.shape[0]),
-        "n_subjects": stats.biomarker_stats.get(cohort, {}).get("global_fc", {}).get("n", 0),
-        "matrix": _safe_round_matrix(matrix),
-    })
+    return JSONResponse(
+        {
+            "cohort": cohort,
+            "n_rois": int(matrix.shape[0]),
+            "n_subjects": stats.biomarker_stats.get(cohort, {}).get("global_fc", {}).get("n", 0),
+            "matrix": _safe_round_matrix(matrix),
+        }
+    )
 
 
 @router.get("/api/cohort/missingness")
@@ -271,22 +296,21 @@ def api_cohort_missingness(
     if not os.path.exists(abs_csv):
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
 
-
     df = load_metadata(abs_csv)
     if "subject_id" not in df.columns:
         return JSONResponse({"error": "No subject_id column"}, status_code=400)
 
     BIOMARKERS = [
-        ("age",        "Age"),
-        ("sex",        "Sex"),
-        ("apoe",       "APOE"),
+        ("age", "Age"),
+        ("sex", "Sex"),
+        ("apoe", "APOE"),
         ("mmse_total", "MMSE"),
-        ("cdr_sum",    "CDR-SB"),
+        ("cdr_sum", "CDR-SB"),
         ("cdr_global", "CDR global"),
-        ("abeta42",    "Aβ42"),
-        ("total_tau",  "t-Tau"),
-        ("p_tau",      "p-Tau181"),
-        ("pacc5",      "PACC-5"),
+        ("abeta42", "Aβ42"),
+        ("total_tau", "t-Tau"),
+        ("p_tau", "p-Tau181"),
+        ("pacc5", "PACC-5"),
     ]
     available = [(col, label) for col, label in BIOMARKERS if col in df.columns]
     biomarker_labels = [label for _, label in available] + ["Visits (n)"]
@@ -308,38 +332,46 @@ def api_cohort_missingness(
             has_val = has_val[not has_val.astype(str).str.strip().isin(["", "nan"])]
             observed.append(1 if len(has_val) > 0 else 0)
         observed.append(min(n_visits, 10))  # visit count capped at 10 for colour scaling
-        rows.append({
-            "sid": str(sid),
-            "diagnosis": diag,
-            "sort_key": diag_order.get(diag, 5),
-            "observed": observed,
-        })
+        rows.append(
+            {
+                "sid": str(sid),
+                "diagnosis": diag,
+                "sort_key": diag_order.get(diag, 5),
+                "observed": observed,
+            }
+        )
 
     rows.sort(key=lambda r: (r["sort_key"], r["sid"]))
 
     # Build diagnosis colour map
     DIAG_COLORS = {
-        "healthy": "#6daa45", "scd": "#4f98a3", "mci": "#e8af34",
-        "converter": "#e08040", "ad": "#d163a7",
+        "healthy": "#6daa45",
+        "scd": "#4f98a3",
+        "mci": "#e8af34",
+        "converter": "#e08040",
+        "ad": "#d163a7",
     }
-    subject_ids   = [r["sid"]       for r in rows]
-    diagnoses     = [r["diagnosis"] for r in rows]
-    diag_colors   = [DIAG_COLORS.get(d, "#7a7976") for d in diagnoses]
-    matrix        = [r["observed"]  for r in rows]
+    subject_ids = [r["sid"] for r in rows]
+    diagnoses = [r["diagnosis"] for r in rows]
+    diag_colors = [DIAG_COLORS.get(d, "#7a7976") for d in diagnoses]
+    matrix = [r["observed"] for r in rows]
 
-    return JSONResponse({
-        "subjects":        subject_ids,
-        "diagnoses":       diagnoses,
-        "diag_colors":     diag_colors,
-        "biomarkers":      biomarker_labels,
-        "matrix":          matrix,
-        "diag_color_map":  DIAG_COLORS,
-    })
+    return JSONResponse(
+        {
+            "subjects": subject_ids,
+            "diagnoses": diagnoses,
+            "diag_colors": diag_colors,
+            "biomarkers": biomarker_labels,
+            "matrix": matrix,
+            "diag_color_map": DIAG_COLORS,
+        }
+    )
 
 
 # --------------------------------------------------------------------------- #
 # Phase 3 — graph topology, dynamic FC, risk distribution                     #
 # --------------------------------------------------------------------------- #
+
 
 @router.get("/api/cohort/graph-topology")
 def api_cohort_graph_topology(
@@ -358,6 +390,7 @@ def api_cohort_graph_topology(
     (random sample, seed=42) to keep total compute under ~30s.
     """
     import numpy as np
+
     abs_csv = os.path.join(DATA_ROOT, csv_path)
     if not os.path.exists(abs_csv):
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
@@ -376,10 +409,12 @@ def api_cohort_graph_topology(
     )
 
     if not _HAS_NX:
-        return JSONResponse({
-            "available": False,
-            "note": "networkx is not installed in the dashboard environment.",
-        })
+        return JSONResponse(
+            {
+                "available": False,
+                "note": "networkx is not installed in the dashboard environment.",
+            }
+        )
 
     # Check disk cache first (written by precompute.py / previous on-demand call).
     cached_gm = load_graph_metrics_cache(DASHBOARD_CACHE_ROOT, csv_path, folder_list, density)
@@ -413,7 +448,9 @@ def api_cohort_graph_topology(
             sampled = list(ids)
 
         buckets: dict[str, list[float]] = {
-            "small_worldness": [], "clustering": [], "path_length": [],
+            "small_worldness": [],
+            "clustering": [],
+            "path_length": [],
             "global_efficiency": [],
         }
         used = 0
@@ -425,8 +462,7 @@ def api_cohort_graph_topology(
                 m = load_correlation_matrix(recs[0]["abs_path"])
             except Exception:
                 continue
-            res = subject_graph_metrics(np.asarray(m), density=density,
-                                        compute_hubs=False)
+            res = subject_graph_metrics(np.asarray(m), density=density, compute_hubs=False)
             for k in buckets:
                 v = res.get(k)
                 if v is not None:
@@ -442,14 +478,18 @@ def api_cohort_graph_topology(
             metric_summary[k] = {
                 "mean": float(arr.mean()),
                 "std": float(arr.std(ddof=0)) if arr.size > 1 else 0.0,
-                "p5":  float(np.quantile(arr, 0.05)),
+                "p5": float(np.quantile(arr, 0.05)),
                 "p25": float(np.quantile(arr, 0.25)),
                 "p50": float(np.quantile(arr, 0.50)),
                 "p75": float(np.quantile(arr, 0.75)),
                 "p95": float(np.quantile(arr, 0.95)),
                 "n": int(arr.size),
             }
-        metrics_by_cohort[cohort] = {"n": used, "n_sampled": len(sampled), "metrics": metric_summary}
+        metrics_by_cohort[cohort] = {
+            "n": used,
+            "n_sampled": len(sampled),
+            "metrics": metric_summary,
+        }
 
     result = {
         "available": True,
@@ -477,17 +517,21 @@ def api_cohort_risk_distribution(
     predictions per diagnosis cohort.
     """
     import numpy as np
+
     abs_csv = os.path.join(DATA_ROOT, csv_path)
     if not os.path.exists(abs_csv):
         return JSONResponse({"error": f"CSV not found: {csv_path}"}, status_code=404)
 
     from ..services.gelstm import get_gelstm_service
+
     svc = get_gelstm_service()
     if not svc.is_available():
-        return JSONResponse({
-            "available": False,
-            "note": "GELSTM ensemble not deployed.",
-        })
+        return JSONResponse(
+            {
+                "available": False,
+                "note": "GELSTM ensemble not deployed.",
+            }
+        )
 
     folder_list = [f.strip() for f in scan_folders.split(",") if f.strip()]
     from ..biomarkers import find_subject_npz_files, load_correlation_matrix
@@ -499,9 +543,11 @@ def api_cohort_risk_distribution(
 
     cohort_probs: dict[str, list[float]] = {c: [] for c in COHORTS}
     for sid, grp in df.groupby(df["subject_id"].astype(str)):
-        diag = (grp["diagnosis"].astype(str).str.lower().dropna().head(1).iloc[0]
-                if "diagnosis" in grp.columns and not grp["diagnosis"].dropna().empty
-                else None)
+        diag = (
+            grp["diagnosis"].astype(str).str.lower().dropna().head(1).iloc[0]
+            if "diagnosis" in grp.columns and not grp["diagnosis"].dropna().empty
+            else None
+        )
         if diag not in cohort_probs:
             continue
         recs = find_subject_npz_files(DATA_ROOT, folder_list, sid)
@@ -541,13 +587,15 @@ def api_cohort_risk_distribution(
             "median": float(np.median(arr)),
         }
 
-    return JSONResponse({
-        "available": True,
-        "model_version": svc._ensemble.model_version if svc._ensemble else "",
-        "bin_edges": edges.tolist(),
-        "histograms": histograms,
-        "cohorts": COHORTS,
-    })
+    return JSONResponse(
+        {
+            "available": True,
+            "model_version": svc._ensemble.model_version if svc._ensemble else "",
+            "bin_edges": edges.tolist(),
+            "histograms": histograms,
+            "cohorts": COHORTS,
+        }
+    )
 
 
 @router.get("/api/cohort/network-disruption")
@@ -568,8 +616,8 @@ def api_cohort_network_disruption(
         return _stats_pending_response(csv_path, folder_list)
     stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
     from ..services.population import network_disruption_atlas
-    return JSONResponse(network_disruption_atlas(stats),
-                        headers=cache_headers(stats.fingerprint))
+
+    return JSONResponse(network_disruption_atlas(stats), headers=cache_headers(stats.fingerprint))
 
 
 @router.get("/api/cohort/dfc-states")
@@ -612,12 +660,14 @@ def api_cohort_dfc_states(
     # Surface the active warmup job (if any) so the frontend can render a progress bar.
     job = get_status(canonical_job_id(csv_path, folder_list), DASHBOARD_CACHE_ROOT)
     job_status = str(job.get("status") or "").lower()
-    return JSONResponse({
-        "available": False,
-        "note": (
-            "Dynamic FC is not computed yet for this dataset. Trigger the cohort "
-            "warmup (or wait for it to finish) — Stage 5 parcellates BOLD .nii.gz "
-            "and fits state distributions automatically."
-        ),
-        "job": job if job_status not in ("unknown", "") else None,
-    })
+    return JSONResponse(
+        {
+            "available": False,
+            "note": (
+                "Dynamic FC is not computed yet for this dataset. Trigger the cohort "
+                "warmup (or wait for it to finish) — Stage 5 parcellates BOLD .nii.gz "
+                "and fits state distributions automatically."
+            ),
+            "job": job if job_status not in ("unknown", "") else None,
+        }
+    )

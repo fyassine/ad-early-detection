@@ -14,6 +14,7 @@ explanations here are about *time*:
 
 All run on one subject ``item`` (dict from ``LongitudinalSubjectDataset``).
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List
@@ -94,20 +95,24 @@ def trace_forward(
     """Run the RNN step-by-step for one subject; capture hidden states + final probability."""
     model.eval()
     seq = build_sequence_input(
-        model, item, device=device, use_time_delta=use_time_delta,
-        graph_pool=graph_pool, dim_filter=dim_filter,
+        model,
+        item,
+        device=device,
+        use_time_delta=use_time_delta,
+        graph_pool=graph_pool,
+        dim_filter=dim_filter,
     )
     inp = seq["seq_input"].unsqueeze(0)  # (1, T, input_dim)
     if getattr(model, "rnn_type", "lstm") == "gru":
         output, h_n = model.lstm(inp)
     else:
         output, (h_n, _c) = model.lstm(inp)
-    hidden_states = output.squeeze(0)               # (T, hidden) per-visit hidden state
-    logit = model.classifier(h_n[-1]).squeeze(-1)   # final-visit prediction
+    hidden_states = output.squeeze(0)  # (T, hidden) per-visit hidden state
+    logit = model.classifier(h_n[-1]).squeeze(-1)  # final-visit prediction
     prob = torch.sigmoid(logit).item()
 
     out = {
-        "visit_embeddings": seq["visit_embeddings"],   # (T, latent)
+        "visit_embeddings": seq["visit_embeddings"],  # (T, latent)
         "seq_input": seq["seq_input"].detach().cpu().numpy(),
         "hidden_states": hidden_states.detach().cpu().numpy(),
         "logit": float(logit.item()),
@@ -151,10 +156,19 @@ def sequence_integrated_gradients(
             "(pip install -r CLASSIFIER/requirements-explain.txt)."
         ) from exc
 
-    seq = build_sequence_input(
-        model, item, device=device, use_time_delta=use_time_delta,
-        graph_pool=graph_pool, dim_filter=dim_filter,
-    )["seq_input"].unsqueeze(0).clone().requires_grad_(True)
+    seq = (
+        build_sequence_input(
+            model,
+            item,
+            device=device,
+            use_time_delta=use_time_delta,
+            graph_pool=graph_pool,
+            dim_filter=dim_filter,
+        )["seq_input"]
+        .unsqueeze(0)
+        .clone()
+        .requires_grad_(True)
+    )
 
     def _logit(inp):
         if getattr(model, "rnn_type", "lstm") == "gru":

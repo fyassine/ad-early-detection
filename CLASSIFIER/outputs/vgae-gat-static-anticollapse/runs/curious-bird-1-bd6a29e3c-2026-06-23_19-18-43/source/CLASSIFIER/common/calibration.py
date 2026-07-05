@@ -19,6 +19,7 @@ sens/spec achievable at the (re-mapped) best threshold — it improves the proba
 Model-agnostic and deterministic (no RNG). Works on probabilities directly: callers
 pass the sigmoid outputs they already have; logits are recovered as log(p/(1-p)).
 """
+
 from __future__ import annotations
 
 from typing import Tuple

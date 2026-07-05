@@ -16,6 +16,7 @@ unchanged):
     reconstruction MSE. Forcing the latent to reconstruct node features (not just
     adjacency) gives the encoder a signal the prior cannot satisfy by collapsing.
 """
+
 from __future__ import annotations
 
 import torch
@@ -35,7 +36,7 @@ def kl_divergence(mu: torch.Tensor, logvar: torch.Tensor, free_bits: float = 0.0
     # Per-node, per-dim KL contribution: -0.5 * (1 + logvar - mu² - exp(logvar)).
     kl_per_dim = -0.5 * (1 + logvar - mu.pow(2) - logvar.exp())  # [N, D]
     if free_bits > 0.0:
-        kl_dim_mean = kl_per_dim.mean(dim=0)                      # [D] batch-mean per dim
+        kl_dim_mean = kl_per_dim.mean(dim=0)  # [D] batch-mean per dim
         return torch.clamp(kl_dim_mean, min=free_bits).sum()
     return kl_per_dim.sum(dim=1).mean()
 

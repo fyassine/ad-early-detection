@@ -1,4 +1,5 @@
 """Tests for CLASSIFIER.common.thresholds."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -54,9 +55,7 @@ def test_select_youden_mode():
 def test_select_fixed_requires_value():
     with pytest.raises(ValueError):
         select_oof_threshold(TARGETS, PROBS, threshold_mode="fixed")
-    thr, method = select_oof_threshold(
-        TARGETS, PROBS, threshold_mode="fixed", fixed_threshold=0.42
-    )
+    thr, method = select_oof_threshold(TARGETS, PROBS, threshold_mode="fixed", fixed_threshold=0.42)
     assert method == "fixed" and thr == 0.42
 
 

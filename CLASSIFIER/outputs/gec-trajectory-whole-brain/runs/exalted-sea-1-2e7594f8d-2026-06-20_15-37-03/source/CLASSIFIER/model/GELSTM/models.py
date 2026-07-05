@@ -7,6 +7,7 @@ Architecture:
 
 Δt_t = months since previous visit / 96  (0 for first visit)
 """
+
 from __future__ import annotations
 
 import sys
@@ -72,7 +73,7 @@ class GELSTMClassifier(nn.Module):
         classifier_hidden: int = 64,
     ):
         super().__init__()
-        self.gaae_latent    = gaae_latent
+        self.gaae_latent = gaae_latent
         self.use_time_delta = use_time_delta
 
         # ── Shared GAAE encoder (applied per-visit) ─────────────────────────
@@ -151,8 +152,8 @@ class GELSTMClassifier(nn.Module):
         """
         _, (h_n, _) = self.lstm(packed_seqs)
         # h_n : (num_layers, B, hidden)
-        h_last = h_n[-1]           # (B, hidden) — last layer hidden state
-        logits = self.classifier(h_last).squeeze(-1)   # (B,)
+        h_last = h_n[-1]  # (B, hidden) — last layer hidden state
+        logits = self.classifier(h_last).squeeze(-1)  # (B,)
         return logits
 
     # ── Freeze / unfreeze encoder ────────────────────────────────────────────
@@ -160,10 +161,13 @@ class GELSTMClassifier(nn.Module):
     def freeze_encoder(self):
         """Freeze all GAAE encoder + FiLM parameters."""
         enc_modules = [
-            self.encoder.encoder_gat1, self.encoder.encoder_bn1,
-            self.encoder.encoder_gat2, self.encoder.encoder_bn2,
+            self.encoder.encoder_gat1,
+            self.encoder.encoder_bn1,
+            self.encoder.encoder_gat2,
+            self.encoder.encoder_bn2,
             self.encoder.encoder_gat3,
-            self.encoder.film_gamma,   self.encoder.film_beta,
+            self.encoder.film_gamma,
+            self.encoder.film_beta,
         ]
         for mod in enc_modules:
             for p in mod.parameters():
@@ -172,10 +176,13 @@ class GELSTMClassifier(nn.Module):
     def unfreeze_encoder(self):
         """Unfreeze all GAAE encoder + FiLM parameters."""
         enc_modules = [
-            self.encoder.encoder_gat1, self.encoder.encoder_bn1,
-            self.encoder.encoder_gat2, self.encoder.encoder_bn2,
+            self.encoder.encoder_gat1,
+            self.encoder.encoder_bn1,
+            self.encoder.encoder_gat2,
+            self.encoder.encoder_bn2,
             self.encoder.encoder_gat3,
-            self.encoder.film_gamma,   self.encoder.film_beta,
+            self.encoder.film_gamma,
+            self.encoder.film_beta,
         ]
         for mod in enc_modules:
             for p in mod.parameters():
@@ -198,7 +205,7 @@ class GELSTMClassifier(nn.Module):
         else:
             gaae_sd = ckpt.state_dict()
 
-        own_sd  = self.encoder.state_dict()
+        own_sd = self.encoder.state_dict()
         to_load = {k: v for k, v in gaae_sd.items() if k in own_sd and v.shape == own_sd[k].shape}
         missing = set(own_sd) - set(to_load)
         if missing:

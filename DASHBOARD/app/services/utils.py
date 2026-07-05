@@ -24,6 +24,7 @@ def _safe_under_root(abs_path: str) -> bool:
 
 # ── HTTP caching helpers ──────────────────────────────────────────────────────
 
+
 def cache_headers(fingerprint: str, max_age: int = 300) -> dict:
     """
     Build HTTP caching headers for heavy, rarely-changing JSON responses.
@@ -61,4 +62,4 @@ def check_not_modified(request_headers: dict, etag: str) -> bool:
             return JSONResponse(data, headers=headers)
     """
     client_etag = request_headers.get("if-none-match", "")
-    return bool(client_etag) and (client_etag == etag or client_etag == f'W/{etag}')
+    return bool(client_etag) and (client_etag == etag or client_etag == f"W/{etag}")

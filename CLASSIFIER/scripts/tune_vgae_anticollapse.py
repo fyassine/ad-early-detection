@@ -20,6 +20,7 @@ Usage
     python scripts/tune_vgae_anticollapse.py --conv-type gcn --n-trials 30
     python scripts/tune_vgae_anticollapse.py --conv-type gat --n-trials 30 --no-wandb
 """
+
 from __future__ import annotations
 
 import argparse
@@ -47,7 +48,9 @@ from SHARED.seeding import make_rng, make_torch_generator, seed_worker, set_seed
 
 SEED = 100  # matches configs/vgae_*_delcode_whole_brain.json
 
-WB_DATA_ROOT = "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__fc_wholebrain_sch200_flat__/matrices"
+WB_DATA_ROOT = (
+    "/mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__fc_wholebrain_sch200_flat__/matrices"
+)
 
 # How many of the final epochs to average when judging where training settled —
 # a single epoch's snapshot is noisy; a tail average is a better readout.
@@ -85,8 +88,11 @@ def build_loaders(cfg: dict, device: torch.device, torch_gen: torch.Generator):
     # num_workers=0: loaders are built once and reused across every trial in the
     # study, so per-trial worker spawn overhead would dominate at low trial counts.
     train_loader = DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True,
-        worker_init_fn=seed_worker, generator=torch_gen,
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        worker_init_fn=seed_worker,
+        generator=torch_gen,
     )
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     return train_loader, val_loader, in_features
@@ -141,8 +147,15 @@ def make_early_exit_callback(beta_warmup_epochs: int, max_floor_frac: float):
 
 
 def make_objective(
-    conv_type: str, base_cfg: dict, train_loader, val_loader, in_features: int,
-    device: torch.device, epochs_cap: int, use_wandb: bool, max_floor_frac: float,
+    conv_type: str,
+    base_cfg: dict,
+    train_loader,
+    val_loader,
+    in_features: int,
+    device: torch.device,
+    epochs_cap: int,
+    use_wandb: bool,
+    max_floor_frac: float,
 ):
     def objective(trial: optuna.Trial) -> float:
         cfg = dict(base_cfg)
@@ -170,22 +183,33 @@ def make_objective(
             # lands in group="tune-vgae-{conv_type}", job_type="tune" — distinct from
             # the real vgae-{gcn,gat}-static training runs.
             exp_meta = {
-                "id": f"tune-vgae-{conv_type}", "mode": "static", "model": "tune",
-                "dataset": "DELCODE_WHOLE_BRAIN", "seed": SEED, "wandb": True,
+                "id": f"tune-vgae-{conv_type}",
+                "mode": "static",
+                "model": "tune",
+                "dataset": "DELCODE_WHOLE_BRAIN",
+                "seed": SEED,
+                "wandb": True,
             }
             wandb_run = tracking.init_run(exp_meta, {**cfg, "trial_number": trial.number})
 
         on_epoch_end = make_early_exit_callback(cfg["beta_warmup_epochs"], max_floor_frac)
         try:
             _best_state, history = adapter.run_training(
-                model, optimizer, train_loader, val_loader, wandb_run, on_epoch_end=on_epoch_end,
+                model,
+                optimizer,
+                train_loader,
+                val_loader,
+                wandb_run,
+                on_epoch_end=on_epoch_end,
             )
         finally:
             if wandb_run is not None:
                 tracking.finish_run(wandb_run)
 
         score, floor_frac = post_warmup_score(history, cfg["beta_warmup_epochs"])
-        raw_kl_mean_tail = sum(history["raw_kl_mean"][-_TAIL_EPOCHS:]) / len(history["raw_kl_mean"][-_TAIL_EPOCHS:])
+        raw_kl_mean_tail = sum(history["raw_kl_mean"][-_TAIL_EPOCHS:]) / len(
+            history["raw_kl_mean"][-_TAIL_EPOCHS:]
+        )
         trial.set_user_attr("frac_dims_at_floor_tail_mean", floor_frac)
         trial.set_user_attr("raw_kl_mean_tail", raw_kl_mean_tail)
         trial.set_user_attr("val_recon_best", score)
@@ -213,10 +237,12 @@ def main(argv=None) -> int:
     parser.add_argument("--n-trials", type=int, default=30)
     parser.add_argument("--epochs-cap", type=int, default=150)
     parser.add_argument(
-        "--max-floor-frac", type=float, default=_MAX_FLOOR_FRAC,
+        "--max-floor-frac",
+        type=float,
+        default=_MAX_FLOOR_FRAC,
         help="Prune trials whose tail-mean fraction of latent dims pinned at the "
-             "free-bits floor exceeds this (default %(default)s). Tighten (e.g. "
-             "0.3) if the default lets through trials that still read collapsed.",
+        "free-bits floor exceeds this (default %(default)s). Tighten (e.g. "
+        "0.3) if the default lets through trials that still read collapsed.",
     )
     parser.add_argument("--no-wandb", action="store_true")
     args = parser.parse_args(argv)
@@ -226,56 +252,83 @@ def main(argv=None) -> int:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     base_cfg_path = (
-        _CLASSIFIER_ROOT / "configs" / f"vgae_{args.conv_type}_anticollapse_delcode_whole_brain.json"
+        _CLASSIFIER_ROOT
+        / "configs"
+        / f"vgae_{args.conv_type}_anticollapse_delcode_whole_brain.json"
     )
     base_cfg = json.loads(base_cfg_path.read_text())
 
     train_loader, val_loader, in_features = build_loaders(base_cfg, device, torch_gen)
-    print(f"conv_type={args.conv_type}  train={len(train_loader.dataset)}  "
-          f"val={len(val_loader.dataset)}  in_features={in_features}  device={device}")
+    print(
+        f"conv_type={args.conv_type}  train={len(train_loader.dataset)}  "
+        f"val={len(val_loader.dataset)}  in_features={in_features}  device={device}"
+    )
 
     objective = make_objective(
-        args.conv_type, base_cfg, train_loader, val_loader, in_features,
-        device, args.epochs_cap, use_wandb=not args.no_wandb, max_floor_frac=args.max_floor_frac,
+        args.conv_type,
+        base_cfg,
+        train_loader,
+        val_loader,
+        in_features,
+        device,
+        args.epochs_cap,
+        use_wandb=not args.no_wandb,
+        max_floor_frac=args.max_floor_frac,
     )
     study = optuna.create_study(direction="minimize", study_name=f"tune-vgae-{args.conv_type}")
     study.optimize(objective, n_trials=args.n_trials)
 
     completed = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
     pruned = [t for t in study.trials if t.state == optuna.trial.TrialState.PRUNED]
-    print(f"\n{len(completed)} completed / {len(pruned)} pruned (collapsed) of {len(study.trials)} trials.")
+    print(
+        f"\n{len(completed)} completed / {len(pruned)} pruned (collapsed) of {len(study.trials)} trials."
+    )
 
     best = None
     if completed:
         best = study.best_trial
         print(f"Best trial (#{best.number}): val_recon={best.value:.4f}")
         print(f"  params: {best.params}")
-        print(f"  frac_dims_at_floor_tail_mean: {best.user_attrs.get('frac_dims_at_floor_tail_mean')}")
+        print(
+            f"  frac_dims_at_floor_tail_mean: {best.user_attrs.get('frac_dims_at_floor_tail_mean')}"
+        )
         print(f"  raw_kl_mean_tail: {best.user_attrs.get('raw_kl_mean_tail')}")
         print(f"  epochs_run: {best.user_attrs.get('epochs_run')}")
     else:
         # Every trial tripped the non-collapse prune — that's a real finding: no
         # point in this search space escaped the free-bits floor, so free-bits is
         # not the right remedy here (revisit the clamp / KL-annealing instead).
-        print(f"NO trial kept < {args.max_floor_frac} of dims off the free-bits floor — "
-              "free-bits did not escape collapse anywhere in this search space.")
+        print(
+            f"NO trial kept < {args.max_floor_frac} of dims off the free-bits floor — "
+            "free-bits did not escape collapse anywhere in this search space."
+        )
 
     out_path = _CLASSIFIER_ROOT / "scripts" / f"tune_vgae_{args.conv_type}_best.json"
-    out_path.write_text(json.dumps({
-        "conv_type": args.conv_type,
-        "max_floor_frac": args.max_floor_frac,
-        "epochs_cap": args.epochs_cap,
-        "best_params": best.params if best else None,
-        "best_val_recon": best.value if best else None,
-        "best_user_attrs": dict(best.user_attrs) if best else None,
-        "n_completed": len(completed),
-        "n_pruned": len(pruned),
-        "all_trials": [
-            {"number": t.number, "state": str(t.state), "params": t.params,
-             "value": t.value, "user_attrs": t.user_attrs}
-            for t in study.trials
-        ],
-    }, indent=2))
+    out_path.write_text(
+        json.dumps(
+            {
+                "conv_type": args.conv_type,
+                "max_floor_frac": args.max_floor_frac,
+                "epochs_cap": args.epochs_cap,
+                "best_params": best.params if best else None,
+                "best_val_recon": best.value if best else None,
+                "best_user_attrs": dict(best.user_attrs) if best else None,
+                "n_completed": len(completed),
+                "n_pruned": len(pruned),
+                "all_trials": [
+                    {
+                        "number": t.number,
+                        "state": str(t.state),
+                        "params": t.params,
+                        "value": t.value,
+                        "user_attrs": t.user_attrs,
+                    }
+                    for t in study.trials
+                ],
+            },
+            indent=2,
+        )
+    )
     print(f"Wrote {out_path}")
     return 0
 

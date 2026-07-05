@@ -34,9 +34,7 @@ def _parse_labels(labels_path: Path) -> dict[int, dict]:
     ``17Networks_RH_VisCent_ExStr_3``.
     """
     out: dict[int, dict] = {}
-    pattern = re.compile(
-        r"^\s*(\d+)\s+(\S+)"
-    )
+    pattern = re.compile(r"^\s*(\d+)\s+(\S+)")
     with labels_path.open("r") as f:
         for line in f:
             m = pattern.match(line)
@@ -84,15 +82,30 @@ def _compute_centroids(parc_path: Path) -> tuple[dict[int, tuple[float, float, f
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--parcellation", required=True, type=Path,
-                        help="Path to the Schaefer parcellation NIfTI (MNI space).")
-    parser.add_argument("--labels", required=True, type=Path,
-                        help="Path to the Schaefer label .txt (e.g. Schaefer2018_200Parcels_7Networks_order.txt).")
-    parser.add_argument("--n-parcels", type=int, default=200,
-                        help="Number of parcels (used for the output filename).")
-    parser.add_argument("--out-dir", type=Path,
-                        default=Path(__file__).parent / "static" / "data",
-                        help="Output directory.")
+    parser.add_argument(
+        "--parcellation",
+        required=True,
+        type=Path,
+        help="Path to the Schaefer parcellation NIfTI (MNI space).",
+    )
+    parser.add_argument(
+        "--labels",
+        required=True,
+        type=Path,
+        help="Path to the Schaefer label .txt (e.g. Schaefer2018_200Parcels_7Networks_order.txt).",
+    )
+    parser.add_argument(
+        "--n-parcels",
+        type=int,
+        default=200,
+        help="Number of parcels (used for the output filename).",
+    )
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=Path(__file__).parent / "static" / "data",
+        help="Output directory.",
+    )
     args = parser.parse_args()
 
     print(f"Parsing labels: {args.labels}")
@@ -105,15 +118,17 @@ def main() -> None:
     for idx in sorted(centroids.keys()):
         meta = labels_meta.get(idx, {})
         x, y, z = centroids[idx]
-        rois.append({
-            "index": idx,                  # 0-based
-            "label": meta.get("label", ""),
-            "network": meta.get("network", ""),
-            "hemisphere": meta.get("hemisphere", ""),
-            "x_mni": round(x, 2),
-            "y_mni": round(y, 2),
-            "z_mni": round(z, 2),
-        })
+        rois.append(
+            {
+                "index": idx,  # 0-based
+                "label": meta.get("label", ""),
+                "network": meta.get("network", ""),
+                "hemisphere": meta.get("hemisphere", ""),
+                "x_mni": round(x, 2),
+                "y_mni": round(y, 2),
+                "z_mni": round(z, 2),
+            }
+        )
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     out_path = args.out_dir / f"schaefer_{args.n_parcels}_coords.json"

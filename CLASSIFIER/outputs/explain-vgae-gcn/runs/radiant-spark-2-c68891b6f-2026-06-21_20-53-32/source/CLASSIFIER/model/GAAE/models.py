@@ -3,6 +3,7 @@
 Used as a pretrained feature extractor by GEC and GELSTM; its training loop
 (train.py) runs once and is intentionally un-refactored per architecture.md.
 """
+
 from __future__ import annotations
 
 import torch.nn as nn
@@ -67,14 +68,10 @@ class GraphAttentionAutoencoderConditioned(nn.Module):
 
         # FiLM modulator
         self.film_gamma = nn.Sequential(
-            nn.Linear(cond_dim, out_features),
-            nn.ReLU(),
-            nn.Linear(out_features, out_features)
+            nn.Linear(cond_dim, out_features), nn.ReLU(), nn.Linear(out_features, out_features)
         )
         self.film_beta = nn.Sequential(
-            nn.Linear(cond_dim, out_features),
-            nn.ReLU(),
-            nn.Linear(out_features, out_features)
+            nn.Linear(cond_dim, out_features), nn.ReLU(), nn.Linear(out_features, out_features)
         )
 
         # Decoder
@@ -113,7 +110,9 @@ class GraphAttentionAutoencoderConditioned(nn.Module):
             return edge_attr.unsqueeze(-1)
         return edge_attr
 
-    def encode(self, x, edge_index, edge_attr, return_attention=False, cond_vec=None, batch_mask=None):
+    def encode(
+        self, x, edge_index, edge_attr, return_attention=False, cond_vec=None, batch_mask=None
+    ):
         edge_attr = self._normalize_edge_attr(edge_attr)
         attention_weights = []
 
@@ -155,9 +154,9 @@ class GraphAttentionAutoencoderConditioned(nn.Module):
 
     def condition_latent(self, z, cond_vec, batch_mask):
         gamma = self.film_gamma(cond_vec)  # shape: [batch_size, F]
-        beta = self.film_beta(cond_vec)    # shape: [batch_size, F]
+        beta = self.film_beta(cond_vec)  # shape: [batch_size, F]
         gamma_per_node = gamma[batch_mask]  # [num_nodes, F]
-        beta_per_node = beta[batch_mask]    # [num_nodes, F]
+        beta_per_node = beta[batch_mask]  # [num_nodes, F]
         z = gamma_per_node * z + beta_per_node
         return z
 

@@ -13,11 +13,13 @@ def api_discover():
     """Discover all available CSVs and scan folders under DATA_ROOT."""
     csvs = discover_csvs(DATA_ROOT)
     folders = discover_scan_folders(DATA_ROOT)
-    return JSONResponse({
-        "data_root": DATA_ROOT,
-        "csvs": csvs,
-        "scan_folders": folders,
-    })
+    return JSONResponse(
+        {
+            "data_root": DATA_ROOT,
+            "csvs": csvs,
+            "scan_folders": folders,
+        }
+    )
 
 
 @router.get("/api/scan")

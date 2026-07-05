@@ -20,6 +20,7 @@ def feature_reconstruction_loss(x, x_reconstructed):
     """
     return F.mse_loss(x_reconstructed, x)
 
+
 def adjacency_reconstruction_loss(precomputed_adj, adj_reconstructed, mask):
     """
     Calculates the binary cross-entropy (BCE) loss for adjacency reconstruction
@@ -44,6 +45,7 @@ def adjacency_reconstruction_loss(precomputed_adj, adj_reconstructed, mask):
 
     # Compute loss only for the valid (non-padded) elements
     return F.binary_cross_entropy(adj_reconstructed_selected, precomputed_adj_selected)
+
 
 def total_loss_fn(x, x_reconstructed, adj_original, adj_reconstructed, mask, adj_loss_weight=1.0):
     """
@@ -73,6 +75,7 @@ def total_loss_fn(x, x_reconstructed, adj_original, adj_reconstructed, mask, adj
 
     return total_loss, feature_loss, adjacency_loss
 
+
 def compute_sample_reconstruction_error(
     data,
     model,
@@ -88,8 +91,16 @@ def compute_sample_reconstruction_error(
     data = data.to(device)
     x, edge_index = data.x, data.edge_index
     edge_attr = getattr(data, "edge_attr", None)
-    age = float(data.patient_age.item()) if torch.is_tensor(data.patient_age) else float(data.patient_age)
-    sex = float(data.patient_sex.item()) if torch.is_tensor(data.patient_sex) else float(data.patient_sex)
+    age = (
+        float(data.patient_age.item())
+        if torch.is_tensor(data.patient_age)
+        else float(data.patient_age)
+    )
+    sex = (
+        float(data.patient_sex.item())
+        if torch.is_tensor(data.patient_sex)
+        else float(data.patient_sex)
+    )
     cond_vec = torch.tensor([[age, sex]], dtype=torch.float32, device=device)
     batch_mask = torch.zeros(x.size(0), dtype=torch.long, device=device)
 

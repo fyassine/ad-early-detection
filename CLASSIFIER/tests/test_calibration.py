@@ -1,4 +1,5 @@
 """Tests for CLASSIFIER.common.calibration — temperature scaling + ECE."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -28,6 +29,7 @@ def test_apply_temperature_identity():
 
 def test_apply_temperature_monotonic_preserves_auc():
     from sklearn.metrics import roc_auc_score
+
     probs, y = _underconfident()
     cal = apply_temperature(probs, 0.5)
     # monotonic transform -> identical ranking -> identical AUC

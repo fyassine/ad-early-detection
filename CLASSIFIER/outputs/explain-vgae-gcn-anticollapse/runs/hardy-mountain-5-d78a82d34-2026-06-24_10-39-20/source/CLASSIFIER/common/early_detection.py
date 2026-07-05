@@ -13,6 +13,7 @@ the model's hooks (so they stay model-agnostic):
 Both reuse the trained model and its validation-derived threshold; neither derives a
 new threshold, so there is no test-set leakage.
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, List

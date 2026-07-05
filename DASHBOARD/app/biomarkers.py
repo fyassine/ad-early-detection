@@ -58,8 +58,10 @@ def _safe_float(v) -> float | None:
     f = float(v)
     return None if not math.isfinite(f) else f
 
+
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     HAS_NETWORKX = False
@@ -136,6 +138,7 @@ def compute_fmri_biomarkers(corr_matrix: np.ndarray, is_dmn_only: bool = False) 
     if not is_dmn_only and n in (100, 200, 400, 600, 800, 1000):
         try:
             from .services.networks import per_network_fc, system_segregation
+
             net_fc = per_network_fc(corr_matrix, n_parcels=n)
             if net_fc:
                 metrics["network_fc"] = net_fc
@@ -218,12 +221,14 @@ def _build_npz_index(data_root: str, folder_paths: list[str]) -> dict[str, list[
                 abs_path = os.path.join(dirpath, fn)
                 vmatch = _VISIT_FILENAME_RE.search(fn)
                 visit = vmatch.group(1) if vmatch else "unknown"
-                by_sid.setdefault(sid, []).append({
-                    "visit": visit,
-                    "abs_path": abs_path,
-                    "rel_path": os.path.relpath(abs_path, data_root),
-                    "filename": fn,
-                })
+                by_sid.setdefault(sid, []).append(
+                    {
+                        "visit": visit,
+                        "abs_path": abs_path,
+                        "rel_path": os.path.relpath(abs_path, data_root),
+                        "filename": fn,
+                    }
+                )
     for recs in by_sid.values():
         recs.sort(key=_vkey)
     return by_sid
@@ -245,12 +250,14 @@ def _build_nifti_index(data_root: str, folder_paths: list[str]) -> dict[str, lis
                     continue
                 sid = m.group(1)
                 abs_path = os.path.join(dirpath, fn)
-                by_sid.setdefault(sid, []).append({
-                    "visit": _detect_nifti_visit(fn, rel_dir),
-                    "abs_path": abs_path,
-                    "rel_path": os.path.relpath(abs_path, data_root),
-                    "filename": fn,
-                })
+                by_sid.setdefault(sid, []).append(
+                    {
+                        "visit": _detect_nifti_visit(fn, rel_dir),
+                        "abs_path": abs_path,
+                        "rel_path": os.path.relpath(abs_path, data_root),
+                        "filename": fn,
+                    }
+                )
     for recs in by_sid.values():
         recs.sort(key=_vkey)
     return by_sid
@@ -382,12 +389,14 @@ def get_subject_trajectory_stream(
         except Exception as e:
             biomarkers = {"error": str(e)}
 
-        sessions.append({
-            "visit": visit,
-            "file": rec["rel_path"],
-            "filename": rec["filename"],
-            **biomarkers,
-        })
+        sessions.append(
+            {
+                "visit": visit,
+                "file": rec["rel_path"],
+                "filename": rec["filename"],
+                **biomarkers,
+            }
+        )
 
     result = {
         "subject_id": subject_id,

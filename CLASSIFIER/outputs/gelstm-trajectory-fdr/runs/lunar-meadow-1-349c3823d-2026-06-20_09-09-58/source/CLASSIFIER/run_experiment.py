@@ -20,6 +20,7 @@ W&B is on by default (see common/tracking.py). Use --no-wandb to disable, or set
 WANDB_MODE=offline in the environment. Credentials are read from the repo-root
 .env (loaded automatically) or ~/.netrc.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -181,8 +182,9 @@ def run_one(exp: dict, *, no_wandb: bool, require_clean: bool) -> bool:
         import papermill as pm
         from papermill.exceptions import PapermillExecutionError
     except ImportError as exc:
-        _write_status(run_dir, state="failed", finished_at=_now(),
-                      error=f"papermill not installed: {exc}")
+        _write_status(
+            run_dir, state="failed", finished_at=_now(), error=f"papermill not installed: {exc}"
+        )
         raise
 
     print(f"  notebook : {input_nb.relative_to(_CLASSIFIER_ROOT)}")
@@ -206,16 +208,28 @@ def run_one(exp: dict, *, no_wandb: bool, require_clean: bool) -> bool:
         # Surface the actual notebook error (cell, ename, traceback) in the terminal.
         error_detail = f"{exc.ename}: {exc.evalue}"
         nb_tb = "\n".join(exc.traceback) if exc.traceback else ""
-        _write_status(run_dir, state="failed", finished_at=_now(),
-                      duration_seconds=round(elapsed, 1),
-                      error=error_detail, cell=f"In [{exc.exec_count}]",
-                      notebook_traceback=nb_tb)
+        _write_status(
+            run_dir,
+            state="failed",
+            finished_at=_now(),
+            duration_seconds=round(elapsed, 1),
+            error=error_detail,
+            cell=f"In [{exc.exec_count}]",
+            notebook_traceback=nb_tb,
+        )
         collect_results(_OUTPUTS)
-        print(color(f"  ✗ FAILED  ({format_elapsed(elapsed)}) — notebook error in cell In [{exc.exec_count}]:", "red"), file=sys.stderr)
+        print(
+            color(
+                f"  ✗ FAILED  ({format_elapsed(elapsed)}) — notebook error in cell In [{exc.exec_count}]:",
+                "red",
+            ),
+            file=sys.stderr,
+        )
         print(f"  {'-' * 70}", file=sys.stderr)
         if nb_tb:
             # Strip ANSI color codes for clean terminal output.
             from papermill.exceptions import strip_color
+
             print(f"  {strip_color(nb_tb)}", file=sys.stderr)
         else:
             print(f"  {error_detail}", file=sys.stderr)
@@ -225,21 +239,29 @@ def run_one(exp: dict, *, no_wandb: bool, require_clean: bool) -> bool:
         return False
     except Exception:
         elapsed = time.monotonic() - t0
-        _write_status(run_dir, state="failed", finished_at=_now(),
-                      duration_seconds=round(elapsed, 1),
-                      error=traceback.format_exc(limit=3))
+        _write_status(
+            run_dir,
+            state="failed",
+            finished_at=_now(),
+            duration_seconds=round(elapsed, 1),
+            error=traceback.format_exc(limit=3),
+        )
         collect_results(_OUTPUTS)
-        print(color(f"  ✗ FAILED  ({format_elapsed(elapsed)}) — see {log_path}", "red"), file=sys.stderr)
+        print(
+            color(f"  ✗ FAILED  ({format_elapsed(elapsed)}) — see {log_path}", "red"),
+            file=sys.stderr,
+        )
         return False
 
     elapsed = time.monotonic() - t0
     _update_latest_symlink(exp["id"], run_dir)
-    _write_status(run_dir, state="done", finished_at=_now(), exit_code=0,
-                  duration_seconds=round(elapsed, 1))
+    _write_status(
+        run_dir, state="done", finished_at=_now(), exit_code=0, duration_seconds=round(elapsed, 1)
+    )
     rows = collect_results(_OUTPUTS)
     row = next((r for r in rows if r.get("run_dir", "").endswith(run_dir.name)), {})
-    cv_summary = {k[len("cv."):]: v for k, v in row.items() if k.startswith("cv.")}
-    metric_summary = {k[len("metric."):]: v for k, v in row.items() if k.startswith("metric.")}
+    cv_summary = {k[len("cv.") :]: v for k, v in row.items() if k.startswith("cv.")}
+    metric_summary = {k[len("metric.") :]: v for k, v in row.items() if k.startswith("metric.")}
     print(color(f"  ✓ DONE  ({format_elapsed(elapsed)})", "green"))
     cv_line = format_cv_summary(cv_summary)
     if cv_line:
@@ -313,7 +335,9 @@ def cmd_collect() -> None:
 # CLI
 # --------------------------------------------------------------------------- #
 def parse_args(argv: list[str]) -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     sel = p.add_mutually_exclusive_group()
     sel.add_argument("--id", help="Run the single experiment with this id.")
     sel.add_argument("--all", action="store_true", help="Run every experiment sequentially.")
@@ -321,9 +345,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     p.add_argument("--dry-run", action="store_true", help="Print merged parameters and exit.")
     p.add_argument("--background", action="store_true", help="Detach and run in the background.")
     p.add_argument("--status", action="store_true", help="Print a table of all runs and exit.")
-    p.add_argument("--collect", action="store_true", help="Rebuild RESULTS.csv from run summaries and exit.")
-    p.add_argument("--no-wandb", action="store_true", help="Disable W&B logging for this invocation.")
-    p.add_argument("--require-clean", action="store_true", help="Refuse to run if the git tree is dirty.")
+    p.add_argument(
+        "--collect", action="store_true", help="Rebuild RESULTS.csv from run summaries and exit."
+    )
+    p.add_argument(
+        "--no-wandb", action="store_true", help="Disable W&B logging for this invocation."
+    )
+    p.add_argument(
+        "--require-clean", action="store_true", help="Refuse to run if the git tree is dirty."
+    )
     return p.parse_args(argv)
 
 

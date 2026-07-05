@@ -1,4 +1,5 @@
 """Tests for CLASSIFIER.common.contrasts — frozen pre-registered contrasts."""
+
 from __future__ import annotations
 
 import dataclasses

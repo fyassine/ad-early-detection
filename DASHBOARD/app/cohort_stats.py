@@ -50,8 +50,14 @@ UMAP_MIN_DIST = 0.1
 UMAP_RANDOM_STATE = 42
 
 # Biomarker fields tracked in normative bands.
-BIOMARKER_KEYS = ["global_fc", "dmn_fc", "modularity", "density", "pos_fc_ratio",
-                  "system_segregation"]
+BIOMARKER_KEYS = [
+    "global_fc",
+    "dmn_fc",
+    "modularity",
+    "density",
+    "pos_fc_ratio",
+    "system_segregation",
+]
 
 # Schaefer 7-network names (used to expose per-network FC stats).
 SCHAEFER_NETWORKS = ["Default", "Cont", "SalVentAttn", "DorsAttn", "Limbic", "SomMot", "Vis"]
@@ -61,9 +67,11 @@ SCHAEFER_NETWORKS = ["Default", "Cont", "SalVentAttn", "DorsAttn", "Limbic", "So
 # Dataclass                                                                   #
 # --------------------------------------------------------------------------- #
 
+
 @dataclass
 class CohortStats:
     """All cohort-level reference data the frontend needs."""
+
     # Per-cohort biomarker stats: {cohort: {metric: {mean, std, n}}}
     biomarker_stats: dict
     # Manifold scatter
@@ -152,6 +160,7 @@ def is_stats_cached(
 # Helpers                                                                     #
 # --------------------------------------------------------------------------- #
 
+
 def _safe_float(v) -> Optional[float]:
     if v is None:
         return None
@@ -202,6 +211,7 @@ def _pick_baseline_npz(records: list[dict]) -> Optional[dict]:
 # --------------------------------------------------------------------------- #
 # Stage 1 — collect baseline FC vectors                                       #
 # --------------------------------------------------------------------------- #
+
 
 def _collect_baseline_fc_vectors(
     data_root: str,
@@ -287,6 +297,7 @@ def _collect_baseline_fc_vectors(
 # Stage 1b — longitudinal FC vectors (converters' non-baseline visits)         #
 # --------------------------------------------------------------------------- #
 
+
 def _collect_longitudinal_fc_vectors(
     data_root: str,
     df: pd.DataFrame,
@@ -316,8 +327,12 @@ def _collect_longitudinal_fc_vectors(
         npz_index = index_npz_by_subject(data_root, scan_folders)
 
     converter_ids = (
-        df[df["diagnosis"].astype(str).str.strip().str.lower() == "converter"]
-        ["subject_id"].dropna().astype(str).str.strip().unique().tolist()
+        df[df["diagnosis"].astype(str).str.strip().str.lower() == "converter"]["subject_id"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .unique()
+        .tolist()
     )
     if not converter_ids:
         return np.empty((0, 0), dtype=np.float32), [], []
@@ -374,6 +389,7 @@ def _collect_longitudinal_fc_vectors(
 # --------------------------------------------------------------------------- #
 # Stage 2 — biomarker statistics for normative bands                          #
 # --------------------------------------------------------------------------- #
+
 
 def _cohort_mean_matrices(
     features: np.ndarray,
@@ -471,8 +487,7 @@ def _biomarker_stats_from_features(
                                  EBM training)
     """
     if features.size == 0:
-        return ({c: {} for c in COHORTS}, {c: {} for c in COHORTS},
-                {c: {} for c in COHORTS}, [])
+        return ({c: {} for c in COHORTS}, {c: {} for c in COHORTS}, {c: {} for c in COHORTS}, [])
 
     iu = np.triu_indices(n_rois, k=1)
     is_dmn_only = n_rois <= 50
@@ -500,9 +515,7 @@ def _biomarker_stats_from_features(
     iu_r, iu_c = iu  # avoid pickling the tuple of arrays as a unit
 
     if miss_indices:
-        miss_args = [
-            (features[i], n_rois, iu_r, iu_c, is_dmn_only) for i in miss_indices
-        ]
+        miss_args = [(features[i], n_rois, iu_r, iu_c, is_dmn_only) for i in miss_indices]
         n_workers = min(os.cpu_count() or 4, len(miss_args), 8)
         # ProcessPool — networkx.greedy_modularity_communities is GIL-bound,
         # so ThreadPool gives no speedup on the 838-subject pass.
@@ -580,6 +593,7 @@ def _biomarker_stats_from_features(
 # --------------------------------------------------------------------------- #
 # Stage 3 — UMAP embedding + centroids + conversion axis                      #
 # --------------------------------------------------------------------------- #
+
 
 def _fit_manifold(
     features: np.ndarray,
@@ -774,6 +788,7 @@ def _compute_disease_axes(centroids: dict) -> dict:
 # 2023+ analytics: percentiles, brain-age, EBM, time-shift                    #
 # --------------------------------------------------------------------------- #
 
+
 def _compute_percentile_bands(biomarker_values: dict) -> dict:
     """Run the percentile bootstrap for each cohort × biomarker."""
     try:
@@ -803,10 +818,17 @@ def _train_brain_age(
     age_lookup = (
         df.dropna(subset=["subject_id"])
         .drop_duplicates(subset="subject_id", keep="first")
-        .set_index(df.columns[df.columns.get_loc("subject_id")] if "subject_id" in df.columns else None)
+        .set_index(
+            df.columns[df.columns.get_loc("subject_id")] if "subject_id" in df.columns else None
+        )
     )
     try:
-        age_lookup = df.dropna(subset=["subject_id"]).drop_duplicates(subset="subject_id", keep="first").set_index("subject_id")["age"].to_dict()
+        age_lookup = (
+            df.dropna(subset=["subject_id"])
+            .drop_duplicates(subset="subject_id", keep="first")
+            .set_index("subject_id")["age"]
+            .to_dict()
+        )
     except Exception:
         return None
 
@@ -818,6 +840,7 @@ def _train_brain_age(
 
     try:
         from .services.brain_age import fit_brain_age
+
         return fit_brain_age(cn_features, cn_ages)
     except Exception:
         return None
@@ -1033,7 +1056,7 @@ def _save_disk_cache(path: str, fingerprint: str, stats: CohortStats) -> None:
         "conversion_axis": stats.conversion_axis,
         "cohort_means": stats.cohort_means,
         "patient_visit_coords": stats.patient_visit_coords,
-        "umap_mapper": None,   # excluded from disk cache — see comment above
+        "umap_mapper": None,  # excluded from disk cache — see comment above
         "edge_dim": stats.edge_dim,
         "n_rois": stats.n_rois,
         "biomarker_percentiles": stats.biomarker_percentiles,
@@ -1058,6 +1081,7 @@ def _save_disk_cache(path: str, fingerprint: str, stats: CohortStats) -> None:
 # Public API                                                                  #
 # --------------------------------------------------------------------------- #
 
+
 def get_cohort_stats(
     data_root: str,
     csv_path: str,
@@ -1077,8 +1101,10 @@ def get_cohort_stats(
             return _CACHE[key]
 
     import time as _time
+
     _stage_times: list[tuple[str, float]] = []
     _t0 = _time.perf_counter()
+
     def _tick(label: str) -> None:
         nonlocal _t0
         dt = _time.perf_counter() - _t0
@@ -1112,16 +1138,17 @@ def get_cohort_stats(
             data_root, df, scan_folders, npz_index=npz_index, executor=executor
         )
         _tick("baseline_fc_vectors")
-        (biomarker_stats, biomarker_values, network_fc_stats,
-         per_subject_biomarkers) = _biomarker_stats_from_features(
-            features, cohorts, n_rois, executor=executor
+        (biomarker_stats, biomarker_values, network_fc_stats, per_subject_biomarkers) = (
+            _biomarker_stats_from_features(features, cohorts, n_rois, executor=executor)
         )
         _tick("biomarker_stats")
         # Co-fit: include every converter's non-baseline visits in the UMAP
         # training set so per-visit coords come from the actual fit (not from
         # an unstable transform()).
         long_features, long_sids, long_visits = _collect_longitudinal_fc_vectors(
-            data_root, df, scan_folders,
+            data_root,
+            df,
+            scan_folders,
             npz_index=npz_index,
             baseline_subject_ids=set(subject_ids),
             n_rois_lock=n_rois,
@@ -1158,8 +1185,12 @@ def get_cohort_stats(
     ebm = _build_ebm(biomarker_values, df, subject_ids)
     _tick("build_ebm")
     time_shift_model = _build_time_shift_model(
-        per_subject_biomarkers, cohorts, subject_ids,
-        long_sids, long_visits, df,
+        per_subject_biomarkers,
+        cohorts,
+        subject_ids,
+        long_sids,
+        long_visits,
+        df,
     )
     _tick("build_time_shift_model")
 
@@ -1220,9 +1251,7 @@ def project_visits(
         rows.append(v)
         keep.append(i)
 
-    out: list[dict] = [
-        {"x": None, "y": None, "conversion_score": None} for _ in matrices
-    ]
+    out: list[dict] = [{"x": None, "y": None, "conversion_score": None} for _ in matrices]
     if not rows:
         return out
 

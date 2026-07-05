@@ -6,6 +6,7 @@ derivation. Each function returns the ``matplotlib.figure.Figure`` so callers ca
 ``plt.show()`` it, save it, or log it. Importing this module does not pick a
 backend, so it is safe under a headless (Agg) test environment.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -73,11 +74,18 @@ def plot_conversion_trajectories(traj_df, threshold: float, *, title: str = "") 
         sub = traj_df[traj_df["label"] == label]
         for _pid, grp in sub.groupby("pid"):
             ax.plot(
-                grp["month"], grp["prob"], marker="o", alpha=0.6,
-                color=palette[label], lw=1.5,
+                grp["month"],
+                grp["prob"],
+                marker="o",
+                alpha=0.6,
+                color=palette[label],
+                lw=1.5,
             )
         ax.axhline(
-            threshold, color="black", lw=1.2, linestyle="--",
+            threshold,
+            color="black",
+            lw=1.2,
+            linestyle="--",
             label=f"Threshold={threshold:.3f}",
         )
         ax.set_xlabel("Visit month")

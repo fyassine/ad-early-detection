@@ -1,4 +1,5 @@
 """Tests for CLASSIFIER.common.early_detection."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -17,11 +18,7 @@ def _bundle_with_visits(n_scans_per_subject, labels):
 
 def _truncate(bundle, n):
     """Keep subjects with >= n visits, cap their n_scans at n."""
-    items = [
-        {**it, "n_scans": min(it["n_scans"], n)}
-        for it in bundle.items
-        if it["n_scans"] >= n
-    ]
+    items = [{**it, "n_scans": min(it["n_scans"], n)} for it in bundle.items if it["n_scans"] >= n]
     return Bundle([it["label"] for it in items], [it["subject_id"] for it in items], items)
 
 
@@ -41,8 +38,13 @@ def test_early_detection_table_respects_min_subjects_guard():
     # 6 subjects: 3 have 3 visits, 3 have 1 visit; balanced classes.
     bundle = _bundle_with_visits([3, 3, 3, 1, 1, 1], [1, 0, 1, 0, 1, 0])
     rows = early_detection_table(
-        bundle, _eval_split, _truncate, state_dict={}, threshold=0.5,
-        device="cpu", min_subjects=4,
+        bundle,
+        _eval_split,
+        _truncate,
+        state_dict={},
+        threshold=0.5,
+        device="cpu",
+        min_subjects=4,
     )
     by_n = {r["n_visits"]: r for r in rows}
     # N=1 keeps all 6 -> included; N=2/N=3 keep only 3 -> skipped (min_subjects=4).
@@ -55,8 +57,13 @@ def test_early_detection_table_skips_single_class():
     # All eligible subjects share one class at every N -> always skipped.
     bundle = _bundle_with_visits([2, 2, 2, 2], [1, 1, 1, 1])
     rows = early_detection_table(
-        bundle, _eval_split, _truncate, state_dict={}, threshold=0.5,
-        device="cpu", min_subjects=2,
+        bundle,
+        _eval_split,
+        _truncate,
+        state_dict={},
+        threshold=0.5,
+        device="cpu",
+        min_subjects=2,
     )
     assert rows == []
 

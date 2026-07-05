@@ -5,6 +5,7 @@ construction, same injected ``wandb_run`` convention, same best-val-loss
 early-stopping contract returning a ``state_dict``) but optimises the VGAE
 objective: masked adjacency BCE + β·KL, with no feature-reconstruction term.
 """
+
 from __future__ import annotations
 
 import copy
@@ -25,7 +26,7 @@ def _combined_dense_adj(edge_index, batch_mask, total_nodes, device):
     start = 0
     for i in range(dense_adj.size(0)):
         n = int((batch_mask == i).sum().item())
-        combined[start:start + n, start:start + n] = dense_adj[i, :n, :n]
+        combined[start : start + n, start : start + n] = dense_adj[i, :n, :n]
         start += n
     return combined
 
@@ -35,7 +36,12 @@ def _run_epoch(model, loader, optimizer, device, beta, *, train: bool):
     total_loss = total_recon = total_kl = 0.0
     for batch in loader:
         batch = batch.to(device)
-        x, edge_index, edge_attr, batch_mask = batch.x, batch.edge_index, batch.edge_attr, batch.batch
+        x, edge_index, edge_attr, batch_mask = (
+            batch.x,
+            batch.edge_index,
+            batch.edge_attr,
+            batch.batch,
+        )
 
         with torch.set_grad_enabled(train):
             _z, mu, logvar, adj_reconstructed = model(x, edge_index, edge_attr)
@@ -57,8 +63,16 @@ def _run_epoch(model, loader, optimizer, device, beta, *, train: bool):
 
 
 def train_vgae_with_val(
-    model, train_loader, val_loader, optimizer, device,
-    *, beta=1.0, epochs=100, early_stopping_patience=25, wandb_run=None,
+    model,
+    train_loader,
+    val_loader,
+    optimizer,
+    device,
+    *,
+    beta=1.0,
+    epochs=100,
+    early_stopping_patience=25,
+    wandb_run=None,
 ):
     """Train the VGAE; return ``(best_state_dict, history)`` (best = lowest val loss).
 
@@ -71,14 +85,27 @@ def train_vgae_with_val(
 
     outer_bar = tqdm(range(epochs), desc="VGAE Training")
     for epoch in outer_bar:
-        tr_loss, tr_recon, tr_kl = _run_epoch(model, train_loader, optimizer, device, beta, train=True)
-        va_loss, _va_recon, _va_kl = _run_epoch(model, val_loader, optimizer, device, beta, train=False)
+        tr_loss, tr_recon, tr_kl = _run_epoch(
+            model, train_loader, optimizer, device, beta, train=True
+        )
+        va_loss, _va_recon, _va_kl = _run_epoch(
+            model, val_loader, optimizer, device, beta, train=False
+        )
 
         outer_bar.set_postfix({"Train": f"{tr_loss:.4f}", "Val": f"{va_loss:.4f}"})
-        logging.info(f"Epoch {epoch}: train={tr_loss:.6f} (recon={tr_recon:.4f} kl={tr_kl:.4f}) val={va_loss:.6f}")
+        logging.info(
+            f"Epoch {epoch}: train={tr_loss:.6f} (recon={tr_recon:.4f} kl={tr_kl:.4f}) val={va_loss:.6f}"
+        )
         if wandb_run is not None:
-            wandb_run.log({"train_loss": tr_loss, "val_loss": va_loss,
-                           "train_recon": tr_recon, "train_kl": tr_kl, "epoch": epoch})
+            wandb_run.log(
+                {
+                    "train_loss": tr_loss,
+                    "val_loss": va_loss,
+                    "train_recon": tr_recon,
+                    "train_kl": tr_kl,
+                    "epoch": epoch,
+                }
+            )
 
         history["train_loss"].append(tr_loss)
         history["val_loss"].append(va_loss)

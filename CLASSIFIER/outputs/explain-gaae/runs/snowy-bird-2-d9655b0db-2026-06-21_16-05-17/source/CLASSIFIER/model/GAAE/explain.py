@@ -18,6 +18,7 @@ its pooled latents), so the region-level explanations live here:
 These operate on a single PyG ``Data`` (one visit graph). The encoder is used without
 FiLM conditioning, matching how GEC / GELSTM pool embeddings (``enc.encode(x, ei, ea)``).
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -97,8 +98,14 @@ def trace_forward(model, data, *, device="cpu") -> Dict[str, Any]:
 
     captured: Dict[str, torch.Tensor] = {}
     handles = []
-    for name in ("encoder_gat1", "encoder_gat2", "encoder_gat3",
-                 "decoder_gat1", "decoder_gat2", "decoder_gat3"):
+    for name in (
+        "encoder_gat1",
+        "encoder_gat2",
+        "encoder_gat3",
+        "decoder_gat1",
+        "decoder_gat2",
+        "decoder_gat3",
+    ):
         layer = getattr(model, name)
 
         def _hook(_mod, _inp, out, _name=name):

@@ -7,6 +7,7 @@ Architecture:
 
 Δt_t = months since previous visit / 96  (0 for first visit)
 """
+
 from __future__ import annotations
 
 import sys
@@ -72,7 +73,7 @@ class GELSTMClassifier(nn.Module):
         classifier_hidden: int = 64,
     ):
         super().__init__()
-        self.gaae_latent    = gaae_latent
+        self.gaae_latent = gaae_latent
         self.use_time_delta = use_time_delta
 
         # ── Per-visit embedding standardisation (z-score) ───────────────────
@@ -82,7 +83,7 @@ class GELSTMClassifier(nn.Module):
         # Defaults are the identity transform (mean=0, std=1), so a model that
         # never calls ``set_feature_norm`` behaves exactly as before.
         self.register_buffer("feat_mean", torch.zeros(gaae_latent))
-        self.register_buffer("feat_std",  torch.ones(gaae_latent))
+        self.register_buffer("feat_std", torch.ones(gaae_latent))
 
         # ── Shared GAAE encoder (applied per-visit) ─────────────────────────
         self.encoder = GraphAttentionAutoencoderConditioned(
@@ -154,7 +155,7 @@ class GELSTMClassifier(nn.Module):
         the GELSTM analogue of the per-fold StandardScaler in the GEC-MLP.
         """
         mean_t = torch.as_tensor(mean, dtype=self.feat_mean.dtype, device=self.feat_mean.device)
-        std_t  = torch.as_tensor(std,  dtype=self.feat_std.dtype,  device=self.feat_std.device)
+        std_t = torch.as_tensor(std, dtype=self.feat_std.dtype, device=self.feat_std.device)
         if mean_t.shape != self.feat_mean.shape or std_t.shape != self.feat_std.shape:
             raise ValueError(
                 f"feature-norm shapes {tuple(mean_t.shape)}/{tuple(std_t.shape)} "
@@ -181,8 +182,8 @@ class GELSTMClassifier(nn.Module):
         """
         _, (h_n, _) = self.lstm(packed_seqs)
         # h_n : (num_layers, B, hidden)
-        h_last = h_n[-1]           # (B, hidden) — last layer hidden state
-        logits = self.classifier(h_last).squeeze(-1)   # (B,)
+        h_last = h_n[-1]  # (B, hidden) — last layer hidden state
+        logits = self.classifier(h_last).squeeze(-1)  # (B,)
         return logits
 
     # ── Freeze / unfreeze encoder ────────────────────────────────────────────
@@ -190,10 +191,13 @@ class GELSTMClassifier(nn.Module):
     def freeze_encoder(self):
         """Freeze all GAAE encoder + FiLM parameters."""
         enc_modules = [
-            self.encoder.encoder_gat1, self.encoder.encoder_bn1,
-            self.encoder.encoder_gat2, self.encoder.encoder_bn2,
+            self.encoder.encoder_gat1,
+            self.encoder.encoder_bn1,
+            self.encoder.encoder_gat2,
+            self.encoder.encoder_bn2,
             self.encoder.encoder_gat3,
-            self.encoder.film_gamma,   self.encoder.film_beta,
+            self.encoder.film_gamma,
+            self.encoder.film_beta,
         ]
         for mod in enc_modules:
             for p in mod.parameters():
@@ -202,10 +206,13 @@ class GELSTMClassifier(nn.Module):
     def unfreeze_encoder(self):
         """Unfreeze all GAAE encoder + FiLM parameters."""
         enc_modules = [
-            self.encoder.encoder_gat1, self.encoder.encoder_bn1,
-            self.encoder.encoder_gat2, self.encoder.encoder_bn2,
+            self.encoder.encoder_gat1,
+            self.encoder.encoder_bn1,
+            self.encoder.encoder_gat2,
+            self.encoder.encoder_bn2,
             self.encoder.encoder_gat3,
-            self.encoder.film_gamma,   self.encoder.film_beta,
+            self.encoder.film_gamma,
+            self.encoder.film_beta,
         ]
         for mod in enc_modules:
             for p in mod.parameters():
@@ -228,7 +235,7 @@ class GELSTMClassifier(nn.Module):
         else:
             gaae_sd = ckpt.state_dict()
 
-        own_sd  = self.encoder.state_dict()
+        own_sd = self.encoder.state_dict()
         to_load = {k: v for k, v in gaae_sd.items() if k in own_sd and v.shape == own_sd[k].shape}
         missing = set(own_sd) - set(to_load)
         if missing:

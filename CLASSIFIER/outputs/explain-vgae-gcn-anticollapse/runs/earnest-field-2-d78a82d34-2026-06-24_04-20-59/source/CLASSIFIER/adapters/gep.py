@@ -20,6 +20,7 @@ The encoder backbone is selected by ``encoder_arch``:
 Per-subject pooled vectors are standardised with a per-fold ``StandardScaler``
 (re-emitted as ``scaler.pkl`` by ``extra_artifacts``), matching the GEC convention.
 """
+
 from __future__ import annotations
 
 import copy
@@ -92,18 +93,24 @@ class GEPAdapter(LongitudinalAdapter):
                 from model.VGAE.models import VariationalGraphAutoencoder
 
                 enc = VariationalGraphAutoencoder(
-                    in_features=self.in_features, hidden_dim=self.enc_hidden,
-                    latent_dim=self.enc_latent, conv_type=self.enc_conv_type,
-                    num_heads=self.enc_heads, dropout=self.enc_dropout,
+                    in_features=self.in_features,
+                    hidden_dim=self.enc_hidden,
+                    latent_dim=self.enc_latent,
+                    conv_type=self.enc_conv_type,
+                    num_heads=self.enc_heads,
+                    dropout=self.enc_dropout,
                     feature_decoder=self.enc_feature_decoder,
                 ).to(self.device)
             else:
                 from model.GAAE.models import GraphAttentionAutoencoderConditioned
 
                 enc = GraphAttentionAutoencoderConditioned(
-                    in_features=self.in_features, hidden_dim=self.gaae_hidden,
-                    out_features=self.gaae_latent, cond_dim=self.gaae_cond_dim,
-                    num_heads=self.gaae_heads, dropout=self.gaae_dropout,
+                    in_features=self.in_features,
+                    hidden_dim=self.gaae_hidden,
+                    out_features=self.gaae_latent,
+                    cond_dim=self.gaae_cond_dim,
+                    num_heads=self.gaae_heads,
+                    dropout=self.gaae_dropout,
                 ).to(self.device)
             obj = torch.load(self.gaae_ckpt_path, map_location=self.device, weights_only=False)
             enc.load_state_dict(obj if isinstance(obj, dict) else obj.state_dict())
@@ -125,21 +132,26 @@ class GEPAdapter(LongitudinalAdapter):
     # ── data ─────────────────────────────────────────────────────────────────
     def prepare_data(self, df) -> Bundle:
         ds = LongitudinalSubjectDataset(
-            self.data_root, df, self.cohorts_csv,
-            adjacency_k=self.adjacency_k, file_variant=self.file_variant,
+            self.data_root,
+            df,
+            self.cohorts_csv,
+            adjacency_k=self.adjacency_k,
+            file_variant=self.file_variant,
         )
         enc = self._encoder()
         records: List[Dict[str, Any]] = []
         with torch.no_grad():
             for i in range(len(ds)):
                 item = ds[i]
-                records.append({
-                    "subject_id": item["subject_id"],
-                    "label": item["label"],
-                    "n_scans": item["n_scans"],
-                    "visit_months": list(item["visit_months"]),
-                    "zs": [self._pool_graph(enc, g) for g in item["graphs"]],
-                })
+                records.append(
+                    {
+                        "subject_id": item["subject_id"],
+                        "label": item["label"],
+                        "n_scans": item["n_scans"],
+                        "visit_months": list(item["visit_months"]),
+                        "zs": [self._pool_graph(enc, g) for g in item["graphs"]],
+                    }
+                )
         return Bundle([r["label"] for r in records], [r["subject_id"] for r in records], records)
 
     def _records_to_X(self, items, n_visits=None):
@@ -160,8 +172,10 @@ class GEPAdapter(LongitudinalAdapter):
 
     def build_model(self) -> LongitudinalMLP:
         m = self._build_mlp(self.latent)
-        print(f"GEP MLP: input={self.latent}  encoder={self.encoder_arch}  "
-              f"params={sum(p.numel() for p in m.parameters()):,}")
+        print(
+            f"GEP MLP: input={self.latent}  encoder={self.encoder_arch}  "
+            f"params={sum(p.numel() for p in m.parameters()):,}"
+        )
         return m
 
     # ── training ─────────────────────────────────────────────────────────────
@@ -181,12 +195,16 @@ class GEPAdapter(LongitudinalAdapter):
         criterion = nn.BCEWithLogitsLoss(pos_weight=pos_w)
 
         model = self._build_mlp(self.latent)
-        opt = torch.optim.Adam(model.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
+        opt = torch.optim.Adam(
+            model.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay
+        )
         sched = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode="max", factor=0.5, patience=7)
 
         tr_ds = torch.utils.data.TensorDataset(X_tr, y_tr_t)
         drop_last = len(tr_ds) % self.batch_size == 1  # BatchNorm1d rejects a 1-sample batch
-        tr_dl = torch.utils.data.DataLoader(tr_ds, batch_size=self.batch_size, shuffle=True, drop_last=drop_last)
+        tr_dl = torch.utils.data.DataLoader(
+            tr_ds, batch_size=self.batch_size, shuffle=True, drop_last=drop_last
+        )
 
         best_auc, best_state, no_improve = 0.0, None, 0
         for _epoch in range(self.epochs):
@@ -256,7 +274,8 @@ class GEPAdapter(LongitudinalAdapter):
     def truncate_to_n_visits(self, bundle, n) -> Bundle:
         items = [
             {**it, "zs": it["zs"][:n], "visit_months": it["visit_months"][:n], "n_scans": n}
-            for it in bundle.items if it["n_scans"] >= n
+            for it in bundle.items
+            if it["n_scans"] >= n
         ]
         return Bundle([it["label"] for it in items], [it["subject_id"] for it in items], items)
 

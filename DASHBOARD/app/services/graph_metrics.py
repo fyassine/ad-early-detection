@@ -31,6 +31,7 @@ import numpy as np
 
 try:
     import networkx as nx  # type: ignore
+
     _HAS_NX = True
 except Exception:
     nx = None  # type: ignore
@@ -40,6 +41,7 @@ except Exception:
 # --------------------------------------------------------------------------- #
 # Adjacency construction                                                       #
 # --------------------------------------------------------------------------- #
+
 
 def _threshold_to_binary(corr: np.ndarray, density: float = 0.20) -> np.ndarray:
     """
@@ -72,6 +74,7 @@ def _to_graph(adj: np.ndarray):
 # --------------------------------------------------------------------------- #
 # Per-subject scalar metrics                                                   #
 # --------------------------------------------------------------------------- #
+
 
 def _safe_float(v) -> Optional[float]:
     if v is None:
@@ -195,8 +198,10 @@ def small_worldness(
 # DomiRank centrality (Engsig 2024)                                            #
 # --------------------------------------------------------------------------- #
 
-def domirank(adj: np.ndarray, alpha: float = 0.95, max_iter: int = 200,
-             tol: float = 1e-6) -> Optional[np.ndarray]:
+
+def domirank(
+    adj: np.ndarray, alpha: float = 0.95, max_iter: int = 200, tol: float = 1e-6
+) -> Optional[np.ndarray]:
     """
     DomiRank centrality (Engsig, Bondia-Carrasco & Garas, *Nat. Commun.*
     2024). Defined by the fixed-point iteration
@@ -248,6 +253,7 @@ def top_k_hubs(rank_vec: np.ndarray, k: int = 10) -> list[dict]:
 # Aggregate per-subject                                                        #
 # --------------------------------------------------------------------------- #
 
+
 def subject_graph_metrics(
     corr: np.ndarray,
     density: float = 0.20,
@@ -295,6 +301,7 @@ def subject_graph_metrics(
 # Disk cache for cohort-level graph metrics                                   #
 # --------------------------------------------------------------------------- #
 
+
 def _gm_cache_key(csv_path: str, scan_folders: list[str]) -> str:
     h = hashlib.sha1()
     h.update(csv_path.encode("utf-8"))
@@ -304,8 +311,9 @@ def _gm_cache_key(csv_path: str, scan_folders: list[str]) -> str:
     return h.hexdigest()[:20]
 
 
-def _gm_cache_path(cache_root: Path, csv_path: str,
-                   scan_folders: list[str], density: float) -> Path:
+def _gm_cache_path(
+    cache_root: Path, csv_path: str, scan_folders: list[str], density: float
+) -> Path:
     key = _gm_cache_key(csv_path, scan_folders)
     d = int(density * 100)
     return cache_root / "graph_metrics" / f"graph_metrics_{key}_density{d:02d}.json"

@@ -12,8 +12,10 @@ router = APIRouter()
 async def health():
     """Health check endpoint."""
     data_exists = os.path.isdir(DATA_ROOT)
-    return JSONResponse({
-        "status": "ok",
-        "data_root": DATA_ROOT,
-        "data_accessible": data_exists,
-    })
+    return JSONResponse(
+        {
+            "status": "ok",
+            "data_root": DATA_ROOT,
+            "data_accessible": data_exists,
+        }
+    )

@@ -28,6 +28,7 @@ Mode resolution (env ``WANDB_MODE`` wins, then experiment, then default):
     online (default)    -> live logging; auto-falls-back to offline if no
                            credentials or ``wandb.init`` fails.
 """
+
 from __future__ import annotations
 
 import os
@@ -104,7 +105,9 @@ def _region_tag(exp: Dict[str, Any], params: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-def _build_init_kwargs(exp: Dict[str, Any], params: Dict[str, Any], fold: Optional[int]) -> Dict[str, Any]:
+def _build_init_kwargs(
+    exp: Dict[str, Any], params: Dict[str, Any], fold: Optional[int]
+) -> Dict[str, Any]:
     """Assemble the wandb.init kwargs implementing the naming convention."""
     git = capture_git_provenance()
 
@@ -127,7 +130,12 @@ def _build_init_kwargs(exp: Dict[str, Any], params: Dict[str, Any], fold: Option
         tags.append(str(region))
     tags = [t for t in tags if t and not t.endswith("=None")]
 
-    config = {**params, "experiment_id": exp.get("id"), "git_commit": git.get("commit"), "fold": fold}
+    config = {
+        **params,
+        "experiment_id": exp.get("id"),
+        "git_commit": git.get("commit"),
+        "fold": fold,
+    }
 
     return {
         "entity": os.environ.get("WANDB_ENTITY") or None,
@@ -185,7 +193,9 @@ def init_run(exp: Dict[str, Any], params: Dict[str, Any], *, fold: Optional[int]
             try:
                 return wandb.init(mode="offline", reinit=True, **init_kwargs)
             except Exception as exc2:
-                warnings.warn(f"[tracking] offline wandb.init also failed ({exc2!r}); logging disabled.")
+                warnings.warn(
+                    f"[tracking] offline wandb.init also failed ({exc2!r}); logging disabled."
+                )
         else:
             warnings.warn(f"[tracking] offline wandb.init failed ({exc!r}); logging disabled.")
         return _NoOpRun(config=params)

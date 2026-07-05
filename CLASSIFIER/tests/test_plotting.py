@@ -1,4 +1,5 @@
 """Tests for SHARED.plotting (headless Agg backend)."""
+
 from __future__ import annotations
 
 import matplotlib
@@ -17,7 +18,9 @@ from SHARED.plotting import (
 
 
 def test_format_model_runs_note_single_model():
-    assert format_model_runs_note({"GAAE": "quiet-fern-12"}) == "Model runs used — GAAE: quiet-fern-12"
+    assert (
+        format_model_runs_note({"GAAE": "quiet-fern-12"}) == "Model runs used — GAAE: quiet-fern-12"
+    )
 
 
 def test_format_model_runs_note_multiple_models():
@@ -53,7 +56,10 @@ def test_append_note_line_no_leading_blank_when_empty():
 
 
 def test_run_name_from_checkpoint_path():
-    assert run_name_from_checkpoint_path("/outputs/quiet-fern-12/model_quiet-fern-12.pth") == "quiet-fern-12"
+    assert (
+        run_name_from_checkpoint_path("/outputs/quiet-fern-12/model_quiet-fern-12.pth")
+        == "quiet-fern-12"
+    )
 
 
 def test_add_note_renders_footnote_text():

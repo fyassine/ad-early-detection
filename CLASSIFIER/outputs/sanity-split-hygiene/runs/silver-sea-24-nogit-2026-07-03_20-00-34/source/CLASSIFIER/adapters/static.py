@@ -210,7 +210,9 @@ class VGAEStaticAdapter(StaticAdapter):
         }
         return model, model_config
 
-    def run_training(self, model, optimizer, train_loader, val_loader, wandb_run, *, on_epoch_end=None):
+    def run_training(
+        self, model, optimizer, train_loader, val_loader, wandb_run, *, on_epoch_end=None
+    ):
         from model.VGAE.train import train_vgae_with_val
 
         c = self.cfg

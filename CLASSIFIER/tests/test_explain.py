@@ -5,6 +5,7 @@ atlas loading, the 2-D embedding, region-importance summaries, the flat-importan
 unpacking, and the ``get_explain_adapter`` registry. The torch attribution paths are
 covered end-to-end by the experiment runner, not here.
 """
+
 from __future__ import annotations
 
 import matplotlib
@@ -127,9 +128,9 @@ def test_reconstruction_quality_shape_mismatch_raises():
 # ── registry ──────────────────────────────────────────────────────────────────
 def test_get_explain_adapter_resolves_known_keys():
     assert get_explain_adapter("gaae") is GAAEExplainAdapter
-    assert get_explain_adapter("GEC") is GECExplainAdapter          # case-insensitive
+    assert get_explain_adapter("GEC") is GECExplainAdapter  # case-insensitive
     assert get_explain_adapter("gelstm") is GELSTMExplainAdapter
-    assert get_explain_adapter("gegru") is GELSTMExplainAdapter      # GRU alias
+    assert get_explain_adapter("gegru") is GELSTMExplainAdapter  # GRU alias
 
 
 def test_get_explain_adapter_unknown_raises():
@@ -276,8 +277,9 @@ def test_steer_along_axis_zero_scale_reproduces_baseline():
     model = _IdentityAutoencoder()
     data = Data(x=torch.randn(5, 4), edge_index=torch.zeros((2, 0), dtype=torch.long))
     w_hat = np.array([1.0, 0.0, 0.0, 0.0])
-    out = steer_along_axis(model, data, w_hat, sigma=1.0,
-                           scales=np.array([-1.0, 0.0, 1.0]), device="cpu")
+    out = steer_along_axis(
+        model, data, w_hat, sigma=1.0, scales=np.array([-1.0, 0.0, 1.0]), device="cpu"
+    )
     assert out["baseline_fc"].shape == (5, 4)
     assert len(out["steered_fcs"]) == 3
     np.testing.assert_allclose(out["steered_fcs"][1], out["baseline_fc"], atol=1e-6)
@@ -295,8 +297,13 @@ def test_reconstruct_sorted_by_score_aligns_outputs():
 
     model = _IdentityAutoencoder()
     subjects = [
-        {"data": Data(x=torch.full((2, 3), float(i)), edge_index=torch.zeros((2, 0), dtype=torch.long)),
-         "score": float(i), "label": i % 2}
+        {
+            "data": Data(
+                x=torch.full((2, 3), float(i)), edge_index=torch.zeros((2, 0), dtype=torch.long)
+            ),
+            "score": float(i),
+            "label": i % 2,
+        }
         for i in range(3)
     ]
     out = reconstruct_sorted_by_score(model, subjects, device="cpu")

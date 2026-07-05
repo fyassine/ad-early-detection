@@ -66,10 +66,7 @@ def build_masker(atlas_path: Path, labels_path: Path | None) -> tuple[NiftiLabel
     """
     if labels_path is not None and labels_path.exists():
         all_labels = labels_path.read_text().splitlines()
-        hippo_1based = [
-            i + 1 for i, ln in enumerate(all_labels)
-            if "hip" in ln.lower()
-        ]
+        hippo_1based = [i + 1 for i, ln in enumerate(all_labels) if "hip" in ln.lower()]
     else:
         hippo_1based = []
 
@@ -119,7 +116,7 @@ def strip_nifti_suffix(filename: str) -> str:
 
 
 def compute_connectivity_matrices(
-    bold_img,   # pre-loaded NIfTI image (or path for fallback)
+    bold_img,  # pre-loaded NIfTI image (or path for fallback)
     masker: NiftiLabelsMasker,
     hippo_indices: list[int],
     correlation_measure: ConnectivityMeasure,
@@ -165,6 +162,7 @@ def process_file(
 @contextlib.contextmanager
 def tqdm_joblib(tqdm_object):
     """Patch joblib to report batch completions into a tqdm progress bar."""
+
     class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
         def __call__(self, *args, **kwargs):
             tqdm_object.update(n=self.batch_size)
@@ -234,7 +232,6 @@ def main(
     masker.fit(ref_img_3d)
     print("  Masker fitted ✓")
 
-
     print(f"Processing {len(bold_files)} files in parallel (n_jobs={n_jobs})…")
 
     _tqdm = tqdm or (lambda **kw: contextlib.nullcontext())
@@ -253,23 +250,51 @@ def main(
         else:
             processed += 1
 
-    print(f"\nDone — processed={processed}, skipped={skipped}, failed={failed}\nOutput: {matrices_out}")
+    print(
+        f"\nDone — processed={processed}, skipped={skipped}, failed={failed}\nOutput: {matrices_out}"
+    )
 
     if labels_path and labels_path.exists():
         all_labels = labels_path.read_text().splitlines()
-        selected = [all_labels[i - 1] for i in hippo_indices if i <= len(all_labels)] if hippo_indices else all_labels
+        selected = (
+            [all_labels[i - 1] for i in hippo_indices if i <= len(all_labels)]
+            if hippo_indices
+            else all_labels
+        )
         (output_root / "parcel_labels.txt").write_text("\n".join(selected) + "\n")
         print(f"Parcel labels: {selected}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--atlas-path", required=True, type=Path, help="Path to Tian atlas NIfTI file")
-    parser.add_argument("--labels-path", type=Path, default=None, help="Path to Tian label text file (optional)")
-    parser.add_argument("--fmri-root", type=Path, default=DEFAULT_FMRI_ROOT, help="Root fMRI directory (all visits)")
-    parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT, help="Output version root (e.g. __fc_hippo_tian2_flat__)")
-    parser.add_argument("--n-jobs", type=int, default=16,
-                        help="Parallel workers (default: 16). Lower if you hit OOM.")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--atlas-path", required=True, type=Path, help="Path to Tian atlas NIfTI file"
+    )
+    parser.add_argument(
+        "--labels-path", type=Path, default=None, help="Path to Tian label text file (optional)"
+    )
+    parser.add_argument(
+        "--fmri-root", type=Path, default=DEFAULT_FMRI_ROOT, help="Root fMRI directory (all visits)"
+    )
+    parser.add_argument(
+        "--output-root",
+        type=Path,
+        default=DEFAULT_OUTPUT_ROOT,
+        help="Output version root (e.g. __fc_hippo_tian2_flat__)",
+    )
+    parser.add_argument(
+        "--n-jobs",
+        type=int,
+        default=16,
+        help="Parallel workers (default: 16). Lower if you hit OOM.",
+    )
     args = parser.parse_args()
-    main(atlas_path=args.atlas_path, labels_path=args.labels_path,
-         fmri_root=args.fmri_root, output_root=args.output_root, n_jobs=args.n_jobs)
+    main(
+        atlas_path=args.atlas_path,
+        labels_path=args.labels_path,
+        fmri_root=args.fmri_root,
+        output_root=args.output_root,
+        n_jobs=args.n_jobs,
+    )

@@ -3,6 +3,7 @@ Tests for CLASSIFIER.common.fdr — Fisher's Discriminant Ratio dimension
 selection. Validates that the helper picks known-separable dimensions, respects
 the top_k bound, and never reads beyond the rows passed in (leakage guard).
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -73,9 +74,7 @@ def test_leakage_guard_only_sees_passed_rows():
     # Corrupt the held-out rows wildly; recompute on the SAME train slice.
     embs_corrupted = embs.copy()
     embs_corrupted[150:] += 1000.0
-    top_train_again, _ = compute_fdr_filter(
-        embs_corrupted[train_idx], labels[train_idx], top_k=2
-    )
+    top_train_again, _ = compute_fdr_filter(embs_corrupted[train_idx], labels[train_idx], top_k=2)
     assert top_train.tolist() == top_train_again.tolist()
 
 

@@ -11,6 +11,7 @@ layering but without the dataclass step (ABI has no training hyperparameters).
 
 Layering: stays cheap to import (yaml/json only) so the CLI starts fast.
 """
+
 from __future__ import annotations
 
 import csv
@@ -107,7 +108,9 @@ def load_experiment(yaml_path: str | Path, exp_id: str) -> Dict[str, Any]:
 def _validate_experiment(exp: Dict[str, Any], yaml_path: Path) -> None:
     """Fail loudly on a missing/invalid field (see .claude/rules/errors.md)."""
     if not isinstance(exp, dict):
-        raise ValueError(f"Each experiment in {yaml_path} must be a mapping, got {type(exp).__name__}.")
+        raise ValueError(
+            f"Each experiment in {yaml_path} must be a mapping, got {type(exp).__name__}."
+        )
     missing = [f for f in _REQUIRED_FIELDS if exp.get(f) is None]
     if missing:
         raise ValueError(

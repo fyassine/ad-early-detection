@@ -1,4 +1,5 @@
 """Unit tests for GEC graph encoder-classifier models."""
+
 import pytest
 import torch
 
@@ -9,12 +10,12 @@ from CLASSIFIER.model.GEC.models import (
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
 
-IN_FEAT  = 8
-HIDDEN   = 16
-LATENT   = 4
+IN_FEAT = 8
+HIDDEN = 16
+LATENT = 4
 COND_DIM = 2
 N_GRAPHS = 3
-N_NODES  = 5  # nodes per graph
+N_NODES = 5  # nodes per graph
 
 
 def _make_batch(n_nodes: int = N_NODES, n_graphs: int = N_GRAPHS):
@@ -23,7 +24,7 @@ def _make_batch(n_nodes: int = N_NODES, n_graphs: int = N_GRAPHS):
     x = torch.randn(total, IN_FEAT)
     # No edges — still a valid graph; GAT handles isolated nodes
     edge_index = torch.zeros(2, 0, dtype=torch.long)
-    cond_vec   = torch.randn(n_graphs, COND_DIM)
+    cond_vec = torch.randn(n_graphs, COND_DIM)
     batch_mask = torch.arange(n_graphs).repeat_interleave(n_nodes)
     return x, edge_index, cond_vec, batch_mask
 
@@ -41,6 +42,7 @@ def _make_model(cls):
 
 # ── GraphEncoderClassifier ────────────────────────────────────────────────────
 
+
 @pytest.mark.parametrize("cls", [GraphEncoderClassifier, GraphEncoderClassifierAttention])
 def test_forward_output_shapes(cls):
     model = _make_model(cls)
@@ -49,7 +51,7 @@ def test_forward_output_shapes(cls):
     with torch.no_grad():
         logits, emb = model(x, ei, cond, bm)
     assert logits.shape == (N_GRAPHS,), f"logits shape {logits.shape}"
-    assert emb.shape    == (N_GRAPHS, LATENT), f"embedding shape {emb.shape}"
+    assert emb.shape == (N_GRAPHS, LATENT), f"embedding shape {emb.shape}"
 
 
 @pytest.mark.parametrize("cls", [GraphEncoderClassifier, GraphEncoderClassifierAttention])
@@ -92,8 +94,8 @@ def test_get_trainable_params_after_freeze(cls):
     model.freeze_encoder()
     trainable = model.get_trainable_params()
     # Only classifier head + attention_pool (if present) should be in the list
-    total_params   = sum(p.numel() for p in model.parameters())
-    frozen_params  = sum(p.numel() for p in model.parameters() if not p.requires_grad)
+    total_params = sum(p.numel() for p in model.parameters())
+    frozen_params = sum(p.numel() for p in model.parameters() if not p.requires_grad)
     trainable_numel = sum(p.numel() for p in trainable)
     assert trainable_numel == total_params - frozen_params
 

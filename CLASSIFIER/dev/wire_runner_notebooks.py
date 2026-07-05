@@ -18,6 +18,7 @@ treated as wired and skipped (idempotent).
 
 Run with:  python CLASSIFIER/dev/wire_runner_notebooks.py
 """
+
 from __future__ import annotations
 
 import json
@@ -147,8 +148,9 @@ def threshold_guard(youden_var, f1_var, prompt_block):
         "    ACTIVE_THRESHOLD = float(FIXED_THRESHOLD); THRESHOLD_METHOD = 'fixed'\n"
         "else:\n"
     )
-    indented = "".join("    " + ln if ln.strip() else ln
-                       for ln in prompt_block.splitlines(keepends=True))
+    indented = "".join(
+        "    " + ln if ln.strip() else ln for ln in prompt_block.splitlines(keepends=True)
+    )
     return guard + indented
 
 
@@ -166,48 +168,112 @@ def wire_gelstm_flagship(nb):
         "else:\n"
         "    ACTIVE_THRESHOLD = best_threshold_overall; THRESHOLD_METHOD = 'oof_youden'\n"
     )
-    replace(nb, 20, prompt20, threshold_guard("best_threshold_overall", "best_f1_threshold", prompt20))
+    replace(
+        nb, 20, prompt20, threshold_guard("best_threshold_overall", "best_f1_threshold", prompt20)
+    )
     # W&B init before CV loop + per-epoch (cell 17)
-    replace(nb, 17, "sgkf = StratifiedGroupKFold(n_splits=N_FOLDS)",
-            wb_init("gelstm-trajectory-whole-brain", "longitudinal", "GELSTM")
-            + "sgkf = StratifiedGroupKFold(n_splits=N_FOLDS)")
-    replace(nb, 17, "        scheduler.step(va_auc)\n        fold_train_losses.append(tr_loss)",
-            "        scheduler.step(va_auc)\n" + PEREPOCH.format()
-            + "        fold_train_losses.append(tr_loss)")
+    replace(
+        nb,
+        17,
+        "sgkf = StratifiedGroupKFold(n_splits=N_FOLDS)",
+        wb_init("gelstm-trajectory-whole-brain", "longitudinal", "GELSTM")
+        + "sgkf = StratifiedGroupKFold(n_splits=N_FOLDS)",
+    )
+    replace(
+        nb,
+        17,
+        "        scheduler.step(va_auc)\n        fold_train_losses.append(tr_loss)",
+        "        scheduler.step(va_auc)\n"
+        + PEREPOCH.format()
+        + "        fold_train_losses.append(tr_loss)",
+    )
     # run-dir preference (cell 22) + CV summary log
-    replace(nb, 22, "run_name, run_dir = make_run_dir(OUTPUT_DIR, 'gelstm', DATA_INFO)",
-            "if RUN_DIR:\n    run_dir = Path(RUN_DIR); run_dir.mkdir(parents=True, exist_ok=True)\n"
-            "    run_name = RUN_NAME or run_dir.name\nelse:\n"
-            "    run_name, run_dir = make_run_dir(OUTPUT_DIR, 'gelstm', DATA_INFO)")
+    replace(
+        nb,
+        22,
+        "run_name, run_dir = make_run_dir(OUTPUT_DIR, 'gelstm', DATA_INFO)",
+        "if RUN_DIR:\n    run_dir = Path(RUN_DIR); run_dir.mkdir(parents=True, exist_ok=True)\n"
+        "    run_name = RUN_NAME or run_dir.name\nelse:\n"
+        "    run_name, run_dir = make_run_dir(OUTPUT_DIR, 'gelstm', DATA_INFO)",
+    )
     append(nb, 22, wb_cv_summary())
     # metrics block + test log/finish (cell 24)
-    replace(nb, 24, "patch_run_summary(run_dir, {\n    'test_auc':          float(te_metrics['auc']),",
-            "patch_run_summary(run_dir, {\n"
-            + metrics_block("te_metrics['auc']", "te_metrics['f1']",
-                            "te_metrics['sensitivity']", "te_metrics['specificity']")
-            + "    'test_auc':          float(te_metrics['auc']),")
-    append(nb, 24, wb_test_finish("te_metrics['auc']", "te_metrics['f1']",
-                                  "te_metrics['sensitivity']", "te_metrics['specificity']"))
+    replace(
+        nb,
+        24,
+        "patch_run_summary(run_dir, {\n    'test_auc':          float(te_metrics['auc']),",
+        "patch_run_summary(run_dir, {\n"
+        + metrics_block(
+            "te_metrics['auc']",
+            "te_metrics['f1']",
+            "te_metrics['sensitivity']",
+            "te_metrics['specificity']",
+        )
+        + "    'test_auc':          float(te_metrics['auc']),",
+    )
+    append(
+        nb,
+        24,
+        wb_test_finish(
+            "te_metrics['auc']",
+            "te_metrics['f1']",
+            "te_metrics['sensitivity']",
+            "te_metrics['specificity']",
+        ),
+    )
 
 
-def _wire_cv_inline(nb, *, exp_id, model_tag_line, ckpt_cell, thr_cell, thr_prompt,
-                    youden_var, f1_var, loop_cell, loop_anchor, rundir_cell,
-                    rundir_old, patch_cell, patch_header, te):
+def _wire_cv_inline(
+    nb,
+    *,
+    exp_id,
+    model_tag_line,
+    ckpt_cell,
+    thr_cell,
+    thr_prompt,
+    youden_var,
+    f1_var,
+    loop_cell,
+    loop_anchor,
+    rundir_cell,
+    rundir_old,
+    patch_cell,
+    patch_header,
+    te,
+):
     replace(nb, 8, CONFIG_MERGE, CONFIG_MERGE_NEW)
     replace(nb, ckpt_cell, CKPT_PROMPT, CKPT_GUARD)
     replace(nb, thr_cell, thr_prompt, threshold_guard(youden_var, f1_var, thr_prompt))
-    replace(nb, loop_cell, "sgkf = StratifiedGroupKFold(n_splits=N_FOLDS)",
-            wb_init(exp_id, "longitudinal", "GELSTM" if "gelstm" in exp_id else "GEC")
-            + "sgkf = StratifiedGroupKFold(n_splits=N_FOLDS)")
-    replace(nb, loop_cell, loop_anchor, loop_anchor.split("\n")[0] + "\n" + PEREPOCH.format()
-            + "\n".join(loop_anchor.split("\n")[1:]))
-    replace(nb, rundir_cell, rundir_old,
-            "if RUN_DIR:\n    run_dir = Path(RUN_DIR); run_dir.mkdir(parents=True, exist_ok=True)\n"
-            "    run_name = RUN_NAME or run_dir.name\nelse:\n    " + rundir_old)
+    replace(
+        nb,
+        loop_cell,
+        "sgkf = StratifiedGroupKFold(n_splits=N_FOLDS)",
+        wb_init(exp_id, "longitudinal", "GELSTM" if "gelstm" in exp_id else "GEC")
+        + "sgkf = StratifiedGroupKFold(n_splits=N_FOLDS)",
+    )
+    replace(
+        nb,
+        loop_cell,
+        loop_anchor,
+        loop_anchor.split("\n")[0]
+        + "\n"
+        + PEREPOCH.format()
+        + "\n".join(loop_anchor.split("\n")[1:]),
+    )
+    replace(
+        nb,
+        rundir_cell,
+        rundir_old,
+        "if RUN_DIR:\n    run_dir = Path(RUN_DIR); run_dir.mkdir(parents=True, exist_ok=True)\n"
+        "    run_name = RUN_NAME or run_dir.name\nelse:\n    " + rundir_old,
+    )
     append(nb, rundir_cell, wb_cv_summary())
-    replace(nb, patch_cell, patch_header,
-            patch_header.split("{\n")[0] + "{\n" + metrics_block(*te)
-            + patch_header.split("{\n")[1])
+    replace(
+        nb,
+        patch_cell,
+        patch_header,
+        patch_header.split("{\n")[0] + "{\n" + metrics_block(*te) + patch_header.split("{\n")[1],
+    )
     append(nb, patch_cell, wb_test_finish(*te))
 
 
@@ -218,9 +284,14 @@ def wire_gelstm_fdr(nb):
         "THRESHOLD_METHOD='oof_f1' if choice=='2' else 'oof_youden'\n"
     )
     _wire_cv_inline(
-        nb, exp_id="gelstm-trajectory-fdr", model_tag_line=None,
-        ckpt_cell=11, thr_cell=27, thr_prompt=thr_prompt,
-        youden_var="best_threshold_overall", f1_var="best_f1_threshold",
+        nb,
+        exp_id="gelstm-trajectory-fdr",
+        model_tag_line=None,
+        ckpt_cell=11,
+        thr_cell=27,
+        thr_prompt=thr_prompt,
+        youden_var="best_threshold_overall",
+        f1_var="best_f1_threshold",
         loop_cell=24,
         loop_anchor="        scheduler.step(va_auc)\n        fold_train_losses.append(tr_loss)",
         rundir_cell=29,
@@ -238,9 +309,14 @@ def wire_gec(nb):
         "THRESHOLD_METHOD = 'oof_f1' if choice == '2' else 'oof_youden'\n"
     )
     _wire_cv_inline(
-        nb, exp_id="gec-trajectory", model_tag_line=None,
-        ckpt_cell=11, thr_cell=27, thr_prompt=thr_prompt,
-        youden_var="best_threshold_overall", f1_var="best_f1_thr",
+        nb,
+        exp_id="gec-trajectory",
+        model_tag_line=None,
+        ckpt_cell=11,
+        thr_cell=27,
+        thr_prompt=thr_prompt,
+        youden_var="best_threshold_overall",
+        f1_var="best_f1_thr",
         loop_cell=24,
         loop_anchor="        sched.step(va_auc)\n\n        fold_tr_losses.append(tr_loss)",
         rundir_cell=29,
@@ -253,10 +329,13 @@ def wire_gec(nb):
 
 def wire_logreg(nb):
     # checkpoint via the central helper — pass checkpoint_path through.
-    replace(nb, 11,
-            "GAAE_RUN_NAME, _ckpt_path, GAAE_RUN_DIR = select_gaae_checkpoint(CHECKPOINT_SEARCH_DIRS)",
-            "GAAE_RUN_NAME, _ckpt_path, GAAE_RUN_DIR = select_gaae_checkpoint(\n"
-            "    CHECKPOINT_SEARCH_DIRS, checkpoint_path=GAAE_CHECKPOINT_PATH)")
+    replace(
+        nb,
+        11,
+        "GAAE_RUN_NAME, _ckpt_path, GAAE_RUN_DIR = select_gaae_checkpoint(CHECKPOINT_SEARCH_DIRS)",
+        "GAAE_RUN_NAME, _ckpt_path, GAAE_RUN_DIR = select_gaae_checkpoint(\n"
+        "    CHECKPOINT_SEARCH_DIRS, checkpoint_path=GAAE_CHECKPOINT_PATH)",
+    )
     replace(nb, 8, CONFIG_MERGE, CONFIG_MERGE_NEW)
     thr_prompt = (
         "choice = input('Select threshold [1=Youden (default), 2=Best-F1]: ').strip()\n"
@@ -267,85 +346,117 @@ def wire_logreg(nb):
         "    ACTIVE_THRESHOLD = best_threshold_overall\n"
         "    THRESHOLD_METHOD = 'oof_youden'\n"
     )
-    replace(nb, 21, thr_prompt, threshold_guard("best_threshold_overall", "best_f1_threshold", thr_prompt))
+    replace(
+        nb,
+        21,
+        thr_prompt,
+        threshold_guard("best_threshold_overall", "best_f1_threshold", thr_prompt),
+    )
     # sklearn: no epoch loop. Init W&B + log CV summary in the run-dir cell (23).
-    replace(nb, 23, "run_name, run_dir = make_run_dir(OUTPUT_DIR, 'gaae_logreg', DATA_INFO)",
-            wb_init("logreg-static", "static", "LogReg")
-            + "if RUN_DIR:\n    run_dir = Path(RUN_DIR); run_dir.mkdir(parents=True, exist_ok=True)\n"
-            "    run_name = RUN_NAME or run_dir.name\nelse:\n"
-            "    run_name, run_dir = make_run_dir(OUTPUT_DIR, 'gaae_logreg', DATA_INFO)")
+    replace(
+        nb,
+        23,
+        "run_name, run_dir = make_run_dir(OUTPUT_DIR, 'gaae_logreg', DATA_INFO)",
+        wb_init("logreg-static", "static", "LogReg")
+        + "if RUN_DIR:\n    run_dir = Path(RUN_DIR); run_dir.mkdir(parents=True, exist_ok=True)\n"
+        "    run_name = RUN_NAME or run_dir.name\nelse:\n"
+        "    run_name, run_dir = make_run_dir(OUTPUT_DIR, 'gaae_logreg', DATA_INFO)",
+    )
     append(nb, 23, wb_cv_summary())
-    replace(nb, 25, "patch_run_summary(LOGREG_RUN_DIR, {\n    'test_auc':           float(te_auc),",
-            "patch_run_summary(LOGREG_RUN_DIR, {\n"
-            + metrics_block("te_auc", "te_f1", "te_sens", "te_spec")
-            + "    'test_auc':           float(te_auc),")
+    replace(
+        nb,
+        25,
+        "patch_run_summary(LOGREG_RUN_DIR, {\n    'test_auc':           float(te_auc),",
+        "patch_run_summary(LOGREG_RUN_DIR, {\n"
+        + metrics_block("te_auc", "te_f1", "te_sens", "te_spec")
+        + "    'test_auc':           float(te_auc),",
+    )
     append(nb, 25, wb_test_finish("te_auc", "te_f1", "te_sens", "te_spec"))
 
 
 def wire_first_n(nb):
     # Checkpoint: let the runner supply the GAAE encoder (default '' = none, as before).
-    replace(nb, 5,
-            "GAAE_CKPT_PATH   = ''   # set to GAAE encoder checkpoint produced by GAAE_DELCODE_WHOLE_BRAIN",
-            "GAAE_CKPT_PATH   = GAAE_CHECKPOINT_PATH or ''   # runner-supplied GAAE encoder, else none")
+    replace(
+        nb,
+        5,
+        "GAAE_CKPT_PATH   = ''   # set to GAAE encoder checkpoint produced by GAAE_DELCODE_WHOLE_BRAIN",
+        "GAAE_CKPT_PATH   = GAAE_CHECKPOINT_PATH or ''   # runner-supplied GAAE encoder, else none",
+    )
     # W&B per-epoch inside run_cv (cell 9) + finish after the summary table.
-    replace(nb, 9, "def run_cv(items, labels, sids, n_folds=N_FOLDS):",
-            "from common import tracking\n"
-            "_wb_exp = {'id': EXPERIMENT_ID or 'gelstm-early-detection-first-n', 'mode': MODE or 'longitudinal',\n"
-            "           'model': MODEL or 'GELSTM', 'dataset': DATASET, 'seed': SEED, 'wandb': WANDB_ENABLED}\n"
-            "wandb_run = tracking.init_run(_wb_exp, {**(RESOLVED_CONFIG or {})})\n\n"
-            "def run_cv(items, labels, sids, n_folds=N_FOLDS):")
-    replace(nb, 9,
-            "            r    = evaluate(m, va_b, device)\n            if r['auc'] > best_auc:",
-            "            r    = evaluate(m, va_b, device)\n"
-            "            tracking.log_metrics(wandb_run, {'fold': fold+1, 'epoch': epoch+1, 'val_auc': r['auc']})\n"
-            "            if r['auc'] > best_auc:")
-    append(nb, 9,
-           "\ntry:\n"
-           "    for _r in rows:\n"
-           "        tracking.log_metrics(wandb_run, {f\"{_r['window']}_cv_auc\": _r['cv_auc_mean'], "
-           "f\"{_r['window']}_test_auc\": _r['test_auc']})\n"
-           "    if RUN_DIR:\n"
-           "        from SHARED.provenance import write_run_summary, capture_git_provenance, capture_env\n"
-           "        write_run_summary(RUN_DIR, {'experiment_id': EXPERIMENT_ID, 'timestamp': RUN_NAME,\n"
-           "            'git': capture_git_provenance(), 'env': capture_env(),\n"
-           "            'metrics': {r['window'] + '_test_auc': r['test_auc'] for r in rows}})\n"
-           "    tracking.finish_run(wandb_run)\n"
-           "except NameError:\n"
-           "    pass\n")
+    replace(
+        nb,
+        9,
+        "def run_cv(items, labels, sids, n_folds=N_FOLDS):",
+        "from common import tracking\n"
+        "_wb_exp = {'id': EXPERIMENT_ID or 'gelstm-early-detection-first-n', 'mode': MODE or 'longitudinal',\n"
+        "           'model': MODEL or 'GELSTM', 'dataset': DATASET, 'seed': SEED, 'wandb': WANDB_ENABLED}\n"
+        "wandb_run = tracking.init_run(_wb_exp, {**(RESOLVED_CONFIG or {})})\n\n"
+        "def run_cv(items, labels, sids, n_folds=N_FOLDS):",
+    )
+    replace(
+        nb,
+        9,
+        "            r    = evaluate(m, va_b, device)\n            if r['auc'] > best_auc:",
+        "            r    = evaluate(m, va_b, device)\n"
+        "            tracking.log_metrics(wandb_run, {'fold': fold+1, 'epoch': epoch+1, 'val_auc': r['auc']})\n"
+        "            if r['auc'] > best_auc:",
+    )
+    append(
+        nb,
+        9,
+        "\ntry:\n"
+        "    for _r in rows:\n"
+        "        tracking.log_metrics(wandb_run, {f\"{_r['window']}_cv_auc\": _r['cv_auc_mean'], "
+        "f\"{_r['window']}_test_auc\": _r['test_auc']})\n"
+        "    if RUN_DIR:\n"
+        "        from SHARED.provenance import write_run_summary, capture_git_provenance, capture_env\n"
+        "        write_run_summary(RUN_DIR, {'experiment_id': EXPERIMENT_ID, 'timestamp': RUN_NAME,\n"
+        "            'git': capture_git_provenance(), 'env': capture_env(),\n"
+        "            'metrics': {r['window'] + '_test_auc': r['test_auc'] for r in rows}})\n"
+        "    tracking.finish_run(wandb_run)\n"
+        "except NameError:\n"
+        "    pass\n",
+    )
 
 
 def wire_sanity_gelstm(nb):
     # Guard the inline GELSTM-checkpoint prompt (cell 3). Headless: pick latest, or the
     # runner-supplied checkpoint if given.
-    replace(nb, 3,
-            "selected_idx = int(input('Select checkpoint index: '))\n"
-            "GELSTM_RUN_NAME, GELSTM_CKPT_PATH, GELSTM_RUN_DIR = checkpoint_candidates[selected_idx]",
-            "if GAAE_CHECKPOINT_PATH is not None:\n"
-            "    _t = str(Path(GAAE_CHECKPOINT_PATH).resolve())\n"
-            "    _m = [c for c in checkpoint_candidates if str(Path(c[1]).resolve()) == _t]\n"
-            "    if not _m:\n"
-            "        raise FileNotFoundError(f'GAAE_CHECKPOINT_PATH={GAAE_CHECKPOINT_PATH!r} not among candidates')\n"
-            "    GELSTM_RUN_NAME, GELSTM_CKPT_PATH, GELSTM_RUN_DIR = _m[0]\n"
-            "elif RUN_DIR is not None:\n"
-            "    GELSTM_RUN_NAME, GELSTM_CKPT_PATH, GELSTM_RUN_DIR = checkpoint_candidates[-1]\n"
-            "    print(f'Headless: using latest GELSTM checkpoint {GELSTM_RUN_NAME}')\n"
-            "else:\n"
-            "    selected_idx = int(input('Select checkpoint index: '))\n"
-            "    GELSTM_RUN_NAME, GELSTM_CKPT_PATH, GELSTM_RUN_DIR = checkpoint_candidates[selected_idx]")
+    replace(
+        nb,
+        3,
+        "selected_idx = int(input('Select checkpoint index: '))\n"
+        "GELSTM_RUN_NAME, GELSTM_CKPT_PATH, GELSTM_RUN_DIR = checkpoint_candidates[selected_idx]",
+        "if GAAE_CHECKPOINT_PATH is not None:\n"
+        "    _t = str(Path(GAAE_CHECKPOINT_PATH).resolve())\n"
+        "    _m = [c for c in checkpoint_candidates if str(Path(c[1]).resolve()) == _t]\n"
+        "    if not _m:\n"
+        "        raise FileNotFoundError(f'GAAE_CHECKPOINT_PATH={GAAE_CHECKPOINT_PATH!r} not among candidates')\n"
+        "    GELSTM_RUN_NAME, GELSTM_CKPT_PATH, GELSTM_RUN_DIR = _m[0]\n"
+        "elif RUN_DIR is not None:\n"
+        "    GELSTM_RUN_NAME, GELSTM_CKPT_PATH, GELSTM_RUN_DIR = checkpoint_candidates[-1]\n"
+        "    print(f'Headless: using latest GELSTM checkpoint {GELSTM_RUN_NAME}')\n"
+        "else:\n"
+        "    selected_idx = int(input('Select checkpoint index: '))\n"
+        "    GELSTM_RUN_NAME, GELSTM_CKPT_PATH, GELSTM_RUN_DIR = checkpoint_candidates[selected_idx]",
+    )
 
 
 def wire_gaae(nb):
     # Guard the train-vs-load prompt (cell 6) so headless runs never block.
-    replace(nb, 6,
-            '    _idx_str = input("Select [0=train new / 1,2,...=load existing, Enter=train new]: ").strip()\n'
-            "    _idx = int(_idx_str) if _idx_str.isdigit() else 0",
-            "    if GAAE_CHECKPOINT_PATH is not None:\n"
-            "        _idx_str = ''   # runner supplied an explicit checkpoint (handled below)\n"
-            "    elif RUN_DIR is not None:\n"
-            "        _idx_str = '0'  # headless default: train a new model\n"
-            "    else:\n"
-            '        _idx_str = input("Select [0=train new / 1,2,...=load existing, Enter=train new]: ").strip()\n'
-            "    _idx = int(_idx_str) if _idx_str.isdigit() else 0")
+    replace(
+        nb,
+        6,
+        '    _idx_str = input("Select [0=train new / 1,2,...=load existing, Enter=train new]: ").strip()\n'
+        "    _idx = int(_idx_str) if _idx_str.isdigit() else 0",
+        "    if GAAE_CHECKPOINT_PATH is not None:\n"
+        "        _idx_str = ''   # runner supplied an explicit checkpoint (handled below)\n"
+        "    elif RUN_DIR is not None:\n"
+        "        _idx_str = '0'  # headless default: train a new model\n"
+        "    else:\n"
+        '        _idx_str = input("Select [0=train new / 1,2,...=load existing, Enter=train new]: ").strip()\n'
+        "    _idx = int(_idx_str) if _idx_str.isdigit() else 0",
+    )
 
 
 # (wirer, idempotency-marker) — the marker is a string the wirer guarantees to
@@ -356,13 +467,20 @@ WIRERS = {
     "LONGITUDINAL/LONGITUDINAL_GEC_DELCODE.ipynb": (wire_gec, WIRED_MARKER),
     "STATIC/STATIC_LOGREG_DELCODE_WHOLE_BRAIN.ipynb": (wire_logreg, WIRED_MARKER),
     "LONGITUDINAL/LONGITUDINAL_GELSTM_FIRST_N_DELCODE.ipynb": (wire_first_n, WIRED_MARKER),
-    "SANITY/SANITY_LONGITUDINAL_GELSTM.ipynb": (wire_sanity_gelstm, "Headless: using latest GELSTM checkpoint"),
-    "STATIC/STATIC_GAAE_DELCODE_WHOLE_BRAIN.ipynb": (wire_gaae, "headless default: train a new model"),
+    "SANITY/SANITY_LONGITUDINAL_GELSTM.ipynb": (
+        wire_sanity_gelstm,
+        "Headless: using latest GELSTM checkpoint",
+    ),
+    "STATIC/STATIC_GAAE_DELCODE_WHOLE_BRAIN.ipynb": (
+        wire_gaae,
+        "headless default: train a new model",
+    ),
 }
 
 
 def main() -> int:
     import py_compile  # noqa: F401  (compile check via compile())
+
     for rel, (fn, marker) in WIRERS.items():
         path = NB_ROOT / rel
         nb = json.loads(path.read_text())

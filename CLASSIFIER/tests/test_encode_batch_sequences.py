@@ -3,6 +3,7 @@
 silently mutated the caller's model state and required a defensive
 ``model.train()`` in the training loop.
 """
+
 import torch
 from torch_geometric.data import Data
 
@@ -20,13 +21,15 @@ class _StubEncoder(torch.nn.Module):
 
 def _make_batch():
     g = Data(x=torch.zeros(1, 1), edge_index=torch.zeros(2, 0, dtype=torch.long), edge_attr=None)
-    return [{
-        "subject_id": "s0",
-        "graphs":     [g],
-        "delta_t":    [0.0],
-        "visit_months": [0.0],
-        "label":      0.0,
-    }]
+    return [
+        {
+            "subject_id": "s0",
+            "graphs": [g],
+            "delta_t": [0.0],
+            "visit_months": [0.0],
+            "label": 0.0,
+        }
+    ]
 
 
 def test_training_mode_preserved_when_caller_in_train():

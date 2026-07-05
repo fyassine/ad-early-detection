@@ -24,6 +24,7 @@ inside the functions that need them, so importing this module is cheap and never
 fails when an optional backend is absent — the caller gets a clear error only if it
 actually uses that path.
 """
+
 from __future__ import annotations
 
 import json
@@ -110,8 +111,9 @@ def embed_2d(
         from sklearn.manifold import TSNE
 
         perplexity = min(30, max(5, (X.shape[0] - 1) // 3))
-        return TSNE(n_components=2, random_state=seed, perplexity=perplexity,
-                    init="pca").fit_transform(X)
+        return TSNE(
+            n_components=2, random_state=seed, perplexity=perplexity, init="pca"
+        ).fit_transform(X)
     if method == "umap":
         try:
             import umap  # type: ignore
@@ -121,8 +123,9 @@ def embed_2d(
                 "(pip install -r CLASSIFIER/requirements-explain.txt) or use method='pca'."
             ) from exc
         n_neighbors = int(min(n_neighbors, max(2, X.shape[0] - 1)))
-        reducer = umap.UMAP(n_components=2, n_neighbors=n_neighbors, min_dist=min_dist,
-                            random_state=seed)
+        reducer = umap.UMAP(
+            n_components=2, n_neighbors=n_neighbors, min_dist=min_dist, random_state=seed
+        )
         return reducer.fit_transform(X)
     raise ValueError(f"Unknown embed_2d method {method!r}; expected umap | pca | tsne.")
 
@@ -153,9 +156,16 @@ def plot_latent_space(
     for lab in (0, 1):
         m = labels_arr == lab
         if m.any():
-            ax.scatter(emb2d[m, 0], emb2d[m, 1], alpha=0.7, s=28,
-                       color=palette[lab], label=f"{names[lab]} (n={int(m.sum())})",
-                       edgecolors="white", linewidths=0.4)
+            ax.scatter(
+                emb2d[m, 0],
+                emb2d[m, 1],
+                alpha=0.7,
+                s=28,
+                color=palette[lab],
+                label=f"{names[lab]} (n={int(m.sum())})",
+                edgecolors="white",
+                linewidths=0.4,
+            )
 
     cents: Dict[int, np.ndarray] = {}
     if centroids:
@@ -164,13 +174,25 @@ def plot_latent_space(
             if m.any():
                 c = emb2d[m].mean(0)
                 cents[lab] = c
-                ax.scatter(float(c[0]), float(c[1]), s=320, marker="X", color=palette[lab],
-                           edgecolors="black", linewidths=1.3, zorder=5)
+                ax.scatter(
+                    float(c[0]),
+                    float(c[1]),
+                    s=320,
+                    marker="X",
+                    color=palette[lab],
+                    edgecolors="black",
+                    linewidths=1.3,
+                    zorder=5,
+                )
 
     if conversion_axis and 0 in cents and 1 in cents:
         c0, c1 = cents[0], cents[1]
-        ax.annotate("", xy=tuple(c1), xytext=tuple(c0),
-                    arrowprops=dict(arrowstyle="-|>", color="black", lw=2.0))
+        ax.annotate(
+            "",
+            xy=tuple(c1),
+            xytext=tuple(c0),
+            arrowprops=dict(arrowstyle="-|>", color="black", lw=2.0),
+        )
         mid = 0.5 * (c0 + c1)
         ax.text(float(mid[0]), float(mid[1]), "  conversion axis", fontsize=9, style="italic")
 
@@ -219,9 +241,7 @@ def plot_region_importance_glassbrain(
     coords = atlas_coords(atlas)
     mag = _normalize_importance(values)
     if coords.shape[0] != mag.shape[0]:
-        raise ValueError(
-            f"values length {mag.shape[0]} != atlas size {coords.shape[0]}."
-        )
+        raise ValueError(f"values length {mag.shape[0]} != atlas size {coords.shape[0]}.")
     keep = np.argsort(mag)[::-1][: int(top_k)]
     fig = plt.figure(figsize=(11, 4))
     nlplt.plot_markers(
@@ -273,8 +293,7 @@ def plot_region_importance_bars(
     for n in present:
         idx = [i for i, nn in enumerate(networks) if nn == n]
         per_net.append(float(np.mean(mag[idx])) if idx else 0.0)
-    ax.bar(range(len(present)), per_net,
-           color=[NETWORK_COLORS.get(n, "#888888") for n in present])
+    ax.bar(range(len(present)), per_net, color=[NETWORK_COLORS.get(n, "#888888") for n in present])
     ax.set_xticks(range(len(present)))
     ax.set_xticklabels(present, rotation=30, ha="right", fontsize=8)
     ax.set_ylabel("mean normalised importance")
@@ -342,8 +361,15 @@ def plot_classification_diagnostics(
     cm = confusion_matrix(targets_arr, preds, labels=[0, 1])
     im = ax.imshow(cm, cmap="Blues")
     for (i, j), v in np.ndenumerate(cm):
-        ax.text(j, i, str(int(v)), ha="center", va="center",
-                color="white" if v > cm.max() / 2 else "black", fontsize=12)
+        ax.text(
+            j,
+            i,
+            str(int(v)),
+            ha="center",
+            va="center",
+            color="white" if v > cm.max() / 2 else "black",
+            fontsize=12,
+        )
     ax.set_xticks([0, 1])
     ax.set_xticklabels(["stable", "converter"])
     ax.set_yticks([0, 1])
@@ -430,8 +456,12 @@ def plot_latent_dim_distributions(
         lo, hi = min(v1.min(), v0.min()), max(v1.max(), v0.max())
         xs = np.linspace(lo, hi, 200)
         try:
-            ax.fill_between(xs, gaussian_kde(v1)(xs), alpha=0.45, color="#F44336", label="converter")
-            ax.fill_between(xs, gaussian_kde(v0)(xs), alpha=0.45, color="#2196F3", label="stable MCI")
+            ax.fill_between(
+                xs, gaussian_kde(v1)(xs), alpha=0.45, color="#F44336", label="converter"
+            )
+            ax.fill_between(
+                xs, gaussian_kde(v0)(xs), alpha=0.45, color="#2196F3", label="stable MCI"
+            )
         except Exception:
             ax.hist(v1, bins=20, alpha=0.5, color="#F44336", density=True, label="converter")
             ax.hist(v0, bins=20, alpha=0.5, color="#2196F3", density=True, label="stable MCI")
@@ -469,8 +499,9 @@ def embed_3d(
             "(pip install -r CLASSIFIER/requirements-explain.txt)."
         ) from exc
     n_neighbors = int(min(n_neighbors, max(2, X.shape[0] - 1)))
-    reducer = umap.UMAP(n_components=3, n_neighbors=n_neighbors, min_dist=min_dist,
-                        random_state=seed)
+    reducer = umap.UMAP(
+        n_components=3, n_neighbors=n_neighbors, min_dist=min_dist, random_state=seed
+    )
     return reducer.fit_transform(X)
 
 
@@ -498,18 +529,32 @@ def plot_latent_space_3d(
     for lab in (0, 1):
         m = labels_arr == lab
         if m.any():
-            fig.add_trace(go.Scatter3d(
-                x=emb3d[m, 0], y=emb3d[m, 1], z=emb3d[m, 2],
-                mode="markers", marker=dict(size=4, color=palette[lab], opacity=0.75),
-                name=f"{names[lab]} (n={int(m.sum())})",
-            ))
+            fig.add_trace(
+                go.Scatter3d(
+                    x=emb3d[m, 0],
+                    y=emb3d[m, 1],
+                    z=emb3d[m, 2],
+                    mode="markers",
+                    marker=dict(size=4, color=palette[lab], opacity=0.75),
+                    name=f"{names[lab]} (n={int(m.sum())})",
+                )
+            )
     fig.update_layout(
         title=title,
-        scene=dict(xaxis_title="UMAP 1", yaxis_title="UMAP 2", zaxis_title="UMAP 3",
-                   bgcolor="rgb(15,15,25)",
-                   xaxis=dict(gridcolor="#333"), yaxis=dict(gridcolor="#333"), zaxis=dict(gridcolor="#333")),
-        paper_bgcolor="rgb(15,15,25)", plot_bgcolor="rgb(15,15,25)",
-        font=dict(color="white"), width=800, height=600,
+        scene=dict(
+            xaxis_title="UMAP 1",
+            yaxis_title="UMAP 2",
+            zaxis_title="UMAP 3",
+            bgcolor="rgb(15,15,25)",
+            xaxis=dict(gridcolor="#333"),
+            yaxis=dict(gridcolor="#333"),
+            zaxis=dict(gridcolor="#333"),
+        ),
+        paper_bgcolor="rgb(15,15,25)",
+        plot_bgcolor="rgb(15,15,25)",
+        font=dict(color="white"),
+        width=800,
+        height=600,
     )
     return fig
 
@@ -533,8 +578,9 @@ def disease_axis_projection(X: np.ndarray, y: Sequence[int], *, seed: int = 42) 
     X = np.asarray(X, dtype=float)
     y_arr: np.ndarray = np.asarray(y, dtype=int)
     scaler = StandardScaler().fit(X)
-    clf = LogisticRegression(max_iter=2000, C=1.0, class_weight="balanced",
-                             random_state=seed).fit(scaler.transform(X), y_arr)
+    clf = LogisticRegression(max_iter=2000, C=1.0, class_weight="balanced", random_state=seed).fit(
+        scaler.transform(X), y_arr
+    )
 
     w = clf.coef_.ravel()
     w_hat = w / np.linalg.norm(w)
@@ -542,7 +588,13 @@ def disease_axis_projection(X: np.ndarray, y: Sequence[int], *, seed: int = 42) 
     scores = z_std @ w_hat
     residual = z_std - np.outer(scores, w_hat)
     residual_pc = PCA(n_components=2, random_state=seed).fit_transform(residual)
-    return {"w_hat": w_hat, "scaler": scaler, "clf": clf, "scores": scores, "residual_pc": residual_pc}
+    return {
+        "w_hat": w_hat,
+        "scaler": scaler,
+        "clf": clf,
+        "scores": scores,
+        "residual_pc": residual_pc,
+    }
 
 
 def plot_disease_axis(
@@ -569,8 +621,16 @@ def plot_disease_axis(
     for lab in (0, 1):
         m = y_arr == lab
         if m.any():
-            ax.scatter(s[m], pc1[m], c=palette[lab], alpha=0.45, s=22,
-                       edgecolors="none", label=f"{names[lab]} (n={int(m.sum())})", zorder=2)
+            ax.scatter(
+                s[m],
+                pc1[m],
+                c=palette[lab],
+                alpha=0.45,
+                s=22,
+                edgecolors="none",
+                label=f"{names[lab]} (n={int(m.sum())})",
+                zorder=2,
+            )
 
     centroids: Dict[int, tuple] = {}
     for lab in (0, 1):
@@ -578,10 +638,17 @@ def plot_disease_axis(
         if m.any():
             c = (float(s[m].mean()), float(pc1[m].mean()))
             centroids[lab] = c
-            ax.scatter(*c, marker="*", s=300, c=palette[lab],
-                       edgecolors="black", linewidths=0.8, zorder=5)
-            ax.annotate(names[lab].upper(), c, textcoords="offset points",
-                       xytext=(6, 4), fontsize=9, fontweight="bold")
+            ax.scatter(
+                *c, marker="*", s=300, c=palette[lab], edgecolors="black", linewidths=0.8, zorder=5
+            )
+            ax.annotate(
+                names[lab].upper(),
+                c,
+                textcoords="offset points",
+                xytext=(6, 4),
+                fontsize=9,
+                fontweight="bold",
+            )
 
     if visit_groups:
         for _sid, idx in visit_groups.items():
@@ -591,8 +658,12 @@ def plot_disease_axis(
             lab = int(y_arr[idx[0]])
             col = palette.get(lab, "#9E9E9E")
             ax.plot(xs, ys_, color=col, alpha=0.35, lw=1.2, zorder=1)
-            ax.annotate("", xy=(xs[-1], ys_[-1]), xytext=(xs[-2], ys_[-2]),
-                       arrowprops=dict(arrowstyle="->", color=col, lw=1.0, alpha=0.6))
+            ax.annotate(
+                "",
+                xy=(xs[-1], ys_[-1]),
+                xytext=(xs[-2], ys_[-2]),
+                arrowprops=dict(arrowstyle="->", color=col, lw=1.0, alpha=0.6),
+            )
 
     ax.axvline(0, color="black", lw=1.2, linestyle="--", alpha=0.6, label="Decision boundary (s=0)")
     ax.set_xlabel("Disease score  (s = Z ŵ)  →  conversion direction", fontsize=11)
@@ -631,18 +702,33 @@ def plot_disease_axis_3d(
     for lab in (0, 1):
         m = y_arr == lab
         if m.any():
-            fig.add_trace(go.Scatter3d(
-                x=s[m], y=pc1[m], z=pc2[m], mode="markers",
-                marker=dict(size=4, color=palette[lab], opacity=0.7),
-                name=f"{names[lab]} (n={int(m.sum())})",
-            ))
-            fig.add_trace(go.Scatter3d(
-                x=[float(s[m].mean())], y=[float(pc1[m].mean())], z=[float(pc2[m].mean())],
-                mode="markers+text", marker=dict(size=12, color=palette[lab], symbol="diamond",
-                                                 line=dict(color="white", width=1)),
-                text=[names[lab].upper()], textposition="top center",
-                name=f"{names[lab]} centroid",
-            ))
+            fig.add_trace(
+                go.Scatter3d(
+                    x=s[m],
+                    y=pc1[m],
+                    z=pc2[m],
+                    mode="markers",
+                    marker=dict(size=4, color=palette[lab], opacity=0.7),
+                    name=f"{names[lab]} (n={int(m.sum())})",
+                )
+            )
+            fig.add_trace(
+                go.Scatter3d(
+                    x=[float(s[m].mean())],
+                    y=[float(pc1[m].mean())],
+                    z=[float(pc2[m].mean())],
+                    mode="markers+text",
+                    marker=dict(
+                        size=12,
+                        color=palette[lab],
+                        symbol="diamond",
+                        line=dict(color="white", width=1),
+                    ),
+                    text=[names[lab].upper()],
+                    textposition="top center",
+                    name=f"{names[lab]} centroid",
+                )
+            )
 
     if visit_groups:
         for _sid, idx in visit_groups.items():
@@ -650,29 +736,50 @@ def plot_disease_axis_3d(
                 continue
             lab = int(y_arr[idx[0]])
             col = palette.get(lab, "#888")
-            fig.add_trace(go.Scatter3d(
-                x=s[idx], y=pc1[idx], z=pc2[idx], mode="lines",
-                line=dict(color=col, width=2), opacity=0.35,
-                showlegend=False, hoverinfo="skip",
-            ))
+            fig.add_trace(
+                go.Scatter3d(
+                    x=s[idx],
+                    y=pc1[idx],
+                    z=pc2[idx],
+                    mode="lines",
+                    line=dict(color=col, width=2),
+                    opacity=0.35,
+                    showlegend=False,
+                    hoverinfo="skip",
+                )
+            )
 
     pc1_range = [float(pc1.min()), float(pc1.max())]
     pc2_range = [float(pc2.min()), float(pc2.max())]
-    fig.add_trace(go.Surface(
-        x=[[0, 0], [0, 0]], y=[pc1_range, pc1_range],
-        z=[[pc2_range[0], pc2_range[1]], [pc2_range[0], pc2_range[1]]],
-        opacity=0.15, colorscale=[[0, "grey"], [1, "grey"]],
-        showscale=False, name="Decision boundary (s=0)", showlegend=True,
-    ))
+    fig.add_trace(
+        go.Surface(
+            x=[[0, 0], [0, 0]],
+            y=[pc1_range, pc1_range],
+            z=[[pc2_range[0], pc2_range[1]], [pc2_range[0], pc2_range[1]]],
+            opacity=0.15,
+            colorscale=[[0, "grey"], [1, "grey"]],
+            showscale=False,
+            name="Decision boundary (s=0)",
+            showlegend=True,
+        )
+    )
 
     fig.update_layout(
         title=title,
-        scene=dict(xaxis_title="Disease score (ŵ · z)",
-                   yaxis_title="Residual PC1", zaxis_title="Residual PC2",
-                   bgcolor="rgb(15,15,25)",
-                   xaxis=dict(gridcolor="#333"), yaxis=dict(gridcolor="#333"), zaxis=dict(gridcolor="#333")),
-        paper_bgcolor="rgb(15,15,25)", plot_bgcolor="rgb(15,15,25)",
-        font=dict(color="white"), width=900, height=650,
+        scene=dict(
+            xaxis_title="Disease score (ŵ · z)",
+            yaxis_title="Residual PC1",
+            zaxis_title="Residual PC2",
+            bgcolor="rgb(15,15,25)",
+            xaxis=dict(gridcolor="#333"),
+            yaxis=dict(gridcolor="#333"),
+            zaxis=dict(gridcolor="#333"),
+        ),
+        paper_bgcolor="rgb(15,15,25)",
+        plot_bgcolor="rgb(15,15,25)",
+        font=dict(color="white"),
+        width=900,
+        height=650,
     )
     return fig
 

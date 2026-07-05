@@ -16,6 +16,7 @@ All functions are deterministic (no sampling), so none takes an ``rng``.
 Label convention (see ``DATA/src/splitting/create_downstream_data_splits.py`` and
 ``model/GELSTM/dataset.py``): ``1 = converter``, ``0 = non-converter`` (stable MCI).
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, List, Tuple
@@ -318,6 +319,7 @@ def prob_spread_summary(prob_df: pd.DataFrame) -> dict:
     A small spread / separation is the "too narrow" pattern the RNNs show relative to
     the GEC-MLP. ``NaN`` for an empty group.
     """
+
     def _stats(sub: pd.DataFrame) -> dict:
         p = sub["prob"].to_numpy(dtype=float)
         if p.size == 0:

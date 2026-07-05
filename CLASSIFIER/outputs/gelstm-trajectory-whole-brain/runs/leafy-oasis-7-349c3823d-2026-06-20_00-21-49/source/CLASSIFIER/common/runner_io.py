@@ -6,6 +6,7 @@ elapsed counter while a long notebook executes. All coloring is a no-op when
 stdout is not a TTY (or ``NO_COLOR`` is set), so redirected output and the
 per-run ``run.log`` stay free of ANSI escape codes.
 """
+
 from __future__ import annotations
 
 import os

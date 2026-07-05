@@ -102,7 +102,9 @@ def build_survival_table(
     if id_col is None:
         raise ValueError(f"No subject ID column found in {cohorts_csv}")
     if "diagnosis" not in df.columns or "visit" not in df.columns:
-        raise ValueError(f"cohorts CSV must have 'diagnosis' and 'visit' columns, got {list(df.columns)}")
+        raise ValueError(
+            f"cohorts CSV must have 'diagnosis' and 'visit' columns, got {list(df.columns)}"
+        )
 
     df = df.copy()
     df[id_col] = df[id_col].astype(str)
@@ -127,7 +129,10 @@ def build_survival_table(
     agg = None
     if long_features:
         from PROGNOSER.common.longitudinal import LongitudinalAggregator
-        agg = LongitudinalAggregator(df, id_col=id_col, visit_col="visit", diagnosis_col="diagnosis")
+
+        agg = LongitudinalAggregator(
+            df, id_col=id_col, visit_col="visit", diagnosis_col="diagnosis"
+        )
 
     rows: list[dict] = []
     for sid, grp in df.dropna(subset=[id_col]).groupby(id_col):
@@ -144,7 +149,9 @@ def build_survival_table(
         months = grp["_months"]
         ad_mask = diags == "ad"
         if ad_mask.any():
-            duration = int(months[ad_mask].dropna().min()) if not months[ad_mask].dropna().empty else 0
+            duration = (
+                int(months[ad_mask].dropna().min()) if not months[ad_mask].dropna().empty else 0
+            )
             event = 1
         else:
             valid_months = months.dropna()
@@ -171,11 +178,17 @@ def build_survival_table(
             record["age"] = _extract_age(grp)
         if "sex" in include_features:
             sex_val = _first_non_null(grp.get("sex", pd.Series(dtype=object)))
-            record["sex"] = 1 if str(sex_val).lower().strip() == "m" else 0 if sex_val is not None else None
+            record["sex"] = (
+                1 if str(sex_val).lower().strip() == "m" else 0 if sex_val is not None else None
+            )
         if "mmstot" in include_features:
-            record["mmstot"] = _coerce_float(_first_non_null(grp.get("mmstot", pd.Series(dtype=object))))
+            record["mmstot"] = _coerce_float(
+                _first_non_null(grp.get("mmstot", pd.Series(dtype=object)))
+            )
         if "cdrglobal" in include_features:
-            record["cdrglobal"] = _coerce_float(_first_non_null(grp.get("cdrglobal", pd.Series(dtype=object))))
+            record["cdrglobal"] = _coerce_float(
+                _first_non_null(grp.get("cdrglobal", pd.Series(dtype=object)))
+            )
         if "apoe4" in include_features:
             apoe4_val = None
             for v in grp.get("ApoE", grp.get("apoe", pd.Series(dtype=object))):
@@ -256,7 +269,9 @@ def make_xte(
 
     sub = table[["subject_id", "duration", "event_observed", *feature_cols]].copy()
     if drop_na:
-        sub = sub.dropna(subset=feature_cols + ["duration", "event_observed"]).reset_index(drop=True)
+        sub = sub.dropna(subset=feature_cols + ["duration", "event_observed"]).reset_index(
+            drop=True
+        )
 
     X = sub[feature_cols].astype(float).to_numpy()
     T = sub["duration"].astype(float).to_numpy()

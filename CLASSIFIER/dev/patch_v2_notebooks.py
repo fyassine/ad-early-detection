@@ -13,6 +13,7 @@ The patcher is idempotent: re-running it does not duplicate insertions.
 
 Run with:  python CLASSIFIER/dev/patch_v2_notebooks.py
 """
+
 from __future__ import annotations
 
 import json
@@ -62,8 +63,8 @@ def _patch_sys_path(nb):
                 "ad-early-detection/CLASSIFIER'",
                 "ad-early-detection/CLASSIFIER'",
             ).replace(
-                "ad-early-detection/CLASSIFIER\"",
-                "ad-early-detection/CLASSIFIER\"",
+                'ad-early-detection/CLASSIFIER"',
+                'ad-early-detection/CLASSIFIER"',
             )
             if new_line != line:
                 changed = True
@@ -252,19 +253,25 @@ FRAMING = {
 # Per-notebook: which split model to audit ('pretrain' | 'downstream', resolved via
 # load_splits.split_csv_paths), and whether to append a subject-level rollup.
 TARGETS = {
-    "LONGITUDINAL_GELSTM_DELCODE_WHOLE_BRAIN.ipynb":              ("downstream", False),
+    "LONGITUDINAL_GELSTM_DELCODE_WHOLE_BRAIN.ipynb": ("downstream", False),
     "LONGITUDINAL_GELSTM_FDR_FILTERED_DELCODE_WHOLE_BRAIN.ipynb": ("downstream", False),
-    "LONGITUDINAL_GEC_MLP_DELCODE.ipynb":                         ("downstream", False),
-    "STATIC_GAAE_LOGREG_DELCODE_WHOLE_BRAIN.ipynb":               ("downstream", True),
-    "BASELINE_MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb":        ("downstream", False),
-    "LONGITUDINAL_GELSTM_FIRST_N_DELCODE_WHOLE_BRAIN.ipynb":      ("downstream", False),
+    "LONGITUDINAL_GEC_MLP_DELCODE.ipynb": ("downstream", False),
+    "STATIC_GAAE_LOGREG_DELCODE_WHOLE_BRAIN.ipynb": ("downstream", True),
+    "BASELINE_MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb": ("downstream", False),
+    "LONGITUDINAL_GELSTM_FIRST_N_DELCODE_WHOLE_BRAIN.ipynb": ("downstream", False),
 }
 
 
 def _strip_existing_tags(nb):
     """Remove any cells previously inserted by this patcher (so re-runs are idempotent)."""
     keep = []
-    drop_tags = {SANITY_CELL_TAG, FRAMING_CELL_TAG, SUBJECT_ROLLUP_TAG, TASK_COLUMN_TAG, SEEDING_CELL_TAG}
+    drop_tags = {
+        SANITY_CELL_TAG,
+        FRAMING_CELL_TAG,
+        SUBJECT_ROLLUP_TAG,
+        TASK_COLUMN_TAG,
+        SEEDING_CELL_TAG,
+    }
     for c in nb["cells"]:
         tags = set(c.get("metadata", {}).get("tags") or [])
         if tags & drop_tags:

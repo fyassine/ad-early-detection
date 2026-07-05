@@ -16,6 +16,7 @@ unchanged):
     reconstruction MSE. Forcing the latent to reconstruct node features (not just
     adjacency) gives the encoder a signal the prior cannot satisfy by collapsing.
 """
+
 from __future__ import annotations
 
 import torch
@@ -36,7 +37,7 @@ def kl_divergence(mu: torch.Tensor, logvar: torch.Tensor, free_bits: float = 0.0
     # Per-node, per-dim KL contribution: -0.5 * (1 + logvar - mu² - exp(logvar)).
     kl_per_dim = -0.5 * (1 + logvar - mu.pow(2) - logvar.exp())  # [N, D]
     if free_bits > 0.0:
-        kl_dim_mean = kl_per_dim.mean(dim=0)                      # [D] batch-mean per dim
+        kl_dim_mean = kl_per_dim.mean(dim=0)  # [D] batch-mean per dim
         return torch.clamp(kl_dim_mean, min=free_bits).sum()
     return kl_per_dim.sum(dim=1).mean()
 
@@ -96,8 +97,16 @@ def compute_sample_reconstruction_error(
     data = data.to(device)
     x, edge_index = data.x, data.edge_index
     edge_attr = getattr(data, "edge_attr", None)
-    age = float(data.patient_age.item()) if torch.is_tensor(data.patient_age) else float(data.patient_age)
-    sex = float(data.patient_sex.item()) if torch.is_tensor(data.patient_sex) else float(data.patient_sex)
+    age = (
+        float(data.patient_age.item())
+        if torch.is_tensor(data.patient_age)
+        else float(data.patient_age)
+    )
+    sex = (
+        float(data.patient_sex.item())
+        if torch.is_tensor(data.patient_sex)
+        else float(data.patient_sex)
+    )
     cond_vec = torch.tensor([[age, sex]], dtype=torch.float32, device=device)
     batch_mask = torch.zeros(x.size(0), dtype=torch.long, device=device)
 

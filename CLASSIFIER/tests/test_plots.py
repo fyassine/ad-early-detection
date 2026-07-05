@@ -1,4 +1,5 @@
 """Smoke tests for CLASSIFIER.common.plots (headless Agg backend)."""
+
 from __future__ import annotations
 
 import matplotlib

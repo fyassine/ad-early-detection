@@ -4,6 +4,7 @@ The VGAE reconstructs the *adjacency* (not the node features), so its
 explainability mirrors ``model/GAAE/explain.py`` but scores how well each ROI's
 graph neighbourhood is recovered by ``sigmoid(z zᵀ)`` rather than feature MSE.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional

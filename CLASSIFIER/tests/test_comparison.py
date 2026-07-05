@@ -3,6 +3,7 @@ Tests for CLASSIFIER.common.comparison — paired DeLong, bootstrap CI, Holm,
 McNemar. Validates correctness on synthetic data with known answers and
 cross-checks against scipy / sklearn where possible.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -82,7 +83,12 @@ def test_bootstrap_ci_recovers_known_delta_auc():
     probs_a, probs_b, labels = _make_paired_data(n=400, auc_a=0.85, auc_b=0.65, seed=5)
     rng = np.random.default_rng(99)
     point, lo, hi = paired_bootstrap_ci(
-        probs_a, probs_b, labels, roc_auc_score, n_boot=500, rng=rng,
+        probs_a,
+        probs_b,
+        labels,
+        roc_auc_score,
+        n_boot=500,
+        rng=rng,
     )
     truth = roc_auc_score(labels, probs_a) - roc_auc_score(labels, probs_b)
     assert point == pytest.approx(truth, abs=1e-9)
@@ -92,18 +98,21 @@ def test_bootstrap_ci_recovers_known_delta_auc():
 
 def test_bootstrap_ci_deterministic_with_same_rng():
     probs_a, probs_b, labels = _make_paired_data(seed=6)
-    r1 = paired_bootstrap_ci(probs_a, probs_b, labels, roc_auc_score,
-                              n_boot=200, rng=np.random.default_rng(7))
-    r2 = paired_bootstrap_ci(probs_a, probs_b, labels, roc_auc_score,
-                              n_boot=200, rng=np.random.default_rng(7))
+    r1 = paired_bootstrap_ci(
+        probs_a, probs_b, labels, roc_auc_score, n_boot=200, rng=np.random.default_rng(7)
+    )
+    r2 = paired_bootstrap_ci(
+        probs_a, probs_b, labels, roc_auc_score, n_boot=200, rng=np.random.default_rng(7)
+    )
     assert r1 == r2
 
 
 def test_bootstrap_rejects_too_few_boot():
     probs_a, probs_b, labels = _make_paired_data(seed=8)
     with pytest.raises(ValueError, match="n_boot must be"):
-        paired_bootstrap_ci(probs_a, probs_b, labels, roc_auc_score,
-                            n_boot=50, rng=np.random.default_rng(0))
+        paired_bootstrap_ci(
+            probs_a, probs_b, labels, roc_auc_score, n_boot=50, rng=np.random.default_rng(0)
+        )
 
 
 def test_holm_known_example():

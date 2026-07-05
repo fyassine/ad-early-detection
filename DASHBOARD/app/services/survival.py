@@ -28,7 +28,7 @@ def _visit_months(visit) -> Optional[int]:
     s = str(visit).strip().upper()
     if s in ("BL", "SC", "SCMRI", "SCREEN"):
         return 0
-    m = re.match(r"^M0*(\d+)$", s)   # M0, M06, M12, M024 all match
+    m = re.match(r"^M0*(\d+)$", s)  # M0, M06, M12, M024 all match
     return int(m.group(1)) if m else None
 
 
@@ -90,12 +90,14 @@ def time_to_conversion_table(df: pd.DataFrame) -> pd.DataFrame:
                     apoe4 = c
                     break
 
-        out_rows.append({
-            "subject_id": str(sid),
-            "duration": duration,
-            "event_observed": event,
-            "apoe4": apoe4,
-        })
+        out_rows.append(
+            {
+                "subject_id": str(sid),
+                "duration": duration,
+                "event_observed": event,
+                "apoe4": apoe4,
+            }
+        )
     return pd.DataFrame(out_rows)
 
 
@@ -161,9 +163,11 @@ def kaplan_meier(
         if sub.empty:
             return None
         kmf = KaplanMeierFitter()
-        kmf.fit(durations=sub["duration"].values,
-                event_observed=sub["event_observed"].values,
-                label=label)
+        kmf.fit(
+            durations=sub["duration"].values,
+            event_observed=sub["event_observed"].values,
+            label=label,
+        )
         sf = kmf.survival_function_
         ci = kmf.confidence_interval_
         timeline = sf.index.tolist()

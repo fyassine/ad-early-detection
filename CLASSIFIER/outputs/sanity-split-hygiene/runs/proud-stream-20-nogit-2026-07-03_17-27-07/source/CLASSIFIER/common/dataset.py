@@ -10,11 +10,23 @@ from .visits import allowed_months_map, month_allowed
 
 
 class ClassificationDataset(InMemoryDataset):
-    def __init__(self, root, adjacency_function, adjacency_args=None, transform=None,
-                 pre_transform=None, patient_info_path=None, converter_list_path=None,
-                 is_converter_dataset=False, separator=",", correlation_type="pearson",
-                 filter_csv_path=None, subject_ids=None, file_variant="z_transformed",
-                 file_suffix=None):
+    def __init__(
+        self,
+        root,
+        adjacency_function,
+        adjacency_args=None,
+        transform=None,
+        pre_transform=None,
+        patient_info_path=None,
+        converter_list_path=None,
+        is_converter_dataset=False,
+        separator=",",
+        correlation_type="pearson",
+        filter_csv_path=None,
+        subject_ids=None,
+        file_variant="z_transformed",
+        file_suffix=None,
+    ):
         self.adjacency_function = adjacency_function
         self.adjacency_args = adjacency_args or {}
         self.patient_info = None
@@ -58,10 +70,10 @@ class ClassificationDataset(InMemoryDataset):
 
         if converter_list_path and os.path.exists(converter_list_path):
             converter_df = pd.read_csv(converter_list_path)
-            if 'ID' in converter_df.columns:
-                self.converter_ids = set(converter_df['ID'].astype(str))
-            elif 'Pseudonym' in converter_df.columns:
-                self.converter_ids = set(converter_df['Pseudonym'].astype(str))
+            if "ID" in converter_df.columns:
+                self.converter_ids = set(converter_df["ID"].astype(str))
+            elif "Pseudonym" in converter_df.columns:
+                self.converter_ids = set(converter_df["Pseudonym"].astype(str))
 
         super().__init__(root, transform, pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0], weights_only=False)
@@ -105,20 +117,22 @@ class ClassificationDataset(InMemoryDataset):
 
     @property
     def raw_file_names(self):
-        all_files = sorted([f for f in os.listdir(self.raw_dir) if f.endswith('.npz')])
+        all_files = sorted([f for f in os.listdir(self.raw_dir) if f.endswith(".npz")])
         candidate_files = self._resolve_candidate_files(all_files)
 
         if self.allowed_ids:
             candidate_files = [
-                f for f in candidate_files
-                if f.split('_')[0].replace('sub-', '') in self.allowed_ids
+                f
+                for f in candidate_files
+                if f.split("_")[0].replace("sub-", "") in self.allowed_ids
             ]
 
         if self.allowed_months_per_pid is not None:
             candidate_files = [
-                f for f in candidate_files
+                f
+                for f in candidate_files
                 if month_allowed(
-                    f, self.allowed_months_per_pid.get(f.split('_')[0].replace('sub-', ''))
+                    f, self.allowed_months_per_pid.get(f.split("_")[0].replace("sub-", ""))
                 )
             ]
 
@@ -134,19 +148,19 @@ class ClassificationDataset(InMemoryDataset):
 
     @property
     def processed_file_names(self):
-        suffix = '_converter' if self.is_converter_dataset else '_nonconverter'
-        variant_tag = self.file_variant.replace('-', '_')
+        suffix = "_converter" if self.is_converter_dataset else "_nonconverter"
+        variant_tag = self.file_variant.replace("-", "_")
         split_tag = "all"
         if self.filter_csv_path:
             split_tag = os.path.splitext(os.path.basename(self.filter_csv_path))[0]
-        return [f'data_classification_{variant_tag}_{split_tag}{suffix}.pt']
+        return [f"data_classification_{variant_tag}_{split_tag}{suffix}.pt"]
 
     def process(self):
         data_list = []
         for _idx, raw_path in enumerate(self.raw_paths):
             data_npz = np.load(raw_path)
-            if 'array' in data_npz:
-                feature_matrix = data_npz['array']
+            if "array" in data_npz:
+                feature_matrix = data_npz["array"]
             else:
                 key = list(data_npz.keys())[0]
                 feature_matrix = data_npz[key]
@@ -159,7 +173,7 @@ class ClassificationDataset(InMemoryDataset):
 
             edge_index, _ = dense_to_sparse(adjacency_matrix)
             raw_filename = os.path.basename(raw_path)
-            patient_id = raw_filename.split('_')[0].replace('sub-', '')
+            patient_id = raw_filename.split("_")[0].replace("sub-", "")
 
             data = Data(x=feature_matrix, edge_index=edge_index)
             data.patient_id = patient_id
@@ -169,7 +183,9 @@ class ClassificationDataset(InMemoryDataset):
                 if isinstance(patient_row, pd.DataFrame):
                     patient_row = patient_row.iloc[0]
 
-                sex_tensor = torch.tensor(1 if patient_row.get("sex", "f") == "m" else 0, dtype=torch.long)
+                sex_tensor = torch.tensor(
+                    1 if patient_row.get("sex", "f") == "m" else 0, dtype=torch.long
+                )
                 age_value = patient_row.get("age", 50.0)
                 age_tensor = torch.tensor(min(max(age_value / 100.0, 0.0), 1.0), dtype=torch.float)
             else:

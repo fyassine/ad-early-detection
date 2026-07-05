@@ -35,12 +35,14 @@ def discover_csvs(data_root: str) -> list[dict]:
             if fn.lower().endswith(".csv"):
                 full = os.path.join(dirpath, fn)
                 rel = os.path.relpath(full, data_root)
-                csvs.append({
-                    "path": rel,
-                    "abs_path": full,
-                    "name": fn,
-                    "size_bytes": os.path.getsize(full),
-                })
+                csvs.append(
+                    {
+                        "path": rel,
+                        "abs_path": full,
+                        "name": fn,
+                        "size_bytes": os.path.getsize(full),
+                    }
+                )
     return csvs
 
 
@@ -66,13 +68,15 @@ def discover_scan_folders(data_root: str) -> list[dict]:
             rel = os.path.relpath(full, data_root)
             subj = _extract_subject_from_path(rel)
 
-            scan_files.append({
-                "rel_path": rel,
-                "abs_path": full,
-                "ext": ext,
-                "subject": subj,
-                "filename": fn,
-            })
+            scan_files.append(
+                {
+                    "rel_path": rel,
+                    "abs_path": full,
+                    "ext": ext,
+                    "subject": subj,
+                    "filename": fn,
+                }
+            )
 
     if not scan_files:
         return []
@@ -83,7 +87,13 @@ def discover_scan_folders(data_root: str) -> list[dict]:
         parts = sf["rel_path"].split(os.sep)
         dir_parts = parts[:-1]
         key_depth = min(3, len(dir_parts))
-        key = os.sep.join(dir_parts[:key_depth]) if key_depth > 0 else dir_parts[0] if dir_parts else "."
+        key = (
+            os.sep.join(dir_parts[:key_depth])
+            if key_depth > 0
+            else dir_parts[0]
+            if dir_parts
+            else "."
+        )
         groups.setdefault(key, []).append(sf)
 
     # Build result with format info
@@ -107,15 +117,17 @@ def discover_scan_folders(data_root: str) -> list[dict]:
         # Get format details by sampling one file
         format_info = _get_format_info(files[0], file_type)
 
-        results.append({
-            "path": group_path,
-            "abs_path": os.path.join(data_root, group_path),
-            "file_type": file_type,
-            "scan_count": len(files),
-            "subject_count": len(subjects),
-            "visit_distribution": dict(sorted(visits.items())),
-            "format_info": format_info,
-        })
+        results.append(
+            {
+                "path": group_path,
+                "abs_path": os.path.join(data_root, group_path),
+                "file_type": file_type,
+                "scan_count": len(files),
+                "subject_count": len(subjects),
+                "visit_distribution": dict(sorted(visits.items())),
+                "format_info": format_info,
+            }
+        )
 
     return results
 
@@ -200,21 +212,21 @@ def scan_selected_folders(data_root: str, folder_paths: list[str]) -> dict:
                 vm = VISIT_PATTERN.search(fn)
                 visit = vm.group(1) if vm else "unknown"
 
-                all_files.append({
-                    "file": rel,
-                    "subject": subj,
-                    "type": ext,
-                    "visit": visit,
-                })
+                all_files.append(
+                    {
+                        "file": rel,
+                        "subject": subj,
+                        "type": ext,
+                        "visit": visit,
+                    }
+                )
 
                 if subj:
                     subject_visits.setdefault(subj, set()).add(visit)
 
                 # Sample format info from first file
                 if format_info is None:
-                    format_info = _get_format_info(
-                        {"abs_path": full, "filename": fn}, ext
-                    )
+                    format_info = _get_format_info({"abs_path": full, "filename": fn}, ext)
 
     if len(detected_types) > 1:
         file_type = "mixed"
@@ -225,9 +237,7 @@ def scan_selected_folders(data_root: str, folder_paths: list[str]) -> dict:
 
     subject_scan_counts = {k: len(v) for k, v in subject_visits.items()}
 
-    multi_visit_subjects = {
-        k: sorted(v) for k, v in subject_visits.items() if len(v) > 1
-    }
+    multi_visit_subjects = {k: sorted(v) for k, v in subject_visits.items() if len(v) > 1}
 
     result = {
         "total_scans": len(all_files),

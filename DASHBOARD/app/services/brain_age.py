@@ -41,12 +41,15 @@ def _safe_float(v) -> Optional[float]:
 @dataclass
 class BrainAgeModel:
     """A trained Ridge brain-age model + summary diagnostics."""
+
     n_train: int = 0
     n_features: int = 0
     age_mean: float = 0.0
-    cv_mae: Optional[float] = None        # cross-validated mean absolute error
+    cv_mae: Optional[float] = None  # cross-validated mean absolute error
     cv_r2: Optional[float] = None
-    bias_slope: Optional[float] = None    # slope of (predicted - true) on true (Smith 2019 correction)
+    bias_slope: Optional[float] = (
+        None  # slope of (predicted - true) on true (Smith 2019 correction)
+    )
     bias_intercept: Optional[float] = None
     # CV-based predicted ages for the healthy cohort (used to render the
     # cohort BAG distribution + percentile context).
@@ -64,8 +67,8 @@ def _vectorize(matrix: np.ndarray) -> np.ndarray:
 
 
 def fit_brain_age(
-    fc_features: np.ndarray,           # (N, n_edges)
-    ages: np.ndarray,                  # (N,)
+    fc_features: np.ndarray,  # (N, n_edges)
+    ages: np.ndarray,  # (N,)
     n_splits: int = 5,
     alpha: float = 1.0,
     seed: int = 42,

@@ -6,10 +6,15 @@ import numpy as np
 
 from ..config import DATA_ROOT
 
-_QC_CACHE_DIR = Path(os.environ.get(
-    "DASHBOARD_CACHE_DIR",
-    os.path.join(DATA_ROOT, "_dashboard_cache"),
-)) / "qc_std"
+_QC_CACHE_DIR = (
+    Path(
+        os.environ.get(
+            "DASHBOARD_CACHE_DIR",
+            os.path.join(DATA_ROOT, "_dashboard_cache"),
+        )
+    )
+    / "qc_std"
+)
 
 
 def _qc_std_path(src_abs: str) -> Path:
@@ -56,11 +61,12 @@ def _ensure_qc_reduce(src_abs: str) -> str:
     # Embed valid cal_min/cal_max so NiiVue gets correct windowing from the header
     finite_pos = result[np.isfinite(result) & (result > 0)]
     if finite_pos.size > 0:
-        out.header['cal_min'] = float(np.percentile(finite_pos, 2))
-        out.header['cal_max'] = float(np.percentile(finite_pos, 98))
+        out.header["cal_min"] = float(np.percentile(finite_pos, 2))
+        out.header["cal_max"] = float(np.percentile(finite_pos, 98))
 
     cached.parent.mkdir(parents=True, exist_ok=True)
     import gzip as _gzip
+
     raw_bytes = out.to_bytes()
     with _gzip.open(str(cached), "wb", compresslevel=9) as f:
         f.write(raw_bytes)

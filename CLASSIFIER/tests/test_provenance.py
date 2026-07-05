@@ -1,4 +1,5 @@
 """Tests for CLASSIFIER.common.provenance."""
+
 from __future__ import annotations
 
 import json
@@ -53,9 +54,7 @@ def test_region_from_data_root_raises_without_dataset_dir():
 
 
 def test_make_run_dir_embeds_region(tmp_path):
-    info = region_from_data_root(
-        "/data/DELCODE/__fc_wholebrain_sch200_flat__/matrices"
-    )
+    info = region_from_data_root("/data/DELCODE/__fc_wholebrain_sch200_flat__/matrices")
     run_name, run_dir = make_run_dir(tmp_path, "gelstm", info, timestamp="2026-05-28_00-00-00")
     assert run_name == "gelstm_wholebrain_2026-05-28_00-00-00"
     assert run_dir.is_dir()
@@ -151,12 +150,12 @@ def test_snapshot_source_dirs(tmp_path):
     (pkg / "sub").mkdir(parents=True)
     (pkg / "keep.py").write_text("x = 1\n")
     (pkg / "cfg.yaml").write_text("a: 1\n")
-    (pkg / "data.npz").write_bytes(b"\x00\x01")          # excluded by suffix
+    (pkg / "data.npz").write_bytes(b"\x00\x01")  # excluded by suffix
     (pkg / "sub" / "deep.py").write_text("y = 2\n")
     cache = pkg / "__pycache__"
     cache.mkdir()
-    (cache / "junk.py").write_text("garbage\n")           # excluded dir
-    (repo / "lone.py").write_text("z = 3\n")              # a file root
+    (cache / "junk.py").write_text("garbage\n")  # excluded dir
+    (repo / "lone.py").write_text("z = 3\n")  # a file root
 
     run_dir = tmp_path / "run"
     run_dir.mkdir()
@@ -171,8 +170,8 @@ def test_snapshot_source_dirs(tmp_path):
     assert "pkg/cfg.yaml" in copied
     assert "pkg/sub/deep.py" in copied
     assert "lone.py" in copied
-    assert not any("data.npz" in c for c in copied)       # wrong suffix skipped
-    assert not any("__pycache__" in c for c in copied)    # excluded dir skipped
+    assert not any("data.npz" in c for c in copied)  # wrong suffix skipped
+    assert not any("__pycache__" in c for c in copied)  # excluded dir skipped
     assert "does_not_exist" in manifest["missing"]
 
     # Files actually land under run_dir/source/ preserving repo-relative paths.

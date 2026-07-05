@@ -15,16 +15,19 @@ def load_frozen_encoder_from_gaae(
 ) -> nn.Module:
     checkpoint = torch.load(gaae_checkpoint_path, map_location=device, weights_only=False)
 
-    if 'model_state_dict' in checkpoint:
-        gaae_state_dict = checkpoint['model_state_dict']
+    if "model_state_dict" in checkpoint:
+        gaae_state_dict = checkpoint["model_state_dict"]
     else:
         gaae_state_dict = checkpoint
 
     encoder_keys = [
-        'encoder_gat1', 'encoder_bn1',
-        'encoder_gat2', 'encoder_bn2',
-        'encoder_gat3',
-        'film_gamma', 'film_beta'
+        "encoder_gat1",
+        "encoder_bn1",
+        "encoder_gat2",
+        "encoder_bn2",
+        "encoder_gat3",
+        "film_gamma",
+        "film_beta",
     ]
 
     gec_state_dict = gec_model.state_dict()

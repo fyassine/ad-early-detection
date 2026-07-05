@@ -45,7 +45,9 @@ def percentile_bands(
     Returns ``{p5, p25, p50, p75, p95, n, mean, std,
                median_ci_lo, median_ci_hi}`` or ``None`` if too few data.
     """
-    arr = np.asarray([v for v in values if v is not None and math.isfinite(float(v))], dtype=np.float64)
+    arr = np.asarray(
+        [v for v in values if v is not None and math.isfinite(float(v))], dtype=np.float64
+    )
     if arr.size < 5:
         return None
 
@@ -57,13 +59,15 @@ def percentile_bands(
         sample = rng.choice(arr, size=arr.size, replace=True)
         medians[b] = float(np.median(sample))
 
-    point.update({
-        "n": int(arr.size),
-        "mean": _safe_float(arr.mean()),
-        "std": _safe_float(arr.std(ddof=1)) if arr.size > 1 else None,
-        "median_ci_lo": _safe_float(np.quantile(medians, 0.025)),
-        "median_ci_hi": _safe_float(np.quantile(medians, 0.975)),
-    })
+    point.update(
+        {
+            "n": int(arr.size),
+            "mean": _safe_float(arr.mean()),
+            "std": _safe_float(arr.std(ddof=1)) if arr.size > 1 else None,
+            "median_ci_lo": _safe_float(np.quantile(medians, 0.025)),
+            "median_ci_hi": _safe_float(np.quantile(medians, 0.975)),
+        }
+    )
     return point
 
 
@@ -79,8 +83,7 @@ def cohort_percentile_bands(
     """
     out: dict = {}
     for cohort, values in cohort_to_values.items():
-        out[cohort] = percentile_bands(values, percentiles=percentiles,
-                                       n_boot=n_boot, seed=seed)
+        out[cohort] = percentile_bands(values, percentiles=percentiles, n_boot=n_boot, seed=seed)
     return out
 
 
@@ -92,7 +95,9 @@ def patient_percentile(value: float, reference_values: list[float]) -> Optional[
     """
     if value is None:
         return None
-    arr = np.asarray([v for v in reference_values if v is not None and math.isfinite(float(v))], dtype=np.float64)
+    arr = np.asarray(
+        [v for v in reference_values if v is not None and math.isfinite(float(v))], dtype=np.float64
+    )
     if arr.size < 5:
         return None
     rank = float(np.mean(arr <= value)) * 100.0

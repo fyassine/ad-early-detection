@@ -5,6 +5,7 @@ Dataclass configs for GELSTM training and evaluation.
 groups the (formerly loose) kwargs threaded through ``evaluate`` and
 ``encode_batch_sequences`` so they can be logged as a single bundle.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

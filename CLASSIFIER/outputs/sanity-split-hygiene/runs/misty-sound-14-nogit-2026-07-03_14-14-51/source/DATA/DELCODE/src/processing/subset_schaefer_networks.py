@@ -69,7 +69,9 @@ def process_file(
 def main(networks: list[str], output_version: str, output_suffix: str) -> None:
     matrices_in = V3_ROOT / "matrices"
     if not matrices_in.exists():
-        raise FileNotFoundError(f"__fc_wholebrain_sch200_flat__ matrices dir not found: {matrices_in}")
+        raise FileNotFoundError(
+            f"__fc_wholebrain_sch200_flat__ matrices dir not found: {matrices_in}"
+        )
 
     indices = load_network_indices(networks)
     if not indices:
@@ -107,10 +109,14 @@ def main(networks: list[str], output_version: str, output_suffix: str) -> None:
                 matrices_out / f"{stem}{raw_suffix_out}",
             )
             z_npz = matrices_in / f"{stem}{INPUT_Z_SUFFIX}"
-            msg_z = "NO_Z_SOURCE" if not z_npz.exists() else process_file(
-                z_npz,
-                indices,
-                matrices_out / f"{stem}{z_suffix_out}",
+            msg_z = (
+                "NO_Z_SOURCE"
+                if not z_npz.exists()
+                else process_file(
+                    z_npz,
+                    indices,
+                    matrices_out / f"{stem}{z_suffix_out}",
+                )
             )
             if msg_raw.startswith("SKIP"):
                 skipped += 1
@@ -144,18 +150,24 @@ def main(networks: list[str], output_version: str, output_suffix: str) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument(
-        "--networks", nargs="+", required=True,
-        help="Schaefer 7-network names to include (e.g. Default Limbic)"
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
-        "--output-version", required=True,
-        help="DELCODE data version directory name (e.g. __fc_limbic_sch200_flat__)"
+        "--networks",
+        nargs="+",
+        required=True,
+        help="Schaefer 7-network names to include (e.g. Default Limbic)",
     )
     parser.add_argument(
-        "--output-suffix", required=True,
-        help="File name suffix for output matrices (e.g. limbic)"
+        "--output-version",
+        required=True,
+        help="DELCODE data version directory name (e.g. __fc_limbic_sch200_flat__)",
+    )
+    parser.add_argument(
+        "--output-suffix", required=True, help="File name suffix for output matrices (e.g. limbic)"
     )
     args = parser.parse_args()
-    main(networks=args.networks, output_version=args.output_version, output_suffix=args.output_suffix)
+    main(
+        networks=args.networks, output_version=args.output_version, output_suffix=args.output_suffix
+    )

@@ -8,6 +8,7 @@ and aggregate finished runs into a single results ledger.
 Layering: this module knows about config dataclasses and the registry, but does
 NOT import torch or any model code — it stays cheap to import inside the CLI.
 """
+
 from __future__ import annotations
 
 import csv
@@ -36,7 +37,9 @@ def load_registry(yaml_path: str | Path) -> List[Dict[str, Any]]:
     if registry_path.is_dir():
         yaml_files = sorted(registry_path.glob("*.yaml"))
         if not yaml_files:
-            raise FileNotFoundError(f"No .yaml files found in experiment registry directory: {registry_path}")
+            raise FileNotFoundError(
+                f"No .yaml files found in experiment registry directory: {registry_path}"
+            )
     elif registry_path.is_file():
         yaml_files = [registry_path]
     else:
@@ -58,7 +61,11 @@ def load_registry(yaml_path: str | Path) -> List[Dict[str, Any]]:
     if dupes:
         raise ValueError(f"Duplicate experiment id(s) in {registry_path}: {sorted(dupes)}")
     for exp in experiments:
-        source_yaml = Path(exp.pop("_source_yaml")) if isinstance(exp, dict) and "_source_yaml" in exp else registry_path
+        source_yaml = (
+            Path(exp.pop("_source_yaml"))
+            if isinstance(exp, dict) and "_source_yaml" in exp
+            else registry_path
+        )
         _validate_experiment(exp, source_yaml)
     return experiments
 
@@ -76,7 +83,9 @@ def load_experiment(yaml_path: str | Path, exp_id: str) -> Dict[str, Any]:
 def _validate_experiment(exp: Dict[str, Any], yaml_path: Path) -> None:
     """Fail loudly on a missing/invalid field (see .claude/rules/errors.md)."""
     if not isinstance(exp, dict):
-        raise ValueError(f"Each experiment in {yaml_path} must be a mapping, got {type(exp).__name__}.")
+        raise ValueError(
+            f"Each experiment in {yaml_path} must be a mapping, got {type(exp).__name__}."
+        )
     missing = [f for f in _REQUIRED_FIELDS if exp.get(f) is None]
     if missing:
         raise ValueError(
@@ -223,7 +232,8 @@ def collect_results(outputs_root: str | Path) -> List[Dict[str, Any]]:
         metrics = dict(summary.get("metrics") or {})
         if not metrics:
             metrics = {
-                k: v for k, v in summary.items()
+                k: v
+                for k, v in summary.items()
                 if k.startswith("test_") and isinstance(v, (int, float, bool))
             }
         for k, v in metrics.items():

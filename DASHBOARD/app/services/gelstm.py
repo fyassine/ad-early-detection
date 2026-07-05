@@ -89,9 +89,10 @@ def _compute_model_version(paths: list[Path]) -> str:
 # Service                                                                     #
 # --------------------------------------------------------------------------- #
 
+
 @dataclass
 class _LoadedEnsemble:
-    folds: list = field(default_factory=list)      # list[GELSTMClassifier]
+    folds: list = field(default_factory=list)  # list[GELSTMClassifier]
     model_version: str = ""
     gaae_path: Optional[Path] = None
     fold_paths: list[Path] = field(default_factory=list)
@@ -213,6 +214,7 @@ class GELSTMService:
         device = "cpu"  # dashboard has no GPU
         try:
             import torch
+
             folds = []
             for ckpt in fold_paths:
                 model = GELSTMClassifier(**arch)
@@ -241,7 +243,9 @@ class GELSTMService:
             norm=norm,
             device=device,
         )
-        print(f"[gelstm] loaded ensemble ({len(folds)} folds) version={self._ensemble.model_version}")
+        print(
+            f"[gelstm] loaded ensemble ({len(folds)} folds) version={self._ensemble.model_version}"
+        )
         return True
 
     # ─── Inference ──────────────────────────────────────────────────────── #
@@ -285,7 +289,9 @@ class GELSTMService:
         if not self.load_ensemble() or self._ensemble is None:
             return {
                 "available": False,
-                "prob": None, "ci_lo": None, "ci_hi": None,
+                "prob": None,
+                "ci_lo": None,
+                "ci_hi": None,
                 "fold_probs": [],
                 "model_version": "",
                 "note": self._load_error or "GELSTM ensemble unavailable",
@@ -302,7 +308,9 @@ class GELSTMService:
         if not visit_matrices:
             return {
                 "available": True,
-                "prob": None, "ci_lo": None, "ci_hi": None,
+                "prob": None,
+                "ci_lo": None,
+                "ci_hi": None,
                 "fold_probs": [],
                 "model_version": self._ensemble.model_version,
                 "note": "no visits",
@@ -322,12 +330,19 @@ class GELSTMService:
                     for g in graphs:
                         batch = Batch.from_data_list([g])
                         z_nodes = model.encoder.encode(
-                            batch.x, batch.edge_index,
+                            batch.x,
+                            batch.edge_index,
                             edge_attr=getattr(batch, "edge_attr", None),
                         )
                         # FiLM-condition the latents with sex/age (matches GAAE forward()).
-                        batch_mask = batch.batch if hasattr(batch, "batch") else torch.zeros(
-                            z_nodes.shape[0], dtype=torch.long, device=z_nodes.device,
+                        batch_mask = (
+                            batch.batch
+                            if hasattr(batch, "batch")
+                            else torch.zeros(
+                                z_nodes.shape[0],
+                                dtype=torch.long,
+                                device=z_nodes.device,
+                            )
                         )
                         z_nodes = model.encoder.condition_latent(z_nodes, cond_vec, batch_mask)
                         z_pooled = z_nodes.mean(dim=0, keepdim=True)
@@ -338,7 +353,10 @@ class GELSTMService:
                         z = torch.cat([z, dt], dim=-1)
                     lengths = torch.tensor([z.shape[1]], dtype=torch.long)
                     packed = torch.nn.utils.rnn.pack_padded_sequence(
-                        z, lengths, batch_first=True, enforce_sorted=False,
+                        z,
+                        lengths,
+                        batch_first=True,
+                        enforce_sorted=False,
                     )
                     logits = model(packed)
                     fold_probs.append(float(torch.sigmoid(logits.view(-1)[0]).item()))
@@ -349,7 +367,9 @@ class GELSTMService:
         if not fold_probs:
             return {
                 "available": True,
-                "prob": None, "ci_lo": None, "ci_hi": None,
+                "prob": None,
+                "ci_lo": None,
+                "ci_hi": None,
                 "fold_probs": [],
                 "model_version": self._ensemble.model_version,
                 "note": "all folds failed",
@@ -379,6 +399,7 @@ class GELSTMService:
 
     def _build_cond_vector(self, sex, age):
         import torch
+
         norm = self._ensemble.norm if self._ensemble else {}
         sex_v = float(sex) if sex is not None else float(norm.get("sex_default", 0.5))
         if age is None:
@@ -473,7 +494,10 @@ class GELSTMService:
                     f"model_card.json — drop a JSON file alongside checkpoints "
                     f"with roc/pr/calibration/cm payloads."
                 ),
-                "roc": None, "pr": None, "calibration": None, "cm": None,
+                "roc": None,
+                "pr": None,
+                "calibration": None,
+                "cm": None,
             }
         try:
             card = json.loads(card_file.read_text())

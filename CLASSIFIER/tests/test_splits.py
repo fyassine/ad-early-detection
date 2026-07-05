@@ -10,8 +10,8 @@ def test_deterministic_with_same_seed():
     a = make_splits(sids, labels, seed=42)
     b = make_splits(sids, labels, seed=42)
     assert np.array_equal(a["train"], b["train"])
-    assert np.array_equal(a["val"],   b["val"])
-    assert np.array_equal(a["test"],  b["test"])
+    assert np.array_equal(a["val"], b["val"])
+    assert np.array_equal(a["test"], b["test"])
 
 
 def test_no_overlap_between_partitions():
@@ -27,16 +27,14 @@ def test_no_overlap_between_partitions():
 
 def test_split_fractions_respected():
     sids = list(range(100))
-    splits = make_splits(sids, labels=None, seed=42,
-                         val_frac=0.2, test_frac=0.1, stratify=False)
+    splits = make_splits(sids, labels=None, seed=42, val_frac=0.2, test_frac=0.1, stratify=False)
     # val_frac and test_frac are fractions of the total dataset, achieved by
     # first carving out test_frac then val_frac/(1-test_frac) of the remainder.
     assert len(splits["test"]) == 10
-    assert len(splits["val"])  == 20
+    assert len(splits["val"]) == 20
     assert len(splits["train"]) == 70
 
 
 def test_invalid_fractions_rejected():
     with pytest.raises(ValueError):
-        make_splits(list(range(10)), labels=None, seed=42,
-                    val_frac=0.6, test_frac=0.6)
+        make_splits(list(range(10)), labels=None, seed=42, val_frac=0.6, test_frac=0.6)

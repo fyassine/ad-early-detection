@@ -154,10 +154,10 @@ def compute_joint_connectivity(
 
     # Schaefer: use transform() (masker already fitted) — avoids resampling
     ts_schaefer = schaefer_masker.transform(bold_img)  # (T, 200)
-    ts_net = ts_schaefer[:, schaefer_col_indices]       # (T, N_schaefer_subset)
+    ts_net = ts_schaefer[:, schaefer_col_indices]  # (T, N_schaefer_subset)
 
     # Tian: use transform() — masker is pre-fitted and pre-subsetted to hippo
-    ts_tian = tian_masker.transform(bold_img)           # (T, N_hippo)
+    ts_tian = tian_masker.transform(bold_img)  # (T, N_hippo)
     # tian_masker is already subsetted; pass all columns
     ts_hippo = ts_tian if not tian_hippo_indices else ts_tian
 
@@ -191,8 +191,12 @@ def process_file(
         return f"SKIP {bold_path.name}"
 
     corr, z = compute_joint_connectivity(
-        bold_path, schaefer_masker, schaefer_col_indices,
-        tian_masker, tian_hippo_indices, correlation_measure,
+        bold_path,
+        schaefer_masker,
+        schaefer_col_indices,
+        tian_masker,
+        tian_hippo_indices,
+        correlation_measure,
     )
     np.savez_compressed(raw_out, array=corr)
     np.savez_compressed(z_out, array=z)
@@ -202,6 +206,7 @@ def process_file(
 @contextlib.contextmanager
 def tqdm_joblib(tqdm_object):
     """Patch joblib to report batch completions into a tqdm progress bar."""
+
     class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
         def __call__(self, *args, **kwargs):
             tqdm_object.update(n=self.batch_size)
@@ -232,8 +237,15 @@ def _parallel_worker(
     cm = ConnectivityMeasure(kind="correlation", standardize="zscore_sample")
     try:
         msg = process_file(
-            bold_path, schaefer_masker, schaefer_col_indices,
-            tian_masker, [], cm, matrices_out, raw_suffix, z_suffix,
+            bold_path,
+            schaefer_masker,
+            schaefer_col_indices,
+            tian_masker,
+            [],
+            cm,
+            matrices_out,
+            raw_suffix,
+            z_suffix,
         )
         return msg, None
     except Exception as exc:
@@ -258,9 +270,7 @@ def main(
     # Load Schaefer network ROI indices
     with ATLAS_JSON.open("r") as f:
         all_rois = json.load(f)["rois"]
-    schaefer_col_indices = sorted(
-        [r["index"] for r in all_rois if r.get("network") in networks]
-    )
+    schaefer_col_indices = sorted([r["index"] for r in all_rois if r.get("network") in networks])
     schaefer_labels = [r["label"] for r in all_rois if r.get("network") in networks]
     tian_hippo_indices = load_hippocampus_label_indices(tian_labels)
 
@@ -323,8 +333,13 @@ def main(
     with tqdm_joblib(_tqdm(desc="Processing fMRI", total=len(bold_files), dynamic_ncols=True)) as _:
         raw_results = Parallel(n_jobs=safe_jobs, verbose=0)(
             delayed(_parallel_worker)(
-                p, schaefer_masker, schaefer_col_indices,
-                tian_masker, matrices_out, raw_suffix, z_suffix,
+                p,
+                schaefer_masker,
+                schaefer_col_indices,
+                tian_masker,
+                matrices_out,
+                raw_suffix,
+                z_suffix,
             )
             for p in bold_files
         )
@@ -357,16 +372,30 @@ def main(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--networks", nargs="+", required=True, help="Schaefer networks to include")
-    parser.add_argument("--output-version", required=True, help="DELCODE version dir (e.g. __fc_dmn-hippo_sch200-tian2_flat__)")
+    parser.add_argument(
+        "--output-version",
+        required=True,
+        help="DELCODE version dir (e.g. __fc_dmn-hippo_sch200-tian2_flat__)",
+    )
     parser.add_argument("--output-suffix", required=True, help="File suffix (e.g. dmn_hippo)")
     parser.add_argument("--tian-atlas", required=True, type=Path, help="Tian atlas NIfTI")
     parser.add_argument("--tian-labels", type=Path, default=None, help="Tian label text file")
-    parser.add_argument("--fmri-root", type=Path, default=DEFAULT_FMRI_ROOT,
-                        help="Root fMRI directory (all visits, default: __fmri_wholebrain_sch200_flat__/fmri)")
-    parser.add_argument("--n-jobs", type=int, default=16,
-                        help="Parallel workers (default: 16). Lower if you hit OOM.")
+    parser.add_argument(
+        "--fmri-root",
+        type=Path,
+        default=DEFAULT_FMRI_ROOT,
+        help="Root fMRI directory (all visits, default: __fmri_wholebrain_sch200_flat__/fmri)",
+    )
+    parser.add_argument(
+        "--n-jobs",
+        type=int,
+        default=16,
+        help="Parallel workers (default: 16). Lower if you hit OOM.",
+    )
     args = parser.parse_args()
     main(
         networks=args.networks,

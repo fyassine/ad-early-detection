@@ -26,6 +26,7 @@ additionally exposes the decoder-dependent ``disease_axis_steering`` and
 ``sorted_reconstruction`` (capability-gated; VGAE's adjacency decoder is structurally
 different enough that porting those two is left for later).
 """
+
 from __future__ import annotations
 
 import json
@@ -60,9 +61,7 @@ def get_explain_adapter(name: str) -> type:
     key = str(name).strip().lower()
     cls_name = _REGISTRY.get(key)
     if cls_name is None:
-        raise ValueError(
-            f"Unknown explain adapter {name!r}. Known keys: {sorted(_REGISTRY)}."
-        )
+        raise ValueError(f"Unknown explain adapter {name!r}. Known keys: {sorted(_REGISTRY)}.")
     return globals()[cls_name]
 
 
@@ -159,8 +158,10 @@ class ExplainAdapter:
         from torch_geometric.data import Data
 
         tr = nii_to_fc_to_graph(
-            subject["subject_id"], self.baseline_visit(subject),
-            file_variant=self.file_variant, adjacency_k=self.adjacency_k,
+            subject["subject_id"],
+            self.baseline_visit(subject),
+            file_variant=self.file_variant,
+            adjacency_k=self.adjacency_k,
         )
         ei = torch.tensor(tr["edge_index"], dtype=torch.long)
         x = torch.tensor(tr["x"], dtype=torch.float)
@@ -226,16 +227,21 @@ class ExplainAdapter:
         raise ValueError(f"{type(self).__name__} has no extra {name!r}.")
 
     # ── shared helpers ──────────────────────────────────────────────────────
-    def _encoder(self) -> GraphAttentionAutoencoderConditioned:  # overridden where a trained encoder exists
+    def _encoder(
+        self,
+    ) -> GraphAttentionAutoencoderConditioned:  # overridden where a trained encoder exists
         raise NotImplementedError
 
     def _build_gaae_encoder(self) -> GraphAttentionAutoencoderConditioned:
         if not self.gaae_ckpt_path:
             raise ValueError("No GAAE checkpoint path available to build the encoder.")
         enc = GraphAttentionAutoencoderConditioned(
-            in_features=self.in_features, hidden_dim=self.gaae_hidden,
-            out_features=self.gaae_latent, cond_dim=self.gaae_cond_dim,
-            num_heads=self.gaae_heads, dropout=self.gaae_dropout,
+            in_features=self.in_features,
+            hidden_dim=self.gaae_hidden,
+            out_features=self.gaae_latent,
+            cond_dim=self.gaae_cond_dim,
+            num_heads=self.gaae_heads,
+            dropout=self.gaae_dropout,
         ).to(self.device)
         obj = torch.load(self.gaae_ckpt_path, map_location=self.device, weights_only=False)  # nosec B614
         enc.load_state_dict(obj if isinstance(obj, dict) else obj.state_dict())
@@ -248,8 +254,11 @@ class ExplainAdapter:
         from model.GELSTM.dataset import LongitudinalSubjectDataset
 
         return LongitudinalSubjectDataset(
-            self.data_root, df, self.cohorts_csv,
-            adjacency_k=self.adjacency_k, file_variant=self.file_variant,
+            self.data_root,
+            df,
+            self.cohorts_csv,
+            adjacency_k=self.adjacency_k,
+            file_variant=self.file_variant,
         )
 
     @torch.no_grad()
@@ -271,8 +280,14 @@ class ExplainAdapter:
 class GAAEExplainAdapter(ExplainAdapter):
     """Explain the GAAE encoder itself: latent space, attention, reconstruction, IG."""
 
-    capabilities = {"reconstruction", "latent_ig", "gnn_explainer", "attention",
-                    "disease_axis_steering", "sorted_reconstruction"}
+    capabilities = {
+        "reconstruction",
+        "latent_ig",
+        "gnn_explainer",
+        "attention",
+        "disease_axis_steering",
+        "sorted_reconstruction",
+    }
     model_tag = "gaae"
 
     def load(self) -> Dict[str, Any]:
@@ -308,27 +323,33 @@ class GAAEExplainAdapter(ExplainAdapter):
         for it in bundle.items:
             x, x_rec = reconstruct_features(enc, it["graphs"][0], device=self.device)
             q = reconstruction_quality(x, x_rec)  # one forward pass → error + fidelity
-            per_subj_list.append(q["mse"])             # mean per-ROI reconstruction error (MSE)
-            fidelity_r_list.append(q["pearson_r"])     # input↔reconstruction agreement
+            per_subj_list.append(q["mse"])  # mean per-ROI reconstruction error (MSE)
+            fidelity_r_list.append(q["pearson_r"])  # input↔reconstruction agreement
             labels_list.append(int(it["label"]))
         per_subj: np.ndarray = np.array(per_subj_list)
         fidelity_r: np.ndarray = np.array(fidelity_r_list)
         labels: np.ndarray = np.array(labels_list)
-        auc = (float(roc_auc_score(labels, per_subj))
-               if len(np.unique(labels)) > 1 else float("nan"))
+        auc = float(roc_auc_score(labels, per_subj)) if len(np.unique(labels)) > 1 else float("nan")
         return {
             "kind": "reconstruction",
-            "recon_error": per_subj, "labels": labels,
+            "recon_error": per_subj,
+            "labels": labels,
             "recon_error_auc": auc,
-            "mean_converter": float(per_subj[labels == 1].mean()) if (labels == 1).any() else float("nan"),
-            "mean_stable": float(per_subj[labels == 0].mean()) if (labels == 0).any() else float("nan"),
+            "mean_converter": float(per_subj[labels == 1].mean())
+            if (labels == 1).any()
+            else float("nan"),
+            "mean_stable": float(per_subj[labels == 0].mean())
+            if (labels == 0).any()
+            else float("nan"),
             # Cohort reconstruction fidelity (Pearson r) — calibrates the single-subject
             # Stage 5b score against what is typical for this trained encoder.
             "recon_fidelity_r": fidelity_r,
             "fidelity_median": float(np.nanmedian(fidelity_r)) if fidelity_r.size else float("nan"),
-            "fidelity_iqr": ([float(np.nanpercentile(fidelity_r, 25)),
-                              float(np.nanpercentile(fidelity_r, 75))]
-                             if fidelity_r.size else [float("nan"), float("nan")]),
+            "fidelity_iqr": (
+                [float(np.nanpercentile(fidelity_r, 25)), float(np.nanpercentile(fidelity_r, 75))]
+                if fidelity_r.size
+                else [float("nan"), float("nan")]
+            ),
         }
 
     def trace_forward(self, subject: Dict[str, Any]) -> Dict[str, Any]:
@@ -351,8 +372,10 @@ class GAAEExplainAdapter(ExplainAdapter):
             from model.GAAE.explain import latent_dim_integrated_gradients
 
             dim = int(ctx.get("latent_dim", 0))
-            return {"node_importance": latent_dim_integrated_gradients(enc, g, dim, device=self.device),
-                    "latent_dim": dim}
+            return {
+                "node_importance": latent_dim_integrated_gradients(enc, g, dim, device=self.device),
+                "latent_dim": dim,
+            }
         if name == "gnn_explainer":
             from model.GAAE.explain import gnn_explain_latent_dim
 
@@ -363,8 +386,9 @@ class GAAEExplainAdapter(ExplainAdapter):
 
             proj = ctx["disease_axis"]  # precomputed via extra('disease_axis', ...)
             sigma = float(ctx.get("sigma", np.std(proj["X"])))
-            return steer_along_axis(enc, g, proj["w_hat"], sigma,
-                                    scales=ctx.get("scales"), device=self.device)
+            return steer_along_axis(
+                enc, g, proj["w_hat"], sigma, scales=ctx.get("scales"), device=self.device
+            )
         if name == "sorted_reconstruction":
             from model.GAAE.explain import reconstruct_sorted_by_score
 
@@ -415,8 +439,11 @@ class VGAEExplainAdapter(ExplainAdapter):
         for p in enc.parameters():
             p.requires_grad_(False)
         self.encoder = enc
-        return {"encoder": type(enc).__name__, "conv_type": enc.conv_type,
-                "vgae_checkpoint": self.gaae_ckpt_path}
+        return {
+            "encoder": type(enc).__name__,
+            "conv_type": enc.conv_type,
+            "vgae_checkpoint": self.gaae_ckpt_path,
+        }
 
     def _encoder(self):
         return self.encoder
@@ -454,21 +481,27 @@ class VGAEExplainAdapter(ExplainAdapter):
         per_subj: np.ndarray = np.array(per_subj_list)
         fidelity_r: np.ndarray = np.array(fidelity_r_list)
         labels: np.ndarray = np.array(labels_list)
-        auc = (float(roc_auc_score(labels, per_subj))
-               if len(np.unique(labels)) > 1 else float("nan"))
+        auc = float(roc_auc_score(labels, per_subj)) if len(np.unique(labels)) > 1 else float("nan")
         return {
             "kind": "reconstruction",
-            "recon_error": per_subj, "labels": labels,
+            "recon_error": per_subj,
+            "labels": labels,
             "recon_error_auc": auc,
-            "mean_converter": float(per_subj[labels == 1].mean()) if (labels == 1).any() else float("nan"),
-            "mean_stable": float(per_subj[labels == 0].mean()) if (labels == 0).any() else float("nan"),
+            "mean_converter": float(per_subj[labels == 1].mean())
+            if (labels == 1).any()
+            else float("nan"),
+            "mean_stable": float(per_subj[labels == 0].mean())
+            if (labels == 0).any()
+            else float("nan"),
             # Adjacency reconstruction fidelity (Pearson r) — calibrates the single-subject
             # score against what is typical for this trained VGAE encoder.
             "recon_fidelity_r": fidelity_r,
             "fidelity_median": float(np.nanmedian(fidelity_r)) if fidelity_r.size else float("nan"),
-            "fidelity_iqr": ([float(np.nanpercentile(fidelity_r, 25)),
-                              float(np.nanpercentile(fidelity_r, 75))]
-                             if fidelity_r.size else [float("nan"), float("nan")]),
+            "fidelity_iqr": (
+                [float(np.nanpercentile(fidelity_r, 25)), float(np.nanpercentile(fidelity_r, 75))]
+                if fidelity_r.size
+                else [float("nan"), float("nan")]
+            ),
         }
 
     def trace_forward(self, subject: Dict[str, Any]) -> Dict[str, Any]:
@@ -485,6 +518,7 @@ class VGAEExplainAdapter(ExplainAdapter):
 
             if name == "reconstruction":
                 from model.VGAE.explain import per_node_adjacency_error
+
                 return {"per_node_error": per_node_adjacency_error(enc, g, device=self.device)}
 
             if name == "attention":
@@ -504,9 +538,13 @@ class _ClassifierExplainAdapter(ExplainAdapter):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self._tr = get_adapter(self._train_key)(
-            gaae_ckpt_path=self.gaae_ckpt_path, gaae_hp=self.gaae_hp,
-            train_config=self.cfg, data_root=self.data_root,
-            cohorts_csv=self.cohorts_csv, device=self.device, rng=self.rng,
+            gaae_ckpt_path=self.gaae_ckpt_path,
+            gaae_hp=self.gaae_hp,
+            train_config=self.cfg,
+            data_root=self.data_root,
+            cohorts_csv=self.cohorts_csv,
+            device=self.device,
+            rng=self.rng,
         )
         self.state: Optional[Dict[str, Any]] = None
         self.threshold: Optional[float] = None
@@ -519,7 +557,9 @@ class _ClassifierExplainAdapter(ExplainAdapter):
                 f"{type(self).__name__} requires source_experiment; set "
                 "'source_experiment:' on the entry in the experiments/ directory."
             )
-        self.run_dir = resolve_source_run(self.source_experiment, classifier_root=self.classifier_root)
+        self.run_dir = resolve_source_run(
+            self.source_experiment, classifier_root=self.classifier_root
+        )
         summary_path = self.run_dir / "run_summary.json"
         summary = json.loads(summary_path.read_text()) if summary_path.is_file() else {}
         gaae_ckpt = summary.get("gaae_checkpoint")
@@ -530,7 +570,9 @@ class _ClassifierExplainAdapter(ExplainAdapter):
         self.threshold = read_run_threshold(self.run_dir)
         metrics = summary.get("metrics") or {}
         self.saved_auc = metrics.get("test_auc", summary.get("test_auc"))
-        assert self.threshold is not None, "read_run_threshold returned None — check the run directory."
+        assert (
+            self.threshold is not None
+        ), "read_run_threshold returned None — check the run directory."
         return {
             "run_dir": str(self.run_dir),
             "threshold": float(self.threshold),
@@ -557,9 +599,12 @@ class _ClassifierExplainAdapter(ExplainAdapter):
             "sensitivity": float(res.get("sensitivity", float("nan"))),
             "specificity": float(res.get("specificity", float("nan"))),
             "f1": float(res.get("f1", float("nan"))),
-            "probs": probs, "targets": targets,
-            "threshold": float(self.threshold), "ece": float(ece),
-            "reloaded_auc": float(res["auc"]), "saved_auc": self.saved_auc,
+            "probs": probs,
+            "targets": targets,
+            "threshold": float(self.threshold),
+            "ece": float(ece),
+            "reloaded_auc": float(res["auc"]),
+            "saved_auc": self.saved_auc,
         }
 
 
@@ -602,19 +647,29 @@ class GECExplainAdapter(_ClassifierExplainAdapter):
         assert self.threshold is not None, "load() must be called before predict_one()"
         pv = self._tr.per_visit_probs(self.state, subject, device=self.device)
         prob = float(pv[-1][1]) if pv else float("nan")
-        return {"prob": prob, "pred": int(prob >= self.threshold), "true": int(subject["label"]),
-                "threshold": float(self.threshold)}
+        return {
+            "prob": prob,
+            "pred": int(prob >= self.threshold),
+            "true": int(subject["label"]),
+            "threshold": float(self.threshold),
+        }
 
     def extra(self, name: str, ctx: Dict[str, Any]) -> Dict[str, Any]:
         subject = ctx["subject"]
         if name == "trajectories":
-            return {"per_visit_probs": self._tr.per_visit_probs(self.state, subject, device=self.device)}
+            return {
+                "per_visit_probs": self._tr.per_visit_probs(self.state, subject, device=self.device)
+            }
         if name == "early_detection":
             from common.early_detection import early_detection_table
 
             rows = early_detection_table(
-                ctx["test_bundle"], self._tr.eval_split, self._tr.truncate_to_n_visits,
-                self.state, self.threshold, device=self.device,
+                ctx["test_bundle"],
+                self._tr.eval_split,
+                self._tr.truncate_to_n_visits,
+                self.state,
+                self.threshold,
+                device=self.device,
             )
             return {"early_detection": rows}
         if name == "latent_ig":
@@ -622,12 +677,17 @@ class GECExplainAdapter(_ClassifierExplainAdapter):
 
             assert self.state is not None, "load() must be called before extra()"
             model = self._tr._model_for_state(self.state)
-            X, _y = self._tr._records_to_X([subject], self.state["dim_filter"], self.state["max_visits"])
+            X, _y = self._tr._records_to_X(
+                [subject], self.state["dim_filter"], self.state["max_visits"]
+            )
             X_s = self.state["scaler"].transform(X)[0]
             imp = mlp_input_attribution(model, X_s, device=self.device)
             unpacked = unpack_flat_importance(
-                imp, k=len(self.state["dim_filter"]), max_visits=int(self.state["max_visits"]),
-                use_time_delta=self._tr.use_time_delta, append_visit_mask=self._tr.append_visit_mask,
+                imp,
+                k=len(self.state["dim_filter"]),
+                max_visits=int(self.state["max_visits"]),
+                use_time_delta=self._tr.use_time_delta,
+                append_visit_mask=self._tr.append_visit_mask,
             )
             return unpacked
         return super().extra(name, ctx)  # nosec B610 - capability-dispatch contract, not Django QuerySet.extra()
@@ -672,19 +732,29 @@ class GEPExplainAdapter(_ClassifierExplainAdapter):
         assert self.threshold is not None, "load() must be called before predict_one()"
         pv = self._tr.per_visit_probs(self.state, subject, device=self.device)
         prob = float(pv[-1][1]) if pv else float("nan")
-        return {"prob": prob, "pred": int(prob >= self.threshold), "true": int(subject["label"]),
-                "threshold": float(self.threshold)}
+        return {
+            "prob": prob,
+            "pred": int(prob >= self.threshold),
+            "true": int(subject["label"]),
+            "threshold": float(self.threshold),
+        }
 
     def extra(self, name: str, ctx: Dict[str, Any]) -> Dict[str, Any]:
         subject = ctx["subject"]
         if name == "trajectories":
-            return {"per_visit_probs": self._tr.per_visit_probs(self.state, subject, device=self.device)}
+            return {
+                "per_visit_probs": self._tr.per_visit_probs(self.state, subject, device=self.device)
+            }
         if name == "early_detection":
             from common.early_detection import early_detection_table
 
             rows = early_detection_table(
-                ctx["test_bundle"], self._tr.eval_split, self._tr.truncate_to_n_visits,
-                self.state, self.threshold, device=self.device,
+                ctx["test_bundle"],
+                self._tr.eval_split,
+                self._tr.truncate_to_n_visits,
+                self.state,
+                self.threshold,
+                device=self.device,
             )
             return {"early_detection": rows}
         return super().extra(name, ctx)  # nosec B610 - capability-dispatch contract, not Django QuerySet.extra()
@@ -695,8 +765,13 @@ class GEPExplainAdapter(_ClassifierExplainAdapter):
 # --------------------------------------------------------------------------- #
 class GELSTMExplainAdapter(_ClassifierExplainAdapter):
     capabilities = {
-        "probability", "trajectories", "early_detection",
-        "visit_occlusion", "hidden_state", "temporal_ablation", "latent_ig",
+        "probability",
+        "trajectories",
+        "early_detection",
+        "visit_occlusion",
+        "hidden_state",
+        "temporal_ablation",
+        "latent_ig",
     }
     model_tag = "gelstm"
     _train_key = "gelstm"
@@ -729,8 +804,11 @@ class GELSTMExplainAdapter(_ClassifierExplainAdapter):
         from model.GELSTM.explain import trace_forward as rnn_trace
 
         return rnn_trace(
-            self._classifier_model(), subject, device=self.device,
-            use_time_delta=self._tr.use_time_delta, graph_pool=self.graph_pool,
+            self._classifier_model(),
+            subject,
+            device=self.device,
+            use_time_delta=self._tr.use_time_delta,
+            graph_pool=self.graph_pool,
             dim_filter=self._dim_filter(),
         )
 
@@ -738,27 +816,40 @@ class GELSTMExplainAdapter(_ClassifierExplainAdapter):
         assert self.threshold is not None, "load() must be called before predict_one()"
         tr = self.trace_forward(subject)
         prob = float(tr["prob"])
-        return {"prob": prob, "pred": int(prob >= self.threshold), "true": int(subject["label"]),
-                "threshold": float(self.threshold)}
+        return {
+            "prob": prob,
+            "pred": int(prob >= self.threshold),
+            "true": int(subject["label"]),
+            "threshold": float(self.threshold),
+        }
 
     def extra(self, name: str, ctx: Dict[str, Any]) -> Dict[str, Any]:
         subject = ctx["subject"]
         if name == "trajectories":
-            return {"per_visit_probs": self._tr.per_visit_probs(self.state, subject, device=self.device)}
+            return {
+                "per_visit_probs": self._tr.per_visit_probs(self.state, subject, device=self.device)
+            }
         if name == "early_detection":
             from common.early_detection import early_detection_table
 
             rows = early_detection_table(
-                ctx["test_bundle"], self._tr.eval_split, self._tr.truncate_to_n_visits,
-                self.state, self.threshold, device=self.device,
+                ctx["test_bundle"],
+                self._tr.eval_split,
+                self._tr.truncate_to_n_visits,
+                self.state,
+                self.threshold,
+                device=self.device,
             )
             return {"early_detection": rows}
         if name == "hidden_state":
             from model.GELSTM.explain import hidden_state_trajectory
 
             h = hidden_state_trajectory(
-                self._classifier_model(), subject, device=self.device,
-                use_time_delta=self._tr.use_time_delta, graph_pool=self.graph_pool,
+                self._classifier_model(),
+                subject,
+                device=self.device,
+                use_time_delta=self._tr.use_time_delta,
+                graph_pool=self.graph_pool,
                 dim_filter=self._dim_filter(),
             )
             return {"hidden_states": h, "visit_months": list(subject.get("visit_months", []))}
@@ -770,8 +861,11 @@ class GELSTMExplainAdapter(_ClassifierExplainAdapter):
             from model.GELSTM.explain import sequence_integrated_gradients
 
             return sequence_integrated_gradients(
-                self._classifier_model(), subject, device=self.device,
-                use_time_delta=self._tr.use_time_delta, graph_pool=self.graph_pool,
+                self._classifier_model(),
+                subject,
+                device=self.device,
+                use_time_delta=self._tr.use_time_delta,
+                graph_pool=self.graph_pool,
                 dim_filter=self._dim_filter(),
             )
         return super().extra(name, ctx)  # nosec B610 - capability-dispatch contract, not Django QuerySet.extra()
@@ -793,8 +887,9 @@ class GELSTMExplainAdapter(_ClassifierExplainAdapter):
                 "n_scans": len(keep),
             }
             p = self.predict_one(sub)["prob"]
-            out.append({"dropped_visit_month": months[t], "prob_without": p,
-                        "delta": float(base - p)})
+            out.append(
+                {"dropped_visit_month": months[t], "prob_without": p, "delta": float(base - p)}
+            )
         return out
 
     def _temporal_ablation(self, bundle: Bundle) -> Dict[str, float]:
@@ -809,17 +904,44 @@ class GELSTMExplainAdapter(_ClassifierExplainAdapter):
         def _auc(eval_cfg):
             return float(evaluate(model, batches, self.device, eval_cfg=eval_cfg)["auc"])
 
-        base = EvalConfig(use_time_delta=self._tr.use_time_delta, graph_pool=self.graph_pool,
-                          dim_filter=df, threshold_mode="fixed", fixed_threshold=self.threshold)
-        zero_dt = EvalConfig(use_time_delta=self._tr.use_time_delta, zero_time_delta=True,
-                             graph_pool=self.graph_pool, dim_filter=df,
-                             threshold_mode="fixed", fixed_threshold=self.threshold)
-        shuffled = EvalConfig(use_time_delta=self._tr.use_time_delta, graph_pool=self.graph_pool,
-                              dim_filter=df, shuffle_order=True, shuffle_rng=self.rng,
-                              threshold_mode="fixed", fixed_threshold=self.threshold)
-        return {"auc_full": _auc(base), "auc_zero_dt": _auc(zero_dt), "auc_shuffled": _auc(shuffled)}
+        base = EvalConfig(
+            use_time_delta=self._tr.use_time_delta,
+            graph_pool=self.graph_pool,
+            dim_filter=df,
+            threshold_mode="fixed",
+            fixed_threshold=self.threshold,
+        )
+        zero_dt = EvalConfig(
+            use_time_delta=self._tr.use_time_delta,
+            zero_time_delta=True,
+            graph_pool=self.graph_pool,
+            dim_filter=df,
+            threshold_mode="fixed",
+            fixed_threshold=self.threshold,
+        )
+        shuffled = EvalConfig(
+            use_time_delta=self._tr.use_time_delta,
+            graph_pool=self.graph_pool,
+            dim_filter=df,
+            shuffle_order=True,
+            shuffle_rng=self.rng,
+            threshold_mode="fixed",
+            fixed_threshold=self.threshold,
+        )
+        return {
+            "auc_full": _auc(base),
+            "auc_zero_dt": _auc(zero_dt),
+            "auc_shuffled": _auc(shuffled),
+        }
 
 
-__all__ = ["get_explain_adapter", "resolve_source_run", "ExplainAdapter",
-           "GAAEExplainAdapter", "VGAEExplainAdapter", "GECExplainAdapter",
-           "GEPExplainAdapter", "GELSTMExplainAdapter"]
+__all__ = [
+    "get_explain_adapter",
+    "resolve_source_run",
+    "ExplainAdapter",
+    "GAAEExplainAdapter",
+    "VGAEExplainAdapter",
+    "GECExplainAdapter",
+    "GEPExplainAdapter",
+    "GELSTMExplainAdapter",
+]

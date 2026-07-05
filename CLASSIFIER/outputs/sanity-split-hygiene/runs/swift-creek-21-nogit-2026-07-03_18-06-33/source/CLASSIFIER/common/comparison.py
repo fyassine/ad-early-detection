@@ -7,6 +7,7 @@ guaranteed by DELCODE's shared 463/346/70/47 splits across the 9 region
 datasets — every (model x region) cell scores the same 47 test subjects, so
 the within-subject correlation must be exploited rather than ignored.
 """
+
 from __future__ import annotations
 
 from typing import Callable, Tuple
@@ -33,7 +34,9 @@ def _compute_midrank(x: np.ndarray) -> np.ndarray:
     return out
 
 
-def _delong_placement(scores: np.ndarray, labels: np.ndarray) -> Tuple[np.ndarray, np.ndarray, float]:
+def _delong_placement(
+    scores: np.ndarray, labels: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, float]:
     """Placement values V10 (per positive) and V01 (per negative), plus AUC."""
     pos = labels == 1
     neg = labels == 0
@@ -153,7 +156,11 @@ def paired_bootstrap_ci(
         )
 
     deltas = deltas[:valid]
-    return point, float(np.quantile(deltas, alpha / 2.0)), float(np.quantile(deltas, 1.0 - alpha / 2.0))
+    return (
+        point,
+        float(np.quantile(deltas, alpha / 2.0)),
+        float(np.quantile(deltas, 1.0 - alpha / 2.0)),
+    )
 
 
 def holm_correction(

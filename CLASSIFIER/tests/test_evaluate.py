@@ -1,4 +1,5 @@
 """Tests for the Youden's-J path in GELSTM.evaluate using a stub model."""
+
 import numpy as np
 import torch
 
@@ -8,6 +9,7 @@ from CLASSIFIER.model.GELSTM.train import evaluate
 
 class _StubModel(torch.nn.Module):
     """Model that returns canned logits in the order it receives batches."""
+
     def __init__(self, logits_by_call):
         super().__init__()
         self._logits = list(logits_by_call)
@@ -27,6 +29,7 @@ class _StubModel(torch.nn.Module):
 def _make_batch(labels):
     """Build a minimal batch of subject dicts compatible with encode_batch_sequences."""
     from torch_geometric.data import Data
+
     items = []
     for sid, y in enumerate(labels):
         g = Data(
@@ -34,13 +37,15 @@ def _make_batch(labels):
             edge_index=torch.zeros(2, 0, dtype=torch.long),
             edge_attr=None,
         )
-        items.append({
-            "subject_id": str(sid),
-            "graphs":      [g],
-            "delta_t":     [0.0],
-            "visit_months":[0.0],
-            "label":       float(y),
-        })
+        items.append(
+            {
+                "subject_id": str(sid),
+                "graphs": [g],
+                "delta_t": [0.0],
+                "visit_months": [0.0],
+                "label": float(y),
+            }
+        )
     return items
 
 

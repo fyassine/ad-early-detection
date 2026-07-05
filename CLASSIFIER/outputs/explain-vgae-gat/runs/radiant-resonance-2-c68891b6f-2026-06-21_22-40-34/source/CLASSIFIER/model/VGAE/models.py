@@ -15,6 +15,7 @@ extractor for the downstream classifiers (``adapters/gep.py`` and friends call
 No FiLM conditioning (the GAAE's age/sex modulation) — kept deliberately simple,
 matching the textbook VGAE.
 """
+
 from __future__ import annotations
 
 from typing import List, Tuple, Union
@@ -64,17 +65,29 @@ class VariationalGraphAutoencoder(nn.Module):
             self.conv_logvar = GCNConv(hidden_dim, latent_dim)
         else:  # gat
             self.shared = GATv2Conv(
-                in_features, hidden_dim, heads=num_heads, concat=True,
-                edge_dim=self.edge_dim, residual=True,
+                in_features,
+                hidden_dim,
+                heads=num_heads,
+                concat=True,
+                edge_dim=self.edge_dim,
+                residual=True,
             )
             self.bn = BatchNorm(hidden_dim * num_heads)
             self.conv_mu = GATv2Conv(
-                hidden_dim * num_heads, latent_dim, heads=num_heads, concat=False,
-                edge_dim=self.edge_dim, residual=True,
+                hidden_dim * num_heads,
+                latent_dim,
+                heads=num_heads,
+                concat=False,
+                edge_dim=self.edge_dim,
+                residual=True,
             )
             self.conv_logvar = GATv2Conv(
-                hidden_dim * num_heads, latent_dim, heads=num_heads, concat=False,
-                edge_dim=self.edge_dim, residual=True,
+                hidden_dim * num_heads,
+                latent_dim,
+                heads=num_heads,
+                concat=False,
+                edge_dim=self.edge_dim,
+                residual=True,
             )
 
     @staticmethod
@@ -125,7 +138,11 @@ class VariationalGraphAutoencoder(nn.Module):
         return mu, logvar
 
     def encode(
-        self, x, edge_index, edge_attr=None, return_attention=False,
+        self,
+        x,
+        edge_index,
+        edge_attr=None,
+        return_attention=False,
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, List]]:
         """Deterministic latent ``mu`` (drop-in for the GAAE pooling path).
 

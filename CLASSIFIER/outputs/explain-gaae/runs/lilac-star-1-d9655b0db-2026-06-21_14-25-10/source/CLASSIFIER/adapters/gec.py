@@ -21,6 +21,7 @@ the whole CV pool), the FDR dims here are selected **per fold from the training
 subjects only** — the leakage-free convention already used by the GELSTM-FDR
 notebook and ``common.fdr``.
 """
+
 from __future__ import annotations
 
 import copy
@@ -98,9 +99,12 @@ class GECAdapter(LongitudinalAdapter):
     def _encoder(self) -> GraphAttentionAutoencoderConditioned:
         if self._encoder_model is None:
             enc = GraphAttentionAutoencoderConditioned(
-                in_features=self.in_features, hidden_dim=self.gaae_hidden,
-                out_features=self.gaae_latent, cond_dim=self.gaae_cond_dim,
-                num_heads=self.gaae_heads, dropout=self.gaae_dropout,
+                in_features=self.in_features,
+                hidden_dim=self.gaae_hidden,
+                out_features=self.gaae_latent,
+                cond_dim=self.gaae_cond_dim,
+                num_heads=self.gaae_heads,
+                dropout=self.gaae_dropout,
             ).to(self.device)
             obj = torch.load(self.gaae_ckpt_path, map_location=self.device, weights_only=False)
             enc.load_state_dict(obj if isinstance(obj, dict) else obj.state_dict())
@@ -118,8 +122,11 @@ class GECAdapter(LongitudinalAdapter):
     # ── data ────────────────────────────────────────────────────────────────
     def prepare_data(self, df) -> Bundle:
         ds = LongitudinalSubjectDataset(
-            self.data_root, df, self.cohorts_csv,
-            adjacency_k=self.adjacency_k, file_variant=self.file_variant,
+            self.data_root,
+            df,
+            self.cohorts_csv,
+            adjacency_k=self.adjacency_k,
+            file_variant=self.file_variant,
         )
         enc = self._encoder()
         records: List[Dict[str, Any]] = []
@@ -127,14 +134,16 @@ class GECAdapter(LongitudinalAdapter):
         with torch.no_grad():
             for i in range(len(ds)):
                 item = ds[i]
-                records.append({
-                    "subject_id": item["subject_id"],
-                    "label": item["label"],
-                    "n_scans": item["n_scans"],
-                    "visit_months": list(item["visit_months"]),
-                    "zs": [self._encode_graph_full(enc, g) for g in item["graphs"]],
-                    "dts": list(item["delta_t"]),
-                })
+                records.append(
+                    {
+                        "subject_id": item["subject_id"],
+                        "label": item["label"],
+                        "n_scans": item["n_scans"],
+                        "visit_months": list(item["visit_months"]),
+                        "zs": [self._encode_graph_full(enc, g) for g in item["graphs"]],
+                        "dts": list(item["delta_t"]),
+                    }
+                )
         # Lock the padded width on the first (CV-pool) call; reuse it for test.
         if self.max_visits is None:
             self.max_visits = (
@@ -167,7 +176,7 @@ class GECAdapter(LongitudinalAdapter):
         for i, it in enumerate(items):
             T = min(it["n_scans"], cap)
             for t in range(T):
-                Xz[i, t * k:(t + 1) * k] = it["zs"][t][dim_filter]
+                Xz[i, t * k : (t + 1) * k] = it["zs"][t][dim_filter]
                 Xdt[i, t] = it["dts"][t]
                 Xm[i, t] = 1.0
             y[i] = float(it["label"])
@@ -190,7 +199,9 @@ class GECAdapter(LongitudinalAdapter):
                 "on the CV pool first."
             )
         m = self._build_mlp(self.feat_dim)
-        print(f"LongitudinalMLP: input={self.feat_dim}  params={sum(p.numel() for p in m.parameters()):,}")
+        print(
+            f"LongitudinalMLP: input={self.feat_dim}  params={sum(p.numel() for p in m.parameters()):,}"
+        )
         return m
 
     # ── training ────────────────────────────────────────────────────────────
@@ -220,14 +231,18 @@ class GECAdapter(LongitudinalAdapter):
         criterion = nn.BCEWithLogitsLoss(pos_weight=pos_w)
 
         model = self._build_mlp(feat_dim)
-        opt = torch.optim.Adam(model.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
+        opt = torch.optim.Adam(
+            model.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay
+        )
         sched = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode="max", factor=0.5, patience=7)
 
         tr_ds = torch.utils.data.TensorDataset(X_tr, y_tr_t)
         # drop_last only when the final batch would be a single sample (BatchNorm1d
         # rejects batch size 1 in train mode); otherwise keep every sample.
         drop_last = len(tr_ds) % self.batch_size == 1
-        tr_dl = torch.utils.data.DataLoader(tr_ds, batch_size=self.batch_size, shuffle=True, drop_last=drop_last)
+        tr_dl = torch.utils.data.DataLoader(
+            tr_ds, batch_size=self.batch_size, shuffle=True, drop_last=drop_last
+        )
 
         best_auc, best_state, no_improve = 0.0, None, 0
         for _epoch in range(self.epochs):
@@ -302,12 +317,15 @@ class GECAdapter(LongitudinalAdapter):
 
     def truncate_to_n_visits(self, bundle, n) -> Bundle:
         items = [
-            {**it,
-             "zs": it["zs"][:n],
-             "dts": it["dts"][:n],
-             "visit_months": it["visit_months"][:n],
-             "n_scans": n}
-            for it in bundle.items if it["n_scans"] >= n
+            {
+                **it,
+                "zs": it["zs"][:n],
+                "dts": it["dts"][:n],
+                "visit_months": it["visit_months"][:n],
+                "n_scans": n,
+            }
+            for it in bundle.items
+            if it["n_scans"] >= n
         ]
         return Bundle([it["label"] for it in items], [it["subject_id"] for it in items], items)
 
@@ -335,8 +353,10 @@ class GECAdapter(LongitudinalAdapter):
             "use_time_delta": self.use_time_delta,
             "append_visit_mask": self.append_visit_mask,
             "use_fdr": self.use_fdr,
-            "gaae_latent": self.gaae_latent, "gaae_heads": self.gaae_heads,
-            "gaae_cond_dim": self.gaae_cond_dim, "gaae_dropout": self.gaae_dropout,
+            "gaae_latent": self.gaae_latent,
+            "gaae_heads": self.gaae_heads,
+            "gaae_cond_dim": self.gaae_cond_dim,
+            "gaae_dropout": self.gaae_dropout,
         }
 
     def source_files(self):

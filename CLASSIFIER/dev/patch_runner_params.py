@@ -11,6 +11,7 @@ Idempotent: a notebook that already has a ``parameters``-tagged cell is skipped.
 
 Run with:  python CLASSIFIER/dev/patch_runner_params.py
 """
+
 from __future__ import annotations
 
 import json

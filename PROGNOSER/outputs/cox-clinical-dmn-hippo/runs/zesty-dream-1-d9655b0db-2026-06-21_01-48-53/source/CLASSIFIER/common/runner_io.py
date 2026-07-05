@@ -6,6 +6,7 @@ elapsed counter while a long notebook executes. All coloring is a no-op when
 stdout is not a TTY (or ``NO_COLOR`` is set), so redirected output and the
 per-run ``run.log`` stay free of ANSI escape codes.
 """
+
 from __future__ import annotations
 
 import os
@@ -85,7 +86,11 @@ def format_cv_summary(cv: dict) -> str:
         std = cv.get(f"{base}_std")
         if mean is None:
             continue
-        parts.append(f"{base} {mean:.3f}±{std:.3f}" if isinstance(std, (int, float)) else f"{base} {mean:.3f}")
+        parts.append(
+            f"{base} {mean:.3f}±{std:.3f}"
+            if isinstance(std, (int, float))
+            else f"{base} {mean:.3f}"
+        )
     tail = ""
     if isinstance(cv.get("best_fold"), (int, float)):
         bv = cv.get("best_val_auc")

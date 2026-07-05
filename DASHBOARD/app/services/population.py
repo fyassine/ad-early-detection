@@ -33,6 +33,7 @@ from ..cohort_stats import COHORTS, CohortStats
 # Fang et al. 2025 lifetime-risk reference                                    #
 # --------------------------------------------------------------------------- #
 
+
 def fang_epidemiology_table() -> dict:
     """
     Lifetime AD-and-related-dementia risk reference values, adapted from
@@ -83,6 +84,7 @@ def fang_epidemiology_table() -> dict:
 # Cohort demographic summary                                                   #
 # --------------------------------------------------------------------------- #
 
+
 def _safe_float(v) -> Optional[float]:
     if v is None:
         return None
@@ -127,9 +129,12 @@ def cohort_demographic_summary(df: pd.DataFrame) -> dict:
         sub = df[diag == cohort]
         if sub.empty:
             cohort_summary[cohort] = {
-                "n_subjects": 0, "n_visits": 0,
-                "age_mean": None, "age_std": None,
-                "sex_pct_F": None, "apoe4_pct": None,
+                "n_subjects": 0,
+                "n_visits": 0,
+                "age_mean": None,
+                "age_std": None,
+                "sex_pct_F": None,
+                "apoe4_pct": None,
                 "conversion_rate": None,
             }
             continue
@@ -201,6 +206,7 @@ def cohort_demographic_summary(df: pd.DataFrame) -> dict:
 # Network-level disruption atlas                                              #
 # --------------------------------------------------------------------------- #
 
+
 def _approx_cohens_d(m_a, s_a, n_a, m_b, s_b, n_b) -> Optional[float]:
     """
     Pooled Cohen's d from summary stats (used when raw per-subject values
@@ -240,8 +246,13 @@ def network_disruption_atlas(stats: CohortStats) -> dict:
     """
     net_stats = stats.network_fc_stats or {}
     if not net_stats:
-        return {"networks": [], "cohorts": [], "matrix": {}, "summary": {},
-                "global_fc_by_network": {}}
+        return {
+            "networks": [],
+            "cohorts": [],
+            "matrix": {},
+            "summary": {},
+            "global_fc_by_network": {},
+        }
 
     networks: list[str] = []
     for cohort in COHORTS:
@@ -257,12 +268,16 @@ def network_disruption_atlas(stats: CohortStats) -> dict:
         matrix[net] = {}
         per_cohort_means = []
         for i, ca in enumerate(cohorts_with_data):
-            for cb in cohorts_with_data[i + 1:]:
+            for cb in cohorts_with_data[i + 1 :]:
                 a = (net_stats.get(ca) or {}).get(net) or {}
                 b = (net_stats.get(cb) or {}).get(net) or {}
                 d = _approx_cohens_d(
-                    a.get("mean"), a.get("std"), a.get("n"),
-                    b.get("mean"), b.get("std"), b.get("n"),
+                    a.get("mean"),
+                    a.get("std"),
+                    a.get("n"),
+                    b.get("mean"),
+                    b.get("std"),
+                    b.get("n"),
                 )
                 matrix[net][f"{ca}__{cb}"] = d
         for c in cohorts_with_data:
@@ -284,8 +299,7 @@ def network_disruption_atlas(stats: CohortStats) -> dict:
         if not nets:
             continue
         global_fc_by_network[c] = {
-            n: _safe_float((nets.get(n) or {}).get("mean"))
-            for n in networks
+            n: _safe_float((nets.get(n) or {}).get("mean")) for n in networks
         }
 
     return {

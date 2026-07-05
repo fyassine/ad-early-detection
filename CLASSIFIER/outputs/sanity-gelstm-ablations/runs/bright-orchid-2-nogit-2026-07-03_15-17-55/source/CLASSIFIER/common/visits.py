@@ -11,6 +11,7 @@ cell so the month filter is identical across the GAAE, GEC, GELSTM and common
 dataset classes. Filenames encode the visit month as an ``_M<int>_`` token, e.g.
 ``sub-XXX_ses-01_M12_..._whole_brain_correlation_matrix_z_transformed.npz``.
 """
+
 from __future__ import annotations
 
 import math

@@ -2,6 +2,7 @@
 Utility functions to load data splits and convert them to indices for datasets.
 Use these to filter datasets based on the pre-defined train/val/test patient splits.
 """
+
 from pathlib import Path
 
 import pandas as pd
@@ -34,8 +35,7 @@ def _load_splits(splits_dir: Path) -> dict:
     for split_name, fname in _SPLIT_FILES:
         df = pd.read_csv(splits_dir / fname)
         result[split_name] = {
-            row["Pseudonym"]: row.drop("Pseudonym").to_dict()
-            for _, row in df.iterrows()
+            row["Pseudonym"]: row.drop("Pseudonym").to_dict() for _, row in df.iterrows()
         }
     return result
 

@@ -89,7 +89,14 @@ TIAN_JOBS = [
         "version": "__fc_dmn-hippo-limbic-dan_sch200-tian2_flat__",
         "description": "All combined — DMN + Limbic + DAN + Hippocampus (88 ROIs)",
         "script": "process_combined_schaefer_tian",
-        "extra_args": ["--networks", "Default", "Limbic", "DorsAttn", "--output-suffix", "all_combined"],
+        "extra_args": [
+            "--networks",
+            "Default",
+            "Limbic",
+            "DorsAttn",
+            "--output-suffix",
+            "all_combined",
+        ],
     },
 ]
 
@@ -105,11 +112,15 @@ def run_schaefer_job(job: dict) -> bool:
     print(f"{'='*60}")
 
     cmd = [
-        sys.executable, "-m",
+        sys.executable,
+        "-m",
         "DATA.src.processing.subset_schaefer_networks",
-        "--networks", *networks,
-        "--output-version", version,
-        "--output-suffix", suffix,
+        "--networks",
+        *networks,
+        "--output-version",
+        version,
+        "--output-suffix",
+        suffix,
     ]
     print(f"  Command: {' '.join(cmd[2:])}")
 
@@ -120,7 +131,9 @@ def run_schaefer_job(job: dict) -> bool:
     return True
 
 
-def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None, n_jobs: int = 16) -> None:
+def print_tian_commands(
+    tian_atlas: Path | None, tian_labels: Path | None, n_jobs: int = 16
+) -> None:
     print("\n" + "=" * 60)
     print("  TIAN-ATLAS EXPERIMENTS")
     print("=" * 60)
@@ -145,7 +158,11 @@ def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None, n_job
                 f"      --atlas-path /mnt/e/fyassine/ad-early-detection/DATA/src/processing/atlas/Tian_Subcortex_S2_3T.nii.gz \\\n"
                 f"      --labels-path /mnt/e/fyassine/ad-early-detection/DATA/src/processing/atlas/Tian_Subcortex_S2_3T_label.txt"
                 + (f" \\\n      {extra}" if extra else "")
-                + (f" \\\n      --output-version {version}" if "output-version" not in extra else "")
+                + (
+                    f" \\\n      --output-version {version}"
+                    if "output-version" not in extra
+                    else ""
+                )
             )
         return
 
@@ -163,11 +180,15 @@ def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None, n_job
             # This script uses --atlas-path / --labels-path / --output-root
             output_root = REPO_ROOT / "DATA" / "DELCODE" / version
             cmd = [
-                sys.executable, "-m",
+                sys.executable,
+                "-m",
                 f"DATA.src.processing.{script}",
-                "--atlas-path", str(tian_atlas),
-                "--output-root", str(output_root),
-                "--n-jobs", str(n_jobs),
+                "--atlas-path",
+                str(tian_atlas),
+                "--output-root",
+                str(output_root),
+                "--n-jobs",
+                str(n_jobs),
                 *extra_args,
             ]
             if tian_labels is not None:
@@ -175,11 +196,15 @@ def print_tian_commands(tian_atlas: Path | None, tian_labels: Path | None, n_job
         else:
             # process_combined_schaefer_tian uses --tian-atlas / --tian-labels / --output-version
             cmd = [
-                sys.executable, "-m",
+                sys.executable,
+                "-m",
                 f"DATA.src.processing.{script}",
-                "--tian-atlas", str(tian_atlas),
-                "--output-version", version,
-                "--n-jobs", str(n_jobs),
+                "--tian-atlas",
+                str(tian_atlas),
+                "--output-version",
+                version,
+                "--n-jobs",
+                str(n_jobs),
                 *extra_args,
             ]
             if tian_labels is not None:
@@ -198,15 +223,20 @@ def run_followup_reprocessing(fmri_root: Path) -> bool:
     print(f"{'='*60}")
     output_dir = REPO_ROOT / "DATA" / "DELCODE" / "__fc_wholebrain_sch200_flat__" / "matrices"
     cmd = [
-        sys.executable, "-m",
+        sys.executable,
+        "-m",
         "DATA.src.processing.process_using_schaeffer_atlas",
-        "--fmri-root", str(fmri_root),
-        "--output-dir", str(output_dir),
+        "--fmri-root",
+        str(fmri_root),
+        "--output-dir",
+        str(output_dir),
     ]
     print(f"  Command: {' '.join(cmd[2:])}")
     result = subprocess.run(cmd, cwd=str(REPO_ROOT))
     if result.returncode != 0:
-        print(f"  ERROR: __fc_wholebrain_sch200_flat__ reprocessing failed (code {result.returncode})")
+        print(
+            f"  ERROR: __fc_wholebrain_sch200_flat__ reprocessing failed (code {result.returncode})"
+        )
         return False
     return True
 
@@ -224,14 +254,18 @@ def main(
     print(f"  Repo root: {REPO_ROOT}")
     print(f"  Reprocess follow-ups: {reprocess_followups}")
     print(f"  Schaefer jobs: {len(SCHAEFER_JOBS)}")
-    print(f"  Tian jobs: {len(TIAN_JOBS)} ({'atlas provided' if tian_atlas else 'atlas missing — will print commands only'})")
+    print(
+        f"  Tian jobs: {len(TIAN_JOBS)} ({'atlas provided' if tian_atlas else 'atlas missing — will print commands only'})"
+    )
     print(f"  Tian parallel workers: {n_jobs}")
 
     # Step 0: Reprocess all follow-up visits from __fmri_wholebrain_sch200_flat__/fmri into __fc_wholebrain_sch200_flat__/matrices
     if reprocess_followups:
         fmri_root = REPO_ROOT / "DATA" / "DELCODE" / "__fmri_wholebrain_sch200_flat__" / "fmri"
         if not fmri_root.exists():
-            print(f"\nWARNING: __fmri_wholebrain_sch200_flat__/fmri not found at {fmri_root}, skipping reprocessing.")
+            print(
+                f"\nWARNING: __fmri_wholebrain_sch200_flat__/fmri not found at {fmri_root}, skipping reprocessing."
+            )
         else:
             print("\n\n── STEP 0: REPROCESS ALL VISITS ────────────────────────────")
             ok = run_followup_reprocessing(fmri_root)
@@ -275,16 +309,29 @@ if __name__ == "__main__":
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--tian-atlas", type=Path, default=None,
-                        help="Path to Tian Subcortex Scale II NIfTI file")
-    parser.add_argument("--tian-labels", type=Path, default=None,
-                        help="Path to Tian label text file (one label per line)")
-    parser.add_argument("--skip-schaefer", action="store_true",
-                        help="Skip Schaefer-only subset jobs")
-    parser.add_argument("--reprocess-followups", action="store_true",
-                        help="Reprocess all follow-up visits from __fmri_wholebrain_sch200_flat__/fmri into __fc_wholebrain_sch200_flat__/matrices")
-    parser.add_argument("--n-jobs", type=int, default=16,
-                        help="Parallel workers for Tian atlas jobs (default: 16). Lower if you hit OOM.")
+    parser.add_argument(
+        "--tian-atlas", type=Path, default=None, help="Path to Tian Subcortex Scale II NIfTI file"
+    )
+    parser.add_argument(
+        "--tian-labels",
+        type=Path,
+        default=None,
+        help="Path to Tian label text file (one label per line)",
+    )
+    parser.add_argument(
+        "--skip-schaefer", action="store_true", help="Skip Schaefer-only subset jobs"
+    )
+    parser.add_argument(
+        "--reprocess-followups",
+        action="store_true",
+        help="Reprocess all follow-up visits from __fmri_wholebrain_sch200_flat__/fmri into __fc_wholebrain_sch200_flat__/matrices",
+    )
+    parser.add_argument(
+        "--n-jobs",
+        type=int,
+        default=16,
+        help="Parallel workers for Tian atlas jobs (default: 16). Lower if you hit OOM.",
+    )
     args = parser.parse_args()
     main(
         tian_atlas=args.tian_atlas,

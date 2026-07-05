@@ -15,6 +15,7 @@ downstream classifiers):
   → downstream val  patients are forced into pretrain val  (excluded from pretrain train)
   → downstream test patients are forced into pretrain test (consistent holdout)
 """
+
 from pathlib import Path
 
 import numpy as np
@@ -41,6 +42,7 @@ def _patient_groups(cohorts: pd.DataFrame) -> pd.Series:
     Assign each patient a group from their full visit history.
     Returns a Series indexed by Pseudonym; SCD-only/relative patients are excluded (None dropped).
     """
+
     def classify(g):
         d = set(g["diagnosis"])
         if "converter" in d:
@@ -83,6 +85,7 @@ def main():
     np.random.seed(RANDOM_SEED)
 
     lines = []
+
     def log(msg=""):
         print(msg)
         lines.append(str(msg))
@@ -101,10 +104,9 @@ def main():
     cohorts = pd.read_csv(COHORTS_CSV)
     groups = _patient_groups(cohorts)
 
-    first_visits = (
-        cohorts.drop_duplicates("Pseudonym", keep="first")
-        .set_index("Pseudonym")[["sex", "brthdat", "scan_date"]]
-    )
+    first_visits = cohorts.drop_duplicates("Pseudonym", keep="first").set_index("Pseudonym")[
+        ["sex", "brthdat", "scan_date"]
+    ]
 
     info: dict = {}
     if PATIENT_INFO_CSV.exists():
@@ -128,13 +130,15 @@ def main():
                 fv["brthdat"] if fv is not None else "",
                 fv["scan_date"] if fv is not None else "",
             )
-        rows.append({
-            "Pseudonym": pid,
-            "diagnosis": group,
-            "sex": sex,
-            "age": age,
-            "n_scans": n,
-        })
+        rows.append(
+            {
+                "Pseudonym": pid,
+                "diagnosis": group,
+                "sex": sex,
+                "age": age,
+                "n_scans": n,
+            }
+        )
 
     df = pd.DataFrame(rows)
     log(f"\nTotal patients with scans: {len(df)}")
@@ -193,17 +197,29 @@ def main():
         xf = len(test[test["diagnosis"].eq(cohort) & ~test["Pseudonym"].isin(holdout)])
         total = tf + vf + xf
         if total > 0:
-            log(f"  {cohort:10}: train={tf} ({tf/total*100:.0f}%), val={vf} ({vf/total*100:.0f}%), test={xf} ({xf/total*100:.0f}%)")
+            log(
+                f"  {cohort:10}: train={tf} ({tf/total*100:.0f}%), val={vf} ({vf/total*100:.0f}%), test={xf} ({xf/total*100:.0f}%)"
+            )
 
     # Leakage assertions — fail loud if violated.
     pretrain_train_ids = set(train["Pseudonym"])
     pretrain_val_ids_out = set(val["Pseudonym"])
     pretrain_test_ids_out = set(test["Pseudonym"])
-    assert len(pretrain_train_ids & downstream_val_ids) == 0,  "LEAK: downstream val patients in pretrain train"
-    assert len(pretrain_train_ids & downstream_test_ids) == 0, "LEAK: downstream test patients in pretrain train"
-    assert len(pretrain_val_ids_out & downstream_test_ids) == 0, "LEAK: downstream test patients in pretrain val"
-    assert downstream_test_ids.issubset(pretrain_test_ids_out), "downstream test not fully covered by pretrain test"
-    assert downstream_val_ids.issubset(pretrain_val_ids_out),   "downstream val not fully covered by pretrain val"
+    assert (
+        len(pretrain_train_ids & downstream_val_ids) == 0
+    ), "LEAK: downstream val patients in pretrain train"
+    assert (
+        len(pretrain_train_ids & downstream_test_ids) == 0
+    ), "LEAK: downstream test patients in pretrain train"
+    assert (
+        len(pretrain_val_ids_out & downstream_test_ids) == 0
+    ), "LEAK: downstream test patients in pretrain val"
+    assert downstream_test_ids.issubset(
+        pretrain_test_ids_out
+    ), "downstream test not fully covered by pretrain test"
+    assert downstream_val_ids.issubset(
+        pretrain_val_ids_out
+    ), "downstream val not fully covered by pretrain val"
     log("\nLeakage assertions passed.")
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -212,9 +228,11 @@ def main():
     test.to_csv(OUTPUT_DIR / "test.csv", index=False)
 
     # Merged sex/age lookup over all splits (consumed by GraphDatasetInMemoryFiltered).
-    pd.concat([train, val, test], ignore_index=True)[["Pseudonym", "diagnosis", "sex", "age"]] \
-        .drop_duplicates("Pseudonym").reset_index(drop=True) \
-        .to_csv(OUTPUT_DIR / "_all_splits_patient_info.csv", index=False)
+    pd.concat([train, val, test], ignore_index=True)[
+        ["Pseudonym", "diagnosis", "sex", "age"]
+    ].drop_duplicates("Pseudonym").reset_index(drop=True).to_csv(
+        OUTPUT_DIR / "_all_splits_patient_info.csv", index=False
+    )
 
     log(f"Saved to {OUTPUT_DIR}")
 

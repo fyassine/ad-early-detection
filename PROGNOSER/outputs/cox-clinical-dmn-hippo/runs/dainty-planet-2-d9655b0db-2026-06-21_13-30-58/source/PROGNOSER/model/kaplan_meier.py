@@ -20,6 +20,7 @@ class KMBaseline(SurvivalModel):
 
     def fit(self, X: np.ndarray, T: np.ndarray, E: np.ndarray, **kwargs) -> "KMBaseline":
         from lifelines import KaplanMeierFitter
+
         self.kmf_ = KaplanMeierFitter()
         self.kmf_.fit(T, event_observed=E)
         return self

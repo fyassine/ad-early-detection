@@ -4,6 +4,7 @@ The VGAE reconstructs the *adjacency* (not the node features), so its
 explainability mirrors ``model/GAAE/explain.py`` but scores how well each ROI's
 graph neighbourhood is recovered by ``sigmoid(z zᵀ)`` rather than feature MSE.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
@@ -74,10 +75,10 @@ def trace_forward(model, data, *, device="cpu") -> Dict[str, Any]:
     ea = _edge_attr(data)
     ea = ea.to(device) if ea is not None else None
 
-    enc_hidden, _attn = model._shared(x, ei, ea)        # activated shared encoder layer
-    mu, logvar = model.encode_dist(x, ei, ea)           # variational bottleneck params
+    enc_hidden, _attn = model._shared(x, ei, ea)  # activated shared encoder layer
+    mu, logvar = model.encode_dist(x, ei, ea)  # variational bottleneck params
     pooled = mu.mean(dim=0)
-    adj_recon = model.decode_all(mu)                     # sigmoid(z zᵀ), z = mu at eval
+    adj_recon = model.decode_all(mu)  # sigmoid(z zᵀ), z = mu at eval
 
     def _np(t):
         return t.detach().cpu().numpy()

@@ -18,6 +18,7 @@ its pooled latents), so the region-level explanations live here:
 These operate on a single PyG ``Data`` (one visit graph). The encoder is used without
 FiLM conditioning, matching how GEC / GELSTM pool embeddings (``enc.encode(x, ei, ea)``).
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional

@@ -51,8 +51,8 @@ JOBS_AUDIT_PATH = LOGS_DIR / "jobs.jsonl"
 LATEST_SYMLINK = PRECOMPUTE_LOGS_DIR / "latest.log"
 LOG_KEEP = 20
 
-MAX_JOB_AGE_S = int(os.environ.get("PRECOMPUTE_MAX_AGE_S", "1800"))      # 30 min
-STALL_THRESHOLD_S = int(os.environ.get("PRECOMPUTE_STALL_S", "300"))     # 5 min
+MAX_JOB_AGE_S = int(os.environ.get("PRECOMPUTE_MAX_AGE_S", "1800"))  # 30 min
+STALL_THRESHOLD_S = int(os.environ.get("PRECOMPUTE_STALL_S", "300"))  # 5 min
 WATCHDOG_INTERVAL_S = int(os.environ.get("PRECOMPUTE_WATCHDOG_S", "60"))
 
 _AUDIT_LOCK = threading.Lock()
@@ -101,7 +101,8 @@ def _rotate_precompute_logs(keep: int = LOG_KEEP) -> None:
     if not PRECOMPUTE_LOGS_DIR.exists():
         return
     files = [
-        p for p in PRECOMPUTE_LOGS_DIR.iterdir()
+        p
+        for p in PRECOMPUTE_LOGS_DIR.iterdir()
         if p.is_file() and not p.is_symlink() and p.name != "latest.log"
     ]
     files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
@@ -115,6 +116,7 @@ def _rotate_precompute_logs(keep: int = LOG_KEEP) -> None:
 # ──────────────────────────────────────────────────────────────────────────── #
 # Helpers                                                                     #
 # ──────────────────────────────────────────────────────────────────────────── #
+
 
 def _jobs_dir(cache_root: Optional[Path] = None) -> Path:
     d = (cache_root or DASHBOARD_CACHE_ROOT) / "jobs"
@@ -172,8 +174,8 @@ def _is_pid_alive(pid: int) -> bool:
 # Public API                                                                  #
 # ──────────────────────────────────────────────────────────────────────────── #
 
-def is_running(csv_path: str, scan_folders: list[str],
-               cache_root: Optional[Path] = None) -> bool:
+
+def is_running(csv_path: str, scan_folders: list[str], cache_root: Optional[Path] = None) -> bool:
     """Return True if a live precompute job for this dataset is running."""
     job_id = canonical_job_id(csv_path, scan_folders)
     pid_file = _pid_path(job_id, cache_root)
@@ -275,6 +277,7 @@ def cancel_job(job_id: str, cache_root: Optional[Path] = None) -> bool:
 # Runaway/stall enforcement                                                   #
 # ──────────────────────────────────────────────────────────────────────────── #
 
+
 def _kill_pid(pid: int, grace_s: float = 5.0) -> str:
     """SIGTERM, wait up to grace_s, escalate to SIGKILL. Returns final state."""
     try:
@@ -323,7 +326,12 @@ def sweep_runaway_jobs(cache_root: Optional[Path] = None) -> dict:
         if not _is_pid_alive(pid):
             pid_file.unlink(missing_ok=True)
             summary["cleaned_stale_pid"] += 1
-            _audit("cleaned_stale_pid", job_id, pid=pid, reason="pid file orphaned (process already gone)")
+            _audit(
+                "cleaned_stale_pid",
+                job_id,
+                pid=pid,
+                reason="pid file orphaned (process already gone)",
+            )
             continue
 
         sp = _status_path(job_id, cache_root)
@@ -346,19 +354,31 @@ def sweep_runaway_jobs(cache_root: Optional[Path] = None) -> dict:
         if age_s is not None and age_s > MAX_JOB_AGE_S:
             outcome = _kill_pid(pid)
             pid_file.unlink(missing_ok=True)
-            _audit("killed_runaway", job_id, pid=pid, age_s=int(age_s),
-                   stage=data.get("stage"), outcome=outcome,
-                   reason=f"exceeded MAX_JOB_AGE_S={MAX_JOB_AGE_S}")
+            _audit(
+                "killed_runaway",
+                job_id,
+                pid=pid,
+                age_s=int(age_s),
+                stage=data.get("stage"),
+                outcome=outcome,
+                reason=f"exceeded MAX_JOB_AGE_S={MAX_JOB_AGE_S}",
+            )
             summary["killed_runaway"] += 1
             continue
 
         if stall_s is not None and stall_s > STALL_THRESHOLD_S:
             outcome = _kill_pid(pid)
             pid_file.unlink(missing_ok=True)
-            _audit("killed_stale", job_id, pid=pid, stall_s=int(stall_s),
-                   stage=data.get("stage"), outcome=outcome,
-                   reason=f"status JSON unchanged for {int(stall_s)}s "
-                          f"(>STALL_THRESHOLD_S={STALL_THRESHOLD_S})")
+            _audit(
+                "killed_stale",
+                job_id,
+                pid=pid,
+                stall_s=int(stall_s),
+                stage=data.get("stage"),
+                outcome=outcome,
+                reason=f"status JSON unchanged for {int(stall_s)}s "
+                f"(>STALL_THRESHOLD_S={STALL_THRESHOLD_S})",
+            )
             summary["killed_stale"] += 1
     return summary
 
@@ -380,12 +400,17 @@ def start_watchdog(cache_root: Optional[Path] = None) -> None:
     _WATCHDOG_STARTED = True
     cr = cache_root or DASHBOARD_CACHE_ROOT
     t = threading.Thread(
-        target=_watchdog_loop, args=(cr,),
-        daemon=True, name="precompute-watchdog",
+        target=_watchdog_loop,
+        args=(cr,),
+        daemon=True,
+        name="precompute-watchdog",
     )
     t.start()
-    print(f"[watchdog] started (interval={WATCHDOG_INTERVAL_S}s, "
-          f"max_age={MAX_JOB_AGE_S}s, stall={STALL_THRESHOLD_S}s)", flush=True)
+    print(
+        f"[watchdog] started (interval={WATCHDOG_INTERVAL_S}s, "
+        f"max_age={MAX_JOB_AGE_S}s, stall={STALL_THRESHOLD_S}s)",
+        flush=True,
+    )
 
 
 # ──────────────────────────────────────────────────────────────────────────── #
@@ -463,6 +488,7 @@ def _start_log_tailer(job_id: str, log_path: Path, status_path: Path) -> None:
 # Internal launch                                                              #
 # ──────────────────────────────────────────────────────────────────────────── #
 
+
 def _launch(
     job_id: str,
     csv_path: str,
@@ -476,33 +502,46 @@ def _launch(
     _rotate_precompute_logs()
 
     cmd = [
-        sys.executable, "-m", "app.precompute",
-        "--data-root", data_root,
-        "--csv-path", csv_path,
-        "--scan-folders", ",".join(scan_folders),
-        "--job-id", job_id,
-        "--cache-root", str(cache_root),
-        "--density", str(density),
+        sys.executable,
+        "-m",
+        "app.precompute",
+        "--data-root",
+        data_root,
+        "--csv-path",
+        csv_path,
+        "--scan-folders",
+        ",".join(scan_folders),
+        "--job-id",
+        job_id,
+        "--cache-root",
+        str(cache_root),
+        "--density",
+        str(density),
     ]
 
     # Write the initial status file BEFORE launching so callers can poll
     # immediately after start_job() returns. ``log_path`` lets re-attach
     # callers find the active log without searching.
     sp = _status_path(job_id, cache_root)
-    sp.write_text(json.dumps({
-        "job_id": job_id,
-        "status": "starting",
-        "stage": "queued",
-        "progress": 0.0,
-        "csv_path": csv_path,
-        "scan_folders": scan_folders,
-        "density": density,
-        "pid": None,
-        "started_at": datetime.now(timezone.utc).isoformat(),
-        "finished_at": None,
-        "error": None,
-        "log_path": str(log_file),
-    }, indent=2))
+    sp.write_text(
+        json.dumps(
+            {
+                "job_id": job_id,
+                "status": "starting",
+                "stage": "queued",
+                "progress": 0.0,
+                "csv_path": csv_path,
+                "scan_folders": scan_folders,
+                "density": density,
+                "pid": None,
+                "started_at": datetime.now(timezone.utc).isoformat(),
+                "finished_at": None,
+                "error": None,
+                "log_path": str(log_file),
+            },
+            indent=2,
+        )
+    )
 
     with open(log_file, "w") as lf:
         proc = subprocess.Popen(
@@ -511,7 +550,7 @@ def _launch(
             stdin=subprocess.DEVNULL,
             stdout=lf,
             stderr=subprocess.STDOUT,
-            start_new_session=True,   # detach from server's signal group
+            start_new_session=True,  # detach from server's signal group
             close_fds=True,
         )
 
@@ -520,8 +559,14 @@ def _launch(
     _pid_path(job_id, cache_root).write_text(str(proc.pid))
 
     _update_latest_symlink(log_file)
-    _audit("started", job_id, pid=proc.pid, log_path=str(log_file),
-           csv_path=csv_path, scan_folders=scan_folders)
+    _audit(
+        "started",
+        job_id,
+        pid=proc.pid,
+        log_path=str(log_file),
+        csv_path=csv_path,
+        scan_folders=scan_folders,
+    )
 
     print(f"[precompute] ── job {job_id[:12]}… started (pid={proc.pid})")
     print(f"[precompute]    csv   : {csv_path}")

@@ -12,6 +12,7 @@ orchestrates them. (Named distinctly from the unrelated ``runner_io.py``, which 
 terminal-output niceties.) The only model-specific inputs are ``model_config`` and
 ``source_files``.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

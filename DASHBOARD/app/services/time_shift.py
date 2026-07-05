@@ -49,6 +49,7 @@ def _logistic(t: np.ndarray, L: float, k: float, t0: float, b: float) -> np.ndar
 @dataclass
 class TimeShiftModel:
     """One logistic curve per biomarker over the longitudinal sample."""
+
     biomarkers: dict = field(default_factory=dict)
     # Each biomarker: {"L": ..., "k": ..., "t0": ..., "b": ..., "direction": "increase"/"decrease",
     #                  "t_min": ..., "t_max": ...}
@@ -68,6 +69,7 @@ def fit_time_shift_model(
     out = TimeShiftModel()
     try:
         from scipy.optimize import curve_fit
+
         has_scipy = True
     except ImportError:
         has_scipy = False
@@ -87,7 +89,9 @@ def fit_time_shift_model(
         if has_scipy:
             try:
                 popt, _ = curve_fit(
-                    _logistic, ts, ys,
+                    _logistic,
+                    ts,
+                    ys,
                     p0=[L_init, 0.05, float(np.median(ts)), b_init],
                     maxfev=2000,
                 )
@@ -103,9 +107,13 @@ def fit_time_shift_model(
             b = float(intercept)
 
         out.biomarkers[key] = {
-            "L": L, "k": k, "t0": t0, "b": b,
+            "L": L,
+            "k": k,
+            "t0": t0,
+            "b": b,
             "direction": direction,
-            "t_min": float(ts.min()), "t_max": float(ts.max()),
+            "t_min": float(ts.min()),
+            "t_max": float(ts.max()),
         }
     return out
 
@@ -144,7 +152,9 @@ def estimate_patient_time_shift(
     by_key: dict[str, list[float]] = {}
     for key, _, y in obs:
         by_key.setdefault(key, []).append(y)
-    sigmas = {k: max(float(np.std(vs, ddof=1)) if len(vs) > 1 else 1.0, 1e-6) for k, vs in by_key.items()}
+    sigmas = {
+        k: max(float(np.std(vs, ddof=1)) if len(vs) > 1 else 1.0, 1e-6) for k, vs in by_key.items()
+    }
 
     def loss(tau: float) -> float:
         total = 0.0
@@ -163,7 +173,10 @@ def estimate_patient_time_shift(
     tau_init = float(grid[int(losses.argmin())])
     try:
         from scipy.optimize import minimize_scalar
-        res = minimize_scalar(loss, bracket=(tau_init - 12, tau_init, tau_init + 12), method="brent")
+
+        res = minimize_scalar(
+            loss, bracket=(tau_init - 12, tau_init, tau_init + 12), method="brent"
+        )
         tau = float(res.x)
     except Exception:
         tau = tau_init

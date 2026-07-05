@@ -1,6 +1,7 @@
 """
 GELSTM/train.py — Training and evaluation loops for GELSTMClassifier.
 """
+
 from __future__ import annotations
 
 from typing import Dict, List
@@ -40,7 +41,9 @@ def train_epoch(
 
     for batch in batch_list:
         packed, labels, _ = encode_batch_sequences(
-            batch, model, device,
+            batch,
+            model,
+            device,
             use_time_delta=use_time_delta,
             graph_pool=graph_pool,
             dim_filter=dim_filter,
@@ -49,8 +52,8 @@ def train_epoch(
         # re-enable training mode for the full model after encoding
         model.train()
 
-        logits = model(packed)            # (B,)
-        loss   = criterion(logits, labels)
+        logits = model(packed)  # (B,)
+        loss = criterion(logits, labels)
 
         optimizer.zero_grad()
         loss.backward()
@@ -92,10 +95,10 @@ def evaluate(
                     subject_ids, n_scans
     """
     model.eval()
-    all_probs:   List[float] = []
-    all_targets: List[int]   = []
-    all_sids:    List[str]   = []
-    all_nscans:  List[int]   = []
+    all_probs: List[float] = []
+    all_targets: List[int] = []
+    all_sids: List[str] = []
+    all_nscans: List[int] = []
 
     for batch in batch_list:
         # encode_batch_sequences sorts the batch internally; mirror that here
@@ -105,7 +108,9 @@ def evaluate(
         all_nscans.extend([len(b["graphs"]) for b in sorted_batch])
 
         packed, labels, _ = encode_batch_sequences(
-            batch, model, device,
+            batch,
+            model,
+            device,
             use_time_delta=use_time_delta,
             zero_time_delta=zero_time_delta,
             graph_pool=graph_pool,
@@ -114,13 +119,13 @@ def evaluate(
             shuffle_rng=shuffle_rng,
         )
         logits = model(packed)
-        probs  = torch.sigmoid(logits).cpu().numpy()
+        probs = torch.sigmoid(logits).cpu().numpy()
         all_probs.extend(probs.tolist())
         all_targets.extend(labels.cpu().numpy().astype(int).tolist())
 
-    probs_arr   = np.array(all_probs)
+    probs_arr = np.array(all_probs)
     targets_arr = np.array(all_targets)
-    preds_arr   = (probs_arr >= threshold).astype(int)
+    preds_arr = (probs_arr >= threshold).astype(int)
 
     auc = roc_auc_score(targets_arr, probs_arr) if len(np.unique(targets_arr)) > 1 else 0.0
 
@@ -131,7 +136,7 @@ def evaluate(
 
     sens = tp / (tp + fn) if (tp + fn) > 0 else 0.0
     spec = tn / (tn + fp) if (tn + fp) > 0 else 0.0
-    f1   = f1_score(targets_arr, preds_arr, zero_division=0)
+    f1 = f1_score(targets_arr, preds_arr, zero_division=0)
 
     # Youden threshold
     if len(np.unique(targets_arr)) > 1:
@@ -142,15 +147,15 @@ def evaluate(
         best_thr = threshold
 
     return {
-        "auc":         float(auc),
+        "auc": float(auc),
         "sensitivity": float(sens),
         "specificity": float(spec),
-        "f1":          float(f1),
+        "f1": float(f1),
         "best_threshold": best_thr,
-        "probs":       probs_arr,
-        "targets":     targets_arr,
+        "probs": probs_arr,
+        "targets": targets_arr,
         "subject_ids": np.array(all_sids),
-        "n_scans":     np.array(all_nscans),
+        "n_scans": np.array(all_nscans),
     }
 
 
@@ -159,4 +164,4 @@ def make_batches(items: List[dict], batch_size: int, shuffle: bool = True) -> Li
     if shuffle:
         idx = np.random.permutation(len(items))
         items = [items[i] for i in idx]
-    return [items[i:i + batch_size] for i in range(0, len(items), batch_size)]
+    return [items[i : i + batch_size] for i in range(0, len(items), batch_size)]

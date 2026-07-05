@@ -1,4 +1,5 @@
 """VGAE inference helpers — mirror ``model/GAAE/utils.load_gaae_for_inference``."""
+
 from __future__ import annotations
 
 from pathlib import Path

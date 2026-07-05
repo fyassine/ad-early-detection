@@ -19,8 +19,8 @@ def _require_pycox():
         from pycox.models import CoxPH  # noqa: F401
     except ImportError as exc:
         raise ImportError(
-            'DeepSurvWrapper requires pycox + torchtuples. Install with:\n'
-            '  pip install pycox torchtuples'
+            "DeepSurvWrapper requires pycox + torchtuples. Install with:\n"
+            "  pip install pycox torchtuples"
         ) from exc
 
 
@@ -54,7 +54,10 @@ class DeepSurvWrapper(SurvivalModel):
         self.train_times_: np.ndarray | None = None
 
     def fit(
-        self, X: np.ndarray, T: np.ndarray, E: np.ndarray,
+        self,
+        X: np.ndarray,
+        T: np.ndarray,
+        E: np.ndarray,
         X_val: np.ndarray | None = None,
         T_val: np.ndarray | None = None,
         E_val: np.ndarray | None = None,
@@ -92,9 +95,12 @@ class DeepSurvWrapper(SurvivalModel):
                 Xv = self.scaler_.transform(Xv).astype(np.float32)
             val_data = (Xv, (T_val.astype(np.float32), E_val.astype(np.float32)))
 
-        callbacks = [tt.callbacks.EarlyStopping(patience=self.early_stopping_patience)] if val_data else []
+        callbacks = (
+            [tt.callbacks.EarlyStopping(patience=self.early_stopping_patience)] if val_data else []
+        )
         self.model_.fit(
-            Xt, y_train,
+            Xt,
+            y_train,
             batch_size=self.batch_size,
             epochs=self.epochs,
             callbacks=callbacks,
@@ -130,7 +136,7 @@ class DeepSurvWrapper(SurvivalModel):
         surv_times = surv.index.to_numpy().astype(float)
         for j, t in enumerate(times):
             # Use last-observed-value (step function evaluation)
-            idx = np.searchsorted(surv_times, t, side='right') - 1
+            idx = np.searchsorted(surv_times, t, side="right") - 1
             if idx < 0:
                 out[:, j] = 1.0
             else:

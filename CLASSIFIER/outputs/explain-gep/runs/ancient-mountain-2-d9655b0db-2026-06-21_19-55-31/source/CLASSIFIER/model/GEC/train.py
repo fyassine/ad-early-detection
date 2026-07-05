@@ -18,6 +18,7 @@ Each batch passed to :func:`train_classifier` must expose: ``x``,
 ``edge_index``, ``batch``, ``is_converter``, ``patient_age``, ``patient_sex``
 (see :class:`CLASSIFIER.configs.gec.GECBatch`).
 """
+
 from __future__ import annotations
 
 import copy
@@ -65,9 +66,7 @@ def build_loader(
 
 def _forward_batch(model, batch, device):
     batch = batch.to(device)
-    cond_vec = torch.stack(
-        [batch.patient_age, batch.patient_sex.float()], dim=1
-    ).to(device)
+    cond_vec = torch.stack([batch.patient_age, batch.patient_sex.float()], dim=1).to(device)
     logits, _ = model(batch.x, batch.edge_index, cond_vec, batch.batch)
     return logits, batch.is_converter
 
@@ -123,10 +122,14 @@ def train_classifier(
     best_threshold = cfg.fixed_threshold
     epochs_no_improve = 0
     history = {
-        "train_loss": [], "val_loss": [],
-        "train_acc": [], "val_acc": [],
-        "train_f1": [], "val_f1": [],
-        "train_auc": [], "val_auc": [],
+        "train_loss": [],
+        "val_loss": [],
+        "train_acc": [],
+        "val_acc": [],
+        "train_f1": [],
+        "val_f1": [],
+        "train_auc": [],
+        "val_auc": [],
         "best_threshold": [],
         "learning_rate": [],
     }
@@ -175,42 +178,54 @@ def train_classifier(
             epoch_threshold = cfg.fixed_threshold
 
         train_preds_binary = [1 if p > epoch_threshold else 0 for p in train_preds]
-        val_preds_binary   = [1 if p > epoch_threshold else 0 for p in val_preds]
+        val_preds_binary = [1 if p > epoch_threshold else 0 for p in val_preds]
 
         train_acc = accuracy_score(train_labels, train_preds_binary)
-        train_f1  = f1_score(train_labels, train_preds_binary, zero_division=0)
+        train_f1 = f1_score(train_labels, train_preds_binary, zero_division=0)
         train_auc = roc_auc_score(train_labels, train_preds) if len(set(train_labels)) > 1 else 0.0
-        val_acc   = accuracy_score(val_labels, val_preds_binary)
-        val_f1    = f1_score(val_labels, val_preds_binary, zero_division=0)
-        val_auc   = roc_auc_score(val_labels, val_preds) if len(set(val_labels)) > 1 else 0.0
+        val_acc = accuracy_score(val_labels, val_preds_binary)
+        val_f1 = f1_score(val_labels, val_preds_binary, zero_division=0)
+        val_auc = roc_auc_score(val_labels, val_preds) if len(set(val_labels)) > 1 else 0.0
 
         for k, v in [
-            ("train_loss", avg_train_loss), ("val_loss", avg_val_loss),
-            ("train_acc", train_acc),       ("val_acc", val_acc),
-            ("train_f1",  train_f1),        ("val_f1",  val_f1),
-            ("train_auc", train_auc),       ("val_auc", val_auc),
+            ("train_loss", avg_train_loss),
+            ("val_loss", avg_val_loss),
+            ("train_acc", train_acc),
+            ("val_acc", val_acc),
+            ("train_f1", train_f1),
+            ("val_f1", val_f1),
+            ("train_auc", train_auc),
+            ("val_auc", val_auc),
             ("best_threshold", epoch_threshold),
             ("learning_rate", optimizer.param_groups[0]["lr"]),
         ]:
             history[k].append(v)
 
-        outer_bar.set_postfix({
-            "Train Loss": f"{avg_train_loss:.4f}",
-            "Val Loss":   f"{avg_val_loss:.4f}",
-            "Val AUC":    f"{val_auc:.4f}",
-            "Thr":        f"{epoch_threshold:.3f}",
-            "LR":         f"{optimizer.param_groups[0]['lr']:.2e}",
-        })
+        outer_bar.set_postfix(
+            {
+                "Train Loss": f"{avg_train_loss:.4f}",
+                "Val Loss": f"{avg_val_loss:.4f}",
+                "Val AUC": f"{val_auc:.4f}",
+                "Thr": f"{epoch_threshold:.3f}",
+                "LR": f"{optimizer.param_groups[0]['lr']:.2e}",
+            }
+        )
 
         if wandb_run is not None:
-            wandb_run.log({
-                "train_loss": avg_train_loss, "val_loss": avg_val_loss,
-                "train_acc": train_acc, "val_acc": val_acc,
-                "train_f1":  train_f1,  "val_f1":  val_f1,
-                "train_auc": train_auc, "val_auc": val_auc,
-                "best_threshold": epoch_threshold,
-                "learning_rate": optimizer.param_groups[0]["lr"],
-            })
+            wandb_run.log(
+                {
+                    "train_loss": avg_train_loss,
+                    "val_loss": avg_val_loss,
+                    "train_acc": train_acc,
+                    "val_acc": val_acc,
+                    "train_f1": train_f1,
+                    "val_f1": val_f1,
+                    "train_auc": train_auc,
+                    "val_auc": val_auc,
+                    "best_threshold": epoch_threshold,
+                    "learning_rate": optimizer.param_groups[0]["lr"],
+                }
+            )
 
         if scheduler is not None:
             scheduler.step(val_auc)
@@ -280,12 +295,12 @@ def evaluate_classifier(
 
     return {
         "accuracy": accuracy_score(all_labels, all_preds),
-        "f1":       f1_score(all_labels, all_preds, zero_division=0),
-        "auc":      roc_auc_score(all_labels, all_probs) if len(set(all_labels)) > 1 else 0.0,
-        "confusion_matrix":      confusion_matrix(all_labels, all_preds),
+        "f1": f1_score(all_labels, all_preds, zero_division=0),
+        "auc": roc_auc_score(all_labels, all_probs) if len(set(all_labels)) > 1 else 0.0,
+        "confusion_matrix": confusion_matrix(all_labels, all_preds),
         "classification_report": classification_report(all_labels, all_preds, zero_division=0),
         "threshold_used": float(threshold),
-        "predictions":    all_preds,
-        "probabilities":  all_probs,
-        "labels":         all_labels,
+        "predictions": all_preds,
+        "probabilities": all_probs,
+        "labels": all_labels,
     }

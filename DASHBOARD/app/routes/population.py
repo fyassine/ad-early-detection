@@ -71,13 +71,14 @@ def api_population_network_atlas(
             status_code=400,
         )
     if not is_stats_cached(DATA_ROOT, csv_path, folder_list):
-        return JSONResponse({
-            "available": False,
-            "note": "Cohort warmup is still running for this dataset.",
-        })
+        return JSONResponse(
+            {
+                "available": False,
+                "note": "Cohort warmup is still running for this dataset.",
+            }
+        )
     stats = get_cohort_stats(DATA_ROOT, csv_path, folder_list)
-    return JSONResponse(network_disruption_atlas(stats),
-                        headers=cache_headers(stats.fingerprint))
+    return JSONResponse(network_disruption_atlas(stats), headers=cache_headers(stats.fingerprint))
 
 
 @router.get("/api/population/model-card")

@@ -1,4 +1,5 @@
 """Tests for CLASSIFIER.common.crossval."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -11,7 +12,9 @@ def _make_bundle(n=40):
     # balanced classes, deterministic.
     labels = [i % 2 for i in range(n)]
     groups = [f"sub{i}" for i in range(n)]  # one item per subject (subject-level)
-    items = [{"subject_id": g, "label": l, "n_scans": 1} for g, l in zip(groups, labels, strict=False)]
+    items = [
+        {"subject_id": g, "label": l, "n_scans": 1} for g, l in zip(groups, labels, strict=False)
+    ]
     return Bundle(labels, groups, items)
 
 
@@ -40,9 +43,7 @@ def _fold_stub(auc_by_call):
 def test_run_kfold_cv_selects_best_fold_and_concatenates_oof():
     bundle = _make_bundle(40)
     aucs = [0.6, 0.9, 0.7, 0.5, 0.8]  # fold 2 (index 1) is best
-    res = run_kfold_cv(
-        bundle, _fold_stub(aucs), cfg={}, n_folds=5, rng=None, device="cpu"
-    )
+    res = run_kfold_cv(bundle, _fold_stub(aucs), cfg={}, n_folds=5, rng=None, device="cpu")
 
     assert isinstance(res, CVResult)
     assert res.best_fold == 2
@@ -64,8 +65,13 @@ def test_run_kfold_cv_log_fn_called_per_fold():
     bundle = _make_bundle(40)
     logged = []
     run_kfold_cv(
-        bundle, _fold_stub([0.5] * 5), cfg={}, n_folds=5,
-        rng=None, device="cpu", log_fn=logged.append,
+        bundle,
+        _fold_stub([0.5] * 5),
+        cfg={},
+        n_folds=5,
+        rng=None,
+        device="cpu",
+        log_fn=logged.append,
     )
     assert len(logged) == 5
     assert all("val_auc" in d and "fold" in d for d in logged)

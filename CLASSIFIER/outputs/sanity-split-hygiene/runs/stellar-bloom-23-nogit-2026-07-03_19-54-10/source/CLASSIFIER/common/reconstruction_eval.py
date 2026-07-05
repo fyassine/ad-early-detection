@@ -14,6 +14,7 @@ evaluation helpers (``compute_one_vs_rest_thresholds``, ``is_cohort_positive``,
 DataFrame/dict — no GAAE coupling — so they are reused unchanged against this
 function's output.
 """
+
 from __future__ import annotations
 
 from typing import Callable, Union
@@ -96,14 +97,16 @@ def compute_errors_for_dataset(
             extra = {}
             total_error = float(result)
 
-        records.append({
-            "Split": split_name,
-            "DatasetIndex": i,
-            "PatientID": patient_id,
-            "Cohort": cohort,
-            **extra,
-            "Total Error": total_error,
-        })
+        records.append(
+            {
+                "Split": split_name,
+                "DatasetIndex": i,
+                "PatientID": patient_id,
+                "Cohort": cohort,
+                **extra,
+                "Total Error": total_error,
+            }
+        )
 
     if allowed_cohorts is not None and unknown_ids:
         unique_unknown = sorted(set(unknown_ids))

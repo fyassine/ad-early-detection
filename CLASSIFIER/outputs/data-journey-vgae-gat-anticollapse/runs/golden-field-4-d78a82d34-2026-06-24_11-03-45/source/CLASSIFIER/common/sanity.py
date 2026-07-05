@@ -20,6 +20,7 @@ Also exposes:
 
 All functions return a dict for the notebook to print/log.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -30,6 +31,7 @@ import numpy as np
 import pandas as pd
 
 # ── 1. Split overlap ──────────────────────────────────────────────────────────
+
 
 def _load_subject_ids(csv_path: str, id_col: str) -> set:
     df = pd.read_csv(csv_path)
@@ -72,18 +74,16 @@ def assert_splits_clean(
         if shared:
             overlaps.append((a, b, len(shared), sorted(shared)[:5]))
 
-    clean = (len(overlaps) == 0)
+    clean = len(overlaps) == 0
     if raise_on_overlap and not clean:
-        msg = "; ".join(
-            f"{a}↔{b}: {n} shared subjects (e.g. {ex})"
-            for a, b, n, ex in overlaps
-        )
+        msg = "; ".join(f"{a}↔{b}: {n} shared subjects (e.g. {ex})" for a, b, n, ex in overlaps)
         raise AssertionError(f"Split-overlap detected — {msg}")
 
     return {"sizes": sizes, "overlaps": overlaps, "clean": clean}
 
 
 # ── 2. Duplicate-matrix audit ─────────────────────────────────────────────────
+
 
 def _hash_npz(path: str, array_key: str = "array") -> str:
     arr = np.load(path)[array_key]
@@ -116,25 +116,25 @@ def assert_no_duplicate_matrices(
         by_hash.setdefault(h, []).append(str(p))
 
     dups = [{"hash": h, "paths": ps} for h, ps in by_hash.items() if len(ps) > 1]
-    clean = (len(dups) == 0)
+    clean = len(dups) == 0
     if raise_on_dup and not clean:
         examples = "; ".join(
-            f"{d['hash'][:8]}: {len(d['paths'])} files (e.g. {d['paths'][:2]})"
-            for d in dups[:3]
+            f"{d['hash'][:8]}: {len(d['paths'])} files (e.g. {d['paths'][:2]})" for d in dups[:3]
         )
         raise AssertionError(
             f"Duplicate-content matrices detected — {len(dups)} group(s); {examples}"
         )
 
     return {
-        "n_files":    len(npz_paths),
-        "n_unique":   len(by_hash),
+        "n_files": len(npz_paths),
+        "n_unique": len(by_hash),
         "duplicates": dups,
-        "clean":      clean,
+        "clean": clean,
     }
 
 
 # ── 3. StratifiedGroupKFold audit ─────────────────────────────────────────────
+
 
 def audit_groupkfold(
     subject_ids: Sequence[str],
@@ -156,7 +156,7 @@ def audit_groupkfold(
     from sklearn.model_selection import StratifiedGroupKFold
 
     sids = np.array(list(map(str, subject_ids)))
-    y    = np.array(list(labels), dtype=int)
+    y = np.array(list(labels), dtype=int)
 
     # One row per subject (StratifiedGroupKFold expects groups = sample-level IDs,
     # but here each sample is already a subject, so the group is itself).
@@ -165,14 +165,16 @@ def audit_groupkfold(
     folds = []
     val_sets: List[set] = []
     for tr_idx, val_idx in cv.split(X=sids.reshape(-1, 1), y=y, groups=sids):
-        tr_subj  = set(sids[tr_idx])
+        tr_subj = set(sids[tr_idx])
         val_subj = set(sids[val_idx])
-        folds.append({
-            "train_subjects": sorted(tr_subj),
-            "val_subjects":   sorted(val_subj),
-            "n_train":        len(tr_subj),
-            "n_val":          len(val_subj),
-        })
+        folds.append(
+            {
+                "train_subjects": sorted(tr_subj),
+                "val_subjects": sorted(val_subj),
+                "n_train": len(tr_subj),
+                "n_val": len(val_subj),
+            }
+        )
         val_sets.append(val_subj)
 
     overlaps: List[Tuple[int, int, int]] = []
@@ -181,7 +183,7 @@ def audit_groupkfold(
         if shared:
             overlaps.append((i, j, len(shared)))
 
-    clean = (len(overlaps) == 0)
+    clean = len(overlaps) == 0
     if not clean:
         raise AssertionError(
             f"StratifiedGroupKFold produced overlapping validation folds: {overlaps}"
@@ -191,6 +193,7 @@ def audit_groupkfold(
 
 
 # ── 4. Cohort-policy assertion ────────────────────────────────────────────────
+
 
 def assert_cohort_policy(
     gaae_pretrain_subjects: Sequence[str],
@@ -230,6 +233,7 @@ def assert_cohort_policy(
 
 
 # ── Smoke helper for notebooks ────────────────────────────────────────────────
+
 
 def run_full_audit(
     split_csvs: Dict[str, str],

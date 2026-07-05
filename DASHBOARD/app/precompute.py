@@ -38,6 +38,7 @@ from pathlib import Path
 # Bootstrap                                                                   #
 # ──────────────────────────────────────────────────────────────────────────── #
 
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -65,6 +66,7 @@ def _update_status(status_path: Path, **kwargs) -> None:
 # Stages                                                                      #
 # ──────────────────────────────────────────────────────────────────────────── #
 
+
 def _stage_cohort_stats(
     data_root: str,
     csv_path: str,
@@ -84,11 +86,13 @@ def _stage_cohort_stats(
     # Liveness ping only — real per-stage timings come from inside
     # get_cohort_stats (look for "[cohort_stats] <stage>: Xs" lines).
     _done = threading.Event()
+
     def _heartbeat():
         elapsed = 0
         while not _done.wait(30):
             elapsed += 30
             _log(f"  … still running ({elapsed}s elapsed)")
+
     hb = threading.Thread(target=_heartbeat, daemon=True)
     hb.start()
 
@@ -201,7 +205,9 @@ def _stage_graph_metrics(
                 except TimeoutError:
                     signal.alarm(0)
                     timed_out += 1
-                    _log(f"  {cohort} [{i}/{len(ids)}] {sid}: TIMEOUT after {PER_SUBJECT_TIMEOUT_S}s — skipped")
+                    _log(
+                        f"  {cohort} [{i}/{len(ids)}] {sid}: TIMEOUT after {PER_SUBJECT_TIMEOUT_S}s — skipped"
+                    )
                     continue
                 finally:
                     signal.alarm(0)
@@ -220,10 +226,14 @@ def _stage_graph_metrics(
                     continue
                 arr = np.asarray(vals, dtype=np.float64)
                 metric_summary[k] = {
-                    "mean": float(arr.mean()), "std": float(arr.std(ddof=0)) if arr.size > 1 else 0.0,
-                    "p5":  float(np.quantile(arr, 0.05)), "p25": float(np.quantile(arr, 0.25)),
-                    "p50": float(np.quantile(arr, 0.50)), "p75": float(np.quantile(arr, 0.75)),
-                    "p95": float(np.quantile(arr, 0.95)), "n": int(arr.size),
+                    "mean": float(arr.mean()),
+                    "std": float(arr.std(ddof=0)) if arr.size > 1 else 0.0,
+                    "p5": float(np.quantile(arr, 0.05)),
+                    "p25": float(np.quantile(arr, 0.25)),
+                    "p50": float(np.quantile(arr, 0.50)),
+                    "p75": float(np.quantile(arr, 0.75)),
+                    "p95": float(np.quantile(arr, 0.95)),
+                    "n": int(arr.size),
                 }
             result[cohort] = {"n": used, "n_sampled": len(ids), "metrics": metric_summary}
             _log(f"  {cohort}: {used}/{len(ids)} subjects computed ({timed_out} timed out)")
@@ -294,6 +304,7 @@ def _stage_gelstm(
         return
 
     VISIT_RE = re.compile(r"M(\d+)", re.IGNORECASE)
+
     def _visit_months(v):
         m = VISIT_RE.match(str(v).strip())
         return int(m.group(1)) if m else None
@@ -328,7 +339,7 @@ def _stage_gelstm(
         if not matrices:
             continue
 
-        delta_t = [0.0] + [(months[i] - months[i-1]) / 108.0 for i in range(1, len(months))]
+        delta_t = [0.0] + [(months[i] - months[i - 1]) / 108.0 for i in range(1, len(months))]
 
         # Get sex/age
         rows = df[df["subject_id"].astype(str) == sid]
@@ -385,8 +396,11 @@ def _stage_qc_volumes(
         return
 
     converters = (
-        df[df["diagnosis"].astype(str).str.lower() == "converter"]
-        ["subject_id"].dropna().astype(str).unique().tolist()
+        df[df["diagnosis"].astype(str).str.lower() == "converter"]["subject_id"]
+        .dropna()
+        .astype(str)
+        .unique()
+        .tolist()
     )
     n_done = 0
     for sid in converters:
@@ -523,29 +537,30 @@ def _stage_dfc(
 # Entry point                                                                 #
 # ──────────────────────────────────────────────────────────────────────────── #
 
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Precompute dashboard caches")
-    parser.add_argument("--data-root",    required=True)
-    parser.add_argument("--csv-path",     required=True)
-    parser.add_argument("--scan-folders", required=True,  help="Comma-separated")
-    parser.add_argument("--job-id",       required=True)
-    parser.add_argument("--cache-root",   required=True)
-    parser.add_argument("--density",      type=float, default=0.20)
+    parser.add_argument("--data-root", required=True)
+    parser.add_argument("--csv-path", required=True)
+    parser.add_argument("--scan-folders", required=True, help="Comma-separated")
+    parser.add_argument("--job-id", required=True)
+    parser.add_argument("--cache-root", required=True)
+    parser.add_argument("--density", type=float, default=0.20)
     args = parser.parse_args()
 
     scan_folders = [f.strip() for f in args.scan_folders.split(",") if f.strip()]
-    cache_root   = Path(args.cache_root)
-    jobs_dir     = cache_root / "jobs"
+    cache_root = Path(args.cache_root)
+    jobs_dir = cache_root / "jobs"
     jobs_dir.mkdir(parents=True, exist_ok=True)
 
     status_path = jobs_dir / f"{args.job_id}.json"
-    pid_path    = jobs_dir / f"{args.job_id}.pid"
+    pid_path = jobs_dir / f"{args.job_id}.pid"
 
     # Write PID immediately (job_manager may have already written it; overwrite is fine).
     pid_path.write_text(str(os.getpid()))
 
     # Propagate config so that app.* imports use the correct paths.
-    os.environ.setdefault("DATA_ROOT",            args.data_root)
+    os.environ.setdefault("DATA_ROOT", args.data_root)
     os.environ.setdefault("DASHBOARD_CACHE_ROOT", str(cache_root))
 
     _update_status(
@@ -567,20 +582,27 @@ def main() -> int:
 
     try:
         stats = _stage_cohort_stats(args.data_root, args.csv_path, scan_folders, status_path)
-        _stage_graph_metrics(args.data_root, scan_folders, stats, cache_root,
-                             args.csv_path, args.density, status_path)
+        _stage_graph_metrics(
+            args.data_root,
+            scan_folders,
+            stats,
+            cache_root,
+            args.csv_path,
+            args.density,
+            status_path,
+        )
         _stage_gelstm(args.data_root, scan_folders, args.csv_path, cache_root, status_path)
         _stage_qc_volumes(args.data_root, scan_folders, args.csv_path, status_path)
         _stage_dfc(args.data_root, scan_folders, args.csv_path, cache_root, status_path)
 
-        _update_status(status_path, status="done", stage="done",
-                       progress=1.0, finished_at=_now(), error=None)
+        _update_status(
+            status_path, status="done", stage="done", progress=1.0, finished_at=_now(), error=None
+        )
         _log(f"Job {args.job_id} completed successfully")
         return 0
 
     except KeyboardInterrupt:
-        _update_status(status_path, status="cancelled", finished_at=_now(),
-                       error="Received SIGINT")
+        _update_status(status_path, status="cancelled", finished_at=_now(), error="Received SIGINT")
         _log(f"Job {args.job_id} cancelled")
         return 1
 

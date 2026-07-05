@@ -18,6 +18,7 @@ If the raw ``.nii`` is unavailable, ``nii_to_fc_to_graph`` falls back to the sto
 ``.npz`` FC matrix (``bold_img`` / ``timeseries`` are then ``None``) so the trace
 still completes.
 """
+
 from __future__ import annotations
 
 import glob
@@ -116,9 +117,14 @@ def nii_to_fc_to_graph(
     and ``source`` ("nii" or "fc_npz").
     """
     out: Dict[str, Any] = {
-        "subject_id": subject_id, "visit_month": int(visit_month),
-        "nii_path": None, "bold_img": None, "timeseries": None,
-        "fc_matrix": None, "z_fc": None, "source": None,
+        "subject_id": subject_id,
+        "visit_month": int(visit_month),
+        "nii_path": None,
+        "bold_img": None,
+        "timeseries": None,
+        "fc_matrix": None,
+        "z_fc": None,
+        "source": None,
     }
 
     nii = find_nii(subject_id, visit_month, fmri_root=fmri_root)
@@ -145,8 +151,9 @@ def nii_to_fc_to_graph(
             print(f"[pipeline_trace] raw-scan processing failed ({exc}); using stored FC.")
 
     if out["fc_matrix"] is None:
-        fc_path = find_fc_matrix(subject_id, visit_month, matrices_dir=matrices_dir,
-                                 file_variant=file_variant)
+        fc_path = find_fc_matrix(
+            subject_id, visit_month, matrices_dir=matrices_dir, file_variant=file_variant
+        )
         if fc_path is None:
             raise FileNotFoundError(
                 f"No raw .nii and no stored FC .npz for subject {subject_id!r} "
@@ -179,8 +186,9 @@ def plot_brain_slice(bold_img: Any, *, title: str = "Mean BOLD") -> Any:
 
     mean_img = nlimg.mean_img(bold_img)
     fig = plt.figure(figsize=(10, 3.5))
-    nlplt.plot_epi(mean_img, figure=fig, title=title, display_mode="ortho",
-                   cmap="gray", colorbar=True)
+    nlplt.plot_epi(
+        mean_img, figure=fig, title=title, display_mode="ortho", cmap="gray", colorbar=True
+    )
     return fig
 
 
@@ -245,7 +253,13 @@ def plot_brain_graph(
     fig, ax = plt.subplots(figsize=(8, 7))
     nx.draw_networkx_edges(G, pos, ax=ax, alpha=0.12, width=0.5)
     nodes = nx.draw_networkx_nodes(
-        G, pos, ax=ax, node_size=45, node_color=node_color, cmap=cmap, linewidths=0.3,
+        G,
+        pos,
+        ax=ax,
+        node_size=45,
+        node_color=node_color,
+        cmap=cmap,
+        linewidths=0.3,
         edgecolors="white",
     )
     if node_values is not None and nodes is not None:

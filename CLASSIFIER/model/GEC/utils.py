@@ -2,19 +2,22 @@ import numpy as np
 import torch
 
 
-def load_frozen_encoder_from_gaae(gec_model, gaae_checkpoint_path, device='cpu'):
+def load_frozen_encoder_from_gaae(gec_model, gaae_checkpoint_path, device="cpu"):
     checkpoint = torch.load(gaae_checkpoint_path, map_location=device, weights_only=False)
 
-    if 'model_state_dict' in checkpoint:
-        gaae_state_dict = checkpoint['model_state_dict']
+    if "model_state_dict" in checkpoint:
+        gaae_state_dict = checkpoint["model_state_dict"]
     else:
         gaae_state_dict = checkpoint
 
     encoder_keys = [
-        'encoder_gat1', 'encoder_bn1',
-        'encoder_gat2', 'encoder_bn2',
-        'encoder_gat3',
-        'film_gamma', 'film_beta'
+        "encoder_gat1",
+        "encoder_bn1",
+        "encoder_gat2",
+        "encoder_bn2",
+        "encoder_gat3",
+        "film_gamma",
+        "film_beta",
     ]
 
     gec_state_dict = gec_model.state_dict()
@@ -56,7 +59,7 @@ def load_frozen_encoder_from_gaae(gec_model, gaae_checkpoint_path, device='cpu')
     return gec_model
 
 
-def compute_class_weights(labels, device='cpu'):
+def compute_class_weights(labels, device="cpu"):
     labels = np.array(labels)
     n_samples = len(labels)
     n_positive = labels.sum()

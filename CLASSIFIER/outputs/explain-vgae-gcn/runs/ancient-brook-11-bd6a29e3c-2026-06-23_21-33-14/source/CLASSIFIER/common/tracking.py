@@ -28,6 +28,7 @@ Mode resolution (env ``WANDB_MODE`` wins, then experiment, then default):
     online (default)    -> live logging; auto-falls-back to offline if no
                            credentials or ``wandb.init`` fails.
 """
+
 from __future__ import annotations
 
 import os
@@ -105,7 +106,9 @@ def _region_tag(exp: Dict[str, Any], params: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-def _build_init_kwargs(exp: Dict[str, Any], params: Dict[str, Any], fold: Optional[int]) -> Dict[str, Any]:
+def _build_init_kwargs(
+    exp: Dict[str, Any], params: Dict[str, Any], fold: Optional[int]
+) -> Dict[str, Any]:
     """Assemble the wandb.init kwargs implementing the naming convention."""
     git = capture_git_provenance()
 
@@ -128,7 +131,12 @@ def _build_init_kwargs(exp: Dict[str, Any], params: Dict[str, Any], fold: Option
         tags.append(str(region))
     tags = [t for t in tags if t and not t.endswith("=None")]
 
-    config = {**params, "experiment_id": exp.get("id"), "git_commit": git.get("commit"), "fold": fold}
+    config = {
+        **params,
+        "experiment_id": exp.get("id"),
+        "git_commit": git.get("commit"),
+        "fold": fold,
+    }
 
     return {
         "entity": os.environ.get("WANDB_ENTITY") or None,
@@ -167,13 +175,16 @@ def init_run(exp: Dict[str, Any], params: Dict[str, Any], *, fold: Optional[int]
     try:
         import wandb
     except Exception as exc:  # wandb not installed in this env
-        warnings.warn(f"[tracking] wandb unavailable ({exc!r}); logging disabled for this run.", stacklevel=2)
+        warnings.warn(
+            f"[tracking] wandb unavailable ({exc!r}); logging disabled for this run.", stacklevel=2
+        )
         return _NoOpRun(config=params)
 
     if mode == "online" and not _credentials_available():
         warnings.warn(
             "[tracking] WANDB_MODE=online but no WANDB_API_KEY/.netrc credentials found; "
-            "falling back to offline mode (sync later with `wandb sync`).", stacklevel=2
+            "falling back to offline mode (sync later with `wandb sync`).",
+            stacklevel=2,
         )
         mode = "offline"
 
@@ -187,13 +198,20 @@ def init_run(exp: Dict[str, Any], params: Dict[str, Any], *, fold: Optional[int]
         return wandb.init(mode=mode, reinit=True, **init_kwargs)
     except Exception as exc:
         if mode != "offline":
-            warnings.warn(f"[tracking] wandb.init failed ({exc!r}); retrying in offline mode.", stacklevel=2)
+            warnings.warn(
+                f"[tracking] wandb.init failed ({exc!r}); retrying in offline mode.", stacklevel=2
+            )
             try:
                 return wandb.init(mode="offline", reinit=True, **init_kwargs)
             except Exception as exc2:
-                warnings.warn(f"[tracking] offline wandb.init also failed ({exc2!r}); logging disabled.", stacklevel=2)
+                warnings.warn(
+                    f"[tracking] offline wandb.init also failed ({exc2!r}); logging disabled.",
+                    stacklevel=2,
+                )
         else:
-            warnings.warn(f"[tracking] offline wandb.init failed ({exc!r}); logging disabled.", stacklevel=2)
+            warnings.warn(
+                f"[tracking] offline wandb.init failed ({exc!r}); logging disabled.", stacklevel=2
+            )
         return _NoOpRun(config=params)
 
 

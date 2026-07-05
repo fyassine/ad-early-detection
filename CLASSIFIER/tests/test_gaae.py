@@ -1,4 +1,5 @@
 """Unit tests for GAAE encoder, decoder, and loss functions."""
+
 import pytest
 import torch
 from torch_geometric.data import Data
@@ -13,13 +14,13 @@ from CLASSIFIER.model.GAAE.utils import calculate_dense_adjacency, create_mask
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 
-N_NODES    = 6
-IN_FEAT    = 8
-HIDDEN     = 16
-LATENT     = 4
-COND_DIM   = 2
-NUM_HEADS  = 1
-DEVICE     = torch.device("cpu")
+N_NODES = 6
+IN_FEAT = 8
+HIDDEN = 16
+LATENT = 4
+COND_DIM = 2
+NUM_HEADS = 1
+DEVICE = torch.device("cpu")
 
 
 def _make_model() -> GraphAttentionAutoencoderConditioned:
@@ -41,13 +42,14 @@ def _make_graph(n_nodes: int = N_NODES) -> tuple:
     dst = torch.arange(n_nodes).repeat(n_nodes)
     mask = src != dst
     edge_index = torch.stack([src[mask], dst[mask]])
-    edge_attr  = torch.rand(edge_index.size(1))
+    edge_attr = torch.rand(edge_index.size(1))
     batch_mask = torch.zeros(n_nodes, dtype=torch.long)
-    cond_vec   = torch.randn(1, COND_DIM)
+    cond_vec = torch.randn(1, COND_DIM)
     return x, edge_index, edge_attr, batch_mask, cond_vec
 
 
 # ── Encoder ───────────────────────────────────────────────────────────────────
+
 
 def test_encode_output_shape():
     model = _make_model()
@@ -91,6 +93,7 @@ def test_condition_latent_changes_output():
 
 # ── Decoder ───────────────────────────────────────────────────────────────────
 
+
 def test_decode_features_shape():
     model = _make_model()
     model.eval()
@@ -115,19 +118,21 @@ def test_decode_adjacency_shape():
 
 # ── Full forward ──────────────────────────────────────────────────────────────
 
+
 def test_forward_output_shapes():
     model = _make_model()
     model.eval()
     x, ei, ea, bm, cond = _make_graph()
     with torch.no_grad():
         z, x_hat, adj_hat, attn = model(x, ei, ea, cond, bm)
-    assert z.shape    == (N_NODES, LATENT)
+    assert z.shape == (N_NODES, LATENT)
     assert x_hat.shape == (N_NODES, IN_FEAT)
     assert adj_hat.shape == (ei.size(1),)
     assert "encoder" in attn and "decoder" in attn
 
 
 # ── Loss functions ────────────────────────────────────────────────────────────
+
 
 def test_feature_reconstruction_loss_perfect():
     x = torch.randn(N_NODES, IN_FEAT)
@@ -148,17 +153,17 @@ def test_adjacency_reconstruction_loss_all_correct():
     adj = torch.eye(N)
     # predictions very close to targets (but not exactly 0/1 for BCE)
     preds = adj.clamp(0.001, 0.999)
-    mask  = torch.ones(N, N, dtype=torch.bool)
-    loss  = adjacency_reconstruction_loss(adj, preds, mask)
+    mask = torch.ones(N, N, dtype=torch.bool)
+    loss = adjacency_reconstruction_loss(adj, preds, mask)
     assert loss.item() < 0.01
 
 
 def test_adjacency_reconstruction_loss_mask_respected():
     """Masked-out entries should not contribute to the loss."""
     N = 4
-    adj   = torch.zeros(N, N)
+    adj = torch.zeros(N, N)
     preds = torch.ones(N, N) * 0.5
-    mask  = torch.zeros(N, N, dtype=torch.bool)
+    mask = torch.zeros(N, N, dtype=torch.bool)
     # Only unmask the diagonal (which is 0 in adj, 0.5 in preds)
     for i in range(N):
         mask[i, i] = True
@@ -172,22 +177,22 @@ def test_adjacency_reconstruction_loss_mask_respected():
 def test_total_loss_fn_weight_zero():
     """adj_loss_weight=0 should reduce total_loss to just the feature loss."""
     N = 4
-    x     = torch.randn(N, IN_FEAT)
+    x = torch.randn(N, IN_FEAT)
     x_hat = torch.randn(N, IN_FEAT)
-    adj   = torch.zeros(N, N)
+    adj = torch.zeros(N, N)
     preds = torch.ones(N, N) * 0.5
-    mask  = torch.ones(N, N, dtype=torch.bool)
+    mask = torch.ones(N, N, dtype=torch.bool)
     total, feat, adj_loss = total_loss_fn(x, x_hat, adj, preds, mask, adj_loss_weight=0.0)
     assert total.item() == pytest.approx(feat.item(), abs=1e-6)
 
 
 def test_total_loss_fn_components():
     N = 4
-    x     = torch.randn(N, IN_FEAT)
+    x = torch.randn(N, IN_FEAT)
     x_hat = torch.randn(N, IN_FEAT)
-    adj   = torch.zeros(N, N)
+    adj = torch.zeros(N, N)
     preds = torch.ones(N, N) * 0.5
-    mask  = torch.ones(N, N, dtype=torch.bool)
+    mask = torch.ones(N, N, dtype=torch.bool)
     w = 2.0
     total, feat, adj_loss = total_loss_fn(x, x_hat, adj, preds, mask, adj_loss_weight=w)
     expected = feat + w * adj_loss

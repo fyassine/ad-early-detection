@@ -154,8 +154,7 @@ def main(
 
     masker = build_masker()
     correlation_measure = ConnectivityMeasure(
-        kind="correlation",
-        standardize=cast(Any, "zscore_sample")
+        kind="correlation", standardize=cast(Any, "zscore_sample")
     )
     processed_count = 0
     skipped_count = 0
@@ -209,18 +208,29 @@ def main(
     if tqdm is not None:
         progress.close()
 
-    print(
-        f"Finished: processed={processed_count}, skipped={skipped_count}, failed={failed_count}"
-    )
+    print(f"Finished: processed={processed_count}, skipped={skipped_count}, failed={failed_count}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--fmri-root", type=Path, default=DEFAULT_FMRI_ROOT,
-                        help="Root directory containing sub-*/ directories with BOLD NIfTI files")
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR,
-                        help="Flat output directory for .npz matrix files")
-    parser.add_argument("--overwrite", action="store_true",
-                        help="Re-compute matrices that already exist in output-dir")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--fmri-root",
+        type=Path,
+        default=DEFAULT_FMRI_ROOT,
+        help="Root directory containing sub-*/ directories with BOLD NIfTI files",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=DEFAULT_OUTPUT_DIR,
+        help="Flat output directory for .npz matrix files",
+    )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Re-compute matrices that already exist in output-dir",
+    )
     args = parser.parse_args()
     main(fmri_root=args.fmri_root, output_dir=args.output_dir, overwrite=args.overwrite)

@@ -17,6 +17,7 @@ functions that need them, so importing this module is cheap and never fails when
 optional backend is absent — the caller gets a clear error only if it actually uses
 that path.
 """
+
 from __future__ import annotations
 
 import json
@@ -103,8 +104,9 @@ def embed_2d(
         from sklearn.manifold import TSNE
 
         perplexity = min(30, max(5, (X.shape[0] - 1) // 3))
-        return TSNE(n_components=2, random_state=seed, perplexity=perplexity,
-                    init="pca").fit_transform(X)
+        return TSNE(
+            n_components=2, random_state=seed, perplexity=perplexity, init="pca"
+        ).fit_transform(X)
     if method == "umap":
         try:
             import umap  # type: ignore
@@ -114,8 +116,9 @@ def embed_2d(
                 "(pip install -r CLASSIFIER/requirements-explain.txt) or use method='pca'."
             ) from exc
         n_neighbors = int(min(n_neighbors, max(2, X.shape[0] - 1)))
-        reducer = umap.UMAP(n_components=2, n_neighbors=n_neighbors, min_dist=min_dist,
-                            random_state=seed)
+        reducer = umap.UMAP(
+            n_components=2, n_neighbors=n_neighbors, min_dist=min_dist, random_state=seed
+        )
         return reducer.fit_transform(X)
     raise ValueError(f"Unknown embed_2d method {method!r}; expected umap | pca | tsne.")
 
@@ -146,9 +149,16 @@ def plot_latent_space(
     for lab in (0, 1):
         m = labels == lab
         if m.any():
-            ax.scatter(emb2d[m, 0], emb2d[m, 1], s=28, alpha=0.7,
-                       color=palette[lab], label=f"{names[lab]} (n={int(m.sum())})",
-                       edgecolors="white", linewidths=0.4)
+            ax.scatter(
+                emb2d[m, 0],
+                emb2d[m, 1],
+                s=28,
+                alpha=0.7,
+                color=palette[lab],
+                label=f"{names[lab]} (n={int(m.sum())})",
+                edgecolors="white",
+                linewidths=0.4,
+            )
 
     cents: Dict[int, np.ndarray] = {}
     if centroids:
@@ -157,13 +167,24 @@ def plot_latent_space(
             if m.any():
                 c = emb2d[m].mean(0)
                 cents[lab] = c
-                ax.scatter(*c, s=320, marker="X", color=palette[lab],
-                           edgecolors="black", linewidths=1.3, zorder=5)
+                ax.scatter(
+                    *c,
+                    s=320,
+                    marker="X",
+                    color=palette[lab],
+                    edgecolors="black",
+                    linewidths=1.3,
+                    zorder=5,
+                )
 
     if conversion_axis and 0 in cents and 1 in cents:
         c0, c1 = cents[0], cents[1]
-        ax.annotate("", xy=tuple(c1), xytext=tuple(c0),
-                    arrowprops=dict(arrowstyle="-|>", color="black", lw=2.0))
+        ax.annotate(
+            "",
+            xy=tuple(c1),
+            xytext=tuple(c0),
+            arrowprops=dict(arrowstyle="-|>", color="black", lw=2.0),
+        )
         ax.text(*(0.5 * (c0 + c1)), "  conversion axis", fontsize=9, style="italic")
 
     ax.set_xlabel(f"{method_name}-1")
@@ -211,9 +232,7 @@ def plot_region_importance_glassbrain(
     coords = atlas_coords(atlas)
     mag = _normalize_importance(values)
     if coords.shape[0] != mag.shape[0]:
-        raise ValueError(
-            f"values length {mag.shape[0]} != atlas size {coords.shape[0]}."
-        )
+        raise ValueError(f"values length {mag.shape[0]} != atlas size {coords.shape[0]}.")
     keep = np.argsort(mag)[::-1][: int(top_k)]
     fig = plt.figure(figsize=(11, 4))
     nlplt.plot_markers(
@@ -265,8 +284,7 @@ def plot_region_importance_bars(
     for n in present:
         idx = [i for i, nn in enumerate(networks) if nn == n]
         per_net.append(float(np.mean(mag[idx])) if idx else 0.0)
-    ax.bar(range(len(present)), per_net,
-           color=[NETWORK_COLORS.get(n, "#888888") for n in present])
+    ax.bar(range(len(present)), per_net, color=[NETWORK_COLORS.get(n, "#888888") for n in present])
     ax.set_xticks(range(len(present)))
     ax.set_xticklabels(present, rotation=30, ha="right", fontsize=8)
     ax.set_ylabel("mean normalised importance")
@@ -334,8 +352,15 @@ def plot_classification_diagnostics(
     cm = confusion_matrix(targets, preds, labels=[0, 1])
     im = ax.imshow(cm, cmap="Blues")
     for (i, j), v in np.ndenumerate(cm):
-        ax.text(j, i, str(int(v)), ha="center", va="center",
-                color="white" if v > cm.max() / 2 else "black", fontsize=12)
+        ax.text(
+            j,
+            i,
+            str(int(v)),
+            ha="center",
+            va="center",
+            color="white" if v > cm.max() / 2 else "black",
+            fontsize=12,
+        )
     ax.set_xticks([0, 1])
     ax.set_xticklabels(["stable", "converter"])
     ax.set_yticks([0, 1])

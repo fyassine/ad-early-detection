@@ -27,7 +27,7 @@ COLUMN_ALIASES = {
     "prmdiag": "diagnosis_code",
     # Visit
     "visit": "visit",
-    "viscode": "visit",   # ADNI VISCODE / VISCODE2 alternate names
+    "viscode": "visit",  # ADNI VISCODE / VISCODE2 alternate names
     "viscode2": "visit",
     "visnam": "visit_name",
     "visdate": "visit_date",
@@ -151,7 +151,11 @@ def load_metadata(file_path: str, cohort: Optional[str] = None) -> pd.DataFrame:
     return df
 
 
-def compute_metadata_metrics(df: pd.DataFrame, scan_subjects: Optional[list[str]] = None, scan_subject_counts: Optional[dict] = None) -> dict:
+def compute_metadata_metrics(
+    df: pd.DataFrame,
+    scan_subjects: Optional[list[str]] = None,
+    scan_subject_counts: Optional[dict] = None,
+) -> dict:
     """
     Compute aggregate metrics from a metadata DataFrame.
     If scan_subjects is provided, also compute metrics for the scan subset.
@@ -184,7 +188,9 @@ def compute_metadata_metrics(df: pd.DataFrame, scan_subjects: Optional[list[str]
                 diag = str(row.get("diagnosis", "unknown"))
                 n_scans = scan_subject_counts.get(sid, 0)
                 diag_scans[diag] = diag_scans.get(diag, 0) + n_scans
-            metrics["diagnosis_scans"] = {k: int(diag_scans.get(k, 0)) for k in metrics["diagnosis_distribution"]}
+            metrics["diagnosis_scans"] = {
+                k: int(diag_scans.get(k, 0)) for k in metrics["diagnosis_distribution"]
+            }
 
         if "visit" in df.columns and "subject_id" in baseline.columns:
             visit_df = df[["subject_id", "visit"]].copy()
@@ -199,7 +205,9 @@ def compute_metadata_metrics(df: pd.DataFrame, scan_subjects: Optional[list[str]
                 diag = subj_diag.get(row["subject_id"], "unknown")
                 diag_visits[diag] = diag_visits.get(diag, 0) + 1
 
-            metrics["diagnosis_visits"] = {k: int(diag_visits.get(k, 0)) for k in metrics["diagnosis_distribution"]}
+            metrics["diagnosis_visits"] = {
+                k: int(diag_visits.get(k, 0)) for k in metrics["diagnosis_distribution"]
+            }
 
     # Sex
     if "sex" in df.columns:
@@ -272,7 +280,7 @@ def compute_metadata_metrics(df: pd.DataFrame, scan_subjects: Optional[list[str]
             metrics["apoe4_zygosity_distribution"] = {
                 "non-carrier": int(zyg_counts.get("non-carrier", 0)),
                 "heterozygous": int(zyg_counts.get("heterozygous", 0)),
-                "homozygous":  int(zyg_counts.get("homozygous", 0)),
+                "homozygous": int(zyg_counts.get("homozygous", 0)),
             }
 
     # Train/Val/Test split
@@ -306,18 +314,34 @@ def compute_metadata_metrics(df: pd.DataFrame, scan_subjects: Optional[list[str]
     # Patient table: baseline row + longitudinal visit info
     if "subject_id" in df.columns:
         import re as _re
+
         baseline = _get_baseline(df)
-        table_cols = [c for c in ["subject_id", "sex", "age", "diagnosis", "mmse_total",
-                                   "cdr_global", "apoe", "split"] if c in baseline.columns]
+        table_cols = [
+            c
+            for c in [
+                "subject_id",
+                "sex",
+                "age",
+                "diagnosis",
+                "mmse_total",
+                "cdr_global",
+                "apoe",
+                "split",
+            ]
+            if c in baseline.columns
+        ]
         table_df = baseline[table_cols].copy()
 
         # Add per-patient visit list and count from full df
         if "visit" in df.columns:
+
             def _visit_list(sid):
                 rows = df[df["subject_id"] == sid]["visit"].dropna().unique().tolist()
+
                 def vkey(v):
                     m = _re.search(r"(\d+)", str(v))
                     return int(m.group(1)) if m else 9999
+
                 rows.sort(key=vkey)
                 return rows
 
@@ -401,7 +425,16 @@ def _compute_age(birth_str) -> Optional[float]:
 
 def _classify_apoe4_zygosity(apoe_str: str) -> str:
     """Return 'non-carrier', 'heterozygous', or 'homozygous' for an APOE genotype string."""
-    s = str(apoe_str).strip().lower().replace("e", "").replace("ε", "").replace("/", "").replace("\\", "").replace(" ", "")
+    s = (
+        str(apoe_str)
+        .strip()
+        .lower()
+        .replace("e", "")
+        .replace("ε", "")
+        .replace("/", "")
+        .replace("\\", "")
+        .replace(" ", "")
+    )
     count = s.count("4")
     if count >= 2:
         return "homozygous"
@@ -416,6 +449,7 @@ def _safe_int(val) -> Optional[int]:
         return int(float(val))
     except (ValueError, TypeError):
         return None
+
 
 def get_patient_clinical_trajectory(df: pd.DataFrame, subject_id: str) -> dict:
     """
@@ -435,7 +469,7 @@ def get_patient_clinical_trajectory(df: pd.DataFrame, subject_id: str) -> dict:
     # onto a single sentinel.
     def visit_sort_key(v):
         v = str(v).upper()
-        if v.startswith('M'):
+        if v.startswith("M"):
             try:
                 return (0, int(v[1:]))
             except ValueError:
@@ -481,11 +515,11 @@ def get_patient_clinical_trajectory(df: pd.DataFrame, subject_id: str) -> dict:
         "cognitive": {
             "mmse": _extract_col("mmse_total"),
             "cdr": _extract_col("cdr_global"),
-            "pacc5": _extract_col("pacc5")
+            "pacc5": _extract_col("pacc5"),
         },
         "csf": {
             "abeta42": _extract_col("abeta42"),
             "tau": _extract_col("total_tau"),
-            "ptau": _extract_col("p_tau")
-        }
+            "ptau": _extract_col("p_tau"),
+        },
     }

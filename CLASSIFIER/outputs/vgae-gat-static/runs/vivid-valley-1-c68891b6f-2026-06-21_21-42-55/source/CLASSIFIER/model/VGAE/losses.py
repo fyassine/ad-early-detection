@@ -5,6 +5,7 @@ block-diagonal padding is ignored identically); the variational term is the
 standard KL divergence between the approximate posterior ``N(mu, exp(logvar))``
 and the unit Gaussian prior, normalised per node.
 """
+
 from __future__ import annotations
 
 import torch

@@ -130,7 +130,7 @@ def system_segregation(corr_matrix: np.ndarray, n_parcels: int = 200) -> Optiona
         sub = corr_matrix[np.ix_(idxi, idxi)]
         tri = np.triu_indices(len(idxi), k=1)
         within_vals.append(float(np.nanmean(sub[tri])))
-        for nj in names[i + 1:]:
+        for nj in names[i + 1 :]:
             idxj = grouped[nj]
             block = corr_matrix[np.ix_(idxi, idxj)]
             between_vals.append(float(np.nanmean(block)))

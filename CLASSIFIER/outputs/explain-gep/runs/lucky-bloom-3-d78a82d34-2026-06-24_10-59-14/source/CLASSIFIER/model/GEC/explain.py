@@ -14,6 +14,7 @@ frozen-GAAE pooled latents (``[z_1..z_Nmax ‖ Δt ‖ mask]``). Its explanation
 The per-latent-dim importance is what the explain adapter back-projects through the
 frozen GAAE encoder to obtain a brain-region map.
 """
+
 from __future__ import annotations
 
 from typing import Dict
@@ -74,12 +75,12 @@ def unpack_flat_importance(
     offset = max_visits * k
     dt = None
     if use_time_delta:
-        dt = importance[offset: offset + max_visits]
+        dt = importance[offset : offset + max_visits]
         per_visit = per_visit + dt  # Δt importance belongs to its visit
         offset += max_visits
     # visit-mask block (if present) is structural padding info — folded into per_visit.
     if append_visit_mask:
-        mask_imp = importance[offset: offset + max_visits]
+        mask_imp = importance[offset : offset + max_visits]
         per_visit = per_visit + mask_imp
 
     def _norm(a):

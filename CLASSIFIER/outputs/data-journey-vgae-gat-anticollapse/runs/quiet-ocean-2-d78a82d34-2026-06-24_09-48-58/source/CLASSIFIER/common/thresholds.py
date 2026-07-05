@@ -13,6 +13,7 @@ predictions only — NEVER the test set. Test-set evaluation must reuse the
 validation-derived threshold. ``select_oof_threshold`` defaults to Best-F1, which is
 the notebook default per ``.claude/rules/notebooks.md`` (option 1 / Enter).
 """
+
 from __future__ import annotations
 
 from typing import Tuple

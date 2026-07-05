@@ -16,12 +16,12 @@ class LogRegCVResult:
     fold_sensitivities: list[float] = field(default_factory=list)
     fold_specificities: list[float] = field(default_factory=list)
     fold_f1s: list[float] = field(default_factory=list)
-    best_fold: int = 0                 # 0-indexed
+    best_fold: int = 0  # 0-indexed
     best_val_auc: float = 0.0
     best_scaler: StandardScaler | None = None
     best_clf: LogisticRegression | None = None
-    youden_threshold: float = 0.5      # from best fold, val-derived — never test
-    f1_oof_threshold: float = 0.5      # F1-optimal on OOF predictions
+    youden_threshold: float = 0.5  # from best fold, val-derived — never test
+    f1_oof_threshold: float = 0.5  # F1-optimal on OOF predictions
     oof_probs: np.ndarray = field(default_factory=lambda: np.array([]))
     oof_targets: np.ndarray = field(default_factory=lambda: np.array([]))
 
@@ -98,7 +98,9 @@ def train_logreg_cv(
     if len(np.unique(result.oof_targets)) >= 2:
         _, _, oof_thrs = roc_curve(result.oof_targets, result.oof_probs)
         oof_f1s = [
-            float(f1_score(result.oof_targets, (result.oof_probs >= t).astype(int), zero_division=0))
+            float(
+                f1_score(result.oof_targets, (result.oof_probs >= t).astype(int), zero_division=0)
+            )
             for t in oof_thrs
         ]
         result.f1_oof_threshold = float(oof_thrs[int(np.argmax(oof_f1s))])

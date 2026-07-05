@@ -19,6 +19,7 @@ it contains:
 This module deliberately has no model-specific imports — callers pass explicit
 file paths and config dicts.
 """
+
 from __future__ import annotations
 
 import json
@@ -107,6 +108,7 @@ def capture_git_provenance(repo_root: str | os.PathLike = _REPO_ROOT) -> Dict[st
     Never raises: a failed ``git`` call must not abort a long training run at
     save time. On failure the ``error`` key explains why.
     """
+
     def _git(*args: str) -> Optional[str]:
         try:
             out = subprocess.run(
@@ -123,8 +125,12 @@ def capture_git_provenance(repo_root: str | os.PathLike = _REPO_ROOT) -> Dict[st
 
     commit = _git("rev-parse", "HEAD")
     if commit is None:
-        return {"commit": None, "branch": None, "dirty": None,
-                "error": "git unavailable or not a repository"}
+        return {
+            "commit": None,
+            "branch": None,
+            "dirty": None,
+            "error": "git unavailable or not a repository",
+        }
     status = _git("status", "--porcelain")
     return {
         "commit": commit,
@@ -136,6 +142,7 @@ def capture_git_provenance(repo_root: str | os.PathLike = _REPO_ROOT) -> Dict[st
 
 def capture_env() -> Dict[str, Optional[str]]:
     """Capture interpreter + key library versions (best-effort)."""
+
     def _ver(mod: str) -> Optional[str]:
         try:
             return __import__(mod).__version__

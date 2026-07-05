@@ -20,6 +20,7 @@ its pooled latents), so the region-level explanations live here:
 These operate on a single PyG ``Data`` (one visit graph). The encoder is used without
 FiLM conditioning, matching how GEC / GELSTM pool embeddings (``enc.encode(x, ei, ea)``).
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -116,12 +117,10 @@ def reconstruction_quality(x, x_recon) -> Dict[str, Any]:
     a = np.asarray(x, dtype=float)
     b = np.asarray(x_recon, dtype=float)
     if a.shape != b.shape:
-        raise ValueError(
-            f"reconstruction_quality: shape mismatch x{a.shape} vs x_recon{b.shape}."
-        )
+        raise ValueError(f"reconstruction_quality: shape mismatch x{a.shape} vs x_recon{b.shape}.")
     residual = b - a
     flat_a, flat_b = a.ravel(), b.ravel()
-    mse = float(np.mean(residual ** 2))
+    mse = float(np.mean(residual**2))
     rmse = float(np.sqrt(mse))
     mae = float(np.mean(np.abs(residual)))
     input_std = float(flat_a.std())
@@ -132,7 +131,7 @@ def reconstruction_quality(x, x_recon) -> Dict[str, Any]:
         else float("nan")
     )
     ss_tot = float(np.sum((flat_a - flat_a.mean()) ** 2))
-    r2 = float(1.0 - np.sum(residual ** 2) / ss_tot) if ss_tot > 0 else float("nan")
+    r2 = float(1.0 - np.sum(residual**2) / ss_tot) if ss_tot > 0 else float("nan")
 
     if np.isnan(pearson_r):
         quality = "undefined"
@@ -147,8 +146,13 @@ def reconstruction_quality(x, x_recon) -> Dict[str, Any]:
 
     return {
         "residual": residual,
-        "mse": mse, "rmse": rmse, "mae": mae, "nrmse": nrmse,
-        "pearson_r": pearson_r, "r2": r2, "quality": quality,
+        "mse": mse,
+        "rmse": rmse,
+        "mae": mae,
+        "nrmse": nrmse,
+        "pearson_r": pearson_r,
+        "r2": r2,
+        "quality": quality,
     }
 
 
@@ -170,8 +174,14 @@ def trace_forward(model, data, *, device="cpu") -> Dict[str, Any]:
 
     captured: Dict[str, torch.Tensor] = {}
     handles = []
-    for name in ("encoder_gat1", "encoder_gat2", "encoder_gat3",
-                 "decoder_gat1", "decoder_gat2", "decoder_gat3"):
+    for name in (
+        "encoder_gat1",
+        "encoder_gat2",
+        "encoder_gat3",
+        "decoder_gat1",
+        "decoder_gat2",
+        "decoder_gat3",
+    ):
         layer = getattr(model, name)
 
         def _hook(_mod, _inp, out, _name=name):
@@ -297,8 +307,13 @@ def gnn_explain_latent_dim(
 
 @torch.no_grad()
 def steer_along_axis(
-    model, data, w_hat: np.ndarray, sigma: float, *,
-    scales: Optional[np.ndarray] = None, device="cpu",
+    model,
+    data,
+    w_hat: np.ndarray,
+    sigma: float,
+    *,
+    scales: Optional[np.ndarray] = None,
+    device="cpu",
 ) -> Dict[str, Any]:
     """Steer one subject's baseline graph along a disease-axis direction and decode.
 
@@ -326,12 +341,17 @@ def steer_along_axis(
         shift = float(scale * sigma) * w.unsqueeze(0)
         fc = model.decode_features(z + shift, ei, ea).cpu().numpy()
         steered_fcs.append(fc)
-    return {"scales": np.asarray(scales, dtype=float), "baseline_fc": baseline_fc,
-            "steered_fcs": steered_fcs}
+    return {
+        "scales": np.asarray(scales, dtype=float),
+        "baseline_fc": baseline_fc,
+        "steered_fcs": steered_fcs,
+    }
 
 
 @torch.no_grad()
-def reconstruct_sorted_by_score(model, subjects: List[Dict[str, Any]], *, device="cpu") -> Dict[str, Any]:
+def reconstruct_sorted_by_score(
+    model, subjects: List[Dict[str, Any]], *, device="cpu"
+) -> Dict[str, Any]:
     """Encode+decode each subject's baseline graph; pair with its disease score/label.
 
     ``subjects`` is a list of ``{"data": <PyG Data>, "score": float, "label": int}``
