@@ -1,0 +1,10 @@
+Mode: run
+Source v0: /mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__v0__/fmri
+Source v2 longitudinal: /mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__v2__/longitudinal
+Destination: /mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__v1__/fmri
+Planned copies: 1014
+Copied files: 792
+Skipped (v0 duplicate subjects keep-first): 57
+Skipped (destination already exists): 222
+Errors: 0
+Manifest: /mnt/e/fyassine/ad-early-detection/DATA/DELCODE/__v1__/_artifacts_/delcode_v1_copy_manifest_20260317_002118.tsv

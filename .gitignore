@@ -52,8 +52,45 @@ ABI/outputs/**
 !.vscode/tasks.json
 !.vscode/git-on-close.sh
 
-DATA/*
-!DATA/src/
+DATA/**
+!DATA/**/
+!DATA/**/__artifacts__/**
+!DATA/**/_artifacts/**
+!DATA/**/src/**
+!DATA/**/*.md
+
+# Ignore all subject data directories (recursive)
+**/sub-*/
+
+# Ignore pipeline output, staging, caching and raw data directories under DATA
+DATA/**/mriqc_out/
+DATA/**/fmriprep_out/
+DATA/**/staging/
+DATA/**/BIDS/
+DATA/**/original/
+DATA/**/SAMPLE/
+DATA/**/.cache/
+DATA/**/logs/
+DATA/**/env/
+
+# Re-ignore heavy data/binary/log files in unignored DATA subfolders
+DATA/**/*.csv
+DATA/**/*.xlsx
+DATA/**/*.xls
+DATA/**/*.pkl
+DATA/**/*.npz
+DATA/**/*.nii.gz
+DATA/**/*.nii
+DATA/**/*.mat
+DATA/**/*.pth
+DATA/**/*.log
+DATA/**/*.sif
+DATA/**/__pycache__/
+DATA/**/*.py[cod]
+
+# External / nested repositories
+Brain-TokenGT/
+
 node_modules/
 **/node_modules/
 dist/
@@ -72,14 +109,14 @@ DASHBOARD/frontend/dist/
 logs/
 
 # vendored third-party toolbox (code only; atlas/data files re-downloadable from upstream)
-DATA/src/processing/subcortex/**/*.nii
-DATA/src/processing/subcortex/**/*.mat
-DATA/src/processing/subcortex/**/*.gii
-DATA/src/processing/subcortex/**/*.jpg
-DATA/src/processing/subcortex/**/*.jpeg
-DATA/src/processing/subcortex/**/*.JPG
-DATA/src/processing/subcortex/**/*.png
-DATA/src/processing/subcortex/**/*.pptx
-DATA/src/processing/subcortex/**/*.xlsx
-DATA/src/processing/subcortex/**/*.pdf
-DATA/src/processing/subcortex/**/license.txt
+**/subcortex/**/*.nii
+**/subcortex/**/*.mat
+**/subcortex/**/*.gii
+**/subcortex/**/*.jpg
+**/subcortex/**/*.jpeg
+**/subcortex/**/*.JPG
+**/subcortex/**/*.png
+**/subcortex/**/*.pptx
+**/subcortex/**/*.xlsx
+**/subcortex/**/*.pdf
+**/subcortex/**/license.txt

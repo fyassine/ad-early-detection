@@ -1,0 +1,20 @@
+# Credentials — never commit
+.env
+
+# Logs (written to project root logs/adni-download/<timestamp>/)
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Temporary download/test files
+*.zip
+*.tmp
+
+# Screenshots and HTML dumps from inspect/ scripts
+inspect/screenshots/
+inspect/test_download/
+download/test_download/
+screenshots/

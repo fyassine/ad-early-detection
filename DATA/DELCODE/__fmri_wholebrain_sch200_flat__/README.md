@@ -1,0 +1,1 @@
+contains all scans from all subjects (so far only conveters and non-converters) (no stratification)
