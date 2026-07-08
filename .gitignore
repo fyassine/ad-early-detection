@@ -3,6 +3,7 @@
 .env
 .venv/
 **/.venv/
+DATA/ADNI/.loni_profile/
 **/wandb/
 **/checkpoints/
 
