@@ -523,46 +523,87 @@ def local_image_ids(zip_dir: Path, nifti_dir: Path) -> set[int]:
 # ── Save raw DICOM ZIP ─────────────────────────────────────────────────────────
 
 
-def save_dicom_zip(zip_path: Path, output_dir: Path) -> tuple[int, Path] | None:
+def _member_ids(name: str) -> tuple[str | None, int | None]:
+    """(subject_id, image_id) encoded in one zip member's internal LONI path
+    (ADNI/{subject_id}/.../I{image_id}/*.dcm), or (None, None) if absent."""
+    subject_id = None
+    image_id = None
+    for part in Path(name).parts:
+        if image_id is None:
+            m = re.match(r"^I(\d+)$", part)
+            if m:
+                image_id = int(m.group(1))
+        if subject_id is None:
+            m = re.match(r"^(\d{3}_S_\d{4})$", part)
+            if m:
+                subject_id = m.group(1)
+    return subject_id, image_id
+
+
+def save_dicom_zip(zip_path: Path, output_dir: Path) -> list[tuple[int, Path]]:
     """
     Identify the LONI image_id (I{image_id} dir) and ADNI subject_id
-    (NNN_S_NNNN) from zip_path's internal paths, then move the raw ZIP to
-    output_dir/{subject_id}_{image_id}.zip (flat, no per-subject
-    subdirectories — same naming convention as extract_niftis). Returns
-    (image_id, dest), or None if either id couldn't be determined from the
-    archive's internal paths.
+    (NNN_S_NNNN) for every member of zip_path from its internal paths, then
+    save to output_dir/{subject_id}_{image_id}.zip (flat, no per-subject
+    subdirectories — same naming convention as extract_niftis).
+
+    A batch download (batch_size > 1) packs several images into one LONI
+    "1-CLICK" archive, so a zip is split into one output file per distinct
+    (subject_id, image_id) found among its members rather than trusting just
+    the first member — the previous behaviour silently discarded every image
+    but the first under a single misleading filename. Single-image zips (the
+    common case — the per-image jar downloader always produces these) take
+    the fast move-instead-of-recompress path.
+
+    Returns (image_id, dest) for every image saved (empty if none of the
+    zip's members had an identifiable subject/image_id).
     """
-    image_id = None
-    subject_id = None
     with zipfile.ZipFile(zip_path, "r") as zf:
+        members_by_image: dict[tuple[str, int], list[str]] = {}
         for name in zf.namelist():
-            for part in Path(name).parts:
-                if image_id is None:
-                    m = re.match(r"^I(\d+)$", part)
-                    if m:
-                        image_id = int(m.group(1))
-                if subject_id is None:
-                    m = re.match(r"^(\d{3}_S_\d{4})$", part)
-                    if m:
-                        subject_id = m.group(1)
-            if image_id is not None and subject_id is not None:
-                break
+            subject_id, image_id = _member_ids(name)
+            if subject_id is None or image_id is None:
+                continue
+            members_by_image.setdefault((subject_id, image_id), []).append(name)
 
-    if image_id is None or subject_id is None:
-        log(
-            f"  ! Could not identify subject/image_id in {zip_path.name} "
-            f"(subject={subject_id!r}, image_id={image_id!r})", Colors.YELLOW,
-        )
-        return None
+        if not members_by_image:
+            log(f"  ! Could not identify any subject/image_id in {zip_path.name}", Colors.YELLOW)
+            return []
 
-    dest = output_dir / f"{subject_id}_{image_id}.zip"
-    if dest.exists():
-        log(f"  ↳ skip {image_id} (already exists)", Colors.YELLOW)
-        zip_path.unlink(missing_ok=True)
-    else:
-        shutil.move(str(zip_path), str(dest))
-        log(f"  ✓ {image_id} → {dest}", Colors.GREEN)
-    return (image_id, dest)
+        if len(members_by_image) == 1:
+            (subject_id, image_id), _ = next(iter(members_by_image.items()))
+            dest = output_dir / f"{subject_id}_{image_id}.zip"
+            saved_single = [(image_id, dest)]
+        else:
+            log(
+                f"  ↳ {zip_path.name} bundles {len(members_by_image)} images "
+                f"(batch download) — splitting into per-image zips", Colors.CYAN,
+            )
+            saved: list[tuple[int, Path]] = []
+            for (subject_id, image_id), member_names in members_by_image.items():
+                dest = output_dir / f"{subject_id}_{image_id}.zip"
+                if dest.exists():
+                    log(f"  ↳ skip {image_id} (already exists)", Colors.YELLOW)
+                    saved.append((image_id, dest))
+                    continue
+                with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as out_zf:
+                    for name in member_names:
+                        out_zf.writestr(name, zf.read(name))
+                log(f"  ✓ {image_id} → {dest}", Colors.GREEN)
+                saved.append((image_id, dest))
+
+    if len(members_by_image) == 1:
+        (image_id, dest) = saved_single[0]
+        if dest.exists():
+            log(f"  ↳ skip {image_id} (already exists)", Colors.YELLOW)
+            zip_path.unlink(missing_ok=True)
+        else:
+            shutil.move(str(zip_path), str(dest))
+            log(f"  ✓ {image_id} → {dest}", Colors.GREEN)
+        return saved_single
+
+    zip_path.unlink(missing_ok=True)
+    return saved
 
 
 # ── Extract NIfTIs (defined but unused — kept for possible future re-enabling) ──
@@ -854,8 +895,8 @@ async def run(args: argparse.Namespace) -> None:
             consecutive_failures = 0
 
             saved = save_dicom_zip(tmp_zip, output_dir)
-            if saved is not None:
-                total_ok += 1
+            if saved:
+                total_ok += len(saved)
             else:
                 total_fail += args.batch_size
 

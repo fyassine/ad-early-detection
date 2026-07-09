@@ -601,7 +601,7 @@ async def run(args: argparse.Namespace) -> None:
                 size_mb = zip_path.stat().st_size / 1e6
                 log(f"  ↳ downloaded {size_mb:.1f} MB → {zip_path.name}", Colors.GREEN)
                 saved = save_dicom_zip(zip_path, output_dir)
-                if saved is None:
+                if not saved:
                     fails += 1
                 else:
                     done += 1
