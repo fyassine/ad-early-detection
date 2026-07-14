@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=core-rad
+#SBATCH --account=core-rad-fni
 #SBATCH --job-name=postprocessing_all_sessions
 #SBATCH --nodes=1
 #SBATCH --partition=jobs-cpu

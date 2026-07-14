@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=core-rad
+#SBATCH --account=core-rad-fni
 #SBATCH --job-name=fmriprep_non-converter_all
 #SBATCH --nodes=1
 #SBATCH --partition=jobs-cpu
@@ -15,10 +15,10 @@
 INPUT_BASE=/data2/core-rad-fni/Delcode_faschmit/data/non-converter_BIDS
 OUTPUT_BASE=/data2/core-rad-fni/Delcode_faschmit/outputs/non-converter
 WORK_DIR=/data2/core-rad-fni/Delcode_faschmit/data/workdir
-FS_LICENSE=/data2/core-rad/swunderl/freesurfer/license.txt
+FS_LICENSE=/data2/core-rad-fni/swunderl/freesurfer/license.txt
 
 # Path to the fmriprep Singularity image
-FMRIPREP_SIMG=/data2/core-rad/smoteval/images/fmriprep-23.0.2.simg
+FMRIPREP_SIMG=/data2/core-rad-fni/smoteval/images/fmriprep-23.0.2.simg
 
 # Get the list of subject directories
 ALL_SUBJECT_PATHS=($(ls -d ${INPUT_BASE}/M*/sub-*))

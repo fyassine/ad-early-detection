@@ -20,7 +20,12 @@
 # runs dcm2niix itself.
 #
 # Usage:
-#   bash run_fritz_pipeline.sh [--dataset oasis3|adni|both] [--dry-run]
+#   bash run_fritz_pipeline.sh [--dataset oasis3|adni|both] [--dry-run] [--limit N]
+#
+# --limit N organizes only the first N subjects (sorted) into a separate
+# "_smoketest"-suffixed local BIDS dir and CORE dataset name (e.g. "oasis3"
+# -> "oasis3_smoketest"), so a smoke test never touches the real dataset's
+# local output or remote CORE tree.
 #
 # Requirements (Fritz):
 #   - FSL 6.0.7 (already installed; $FSLDIR must be set) — fslmerge/fslnvols
@@ -56,25 +61,41 @@ ADNI_BIDS="${REPO_ROOT}/DATA/ADNI/BIDS"
 DATASET_DESC_TEMPLATE="$(dirname "$0")/dataset_description.json"
 
 # Logs
-LOG_DIR="${REPO_ROOT}/DATA/PREPROCESSING/logs"
+LOG_DIR="${REPO_ROOT}/DATA/PREPROCESSING/logs/fritz_pipeline"
 LOG_FILE="${LOG_DIR}/fritz_pipeline_$(date +%Y%m%d_%H%M%S).log"
 
 # ─── CORE rsync target ───────────────────────────────────────────────────────
 CORE_USER="flakhal"
 CORE_HOST="HOST"                       # SSH alias; add to ~/.ssh/config
-CORE_DEST="/home/flakhal/ad-early-detection/BIDS"
+# flakhal has no write access to /data2/core-rad-fni/Delcode_faschmit/ (probed
+# 2026-07-06, see DATA/PREPROCESSING/src/logs/probe_report.txt — copies into
+# that tree came back permission denied). Everything lives under the CORE
+# home dir instead; src/core/*.slurm read fMRIPrep input from the matching
+# path under /home/flakhal/preprocessing/. Overridable via CORE_DEST in .env.
+CORE_DEST="${CORE_DEST:-/home/flakhal/preprocessing/data}"
 
 # ─── Parse arguments ─────────────────────────────────────────────────────────
 DATASET="both"
 DRY_RUN=false
+LIMIT=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --dataset) DATASET="${2,,}"; shift 2 ;;
         --dry-run) DRY_RUN=true; shift ;;
+        --limit) LIMIT="$2"; shift 2 ;;
         *) echo "Unknown argument: $1"; exit 1 ;;
     esac
 done
+
+# When --limit is set, this is a smoke test: organize only the first N
+# subjects (sorted) into a separate "_smoketest"-suffixed local BIDS dir and
+# CORE dataset name, so it never mixes with the real dataset's local output
+# or remote CORE tree.
+SMOKETEST_SUFFIX=""
+if [[ -n "$LIMIT" ]]; then
+    SMOKETEST_SUFFIX="_smoketest"
+fi
 
 if [[ "$DATASET" != "oasis3" && "$DATASET" != "adni" && "$DATASET" != "both" ]]; then
     echo "ERROR: --dataset must be oasis3, adni, or both" >&2
@@ -90,6 +111,29 @@ die() { log "ERROR: $*"; exit 1; }
 
 require_tool() {
     command -v "$1" &>/dev/null || die "'$1' not found. Please install it first."
+}
+
+# Extract the BIDS task label from a *_bold.nii.gz filename. Falls back to
+# "rest" for the handful of legacy files that carry no _task- entity, so they
+# still group together instead of being dropped.
+bold_task_label() {
+    local base; base=$(basename "$1")
+    if [[ "$base" == *_task-* ]]; then
+        base=${base#*_task-}
+        printf '%s' "${base%%_*}"
+    else
+        printf 'rest'
+    fi
+}
+
+# Whitespace-free "d1xd2xd3" spatial-dimension signature of a NIfTI. Used to
+# refuse merging runs from acquisitions with different matrix sizes (fslmerge
+# aborts on a size mismatch, which under `set -e` would kill the whole run).
+bold_spatial_dims() {
+    printf '%sx%sx%s' \
+        "$(fslval "$1" dim1 | tr -d '[:space:]')" \
+        "$(fslval "$1" dim2 | tr -d '[:space:]')" \
+        "$(fslval "$1" dim3 | tr -d '[:space:]')"
 }
 
 # ─── Step 2.2 helper: copy dataset_description.json ──────────────────────────
@@ -130,12 +174,20 @@ organize_bids_dataset() {
     log "════════════════════════════════════════"
 
     require_tool fslmerge
+    require_tool fslnvols
+    require_tool fslval
 
     mkdir -p "$bids_dir"
 
     local n_subjects=0 n_merged=0 n_skipped=0 n_anat_copied=0
 
-    for sub_dir in "$raw_dir"/sub-*; do
+    mapfile -t sub_dirs < <(find "$raw_dir" -maxdepth 1 -mindepth 1 -type d -name "sub-*" | sort)
+    if [[ -n "$LIMIT" ]]; then
+        sub_dirs=("${sub_dirs[@]:0:$LIMIT}")
+        log "  --limit ${LIMIT}: restricting to ${#sub_dirs[@]} subject(s)"
+    fi
+
+    for sub_dir in "${sub_dirs[@]}"; do
         [[ -d "$sub_dir" ]] || continue
         sub_id=$(basename "$sub_dir")
 
@@ -147,59 +199,89 @@ organize_bids_dataset() {
 
             local has_func=false has_anat=false
 
-            # ── Step 1.2: detect and merge multiple BOLD runs ─────────────────
+            # ── Step 1.2: group BOLD runs by task label, then merge ───────────
+            # A session may hold several distinct task acquisitions with
+            # different spatial dimensions (OASIS3: task-restingstate +
+            # task-restingstateMB4, task-rest + task-testrest, ... — ~11.5% of
+            # subjects). Merging across task labels makes fslmerge abort on a
+            # size mismatch and, under `set -e`, kills the whole run. So merge
+            # only within a task label, and within that only runs whose spatial
+            # dims match the first valid run — the dim guard also drops
+            # SBRef/truncated scans mislabeled as bold runs (a few ADNI
+            # sessions). Each task label yields its own BIDS output; downstream
+            # fMRIPrep processes them all. Mixed/dropped sessions are catalogued
+            # in DATA/PREPROCESSING/README.md for later curation.
             if [[ -d "$func_dir" ]]; then
                 out_func="${bids_dir}/${sub_id}/${ses_id}/func"
 
-                # Collect runs sorted; run-01 is often incomplete (few volumes)
-                mapfile -t runs < <(find "$func_dir" -name "*_run-*_bold.nii.gz" | sort)
-                mapfile -t jsons < <(find "$func_dir" -name "*_run-*_bold.json" | sort)
+                mapfile -t all_bold < <(find "$func_dir" -name "*_bold.nii.gz" | sort)
 
-                if [[ ${#runs[@]} -gt 1 ]]; then
-                    # Filter out runs with very few volumes (< 50 TRs = likely localiser)
-                    valid_runs=()
-                    for r in "${runs[@]}"; do
-                        nvols=$(fslnvols "$r" 2>/dev/null || echo 0)
-                        if [[ "$nvols" -ge 50 ]]; then
-                            valid_runs+=("$r")
-                        else
-                            log "  Skipping short run ($nvols vols): $(basename "$r")"
+                if [[ ${#all_bold[@]} -eq 0 ]]; then
+                    log "  WARNING: No BOLD files found in $func_dir."
+                    ((n_skipped++)) || true
+                else
+                    # Distinct task labels in first-seen order.
+                    declare -A _seen_task=()
+                    task_labels=()
+                    for b in "${all_bold[@]}"; do
+                        task=$(bold_task_label "$b")
+                        if [[ -z "${_seen_task[$task]:-}" ]]; then
+                            _seen_task[$task]=1
+                            task_labels+=("$task")
                         fi
                     done
+                    unset _seen_task
 
-                    if [[ ${#valid_runs[@]} -gt 1 ]]; then
+                    for task in "${task_labels[@]}"; do
+                        # Volume-filter this task's runs (< 50 TRs = localiser/SBRef).
+                        valid_runs=()
+                        for b in "${all_bold[@]}"; do
+                            [[ "$(bold_task_label "$b")" == "$task" ]] || continue
+                            nvols=$(fslnvols "$b" 2>/dev/null || echo 0)
+                            if [[ "$nvols" -ge 50 ]]; then
+                                valid_runs+=("$b")
+                            else
+                                log "  Skipping short run ($nvols vols): $(basename "$b")"
+                            fi
+                        done
+                        if [[ ${#valid_runs[@]} -eq 0 ]]; then
+                            log "  No valid runs for ${sub_id}/${ses_id} task-${task}; skipping"
+                            ((n_skipped++)) || true
+                            continue
+                        fi
+
+                        # Keep only runs matching the first valid run's spatial
+                        # dims so a mismatched acquisition cannot abort fslmerge.
+                        ref_dims=$(bold_spatial_dims "${valid_runs[0]}")
+                        matched=()
+                        for b in "${valid_runs[@]}"; do
+                            d=$(bold_spatial_dims "$b")
+                            if [[ "$d" == "$ref_dims" ]]; then
+                                matched+=("$b")
+                            else
+                                log "  Skipping dim-mismatched run (${d} vs ${ref_dims}): $(basename "$b")"
+                            fi
+                        done
+
                         mkdir -p "$out_func"
-                        merged="${out_func}/${sub_id}_${ses_id}_task-rest_bold.nii.gz"
-                        log "  Merging ${#valid_runs[@]} runs → $(basename "$merged")"
-                        fslmerge -t "$merged" "${valid_runs[@]}"
-                        first_json="${jsons[0]}"
-                        [[ -f "$first_json" ]] && cp "$first_json" \
-                            "${out_func}/${sub_id}_${ses_id}_task-rest_bold.json"
+                        out_bold="${out_func}/${sub_id}_${ses_id}_task-${task}_bold.nii.gz"
+                        if [[ ${#matched[@]} -gt 1 ]]; then
+                            log "  Merging ${#matched[@]} runs (task-${task}) → $(basename "$out_bold")"
+                            if ! fslmerge -t "$out_bold" "${matched[@]}"; then
+                                log "  WARNING: fslmerge failed for ${sub_id}/${ses_id} task-${task}; skipping"
+                                rm -f "$out_bold"
+                                ((n_skipped++)) || true
+                                continue
+                            fi
+                        else
+                            log "  Single valid run for ${sub_id}/${ses_id} task-${task}; copying as-is"
+                            cp "${matched[0]}" "$out_bold"
+                        fi
+                        src_json="${matched[0]%.nii.gz}.json"
+                        [[ -f "$src_json" ]] && cp "$src_json" "${out_bold%.nii.gz}.json"
                         ((n_merged++)) || true
                         has_func=true
-                    elif [[ ${#valid_runs[@]} -eq 1 ]]; then
-                        mkdir -p "$out_func"
-                        log "  Only one valid run; copying as-is"
-                        cp "${valid_runs[0]}" \
-                            "${out_func}/${sub_id}_${ses_id}_task-rest_bold.nii.gz"
-                        [[ -f "${jsons[0]}" ]] && cp "${jsons[0]}" \
-                            "${out_func}/${sub_id}_${ses_id}_task-rest_bold.json"
-                        has_func=true
-                    else
-                        log "  WARNING: No valid runs found for ${sub_id}/${ses_id}."
-                        ((n_skipped++)) || true
-                    fi
-                elif [[ ${#runs[@]} -eq 1 ]]; then
-                    mkdir -p "$out_func"
-                    log "  Single run for ${sub_id}/${ses_id}, copying as-is"
-                    cp "${runs[0]}" \
-                        "${out_func}/${sub_id}_${ses_id}_task-rest_bold.nii.gz"
-                    [[ -f "${jsons[0]:-}" ]] && cp "${jsons[0]}" \
-                        "${out_func}/${sub_id}_${ses_id}_task-rest_bold.json"
-                    has_func=true
-                else
-                    log "  WARNING: No BOLD runs found in $func_dir."
-                    ((n_skipped++)) || true
+                    done
                 fi
             fi
 
@@ -286,13 +368,13 @@ log " Log     : $LOG_FILE"
 log "================================================================"
 
 if [[ "$DATASET" == "oasis3" || "$DATASET" == "both" ]]; then
-    organize_bids_dataset "$OASIS3_RAW" "$OASIS3_BIDS" "OASIS3"
-    rsync_to_core "$OASIS3_BIDS" "OASIS3"
+    organize_bids_dataset "$OASIS3_RAW" "${OASIS3_BIDS}${SMOKETEST_SUFFIX}" "OASIS3"
+    rsync_to_core "${OASIS3_BIDS}${SMOKETEST_SUFFIX}" "oasis3${SMOKETEST_SUFFIX}"
 fi
 
 if [[ "$DATASET" == "adni" || "$DATASET" == "both" ]]; then
-    organize_bids_dataset "$ADNI_RAW" "$ADNI_BIDS" "ADNI"
-    rsync_to_core "$ADNI_BIDS" "ADNI"
+    organize_bids_dataset "$ADNI_RAW" "${ADNI_BIDS}${SMOKETEST_SUFFIX}" "ADNI"
+    rsync_to_core "${ADNI_BIDS}${SMOKETEST_SUFFIX}" "adni${SMOKETEST_SUFFIX}"
 fi
 
 log "================================================================"

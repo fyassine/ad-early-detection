@@ -11,12 +11,13 @@ This directory contains the clinical, cognitive, and demographic metadata spread
 
 ### A. [OASIS3_UDSb4_cdr.csv](file:///mnt/e/fyassine/ad-early-detection/DATA/OASIS3/__metadata__/OASIS3_UDSb4_cdr.csv)
 Contains the Clinical Dementia Rating (CDR) scores, MMSE scores, and clinician diagnoses.
-* **`CDRTOT` (Global CDR Score):** Primary indicator of cognitive status:
+* **`CDRTOT` (Global CDR Score):** Dementia *staging* scale (not a clinician diagnosis):
   * `0.0` = Cognitively Normal / Healthy
-  * `0.5` = Very Mild Dementia / Mild Cognitive Impairment (MCI)
+  * `0.5` = Very Mild Dementia
   * `1.0` = Mild Dementia
   * `2.0` = Moderate Dementia
   * `3.0` = Severe Dementia
+  * Note: CDR is a severity stage, **not** an MCI/AD diagnosis. The clinician diagnosis lives in `dx1` / `dx1_code`.
 * **`CDRSUM` (CDR Sum of Boxes):** The sum of the sub-domain scores (memory, orientation, judgment, etc.), offering a more granular scale of impairment (ranging from 0 to 18).
 * **`MMSE`:** Mini-Mental State Examination score (range: 0 to 30, lower scores indicate worse impairment).
 * **`dx1_code` & `dx1` (Clinician Primary Diagnosis):**
@@ -45,73 +46,7 @@ In the OASIS-3 dataset (from the Knight ADRC cohort), diagnostic decisions are d
 
 ---
 
-## 3. How to Identify Diagnostic Cohorts Longitudinally
-
-Since OASIS-3 contains longitudinal observations, participants are classified into cohorts based on their progression profiles. Below is a Python code snippet that loads the clinical database and extracts the four key patient groups:
-
-### Python Script to Filter Cohorts
-You can run this python script directly in the repository to identify the cohorts:
-
-```python
-import pandas as pd
-
-# Load clinical metadata
-df = pd.read_csv("DATA/OASIS3/__metadata__/OASIS3_UDSb4_cdr.csv")
-
-# Sort chronologically per subject
-df = df.sort_values(by=["OASISID", "days_to_visit"])
-
-# Group by subject and find their diagnostic history
-cohorts = {
-    "sHC": [],   # Stable Healthy Controls
-    "sMCI": [],  # Stable MCI
-    "cMCI": [],  # MCI Converters to AD
-    "sAD": [],   # Stable/Progressive AD Dementia
-}
-
-for subj, group in df.groupby("OASISID"):
-    cdrs = group["CDRTOT"].dropna().tolist()
-    dxs = group["dx1"].dropna().tolist()
-    
-    if not cdrs:
-        continue
-        
-    # Check if subject ever had an AD/DAT diagnosis
-    ever_ad = any("AD" in str(d) or "DAT" in str(d) for d in dxs)
-    ever_demented = any(c >= 1.0 for c in cdrs)
-    
-    first_cdr = cdrs[0]
-    
-    # 1. Stable Healthy Control (sHC) - always CDR = 0.0
-    if all(c == 0.0 for c in cdrs):
-        cohorts["sHC"].append(subj)
-        
-    # 2. MCI Converter to AD (cMCI) - starts at CDR 0.5, later progresses to dementia with AD diagnosis
-    elif first_cdr == 0.5 and ever_demented and ever_ad:
-        cohorts["cMCI"].append(subj)
-        
-    # 3. Stable MCI (sMCI) - has CDR 0.5, but never progresses beyond CDR 0.5 and never gets AD diagnosis
-    elif 0.5 in cdrs and not ever_demented and not ever_ad:
-        cohorts["sMCI"].append(subj)
-        
-    # 4. Stable/Progressive AD Dementia (sAD) - enters study with CDR >= 0.5 and AD diagnosis
-    elif first_cdr >= 0.5 and ever_ad:
-        cohorts["sAD"].append(subj)
-
-# Print Summary Counts
-for group_name, subjects in cohorts.items():
-    print(f"{group_name}: {len(subjects)} subjects")
-```
-
-### Cohort Distributions in the Dataset:
-* **Stable Healthy Control (sHC):** `755` subjects
-* **Stable/Progressive AD Dementia (sAD):** `191` subjects
-* **MCI Converter to AD (cMCI):** `150` subjects
-* **Stable MCI (sMCI):** `131` subjects
-
----
-
-## 4. Reading and Matching Clinical Data to MRI/PET scans
+## 3. Reading and Matching Clinical Data to MRI/PET scans
 
 All dates are tracked relative to the participant's study entry using a **"days from entry"** label (`dXXXX`):
 * `OAS30001_MR_d0129`: MRI session for subject `OAS30001` occurring `129` days after entry.
