@@ -36,6 +36,7 @@ yaml files, etc. — is project code and **must** be included in searches.
 @.claude/rules/checkpoints.md
 @.claude/rules/notebooks.md
 @.claude/rules/ci.md
+@.claude/rules/credentials.md
 
 ## Reference docs (load on demand — do not embed)
 
