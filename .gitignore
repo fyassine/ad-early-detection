@@ -88,6 +88,11 @@ DATA/**/*.sif
 DATA/**/__pycache__/
 DATA/**/*.py[cod]
 
+# Downloaded IDA/LONI archives and their in-progress .download staging dirs
+# (multi-GB, re-downloadable) — they land inside otherwise-tracked __artifacts__/
+DATA/**/*.zip
+DATA/**/*.zip.download/
+
 # External / nested repositories
 Brain-TokenGT/
 
@@ -100,6 +105,9 @@ coverage/
 **/.cache/
 .idea/
 .DS_Store
+# macOS AppleDouble resource forks, created when archives are unpacked on a Mac
+._*
+.coverage
 CHECKS.json
 
 **/*.nii.gz
