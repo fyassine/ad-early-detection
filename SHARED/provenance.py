@@ -32,7 +32,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]  # .../ad-early-detection
+# This file is <repo>/SHARED/provenance.py, so parents[1] is the repo root.
+# (Was parents[2], which resolved one level ABOVE the repo — git commands then
+# ran outside the work tree and every run recorded commit=None.)
+_REPO_ROOT = Path(__file__).resolve().parents[1]  # .../ad-early-detection
 _DATA_DIR_RE = re.compile(r"^__(?P<inner>.+)__$")
 
 
