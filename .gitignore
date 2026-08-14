@@ -66,6 +66,7 @@ DATA/**
 !DATA/**/_artifacts/**
 !DATA/**/src/**
 !DATA/**/*.md
+!DATA/**/*.sh
 
 # Ignore all subject data directories (recursive)
 **/sub-*/
