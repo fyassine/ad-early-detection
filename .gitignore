@@ -18,6 +18,14 @@ CLASSIFIER/outputs/**
 !CLASSIFIER/outputs/**/*.json
 !CLASSIFIER/outputs/**/*.split
 
+# --- BRAINTOKENGT outputs ---
+BRAINTOKENGT/outputs/**
+!BRAINTOKENGT/outputs/**/
+!BRAINTOKENGT/outputs/**/.gitkeep
+!BRAINTOKENGT/outputs/**/*.ipynb
+!BRAINTOKENGT/outputs/**/latest
+!BRAINTOKENGT/outputs/**/*.json
+
 # --- PROGNOSER outputs ---
 PROGNOSER/outputs/**
 !PROGNOSER/outputs/**/

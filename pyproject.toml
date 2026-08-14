@@ -8,6 +8,8 @@ extend-exclude = [
     "ABI/dci_scripts",
     "DCI",
     "DATA/DELCODE",
+    # Frozen per-run code snapshots — historical copies, never linted.
+    "BRAINTOKENGT/outputs",
     ".venv",
     "**/wandb",
     "**/_embeddings_cache_",
@@ -40,6 +42,7 @@ extend-exclude = '''
       | DCI
       | \.venv
       | DATA/DELCODE
+      | BRAINTOKENGT/outputs
     )/
   | ABI/comp_corr_v1\.py
 )

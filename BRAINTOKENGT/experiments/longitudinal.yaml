@@ -1,0 +1,53 @@
+# Brain-TokenGT competitor baseline — DELCODE MCI vs. converter.
+#
+# Protocol is identical to CLASSIFIER/experiments/longitudinal.yaml by construction:
+# the adapter reuses CLASSIFIER.common.crossval / thresholds / run_artifacts and the
+# same LongitudinalSubjectDataset. The only differences are the model and its
+# adjacency construction, which are properties of the method under comparison.
+#
+# When reporting the head-to-head, re-run the GELSTM entry with the SAME cohort
+# window (min_visits=2, max_visits=3) — see README.md §"Fair-comparison contract".
+experiments:
+  - id: braintokengt-smoke
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_smoke.json
+    threshold_mode: best-f1
+    wandb: false
+    notes: >-
+      Wiring smoke test — 12 subjects, 3 folds, 3 epochs. Metrics are meaningless;
+      this only proves the notebook, adapter, model and artifact schema run end to
+      end. Run this before the full cohort.
+
+  - id: braintokengt-delcode-whole-brain
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_delcode_whole_brain.json
+    threshold_mode: best-f1
+    notes: >-
+      PRIMARY competitor row. Brain-TokenGT exactly as released: binary edge
+      weights, mean-over-all-tokens readout, single attention head, GIVE frozen at
+      random init. Cohort restricted to the authors' regime (2-3 visits).
+
+  - id: braintokengt-delcode-whole-brain-repaired
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode.json
+    threshold_mode: best-f1
+    notes: >-
+      SECONDARY row. The four released-code defects repaired per the paper:
+      FC edge weights reach VEE (§2.2), [graph]-token readout (Fig. 1), the
+      configured head count is honoured, and GIVE is trainable. Report the better
+      of this and the as-released row as the competitor's score.
