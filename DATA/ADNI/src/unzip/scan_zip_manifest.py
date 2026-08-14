@@ -43,7 +43,7 @@ INTERNAL_DATE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})")
 
 # Reused from DATA/ADNI/src/download/download_adni_smri.py
 T1W_DESCRIPTION_RE = re.compile(r"MPRAGE|MP-RAGE|MP RAGE|SPGR|IR-SPGR|FSPGR|3D\s*T1", re.IGNORECASE)
-# Reused from DATA/PREPROCESSING/src/fritz/run_fritz_pipeline.sh's BOLD detection regex
+# Reused from DATA/PREPROCESSING/src/fritz/organize_bids.sh's BOLD detection regex
 BOLD_DESCRIPTION_RE = re.compile(r"rsfmri|fcmri|fmri|resting|bold|rest", re.IGNORECASE)
 
 OUTPUT_COLUMNS = [
@@ -114,7 +114,7 @@ def load_baselines(baselines_csv: Path) -> dict[str, str]:
 
 
 def to_bids_subject(subject_id: str) -> str:
-    """002_S_1261 -> sub-ADNI002S1261 (matches run_fritz_pipeline.sh's mapping)."""
+    """002_S_1261 -> sub-ADNI002S1261 (matches organize_bids.sh's mapping)."""
     return f"sub-ADNI{subject_id.replace('_', '')}"
 
 
@@ -211,7 +211,7 @@ def build_manifest_rows(
         run_label = ""
         # func always gets a run- suffix (even a lone acquisition), matching
         # DATA/OASIS3/__bold_and_smri__'s raw convention, which
-        # organize_bids_dataset() in run_fritz_pipeline.sh depends on via its
+        # organize_bids_dataset() in organize_bids.sh depends on via its
         # "*_run-*_bold.nii.gz" glob. anat only gets one when the session has
         # more than one T1w acquisition (also matches OASIS3's raw layout).
         if entry.scan_type == "func" or group_counts[key] > 1:
