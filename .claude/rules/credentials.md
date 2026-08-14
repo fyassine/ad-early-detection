@@ -8,7 +8,7 @@ documented here so that doesn't need rediscovering each session.
 
 | Variable | Host | Purpose |
 |----------|------|---------|
-| `CORE_USER` / `CORE_PASSWORD` / `CORE_HOST` | `core-mgm.med.uni-muenchen.de` | SSH/rsync to CORE HPC (fMRIPrep + postprocessing array jobs). `CORE_PASSWORD` is optional — omit for key-based auth. Read by `DATA/PREPROCESSING/src/fritz/*.sh`. |
+| `CORE_USER` / `CORE_PASSWORD` / `CORE_HOST` | `core-mgm.med.uni-muenchen.de` | SSH/rsync to CORE HPC (fMRIPrep + postprocessing array jobs). Key-based auth is the default for `DATA/PREPROCESSING/src/fritz/*.sh` — `CORE_PASSWORD` is ignored unless a script is passed `--use-password` (then `sshpass` is used). |
 | `LRZ_USER` / `LRZ_PASSWORD` / `LRZ_HOST` | `cool.hpc.lrz.de` | SSH/rsync/scp to LRZ HPC. Read by `DATA/DELCODE/src/transferring/*.py` (some scripts hardcode `di54lup@cool.hpc.lrz.de` as the default instead of reading the env var — check the script). |
 | `WANDB_API_KEY` / `WANDB_ENTITY` / `WANDB_PROJECT` | wandb.ai (external) | Experiment tracking, routed through `common/tracking.py` / `SHARED/tracking.py`. |
 | `NITRC_USERNAME` / `NITRC_PASSWORD` | nitrc.org (external) | NITRC data access. |

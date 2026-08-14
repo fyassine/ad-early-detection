@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 # =============================================================================
-# run_fritz_pipeline.sh
+# organize_bids.sh
 #
-# Runs preprocessing Steps 1–2 on Fritz for the AD Early Detection project.
+# Step 1 of the manual Fritz → CORE pipeline: organise raw NIfTI trees into
+# BIDS, locally on Fritz. This script is purely local — it never touches CORE.
+# Pushing the result is a separate, explicit step (push_bids_to_core.sh), so
+# the organized tree can be inspected before it ships. See
+# DATA/PREPROCESSING/pipeline-Fritz-CORE.md for the full step sequence.
+#
 # Both OASIS3 (DATA/OASIS3/__bold_and_smri__) and ADNI
 # (DATA/ADNI/__bold_and_smri__, built by DATA/ADNI/src/unzip/*.py before this
 # script runs) already share the same raw layout —
@@ -12,32 +17,24 @@
 #   Step 1.3  Remove empty anat/ dirs                [both, safety net]
 #   Step 2    Organise to BIDS (incl. copying anat/) [both]
 #   Step 2.2  Copy dataset_description.json         [both]
-#   Step →    rsync BIDS output to CORE             [both, unless --dry-run]
 #
-# ADNI's DICOM→NIfTI conversion (dcm2niix) now happens locally, before this
-# script ever runs, via DATA/ADNI/src/unzip/{build_visit_baselines,
-# scan_zip_manifest,convert_to_bids}.py — this script no longer unzips or
-# runs dcm2niix itself.
+# Output: DATA/<COHORT>/BIDS[_smoketest]/sub-*/ses-*/{anat,func}/
+#
+# ADNI's DICOM→NIfTI conversion (dcm2niix) happens locally, before this script
+# ever runs, via DATA/ADNI/src/unzip/{build_visit_baselines,scan_zip_manifest,
+# convert_to_bids}.py — this script does not unzip or run dcm2niix itself.
 #
 # Usage:
-#   bash run_fritz_pipeline.sh [--dataset oasis3|adni|both] [--dry-run] [--limit N]
+#   bash organize_bids.sh [--dataset oasis3|adni|both] [--limit N]
 #
 # --limit N organizes only the first N subjects (sorted) into a separate
-# "_smoketest"-suffixed local BIDS dir and CORE dataset name (e.g. "oasis3"
-# -> "oasis3_smoketest"), so a smoke test never touches the real dataset's
-# local output or remote CORE tree.
+# "_smoketest"-suffixed local BIDS dir (e.g. DATA/OASIS3/BIDS_smoketest), so a
+# smoke test never touches the real dataset's output. push_bids_to_core.sh
+# takes the same --limit N to ship it to the matching "_smoketest" CORE tree.
 #
 # Requirements (Fritz):
-#   - FSL 6.0.7 (already installed; $FSLDIR must be set) — fslmerge/fslnvols
-#     are used for both datasets.
-#   - SSH alias for CORE — The script uses `HOST` as the SSH hostname. Add
-#     this to `~/.ssh/config` on Fritz:
-#     ```
-#     Host HOST
-#         HostName srvcorem2.med.uni-muenchen.de
-#         User flakhal
-#     ```
-#     Ensure key-based SSH auth is set up (`ssh-copy-id flakhal@HOST`).
+#   - FSL 6.0.7 (already installed; $FSLDIR must be set) — fslmerge/fslnvols/
+#     fslval are used for both datasets.
 # =============================================================================
 
 set -euo pipefail
@@ -61,37 +58,24 @@ ADNI_BIDS="${REPO_ROOT}/DATA/ADNI/BIDS"
 DATASET_DESC_TEMPLATE="$(dirname "$0")/dataset_description.json"
 
 # Logs
-LOG_DIR="${REPO_ROOT}/DATA/PREPROCESSING/logs/fritz_pipeline"
-LOG_FILE="${LOG_DIR}/fritz_pipeline_$(date +%Y%m%d_%H%M%S).log"
-
-# ─── CORE rsync target ───────────────────────────────────────────────────────
-CORE_USER="flakhal"
-CORE_HOST="HOST"                       # SSH alias; add to ~/.ssh/config
-# flakhal has no write access to /data2/core-rad-fni/Delcode_faschmit/ (probed
-# 2026-07-06, see DATA/PREPROCESSING/src/logs/probe_report.txt — copies into
-# that tree came back permission denied). Everything lives under the CORE
-# home dir instead; src/core/*.slurm read fMRIPrep input from the matching
-# path under /home/flakhal/preprocessing/. Overridable via CORE_DEST in .env.
-CORE_DEST="${CORE_DEST:-/home/flakhal/preprocessing/data}"
+LOG_DIR="${REPO_ROOT}/DATA/PREPROCESSING/logs/organize_bids"
+LOG_FILE="${LOG_DIR}/organize_bids_$(date +%Y%m%d_%H%M%S).log"
 
 # ─── Parse arguments ─────────────────────────────────────────────────────────
 DATASET="both"
-DRY_RUN=false
 LIMIT=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --dataset) DATASET="${2,,}"; shift 2 ;;
-        --dry-run) DRY_RUN=true; shift ;;
         --limit) LIMIT="$2"; shift 2 ;;
         *) echo "Unknown argument: $1"; exit 1 ;;
     esac
 done
 
 # When --limit is set, this is a smoke test: organize only the first N
-# subjects (sorted) into a separate "_smoketest"-suffixed local BIDS dir and
-# CORE dataset name, so it never mixes with the real dataset's local output
-# or remote CORE tree.
+# subjects (sorted) into a separate "_smoketest"-suffixed local BIDS dir, so it
+# never mixes with the real dataset's output.
 SMOKETEST_SUFFIX=""
 if [[ -n "$LIMIT" ]]; then
     SMOKETEST_SUFFIX="_smoketest"
@@ -179,7 +163,7 @@ organize_bids_dataset() {
 
     mkdir -p "$bids_dir"
 
-    local n_subjects=0 n_merged=0 n_skipped=0 n_anat_copied=0
+    local n_subjects=0 n_merged=0 n_skipped=0 n_anat_copied=0 n_existing=0
 
     mapfile -t sub_dirs < <(find "$raw_dir" -maxdepth 1 -mindepth 1 -type d -name "sub-*" | sort)
     if [[ -n "$LIMIT" ]]; then
@@ -233,6 +217,25 @@ organize_bids_dataset() {
                     unset _seen_task
 
                     for task in "${task_labels[@]}"; do
+                        # ── Resume guard: skip a task whose output already exists ──
+                        # Re-running the script must not redo completed work. A
+                        # valid existing output (>= 50 vols, readable by fslnvols)
+                        # is left untouched; an incomplete one left behind by an
+                        # interrupted merge (unreadable or < 50 vols) is removed
+                        # and rebuilt.
+                        out_bold="${out_func}/${sub_id}_${ses_id}_task-${task}_bold.nii.gz"
+                        if [[ -f "$out_bold" ]]; then
+                            existing_vols=$(fslnvols "$out_bold" 2>/dev/null || echo 0)
+                            if [[ "$existing_vols" -ge 50 ]]; then
+                                log "  Exists (${existing_vols} vols), skipping: $(basename "$out_bold")"
+                                ((n_existing++)) || true
+                                has_func=true
+                                continue
+                            fi
+                            log "  Rebuilding incomplete output (${existing_vols} vols): $(basename "$out_bold")"
+                            rm -f "$out_bold" "${out_bold%.nii.gz}.json"
+                        fi
+
                         # Volume-filter this task's runs (< 50 TRs = localiser/SBRef).
                         valid_runs=()
                         for b in "${all_bold[@]}"; do
@@ -296,6 +299,12 @@ organize_bids_dataset() {
                     out_anat="${bids_dir}/${sub_id}/${ses_id}/anat"
                     mkdir -p "$out_anat"
                     for t1 in "${t1_files[@]}"; do
+                        dest="${out_anat}/$(basename "$t1")"
+                        if [[ -f "$dest" ]]; then
+                            log "  anat exists, skipping: $(basename "$t1")"
+                            ((n_existing++)) || true
+                            continue
+                        fi
                         cp "$t1" "$out_anat/"
                         json="${t1%.nii.gz}.json"
                         [[ -f "$json" ]] && cp "$json" "$out_anat/"
@@ -323,60 +332,26 @@ organize_bids_dataset() {
     # ── Step 2.2: dataset_description.json ────────────────────────────────────
     copy_dataset_description "$bids_dir"
 
-    log "${dataset_label} done — subjects: $n_subjects, func merged: $n_merged, func skipped: $n_skipped, anat files copied: $n_anat_copied"
-}
-
-# =============================================================================
-# RSYNC → CORE
-# =============================================================================
-rsync_to_core() {
-    local src="$1"
-    local dataset_name="$2"
-    local dest="${CORE_USER}@${CORE_HOST}:${CORE_DEST}/${dataset_name}/"
-
-    log "════════════════════════════════════════"
-    log "Rsyncing ${dataset_name} BIDS → CORE"
-    log "  Source : $src"
-    log "  Dest   : $dest"
-    log "════════════════════════════════════════"
-
-    if $DRY_RUN; then
-        log "(--dry-run) Would run: rsync -avuzh --progress \"$src/\" \"$dest\""
-        return
-    fi
-
-    # Create the remote directory first (rsync won't create nested dirs)
-    ssh "${CORE_USER}@${CORE_HOST}" "mkdir -p ${CORE_DEST}/${dataset_name}"
-
-    rsync -avuzh --progress \
-        --exclude="*.zip" \
-        "${src}/" \
-        "$dest" \
-        | tee -a "$LOG_FILE"
-
-    log "rsync ${dataset_name} complete."
+    log "${dataset_label} done — subjects: $n_subjects, func merged: $n_merged, func skipped: $n_skipped, anat files copied: $n_anat_copied, already-present (resumed): $n_existing"
 }
 
 # =============================================================================
 # MAIN
 # =============================================================================
 log "================================================================"
-log " Fritz preprocessing pipeline"
+log " Organize BIDS (Fritz, local only)"
 log " Dataset : $DATASET"
-log " Dry-run : $DRY_RUN"
 log " Log     : $LOG_FILE"
 log "================================================================"
 
 if [[ "$DATASET" == "oasis3" || "$DATASET" == "both" ]]; then
     organize_bids_dataset "$OASIS3_RAW" "${OASIS3_BIDS}${SMOKETEST_SUFFIX}" "OASIS3"
-    rsync_to_core "${OASIS3_BIDS}${SMOKETEST_SUFFIX}" "oasis3${SMOKETEST_SUFFIX}"
 fi
 
 if [[ "$DATASET" == "adni" || "$DATASET" == "both" ]]; then
     organize_bids_dataset "$ADNI_RAW" "${ADNI_BIDS}${SMOKETEST_SUFFIX}" "ADNI"
-    rsync_to_core "${ADNI_BIDS}${SMOKETEST_SUFFIX}" "adni${SMOKETEST_SUFFIX}"
 fi
 
 log "================================================================"
-log " All done!"
+log " All done! Next step: bash push_bids_to_core.sh --dataset ${DATASET}"
 log "================================================================"

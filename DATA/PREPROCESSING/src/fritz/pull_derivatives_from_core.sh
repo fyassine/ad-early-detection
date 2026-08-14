@@ -19,12 +19,13 @@
 # yet for a dataset, that half is skipped with a warning, not an error.
 #
 # Credentials: CORE_USER / CORE_HOST / CORE_PASSWORD are read from the
-# repo-root .env file. CORE_PASSWORD is optional — if unset, plain `ssh`/
-# `rsync` is used (key-based auth); if set, `sshpass` is used for
-# non-interactive auth.
+# repo-root .env file. Key-based SSH auth (plain `ssh`/`rsync`) is the
+# default and preferred method — CORE_PASSWORD in .env is ignored unless
+# --use-password is passed, in which case `sshpass` is used for
+# non-interactive password auth.
 #
 # Usage:
-#   bash pull_derivatives_from_core.sh [--dataset oasis3|adni|both] [--dry-run]
+#   bash pull_derivatives_from_core.sh [--dataset oasis3|adni|both] [--dry-run] [--use-password]
 # =============================================================================
 
 set -euo pipefail
@@ -53,11 +54,13 @@ LOG_FILE="${LOG_DIR}/pull_derivatives_$(date +%Y%m%d_%H%M%S).log"
 # ─── Parse arguments ────────────────────────────────────────────────────
 DATASET="both"
 DRY_RUN=false
+USE_PASSWORD=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --dataset) DATASET="${2,,}"; shift 2 ;;
         --dry-run) DRY_RUN=true; shift ;;
+        --use-password) USE_PASSWORD=true; shift ;;
         *) die "Unknown argument: $1" ;;
     esac
 done
@@ -75,16 +78,17 @@ if [[ -z "${CORE_USER:-}" || -z "${CORE_HOST:-}" ]]; then
     die "CORE_USER and CORE_HOST must be set in ${REPO_ROOT}/.env."
 fi
 
-# CORE outputs root — must match src/core/*.slurm's OUTPUT_BASE. flakhal has
-# no write access to /data2/core-rad-fni/Delcode_faschmit/ (probed
-# 2026-07-06, see DATA/PREPROCESSING/src/logs/probe_report.txt), so this
-# lives under the CORE home dir instead.
-CORE_OUTPUTS_ROOT="${CORE_OUTPUTS_ROOT:-/home/flakhal/preprocessing/outputs}"
+# CORE outputs root — must match src/core/*.slurm's OUTPUT_BASE. flakhal owns
+# /data2/core-rad-fni/flakhal/ (no per-user quota, unlike /home — see
+# DATA/PREPROCESSING/src/logs/probe_report.txt for the earlier 2026-07-06
+# probe against a colleague's tree).
+CORE_OUTPUTS_ROOT="${CORE_OUTPUTS_ROOT:-/data2/core-rad-fni/flakhal/preprocessing/outputs}"
 
 SSH_CMD=(ssh "${CORE_USER}@${CORE_HOST}")
 RSYNC_RSH="ssh"
-if [[ -n "${CORE_PASSWORD:-}" ]]; then
-    command -v sshpass &>/dev/null || die "CORE_PASSWORD is set in .env but 'sshpass' is not installed. Install it (apt install sshpass) or unset CORE_PASSWORD and use key-based auth instead."
+if $USE_PASSWORD; then
+    [[ -n "${CORE_PASSWORD:-}" ]] || die "--use-password was passed but CORE_PASSWORD is not set in ${REPO_ROOT}/.env."
+    command -v sshpass &>/dev/null || die "CORE_PASSWORD is set in .env but 'sshpass' is not installed. Install it (apt install sshpass) or drop --use-password and use key-based auth instead."
     SSH_CMD=(sshpass -p "${CORE_PASSWORD}" ssh "${CORE_USER}@${CORE_HOST}")
     RSYNC_RSH="sshpass -p ${CORE_PASSWORD} ssh"
 fi
