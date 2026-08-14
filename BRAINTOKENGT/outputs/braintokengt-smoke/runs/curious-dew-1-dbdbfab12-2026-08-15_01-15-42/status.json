@@ -1,0 +1,13 @@
+{
+  "experiment_id": "braintokengt-smoke",
+  "run_name": "curious-dew-1-dbdbfab12-2026-08-15_01-15-42",
+  "state": "done",
+  "pid": 2305658,
+  "started_at": "2026-08-15T01:15:47",
+  "git_commit": "dbdbfab12",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb",
+  "finished_at": "2026-08-15T01:16:52",
+  "exit_code": 0,
+  "duration_seconds": 63.8
+}

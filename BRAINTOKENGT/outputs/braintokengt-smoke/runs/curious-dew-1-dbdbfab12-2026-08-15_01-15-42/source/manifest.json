@@ -1,0 +1,17 @@
+{
+  "copied": [
+    "BRAINTOKENGT/model/transformer.py",
+    "BRAINTOKENGT/model/grcu.py",
+    "BRAINTOKENGT/model/sequences.py",
+    "BRAINTOKENGT/adapter.py",
+    "Brain-TokenGT/model_transformer.py",
+    "Brain-TokenGT/model_grcu.py"
+  ],
+  "missing": [],
+  "git": {
+    "commit": "dbdbfab12f95bef30fe6276def01b1e250cfaac7",
+    "short_commit": "dbdbfab12",
+    "branch": "main",
+    "dirty": true
+  }
+}
