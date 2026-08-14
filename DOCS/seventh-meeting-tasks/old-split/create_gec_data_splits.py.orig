@@ -1,0 +1,148 @@
+"""
+Create STRATIFIED train/validation/test splits for GEC model.
+Splits are done at patient level with stratification by cohort (MCI vs Converter).
+Each cohort maintains 60/20/20 ratio across train/val/test.
+All scans from same patient stay together.
+"""
+import json
+import re
+from pathlib import Path
+from sklearn.model_selection import train_test_split
+
+# Paths
+MCI_RAW_DIR = Path(
+    "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw")
+CONVERTER_RAW_DIR = Path(
+    "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw")
+OUTPUT_PATH = Path(
+    "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/gec_data_splits.json")
+
+RANDOM_SEED = 42
+
+
+def extract_patient_id(filename: str) -> str:
+    """Extract patient ID from filename"""
+    match = re.match(r'(sub-[a-f0-9]+)', filename)
+    return match.group(1) if match else None
+
+
+def get_patient_files(directory: Path) -> dict:
+    """Get all files grouped by patient ID"""
+    patient_files = {}
+    for f in directory.glob("*.npz"):
+        patient_id = extract_patient_id(f.name)
+        if patient_id:
+            if patient_id not in patient_files:
+                patient_files[patient_id] = []
+            patient_files[patient_id].append(f.name)
+    return patient_files
+
+
+def stratified_split(patient_ids: list, test_size: float, random_state: int):
+    """Split patient IDs with proper handling of small datasets"""
+    if len(patient_ids) < 2:
+        return patient_ids, []
+    return train_test_split(patient_ids, test_size=test_size, random_state=random_state)
+
+
+def main():
+    # Get patient files for each group
+    mci_patient_files = get_patient_files(MCI_RAW_DIR)
+    converter_patient_files = get_patient_files(CONVERTER_RAW_DIR)
+
+    print(f"MCI (non-converter) patients: {len(mci_patient_files)}")
+    print(f"Converter patients: {len(converter_patient_files)}")
+    print(
+        f"Total MCI files: {sum(len(v) for v in mci_patient_files.values())}")
+    print(
+        f"Total Converter files: {sum(len(v) for v in converter_patient_files.values())}")
+
+    # Stratified split for each cohort independently
+    mci_ids = list(mci_patient_files.keys())
+    converter_ids = list(converter_patient_files.keys())
+
+    # MCI: 60% train, 20% val, 20% test
+    mci_train, mci_temp = stratified_split(
+        mci_ids, test_size=0.4, random_state=RANDOM_SEED)
+    mci_val, mci_test = stratified_split(
+        mci_temp, test_size=0.5, random_state=RANDOM_SEED)
+
+    # Converter: 60% train, 20% val, 20% test
+    converter_train, converter_temp = stratified_split(
+        converter_ids, test_size=0.4, random_state=RANDOM_SEED)
+    converter_val, converter_test = stratified_split(
+        converter_temp, test_size=0.5, random_state=RANDOM_SEED)
+
+    # Create combined splits with cohort labels
+    splits = {
+        "train": {},
+        "validation": {},
+        "test": {},
+        "metadata": {
+            "random_seed": RANDOM_SEED,
+            "split_ratio": {"train": 0.6, "validation": 0.2, "test": 0.2},
+            "mci_raw_dir": str(MCI_RAW_DIR),
+            "converter_raw_dir": str(CONVERTER_RAW_DIR),
+            "stratified": True,
+            "description": "Stratified by cohort - each cohort has 60/20/20 distribution"
+        }
+    }
+
+    # Populate splits with cohort labels
+    for pid in mci_train:
+        splits["train"][pid] = {"files": mci_patient_files[pid],
+                                "cohort": "mci", "source_dir": str(MCI_RAW_DIR)}
+    for pid in converter_train:
+        splits["train"][pid] = {"files": converter_patient_files[pid],
+                                "cohort": "converter", "source_dir": str(CONVERTER_RAW_DIR)}
+
+    for pid in mci_val:
+        splits["validation"][pid] = {
+            "files": mci_patient_files[pid], "cohort": "mci", "source_dir": str(MCI_RAW_DIR)}
+    for pid in converter_val:
+        splits["validation"][pid] = {"files": converter_patient_files[pid],
+                                     "cohort": "converter", "source_dir": str(CONVERTER_RAW_DIR)}
+
+    for pid in mci_test:
+        splits["test"][pid] = {"files": mci_patient_files[pid],
+                               "cohort": "mci", "source_dir": str(MCI_RAW_DIR)}
+    for pid in converter_test:
+        splits["test"][pid] = {"files": converter_patient_files[pid],
+                               "cohort": "converter", "source_dir": str(CONVERTER_RAW_DIR)}
+
+    # Print summary with balance info
+    print("\n=== GEC Split Summary (Stratified) ===")
+    for split in ["train", "validation", "test"]:
+        mci_count = sum(
+            1 for v in splits[split].values() if v["cohort"] == "mci")
+        conv_count = sum(
+            1 for v in splits[split].values() if v["cohort"] == "converter")
+        mci_files = sum(len(v["files"])
+                        for v in splits[split].values() if v["cohort"] == "mci")
+        conv_files = sum(
+            len(v["files"]) for v in splits[split].values() if v["cohort"] == "converter")
+
+        total = mci_count + conv_count
+        mci_pct = (mci_count / total * 100) if total > 0 else 0
+        conv_pct = (conv_count / total * 100) if total > 0 else 0
+
+        print(f"\n{split.upper()}: {total} patients, {mci_files + conv_files} files")
+        print(
+            f"  - MCI: {mci_count} patients ({mci_pct:.1f}%), {mci_files} files")
+        print(
+            f"  - Converter: {conv_count} patients ({conv_pct:.1f}%), {conv_files} files")
+
+    # Verify stratification
+    print("\n=== Per-Cohort Distribution ===")
+    print(f"MCI: train={len(mci_train)} ({len(mci_train)/len(mci_ids)*100:.1f}%), val={len(mci_val)} ({len(mci_val)/len(mci_ids)*100:.1f}%), test={len(mci_test)} ({len(mci_test)/len(mci_ids)*100:.1f}%)")
+    print(f"Converter: train={len(converter_train)} ({len(converter_train)/len(converter_ids)*100:.1f}%), val={len(converter_val)} ({len(converter_val)/len(converter_ids)*100:.1f}%), test={len(converter_test)} ({len(converter_test)/len(converter_ids)*100:.1f}%)")
+
+    # Save to JSON
+    with open(OUTPUT_PATH, 'w') as f:
+        json.dump(splits, f, indent=2)
+
+    print(f"\nSplits saved to: {OUTPUT_PATH}")
+
+
+if __name__ == "__main__":
+    main()

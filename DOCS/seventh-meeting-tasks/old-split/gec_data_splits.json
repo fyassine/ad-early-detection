@@ -1,0 +1,3909 @@
+{
+  "train": {
+    "sub-7aafa1603": {
+      "files": [
+        "sub-7aafa1603_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-14ebb0892": {
+      "files": [
+        "sub-14ebb0892_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-472208b0d": {
+      "files": [
+        "sub-472208b0d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b72d5f82e": {
+      "files": [
+        "sub-b72d5f82e_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-68cd7922d": {
+      "files": [
+        "sub-68cd7922d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e25c67e62": {
+      "files": [
+        "sub-e25c67e62_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-849bda713": {
+      "files": [
+        "sub-849bda713_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1fdf4c4f0": {
+      "files": [
+        "sub-1fdf4c4f0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-383d33cde": {
+      "files": [
+        "sub-383d33cde_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-7c651b5d1": {
+      "files": [
+        "sub-7c651b5d1_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-917e375d7": {
+      "files": [
+        "sub-917e375d7_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-0475ae4e2": {
+      "files": [
+        "sub-0475ae4e2_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b38c31704": {
+      "files": [
+        "sub-b38c31704_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a8aa331e9": {
+      "files": [
+        "sub-a8aa331e9_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4f7987732": {
+      "files": [
+        "sub-4f7987732_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4bfeecc3c": {
+      "files": [
+        "sub-4bfeecc3c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-5b24624c7": {
+      "files": [
+        "sub-5b24624c7_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-60087d2cb": {
+      "files": [
+        "sub-60087d2cb_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-04cbb28bb": {
+      "files": [
+        "sub-04cbb28bb_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-aaa7ce134": {
+      "files": [
+        "sub-aaa7ce134_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-312c25423": {
+      "files": [
+        "sub-312c25423_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-278d3e09d": {
+      "files": [
+        "sub-278d3e09d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-16cf80a1a": {
+      "files": [
+        "sub-16cf80a1a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-bee0d61e0": {
+      "files": [
+        "sub-bee0d61e0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-545f96b8d": {
+      "files": [
+        "sub-545f96b8d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f32bc2d60": {
+      "files": [
+        "sub-f32bc2d60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b810dc0e2": {
+      "files": [
+        "sub-b810dc0e2_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-661b950b8": {
+      "files": [
+        "sub-661b950b8_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-8796c61b4": {
+      "files": [
+        "sub-8796c61b4_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a1fafda5c": {
+      "files": [
+        "sub-a1fafda5c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-700039701": {
+      "files": [
+        "sub-700039701_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-656984512": {
+      "files": [
+        "sub-656984512_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2a819e8ad": {
+      "files": [
+        "sub-2a819e8ad_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-80bbcecbf": {
+      "files": [
+        "sub-80bbcecbf_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-525b4a378": {
+      "files": [
+        "sub-525b4a378_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e61be844c": {
+      "files": [
+        "sub-e61be844c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4b03e5d97": {
+      "files": [
+        "sub-4b03e5d97_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-02943a4c1": {
+      "files": [
+        "sub-02943a4c1_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2bb2584c9": {
+      "files": [
+        "sub-2bb2584c9_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-cb10be838": {
+      "files": [
+        "sub-cb10be838_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-230352033": {
+      "files": [
+        "sub-230352033_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-84c08c5fc": {
+      "files": [
+        "sub-84c08c5fc_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3e1a36b3c": {
+      "files": [
+        "sub-3e1a36b3c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b96ebb5a0": {
+      "files": [
+        "sub-b96ebb5a0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2cf000503": {
+      "files": [
+        "sub-2cf000503_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-483dc63c6": {
+      "files": [
+        "sub-483dc63c6_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-bfd6663a2": {
+      "files": [
+        "sub-bfd6663a2_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f99a6aaaf": {
+      "files": [
+        "sub-f99a6aaaf_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-7af68aeaf": {
+      "files": [
+        "sub-7af68aeaf_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2d3e5ed79": {
+      "files": [
+        "sub-2d3e5ed79_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-8fcab4ced": {
+      "files": [
+        "sub-8fcab4ced_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2149bb4e4": {
+      "files": [
+        "sub-2149bb4e4_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-10fdf7a5d": {
+      "files": [
+        "sub-10fdf7a5d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1511cdf46": {
+      "files": [
+        "sub-1511cdf46_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4988f15b0": {
+      "files": [
+        "sub-4988f15b0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3df617f1f": {
+      "files": [
+        "sub-3df617f1f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-5e7ef3345": {
+      "files": [
+        "sub-5e7ef3345_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-682305c91": {
+      "files": [
+        "sub-682305c91_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-5e3855190": {
+      "files": [
+        "sub-5e3855190_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2103947a0": {
+      "files": [
+        "sub-2103947a0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-7bd198732": {
+      "files": [
+        "sub-7bd198732_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c861671b0": {
+      "files": [
+        "sub-c861671b0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-87ed0d2fc": {
+      "files": [
+        "sub-87ed0d2fc_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-ac8bbe7ab": {
+      "files": [
+        "sub-ac8bbe7ab_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-882f895e7": {
+      "files": [
+        "sub-882f895e7_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-ca4019f86": {
+      "files": [
+        "sub-ca4019f86_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d6bcc36ad": {
+      "files": [
+        "sub-d6bcc36ad_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3ec039a26": {
+      "files": [
+        "sub-3ec039a26_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4a51b3de1": {
+      "files": [
+        "sub-4a51b3de1_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c15a823ec": {
+      "files": [
+        "sub-c15a823ec_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-ff9236c78": {
+      "files": [
+        "sub-ff9236c78_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-71a2c827d": {
+      "files": [
+        "sub-71a2c827d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d82d8429a": {
+      "files": [
+        "sub-d82d8429a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-702458ca4": {
+      "files": [
+        "sub-702458ca4_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-40f93ffcb": {
+      "files": [
+        "sub-40f93ffcb_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d9e81b7d3": {
+      "files": [
+        "sub-d9e81b7d3_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e263d1fb3": {
+      "files": [
+        "sub-e263d1fb3_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-9c6048401": {
+      "files": [
+        "sub-9c6048401_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-ff41e4698": {
+      "files": [
+        "sub-ff41e4698_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-868782d46": {
+      "files": [
+        "sub-868782d46_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e0437d602": {
+      "files": [
+        "sub-e0437d602_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-86f776f8c": {
+      "files": [
+        "sub-86f776f8c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f328caa31": {
+      "files": [
+        "sub-f328caa31_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-396259d44": {
+      "files": [
+        "sub-396259d44_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-5b8f19076": {
+      "files": [
+        "sub-5b8f19076_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-8db32dd08": {
+      "files": [
+        "sub-8db32dd08_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a23dcc997": {
+      "files": [
+        "sub-a23dcc997_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d2602717c": {
+      "files": [
+        "sub-d2602717c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f87e7f5a1": {
+      "files": [
+        "sub-f87e7f5a1_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b3686755c": {
+      "files": [
+        "sub-b3686755c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-74a556abd": {
+      "files": [
+        "sub-74a556abd_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-933ac55af": {
+      "files": [
+        "sub-933ac55af_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-53199d407": {
+      "files": [
+        "sub-53199d407_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4417fee50": {
+      "files": [
+        "sub-4417fee50_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-65ed92d12": {
+      "files": [
+        "sub-65ed92d12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-83b01032e": {
+      "files": [
+        "sub-83b01032e_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-7491dabd4": {
+      "files": [
+        "sub-7491dabd4_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3bc223ffb": {
+      "files": [
+        "sub-3bc223ffb_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3d6e27a4b": {
+      "files": [
+        "sub-3d6e27a4b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a96a4d882": {
+      "files": [
+        "sub-a96a4d882_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-71a96742a": {
+      "files": [
+        "sub-71a96742a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-cd7da0b44": {
+      "files": [
+        "sub-cd7da0b44_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a1e1f109c": {
+      "files": [
+        "sub-a1e1f109c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-404309f27": {
+      "files": [
+        "sub-404309f27_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-9017e3b68": {
+      "files": [
+        "sub-9017e3b68_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d4c29fe4b": {
+      "files": [
+        "sub-d4c29fe4b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-35a1fd556": {
+      "files": [
+        "sub-35a1fd556_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-bb1c45a71": {
+      "files": [
+        "sub-bb1c45a71_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-99eea5fe3": {
+      "files": [
+        "sub-99eea5fe3_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4240c00eb": {
+      "files": [
+        "sub-4240c00eb_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b70f0a1ad": {
+      "files": [
+        "sub-b70f0a1ad_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1ad67792f": {
+      "files": [
+        "sub-1ad67792f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f0c028f76": {
+      "files": [
+        "sub-f0c028f76_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-20e2dc1eb": {
+      "files": [
+        "sub-20e2dc1eb_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-8eef0619f": {
+      "files": [
+        "sub-8eef0619f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-29326bde2": {
+      "files": [
+        "sub-29326bde2_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-79b8babcf": {
+      "files": [
+        "sub-79b8babcf_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6095d7514": {
+      "files": [
+        "sub-6095d7514_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-500ffc5ee": {
+      "files": [
+        "sub-500ffc5ee_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-05c1dface": {
+      "files": [
+        "sub-05c1dface_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-147dcf43b": {
+      "files": [
+        "sub-147dcf43b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-13488115b": {
+      "files": [
+        "sub-13488115b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-5610ccb68": {
+      "files": [
+        "sub-5610ccb68_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-47e5a2600": {
+      "files": [
+        "sub-47e5a2600_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-cb0806279": {
+      "files": [
+        "sub-cb0806279_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e43f9c4e4": {
+      "files": [
+        "sub-e43f9c4e4_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-70f88888b": {
+      "files": [
+        "sub-70f88888b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2c19fb96e": {
+      "files": [
+        "sub-2c19fb96e_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1d8dedd10": {
+      "files": [
+        "sub-1d8dedd10_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-77e426495": {
+      "files": [
+        "sub-77e426495_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c31b50775": {
+      "files": [
+        "sub-c31b50775_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d267c65db": {
+      "files": [
+        "sub-d267c65db_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-5b8721c3f": {
+      "files": [
+        "sub-5b8721c3f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-189de17e1": {
+      "files": [
+        "sub-189de17e1_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-da4d6bea3": {
+      "files": [
+        "sub-da4d6bea3_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6ad06a4f0": {
+      "files": [
+        "sub-6ad06a4f0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-8e41badca": {
+      "files": [
+        "sub-8e41badca_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-80caaf0cd": {
+      "files": [
+        "sub-80caaf0cd_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d514d6473": {
+      "files": [
+        "sub-d514d6473_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-03d146e52": {
+      "files": [
+        "sub-03d146e52_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-81c77c326": {
+      "files": [
+        "sub-81c77c326_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-eb3e1217f": {
+      "files": [
+        "sub-eb3e1217f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2ec63dcae": {
+      "files": [
+        "sub-2ec63dcae_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-720ccda20": {
+      "files": [
+        "sub-720ccda20_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-dbd62cd9f": {
+      "files": [
+        "sub-dbd62cd9f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6e7e5d905": {
+      "files": [
+        "sub-6e7e5d905_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-5659a73f6": {
+      "files": [
+        "sub-5659a73f6_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2d6cec24d": {
+      "files": [
+        "sub-2d6cec24d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-9489a87de": {
+      "files": [
+        "sub-9489a87de_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6fbf95db8": {
+      "files": [
+        "sub-6fbf95db8_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-20a4a536e": {
+      "files": [
+        "sub-20a4a536e_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1b447d8af": {
+      "files": [
+        "sub-1b447d8af_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-140172168": {
+      "files": [
+        "sub-140172168_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-86b7754e0": {
+      "files": [
+        "sub-86b7754e0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b15f3233e": {
+      "files": [
+        "sub-b15f3233e_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6719fe6ee": {
+      "files": [
+        "sub-6719fe6ee_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e8a745bab": {
+      "files": [
+        "sub-e8a745bab_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-12c8dab7c": {
+      "files": [
+        "sub-12c8dab7c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c4a685baa": {
+      "files": [
+        "sub-c4a685baa_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-74816bbba": {
+      "files": [
+        "sub-74816bbba_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-83e434fc7": {
+      "files": [
+        "sub-83e434fc7_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-922a0f6b5": {
+      "files": [
+        "sub-922a0f6b5_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-51fba730f": {
+      "files": [
+        "sub-51fba730f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-db6ea1382": {
+      "files": [
+        "sub-db6ea1382_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-46e288731": {
+      "files": [
+        "sub-46e288731_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-20b405c0d": {
+      "files": [
+        "sub-20b405c0d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-434050aec": {
+      "files": [
+        "sub-434050aec_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4093a08ea": {
+      "files": [
+        "sub-4093a08ea_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f579047a2": {
+      "files": [
+        "sub-f579047a2_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-04abdf921": {
+      "files": [
+        "sub-04abdf921_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b003f2c8c": {
+      "files": [
+        "sub-b003f2c8c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f1ab9da05": {
+      "files": [
+        "sub-f1ab9da05_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-20b7a2694": {
+      "files": [
+        "sub-20b7a2694_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-9a33325cd": {
+      "files": [
+        "sub-9a33325cd_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-08df48201": {
+      "files": [
+        "sub-08df48201_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4dbb82e9b": {
+      "files": [
+        "sub-4dbb82e9b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-178661afd": {
+      "files": [
+        "sub-178661afd_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f08d5b2d7": {
+      "files": [
+        "sub-f08d5b2d7_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-ce8680a84": {
+      "files": [
+        "sub-ce8680a84_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6fcd80548": {
+      "files": [
+        "sub-6fcd80548_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-8a5839660": {
+      "files": [
+        "sub-8a5839660_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e133aeecf": {
+      "files": [
+        "sub-e133aeecf_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-dd0c715af": {
+      "files": [
+        "sub-dd0c715af_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b7b826bb9": {
+      "files": [
+        "sub-b7b826bb9_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-75d45f9f7": {
+      "files": [
+        "sub-75d45f9f7_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6bf64d0cc": {
+      "files": [
+        "sub-6bf64d0cc_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6e407549f": {
+      "files": [
+        "sub-6e407549f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-95c562d3e": {
+      "files": [
+        "sub-95c562d3e_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-ef4adf523": {
+      "files": [
+        "sub-ef4adf523_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-7d6b431dd": {
+      "files": [
+        "sub-7d6b431dd_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-fa30fdef7": {
+      "files": [
+        "sub-fa30fdef7_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-ef8a8daf2": {
+      "files": [
+        "sub-ef8a8daf2_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-9d0228283": {
+      "files": [
+        "sub-9d0228283_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c05ee2fa2": {
+      "files": [
+        "sub-c05ee2fa2_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-871ae55c9": {
+      "files": [
+        "sub-871ae55c9_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-674adf66f": {
+      "files": [
+        "sub-674adf66f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-504f71ebe": {
+      "files": [
+        "sub-504f71ebe_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1a2c1fc8a": {
+      "files": [
+        "sub-1a2c1fc8a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6fe00d1e4": {
+      "files": [
+        "sub-6fe00d1e4_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6395ff56c": {
+      "files": [
+        "sub-6395ff56c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a194138d1": {
+      "files": [
+        "sub-a194138d1_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-83c5a8890": {
+      "files": [
+        "sub-83c5a8890_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3508a0493": {
+      "files": [
+        "sub-3508a0493_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1e2e8fe5a": {
+      "files": [
+        "sub-1e2e8fe5a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d93e164eb": {
+      "files": [
+        "sub-d93e164eb_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-0209d0b35": {
+      "files": [
+        "sub-0209d0b35_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e4a4ddd8a": {
+      "files": [
+        "sub-e4a4ddd8a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f8a4d0519": {
+      "files": [
+        "sub-f8a4d0519_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1c44f600b": {
+      "files": [
+        "sub-1c44f600b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2754924f5": {
+      "files": [
+        "sub-2754924f5_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6a8382c37": {
+      "files": [
+        "sub-6a8382c37_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-144266dae": {
+      "files": [
+        "sub-144266dae_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-8659f6ff1": {
+      "files": [
+        "sub-8659f6ff1_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c8c2f44b0": {
+      "files": [
+        "sub-c8c2f44b0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2b3033806": {
+      "files": [
+        "sub-2b3033806_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b81ae1818": {
+      "files": [
+        "sub-b81ae1818_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f4ba91dc6": {
+      "files": [
+        "sub-f4ba91dc6_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1e04dc368": {
+      "files": [
+        "sub-1e04dc368_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-bd6b65027": {
+      "files": [
+        "sub-bd6b65027_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-867a9f4da": {
+      "files": [
+        "sub-867a9f4da_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-7808e89c0": {
+      "files": [
+        "sub-7808e89c0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-073b63746": {
+      "files": [
+        "sub-073b63746_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a587c1e4f": {
+      "files": [
+        "sub-a587c1e4f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-29b8c2c8a": {
+      "files": [
+        "sub-29b8c2c8a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d753c3070": {
+      "files": [
+        "sub-d753c3070_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-87ffdb49f": {
+      "files": [
+        "sub-87ffdb49f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-536ad028e": {
+      "files": [
+        "sub-536ad028e_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b163b1184": {
+      "files": [
+        "sub-b163b1184_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-fc2301378": {
+      "files": [
+        "sub-fc2301378_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4251bb8be": {
+      "files": [
+        "sub-4251bb8be_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-9f6dd35d4": {
+      "files": [
+        "sub-9f6dd35d4_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f85559075": {
+      "files": [
+        "sub-f85559075_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a936b9c79": {
+      "files": [
+        "sub-a936b9c79_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-79d8c9a49": {
+      "files": [
+        "sub-79d8c9a49_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1e40d4db6": {
+      "files": [
+        "sub-1e40d4db6_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c5903cda3": {
+      "files": [
+        "sub-c5903cda3_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1d48057fd": {
+      "files": [
+        "sub-1d48057fd_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-5802312f2": {
+      "files": [
+        "sub-5802312f2_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-63648cdd8": {
+      "files": [
+        "sub-63648cdd8_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-fe7f5ff9a": {
+      "files": [
+        "sub-fe7f5ff9a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-62d036198": {
+      "files": [
+        "sub-62d036198_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-554465b5c": {
+      "files": [
+        "sub-554465b5c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1fab17572": {
+      "files": [
+        "sub-1fab17572_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1bf0517b1": {
+      "files": [
+        "sub-1bf0517b1_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-bc86f0ab2": {
+      "files": [
+        "sub-bc86f0ab2_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-755562887": {
+      "files": [
+        "sub-755562887_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-7f745ed2a": {
+      "files": [
+        "sub-7f745ed2a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-0e3cd430b": {
+      "files": [
+        "sub-0e3cd430b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a43cd9bb9": {
+      "files": [
+        "sub-a43cd9bb9_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-503be410d": {
+      "files": [
+        "sub-503be410d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-88dc4a57d": {
+      "files": [
+        "sub-88dc4a57d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-64229495d": {
+      "files": [
+        "sub-64229495d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d5f8e8a71": {
+      "files": [
+        "sub-d5f8e8a71_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-949c3507c": {
+      "files": [
+        "sub-949c3507c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e6b521171": {
+      "files": [
+        "sub-e6b521171_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-bc01cbe96": {
+      "files": [
+        "sub-bc01cbe96_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-834fb0636": {
+      "files": [
+        "sub-834fb0636_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a0ff4db13": {
+      "files": [
+        "sub-a0ff4db13_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4bd7938d5": {
+      "files": [
+        "sub-4bd7938d5_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-415839382": {
+      "files": [
+        "sub-415839382_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4c37856d2": {
+      "files": [
+        "sub-4c37856d2_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c43298329": {
+      "files": [
+        "sub-c43298329_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2d82dd5e3": {
+      "files": [
+        "sub-2d82dd5e3_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-cced946e8": {
+      "files": [
+        "sub-cced946e8_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-29b4339b6": {
+      "files": [
+        "sub-29b4339b6_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b362efb8f": {
+      "files": [
+        "sub-b362efb8f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6fb1f7b34": {
+      "files": [
+        "sub-6fb1f7b34_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3d7b875c9": {
+      "files": [
+        "sub-3d7b875c9_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-ffa620116": {
+      "files": [
+        "sub-ffa620116_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-0e27a6de5": {
+      "files": [
+        "sub-0e27a6de5_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-632833e2a": {
+      "files": [
+        "sub-632833e2a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-233b8e0fa": {
+      "files": [
+        "sub-233b8e0fa_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-35682938d": {
+      "files": [
+        "sub-35682938d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-8740df278": {
+      "files": [
+        "sub-8740df278_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-bf78189a4": {
+      "files": [
+        "sub-bf78189a4_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f3a9124c6": {
+      "files": [
+        "sub-f3a9124c6_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-304283db7": {
+      "files": [
+        "sub-304283db7_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b56914910": {
+      "files": [
+        "sub-b56914910_M0_pearson_correlation_matrix.npz",
+        "sub-b56914910_M12_pearson_correlation_matrix.npz",
+        "sub-b56914910_M24_pearson_correlation_matrix.npz",
+        "sub-b56914910_M36_pearson_correlation_matrix.npz",
+        "sub-b56914910_M48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-4e73cdc52": {
+      "files": [
+        "sub-4e73cdc52_M0_pearson_correlation_matrix.npz",
+        "sub-4e73cdc52_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-cd3bf904f": {
+      "files": [
+        "sub-cd3bf904f_M0_pearson_correlation_matrix.npz",
+        "sub-cd3bf904f_M12_pearson_correlation_matrix.npz",
+        "sub-cd3bf904f_M24_pearson_correlation_matrix.npz",
+        "sub-cd3bf904f_M36_pearson_correlation_matrix.npz",
+        "sub-cd3bf904f_M48_pearson_correlation_matrix.npz",
+        "sub-cd3bf904f_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-a5cceacea": {
+      "files": [
+        "sub-a5cceacea_M0_pearson_correlation_matrix.npz",
+        "sub-a5cceacea_M48_pearson_correlation_matrix.npz",
+        "sub-a5cceacea_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-6ecf96ab0": {
+      "files": [
+        "sub-6ecf96ab0_M0_pearson_correlation_matrix.npz",
+        "sub-6ecf96ab0_M12_pearson_correlation_matrix.npz",
+        "sub-6ecf96ab0_M36_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-9f4e60065": {
+      "files": [
+        "sub-9f4e60065_M0_pearson_correlation_matrix.npz",
+        "sub-9f4e60065_M12_pearson_correlation_matrix.npz",
+        "sub-9f4e60065_M24_pearson_correlation_matrix.npz",
+        "sub-9f4e60065_M36_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-40feb97f6": {
+      "files": [
+        "sub-40feb97f6_M0_pearson_correlation_matrix.npz",
+        "sub-40feb97f6_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-bc177df98": {
+      "files": [
+        "sub-bc177df98_M0_pearson_correlation_matrix.npz",
+        "sub-bc177df98_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-07e48dffa": {
+      "files": [
+        "sub-07e48dffa_M0_pearson_correlation_matrix.npz",
+        "sub-07e48dffa_M12_pearson_correlation_matrix.npz",
+        "sub-07e48dffa_M24_pearson_correlation_matrix.npz",
+        "sub-07e48dffa_M36_pearson_correlation_matrix.npz",
+        "sub-07e48dffa_M48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-475b9bfe2": {
+      "files": [
+        "sub-475b9bfe2_M0_pearson_correlation_matrix.npz",
+        "sub-475b9bfe2_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-1eebab647": {
+      "files": [
+        "sub-1eebab647_M0_pearson_correlation_matrix.npz",
+        "sub-1eebab647_M12_pearson_correlation_matrix.npz",
+        "sub-1eebab647_M24_pearson_correlation_matrix.npz",
+        "sub-1eebab647_M36_pearson_correlation_matrix.npz",
+        "sub-1eebab647_M48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-ca971f829": {
+      "files": [
+        "sub-ca971f829_M0_pearson_correlation_matrix.npz",
+        "sub-ca971f829_M12_pearson_correlation_matrix.npz",
+        "sub-ca971f829_M24_pearson_correlation_matrix.npz",
+        "sub-ca971f829_M36_pearson_correlation_matrix.npz",
+        "sub-ca971f829_M48_pearson_correlation_matrix.npz",
+        "sub-ca971f829_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-14532a273": {
+      "files": [
+        "sub-14532a273_M0_pearson_correlation_matrix.npz",
+        "sub-14532a273_M12_pearson_correlation_matrix.npz",
+        "sub-14532a273_M24_pearson_correlation_matrix.npz",
+        "sub-14532a273_M36_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-9b16d9da3": {
+      "files": [
+        "sub-9b16d9da3_M0_pearson_correlation_matrix.npz",
+        "sub-9b16d9da3_M12_pearson_correlation_matrix.npz",
+        "sub-9b16d9da3_M24_pearson_correlation_matrix.npz",
+        "sub-9b16d9da3_M36_pearson_correlation_matrix.npz",
+        "sub-9b16d9da3_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-e7967bcd4": {
+      "files": [
+        "sub-e7967bcd4_M0_pearson_correlation_matrix.npz",
+        "sub-e7967bcd4_M12_pearson_correlation_matrix.npz",
+        "sub-e7967bcd4_M24_pearson_correlation_matrix.npz",
+        "sub-e7967bcd4_M48_pearson_correlation_matrix.npz",
+        "sub-e7967bcd4_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-fff6c90a3": {
+      "files": [
+        "sub-fff6c90a3_M0_pearson_correlation_matrix.npz",
+        "sub-fff6c90a3_M12_pearson_correlation_matrix.npz",
+        "sub-fff6c90a3_M24_pearson_correlation_matrix.npz",
+        "sub-fff6c90a3_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-fdb1d843b": {
+      "files": [
+        "sub-fdb1d843b_M0_pearson_correlation_matrix.npz",
+        "sub-fdb1d843b_M12_pearson_correlation_matrix.npz",
+        "sub-fdb1d843b_M48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-4359a0c41": {
+      "files": [
+        "sub-4359a0c41_M0_pearson_correlation_matrix.npz",
+        "sub-4359a0c41_M12_pearson_correlation_matrix.npz",
+        "sub-4359a0c41_M24_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-75d14b5ca": {
+      "files": [
+        "sub-75d14b5ca_M0_pearson_correlation_matrix.npz",
+        "sub-75d14b5ca_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-ae818e1d7": {
+      "files": [
+        "sub-ae818e1d7_M0_pearson_correlation_matrix.npz",
+        "sub-ae818e1d7_M12_pearson_correlation_matrix.npz",
+        "sub-ae818e1d7_M24_pearson_correlation_matrix.npz",
+        "sub-ae818e1d7_M36_pearson_correlation_matrix.npz",
+        "sub-ae818e1d7_M48_pearson_correlation_matrix.npz",
+        "sub-ae818e1d7_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-74d781eee": {
+      "files": [
+        "sub-74d781eee_M0_pearson_correlation_matrix.npz",
+        "sub-74d781eee_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-b750d9dbe": {
+      "files": [
+        "sub-b750d9dbe_M0_pearson_correlation_matrix.npz",
+        "sub-b750d9dbe_M12_pearson_correlation_matrix.npz",
+        "sub-b750d9dbe_M24_pearson_correlation_matrix.npz",
+        "sub-b750d9dbe_M36_pearson_correlation_matrix.npz",
+        "sub-b750d9dbe_M48_pearson_correlation_matrix.npz",
+        "sub-b750d9dbe_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-660f27d45": {
+      "files": [
+        "sub-660f27d45_M0_pearson_correlation_matrix.npz",
+        "sub-660f27d45_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-d420099e8": {
+      "files": [
+        "sub-d420099e8_M0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-e42f4862b": {
+      "files": [
+        "sub-e42f4862b_M0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-2e2857631": {
+      "files": [
+        "sub-2e2857631_M0_pearson_correlation_matrix.npz",
+        "sub-2e2857631_M12_pearson_correlation_matrix.npz",
+        "sub-2e2857631_M24_pearson_correlation_matrix.npz",
+        "sub-2e2857631_M36_pearson_correlation_matrix.npz",
+        "sub-2e2857631_M48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-836c233ff": {
+      "files": [
+        "sub-836c233ff_M0_pearson_correlation_matrix.npz",
+        "sub-836c233ff_M12_pearson_correlation_matrix.npz",
+        "sub-836c233ff_M24_pearson_correlation_matrix.npz",
+        "sub-836c233ff_M36_pearson_correlation_matrix.npz",
+        "sub-836c233ff_M48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-fd0a4ba8a": {
+      "files": [
+        "sub-fd0a4ba8a_M0_pearson_correlation_matrix.npz",
+        "sub-fd0a4ba8a_M24_pearson_correlation_matrix.npz",
+        "sub-fd0a4ba8a_M36_pearson_correlation_matrix.npz",
+        "sub-fd0a4ba8a_M48_pearson_correlation_matrix.npz",
+        "sub-fd0a4ba8a_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-d7f5479f6": {
+      "files": [
+        "sub-d7f5479f6_M0_pearson_correlation_matrix.npz",
+        "sub-d7f5479f6_M12_pearson_correlation_matrix.npz",
+        "sub-d7f5479f6_M24_pearson_correlation_matrix.npz",
+        "sub-d7f5479f6_M36_pearson_correlation_matrix.npz",
+        "sub-d7f5479f6_M48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-9cf012413": {
+      "files": [
+        "sub-9cf012413_M0_pearson_correlation_matrix.npz",
+        "sub-9cf012413_M12_pearson_correlation_matrix.npz",
+        "sub-9cf012413_M24_pearson_correlation_matrix.npz",
+        "sub-9cf012413_M36_pearson_correlation_matrix.npz",
+        "sub-9cf012413_M48_pearson_correlation_matrix.npz",
+        "sub-9cf012413_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-7898c9f2d": {
+      "files": [
+        "sub-7898c9f2d_M0_pearson_correlation_matrix.npz",
+        "sub-7898c9f2d_M12_pearson_correlation_matrix.npz",
+        "sub-7898c9f2d_M24_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-b18d729af": {
+      "files": [
+        "sub-b18d729af_M0_pearson_correlation_matrix.npz",
+        "sub-b18d729af_M12_pearson_correlation_matrix.npz",
+        "sub-b18d729af_M24_pearson_correlation_matrix.npz",
+        "sub-b18d729af_M36_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-fbebee616": {
+      "files": [
+        "sub-fbebee616_M0_pearson_correlation_matrix.npz",
+        "sub-fbebee616_M12_pearson_correlation_matrix.npz",
+        "sub-fbebee616_M24_pearson_correlation_matrix.npz",
+        "sub-fbebee616_M36_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-05595022c": {
+      "files": [
+        "sub-05595022c_M0_pearson_correlation_matrix.npz",
+        "sub-05595022c_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-be658a955": {
+      "files": [
+        "sub-be658a955_M0_pearson_correlation_matrix.npz",
+        "sub-be658a955_M12_pearson_correlation_matrix.npz",
+        "sub-be658a955_M24_pearson_correlation_matrix.npz",
+        "sub-be658a955_M36_pearson_correlation_matrix.npz",
+        "sub-be658a955_M48_pearson_correlation_matrix.npz",
+        "sub-be658a955_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-5759da909": {
+      "files": [
+        "sub-5759da909_M0_pearson_correlation_matrix.npz",
+        "sub-5759da909_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-0588be6c5": {
+      "files": [
+        "sub-0588be6c5_M0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-63258afb4": {
+      "files": [
+        "sub-63258afb4_M0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-5598d51dd": {
+      "files": [
+        "sub-5598d51dd_M0_pearson_correlation_matrix.npz",
+        "sub-5598d51dd_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-d6334c64c": {
+      "files": [
+        "sub-d6334c64c_M0_pearson_correlation_matrix.npz",
+        "sub-d6334c64c_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-428978e36": {
+      "files": [
+        "sub-428978e36_M0_pearson_correlation_matrix.npz",
+        "sub-428978e36_M12_pearson_correlation_matrix.npz",
+        "sub-428978e36_M24_pearson_correlation_matrix.npz",
+        "sub-428978e36_M36_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-bcae977b3": {
+      "files": [
+        "sub-bcae977b3_M0_pearson_correlation_matrix.npz",
+        "sub-bcae977b3_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    }
+  },
+  "validation": {
+    "sub-aeac24d86": {
+      "files": [
+        "sub-aeac24d86_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-36f1ce88d": {
+      "files": [
+        "sub-36f1ce88d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-7758e79e8": {
+      "files": [
+        "sub-7758e79e8_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e8e9befe5": {
+      "files": [
+        "sub-e8e9befe5_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c17579b36": {
+      "files": [
+        "sub-c17579b36_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-74891bf1b": {
+      "files": [
+        "sub-74891bf1b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-19f47ee32": {
+      "files": [
+        "sub-19f47ee32_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-81489f2bb": {
+      "files": [
+        "sub-81489f2bb_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f2a767eaa": {
+      "files": [
+        "sub-f2a767eaa_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-27044a887": {
+      "files": [
+        "sub-27044a887_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-7c86c18fc": {
+      "files": [
+        "sub-7c86c18fc_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-44d8f7558": {
+      "files": [
+        "sub-44d8f7558_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-12b97ecfe": {
+      "files": [
+        "sub-12b97ecfe_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-88d028fe3": {
+      "files": [
+        "sub-88d028fe3_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f558f2b54": {
+      "files": [
+        "sub-f558f2b54_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2659794c7": {
+      "files": [
+        "sub-2659794c7_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-86865fe08": {
+      "files": [
+        "sub-86865fe08_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-ee700acd0": {
+      "files": [
+        "sub-ee700acd0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-23f33f85c": {
+      "files": [
+        "sub-23f33f85c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-475f066e9": {
+      "files": [
+        "sub-475f066e9_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-9d2285965": {
+      "files": [
+        "sub-9d2285965_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-74c764c7b": {
+      "files": [
+        "sub-74c764c7b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-57e5100b0": {
+      "files": [
+        "sub-57e5100b0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-12be4c67c": {
+      "files": [
+        "sub-12be4c67c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3d0f5ce2b": {
+      "files": [
+        "sub-3d0f5ce2b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-05248fa8e": {
+      "files": [
+        "sub-05248fa8e_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b70da44f4": {
+      "files": [
+        "sub-b70da44f4_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-df57b92f6": {
+      "files": [
+        "sub-df57b92f6_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-20b7a0c0d": {
+      "files": [
+        "sub-20b7a0c0d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a5dee7bbe": {
+      "files": [
+        "sub-a5dee7bbe_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6580eaf4b": {
+      "files": [
+        "sub-6580eaf4b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-68b7c81b9": {
+      "files": [
+        "sub-68b7c81b9_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-0a71a953d": {
+      "files": [
+        "sub-0a71a953d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-64a6bb6db": {
+      "files": [
+        "sub-64a6bb6db_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-712c11cd0": {
+      "files": [
+        "sub-712c11cd0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f4b259d58": {
+      "files": [
+        "sub-f4b259d58_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-41cdab01d": {
+      "files": [
+        "sub-41cdab01d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-5d17b0956": {
+      "files": [
+        "sub-5d17b0956_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-90836ee9a": {
+      "files": [
+        "sub-90836ee9a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6d971bbc9": {
+      "files": [
+        "sub-6d971bbc9_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-7cb61db43": {
+      "files": [
+        "sub-7cb61db43_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-54e0f059e": {
+      "files": [
+        "sub-54e0f059e_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3037ab030": {
+      "files": [
+        "sub-3037ab030_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-49cfc102f": {
+      "files": [
+        "sub-49cfc102f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-27de1112c": {
+      "files": [
+        "sub-27de1112c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c3b025cae": {
+      "files": [
+        "sub-c3b025cae_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-fd03545cc": {
+      "files": [
+        "sub-fd03545cc_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f73060de1": {
+      "files": [
+        "sub-f73060de1_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-eb876fa40": {
+      "files": [
+        "sub-eb876fa40_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4c6b81131": {
+      "files": [
+        "sub-4c6b81131_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-200ff5ec4": {
+      "files": [
+        "sub-200ff5ec4_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2bccafb27": {
+      "files": [
+        "sub-2bccafb27_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-9445854de": {
+      "files": [
+        "sub-9445854de_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6c679cd78": {
+      "files": [
+        "sub-6c679cd78_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-74284cbf3": {
+      "files": [
+        "sub-74284cbf3_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-5dba55e57": {
+      "files": [
+        "sub-5dba55e57_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-5336ff540": {
+      "files": [
+        "sub-5336ff540_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e2cf30aa0": {
+      "files": [
+        "sub-e2cf30aa0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-41a2ff167": {
+      "files": [
+        "sub-41a2ff167_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-647d1b105": {
+      "files": [
+        "sub-647d1b105_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-fd0c95050": {
+      "files": [
+        "sub-fd0c95050_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-fc3c650cd": {
+      "files": [
+        "sub-fc3c650cd_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-95a5fca07": {
+      "files": [
+        "sub-95a5fca07_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3f8021b71": {
+      "files": [
+        "sub-3f8021b71_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-0f1b4b7ac": {
+      "files": [
+        "sub-0f1b4b7ac_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-279a609fa": {
+      "files": [
+        "sub-279a609fa_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-143d8c9eb": {
+      "files": [
+        "sub-143d8c9eb_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3761a4b61": {
+      "files": [
+        "sub-3761a4b61_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e4f49e61d": {
+      "files": [
+        "sub-e4f49e61d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-02a50f215": {
+      "files": [
+        "sub-02a50f215_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2b2a680a7": {
+      "files": [
+        "sub-2b2a680a7_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-7a3350a22": {
+      "files": [
+        "sub-7a3350a22_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a67e61963": {
+      "files": [
+        "sub-a67e61963_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-13b5582d3": {
+      "files": [
+        "sub-13b5582d3_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f96fd7873": {
+      "files": [
+        "sub-f96fd7873_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-ba05f050e": {
+      "files": [
+        "sub-ba05f050e_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4c8677a7f": {
+      "files": [
+        "sub-4c8677a7f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d4b156e5a": {
+      "files": [
+        "sub-d4b156e5a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-13b9c5985": {
+      "files": [
+        "sub-13b9c5985_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-0a8d02f2b": {
+      "files": [
+        "sub-0a8d02f2b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-34d0f4d48": {
+      "files": [
+        "sub-34d0f4d48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-984822b00": {
+      "files": [
+        "sub-984822b00_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3a018fc24": {
+      "files": [
+        "sub-3a018fc24_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a0c8c3e22": {
+      "files": [
+        "sub-a0c8c3e22_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c276f7df7": {
+      "files": [
+        "sub-c276f7df7_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-da07ac132": {
+      "files": [
+        "sub-da07ac132_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-65c8dfd34": {
+      "files": [
+        "sub-65c8dfd34_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f75029b17": {
+      "files": [
+        "sub-f75029b17_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-8955c301f": {
+      "files": [
+        "sub-8955c301f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-bf5da3838": {
+      "files": [
+        "sub-bf5da3838_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d03584c62": {
+      "files": [
+        "sub-d03584c62_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-298ee7d8a": {
+      "files": [
+        "sub-298ee7d8a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b7b9f01f5": {
+      "files": [
+        "sub-b7b9f01f5_M0_pearson_correlation_matrix.npz",
+        "sub-b7b9f01f5_M12_pearson_correlation_matrix.npz",
+        "sub-b7b9f01f5_M24_pearson_correlation_matrix.npz",
+        "sub-b7b9f01f5_M36_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-d4055734e": {
+      "files": [
+        "sub-d4055734e_M0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-779893593": {
+      "files": [
+        "sub-779893593_M0_pearson_correlation_matrix.npz",
+        "sub-779893593_M12_pearson_correlation_matrix.npz",
+        "sub-779893593_M24_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-0df733308": {
+      "files": [
+        "sub-0df733308_M0_pearson_correlation_matrix.npz",
+        "sub-0df733308_M12_pearson_correlation_matrix.npz",
+        "sub-0df733308_M24_pearson_correlation_matrix.npz",
+        "sub-0df733308_M36_pearson_correlation_matrix.npz",
+        "sub-0df733308_M48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-adf756d40": {
+      "files": [
+        "sub-adf756d40_M0_pearson_correlation_matrix.npz",
+        "sub-adf756d40_M24_pearson_correlation_matrix.npz",
+        "sub-adf756d40_M48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-191e8e85d": {
+      "files": [
+        "sub-191e8e85d_M0_pearson_correlation_matrix.npz",
+        "sub-191e8e85d_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-d0887896f": {
+      "files": [
+        "sub-d0887896f_M0_pearson_correlation_matrix.npz",
+        "sub-d0887896f_M12_pearson_correlation_matrix.npz",
+        "sub-d0887896f_M24_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-b2cc7cce8": {
+      "files": [
+        "sub-b2cc7cce8_M0_pearson_correlation_matrix.npz",
+        "sub-b2cc7cce8_M24_pearson_correlation_matrix.npz",
+        "sub-b2cc7cce8_M48_pearson_correlation_matrix.npz",
+        "sub-b2cc7cce8_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-46c3433d4": {
+      "files": [
+        "sub-46c3433d4_M0_pearson_correlation_matrix.npz",
+        "sub-46c3433d4_M12_pearson_correlation_matrix.npz",
+        "sub-46c3433d4_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-89a40fc7e": {
+      "files": [
+        "sub-89a40fc7e_M0_pearson_correlation_matrix.npz",
+        "sub-89a40fc7e_M12_pearson_correlation_matrix.npz",
+        "sub-89a40fc7e_M24_pearson_correlation_matrix.npz",
+        "sub-89a40fc7e_M36_pearson_correlation_matrix.npz",
+        "sub-89a40fc7e_M48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-822a3a811": {
+      "files": [
+        "sub-822a3a811_M0_pearson_correlation_matrix.npz",
+        "sub-822a3a811_M12_pearson_correlation_matrix.npz",
+        "sub-822a3a811_M24_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-dca63a3ab": {
+      "files": [
+        "sub-dca63a3ab_M12_pearson_correlation_matrix.npz",
+        "sub-dca63a3ab_M24_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-b7366d4e7": {
+      "files": [
+        "sub-b7366d4e7_M0_pearson_correlation_matrix.npz",
+        "sub-b7366d4e7_M12_pearson_correlation_matrix.npz",
+        "sub-b7366d4e7_M24_pearson_correlation_matrix.npz",
+        "sub-b7366d4e7_M36_pearson_correlation_matrix.npz",
+        "sub-b7366d4e7_M48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-2d73e8996": {
+      "files": [
+        "sub-2d73e8996_M0_pearson_correlation_matrix.npz",
+        "sub-2d73e8996_M12_pearson_correlation_matrix.npz",
+        "sub-2d73e8996_M24_pearson_correlation_matrix.npz",
+        "sub-2d73e8996_M36_pearson_correlation_matrix.npz",
+        "sub-2d73e8996_M48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    }
+  },
+  "test": {
+    "sub-0165a12e0": {
+      "files": [
+        "sub-0165a12e0_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6cb156d0a": {
+      "files": [
+        "sub-6cb156d0a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-cabeb0731": {
+      "files": [
+        "sub-cabeb0731_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f5502a0d5": {
+      "files": [
+        "sub-f5502a0d5_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-77dc7301d": {
+      "files": [
+        "sub-77dc7301d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d06988f42": {
+      "files": [
+        "sub-d06988f42_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-ed41db601": {
+      "files": [
+        "sub-ed41db601_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-95f5ea022": {
+      "files": [
+        "sub-95f5ea022_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-9724a842b": {
+      "files": [
+        "sub-9724a842b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-12510d07d": {
+      "files": [
+        "sub-12510d07d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-592f9a269": {
+      "files": [
+        "sub-592f9a269_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-af0197f12": {
+      "files": [
+        "sub-af0197f12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-9ec984dd4": {
+      "files": [
+        "sub-9ec984dd4_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-6d517ce97": {
+      "files": [
+        "sub-6d517ce97_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-23476b97a": {
+      "files": [
+        "sub-23476b97a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-232768c38": {
+      "files": [
+        "sub-232768c38_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-255cd666c": {
+      "files": [
+        "sub-255cd666c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a4f898299": {
+      "files": [
+        "sub-a4f898299_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-9c08c4c32": {
+      "files": [
+        "sub-9c08c4c32_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c6cd0a113": {
+      "files": [
+        "sub-c6cd0a113_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e28b3bb45": {
+      "files": [
+        "sub-e28b3bb45_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-93d232f23": {
+      "files": [
+        "sub-93d232f23_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c47f382f8": {
+      "files": [
+        "sub-c47f382f8_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f0c51137c": {
+      "files": [
+        "sub-f0c51137c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-262490f02": {
+      "files": [
+        "sub-262490f02_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f173e2e9b": {
+      "files": [
+        "sub-f173e2e9b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e49cecc8c": {
+      "files": [
+        "sub-e49cecc8c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4e0c4dfae": {
+      "files": [
+        "sub-4e0c4dfae_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-8c0d47cbb": {
+      "files": [
+        "sub-8c0d47cbb_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-fa491029f": {
+      "files": [
+        "sub-fa491029f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4d9cb00ce": {
+      "files": [
+        "sub-4d9cb00ce_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-724dc3f85": {
+      "files": [
+        "sub-724dc3f85_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3bf21dafc": {
+      "files": [
+        "sub-3bf21dafc_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1389e1285": {
+      "files": [
+        "sub-1389e1285_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c3aa5997a": {
+      "files": [
+        "sub-c3aa5997a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-04b06dc4d": {
+      "files": [
+        "sub-04b06dc4d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3d4991227": {
+      "files": [
+        "sub-3d4991227_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c5696efc3": {
+      "files": [
+        "sub-c5696efc3_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-0cc2d1099": {
+      "files": [
+        "sub-0cc2d1099_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f92a0a035": {
+      "files": [
+        "sub-f92a0a035_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2619b66ee": {
+      "files": [
+        "sub-2619b66ee_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f99275577": {
+      "files": [
+        "sub-f99275577_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4d19bfd31": {
+      "files": [
+        "sub-4d19bfd31_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1b349d5ca": {
+      "files": [
+        "sub-1b349d5ca_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-ef3fe3af2": {
+      "files": [
+        "sub-ef3fe3af2_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-28afcfe13": {
+      "files": [
+        "sub-28afcfe13_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-2bf7ca999": {
+      "files": [
+        "sub-2bf7ca999_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-eda62f302": {
+      "files": [
+        "sub-eda62f302_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1aeb422ba": {
+      "files": [
+        "sub-1aeb422ba_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-66b166f3a": {
+      "files": [
+        "sub-66b166f3a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-dac334ae3": {
+      "files": [
+        "sub-dac334ae3_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-a95bca61d": {
+      "files": [
+        "sub-a95bca61d_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-16dfa6df5": {
+      "files": [
+        "sub-16dfa6df5_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b67b41df4": {
+      "files": [
+        "sub-b67b41df4_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-4b4bd0268": {
+      "files": [
+        "sub-4b4bd0268_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f2384a356": {
+      "files": [
+        "sub-f2384a356_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-47da86d5c": {
+      "files": [
+        "sub-47da86d5c_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d5459d2a3": {
+      "files": [
+        "sub-d5459d2a3_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c07390c3b": {
+      "files": [
+        "sub-c07390c3b_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-56b65dfb6": {
+      "files": [
+        "sub-56b65dfb6_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d468bea63": {
+      "files": [
+        "sub-d468bea63_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f6916b087": {
+      "files": [
+        "sub-f6916b087_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-70834a1a2": {
+      "files": [
+        "sub-70834a1a2_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-cc16a5ecb": {
+      "files": [
+        "sub-cc16a5ecb_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1ece6ef85": {
+      "files": [
+        "sub-1ece6ef85_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-b258c27d1": {
+      "files": [
+        "sub-b258c27d1_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-8a3867328": {
+      "files": [
+        "sub-8a3867328_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3c195bec6": {
+      "files": [
+        "sub-3c195bec6_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-73bb3962a": {
+      "files": [
+        "sub-73bb3962a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-76b663601": {
+      "files": [
+        "sub-76b663601_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-c31b2cac2": {
+      "files": [
+        "sub-c31b2cac2_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3b14ce122": {
+      "files": [
+        "sub-3b14ce122_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e082ef075": {
+      "files": [
+        "sub-e082ef075_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-5b0a86468": {
+      "files": [
+        "sub-5b0a86468_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-e5b08d7e9": {
+      "files": [
+        "sub-e5b08d7e9_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-3e330542a": {
+      "files": [
+        "sub-3e330542a_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-23cd008c9": {
+      "files": [
+        "sub-23cd008c9_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-20ffb4dd8": {
+      "files": [
+        "sub-20ffb4dd8_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-f30441648": {
+      "files": [
+        "sub-f30441648_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-ebde62009": {
+      "files": [
+        "sub-ebde62009_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-dbccffba8": {
+      "files": [
+        "sub-dbccffba8_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-fa890e12f": {
+      "files": [
+        "sub-fa890e12f_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-043ba1305": {
+      "files": [
+        "sub-043ba1305_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-37c00d740": {
+      "files": [
+        "sub-37c00d740_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-71f7c3a00": {
+      "files": [
+        "sub-71f7c3a00_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-049fc7e11": {
+      "files": [
+        "sub-049fc7e11_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1f2ce5457": {
+      "files": [
+        "sub-1f2ce5457_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-1f8d807ca": {
+      "files": [
+        "sub-1f8d807ca_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-0a61339db": {
+      "files": [
+        "sub-0a61339db_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-607693d86": {
+      "files": [
+        "sub-607693d86_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-d2708a425": {
+      "files": [
+        "sub-d2708a425_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-0b28aed58": {
+      "files": [
+        "sub-0b28aed58_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "mci",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw"
+    },
+    "sub-40ea07c4b": {
+      "files": [
+        "sub-40ea07c4b_M0_pearson_correlation_matrix.npz",
+        "sub-40ea07c4b_M12_pearson_correlation_matrix.npz",
+        "sub-40ea07c4b_M24_pearson_correlation_matrix.npz",
+        "sub-40ea07c4b_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-c13fa705c": {
+      "files": [
+        "sub-c13fa705c_M0_pearson_correlation_matrix.npz",
+        "sub-c13fa705c_M12_pearson_correlation_matrix.npz",
+        "sub-c13fa705c_M48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-b2f42b7ff": {
+      "files": [
+        "sub-b2f42b7ff_M0_pearson_correlation_matrix.npz",
+        "sub-b2f42b7ff_M12_pearson_correlation_matrix.npz",
+        "sub-b2f42b7ff_M36_pearson_correlation_matrix.npz",
+        "sub-b2f42b7ff_M48_pearson_correlation_matrix.npz",
+        "sub-b2f42b7ff_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-91383c1f8": {
+      "files": [
+        "sub-91383c1f8_M0_pearson_correlation_matrix.npz",
+        "sub-91383c1f8_M12_pearson_correlation_matrix.npz",
+        "sub-91383c1f8_M24_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-5c4e89915": {
+      "files": [
+        "sub-5c4e89915_M0_pearson_correlation_matrix.npz",
+        "sub-5c4e89915_M12_pearson_correlation_matrix.npz",
+        "sub-5c4e89915_M24_pearson_correlation_matrix.npz",
+        "sub-5c4e89915_M36_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-fd225d1ef": {
+      "files": [
+        "sub-fd225d1ef_M0_pearson_correlation_matrix.npz",
+        "sub-fd225d1ef_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-9766e9c38": {
+      "files": [
+        "sub-9766e9c38_M0_pearson_correlation_matrix.npz",
+        "sub-9766e9c38_M12_pearson_correlation_matrix.npz",
+        "sub-9766e9c38_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-b093bca1e": {
+      "files": [
+        "sub-b093bca1e_M0_pearson_correlation_matrix.npz",
+        "sub-b093bca1e_M12_pearson_correlation_matrix.npz",
+        "sub-b093bca1e_M24_pearson_correlation_matrix.npz",
+        "sub-b093bca1e_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-2d0c30f83": {
+      "files": [
+        "sub-2d0c30f83_M0_pearson_correlation_matrix.npz",
+        "sub-2d0c30f83_M12_pearson_correlation_matrix.npz",
+        "sub-2d0c30f83_M24_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-1169cb29f": {
+      "files": [
+        "sub-1169cb29f_M0_pearson_correlation_matrix.npz",
+        "sub-1169cb29f_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-7bc92ad6d": {
+      "files": [
+        "sub-7bc92ad6d_M0_pearson_correlation_matrix.npz",
+        "sub-7bc92ad6d_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-03a0a6663": {
+      "files": [
+        "sub-03a0a6663_M0_pearson_correlation_matrix.npz",
+        "sub-03a0a6663_M12_pearson_correlation_matrix.npz",
+        "sub-03a0a6663_M36_pearson_correlation_matrix.npz",
+        "sub-03a0a6663_M48_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-c81213449": {
+      "files": [
+        "sub-c81213449_M0_pearson_correlation_matrix.npz",
+        "sub-c81213449_M12_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    },
+    "sub-4850fb0c1": {
+      "files": [
+        "sub-4850fb0c1_M0_pearson_correlation_matrix.npz",
+        "sub-4850fb0c1_M12_pearson_correlation_matrix.npz",
+        "sub-4850fb0c1_M24_pearson_correlation_matrix.npz",
+        "sub-4850fb0c1_M36_pearson_correlation_matrix.npz",
+        "sub-4850fb0c1_M60_pearson_correlation_matrix.npz"
+      ],
+      "cohort": "converter",
+      "source_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw"
+    }
+  },
+  "metadata": {
+    "random_seed": 42,
+    "split_ratio": {
+      "train": 0.6,
+      "validation": 0.2,
+      "test": 0.2
+    },
+    "mci_raw_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_MCI_SCD_exclude_converter_graph_data/raw",
+    "converter_raw_dir": "/mnt/e/fyassine/ad-early-detection/data/Data-Delcode/Delcode_Converter_graph_data/raw",
+    "stratified": true,
+    "description": "Stratified by cohort - each cohort has 60/20/20 distribution"
+  }
+}

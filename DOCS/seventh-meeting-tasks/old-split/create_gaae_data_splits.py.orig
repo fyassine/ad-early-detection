@@ -1,0 +1,225 @@
+"""
+Create STRATIFIED train/validation/test splits for GAAE model.
+All pearson correlation graphs from all Delcode datasets included.
+Stratified by cohort - each cohort maintains consistent ratios across splits.
+GAAE test includes GEC test patients for consistent holdout evaluation.
+All scans from same patient stay together.
+Target: 60% train, 20% validation, 20% test with balanced cohort ratios.
+"""
+import json
+import re
+from pathlib import Path
+from sklearn.model_selection import train_test_split
+import numpy as np
+
+# Paths
+BASE_DIR = Path("/mnt/e/fyassine/ad-early-detection/data/Data-Delcode")
+GEC_SPLITS_PATH = BASE_DIR / "gec_data_splits.json"
+OUTPUT_PATH = BASE_DIR / "gaae_data_splits.json"
+
+RAW_DIRS = {
+    "ad": BASE_DIR / "Delcode_AD_graph_data" / "raw",
+    "healthy": BASE_DIR / "Delcode_healthy_graph_data_demographics" / "raw",
+    "converter": BASE_DIR / "Delcode_Converter_graph_data" / "raw",
+    "mci": BASE_DIR / "Delcode_MCI_SCD_exclude_converter_graph_data" / "raw",
+}
+
+RANDOM_SEED = 42
+
+
+def extract_patient_id(filename: str) -> str:
+    match = re.match(r'(sub-[a-f0-9]+)', filename)
+    return match.group(1) if match else None
+
+
+def get_patient_files(directory: Path) -> dict:
+    patient_files = {}
+    if not directory.exists():
+        return patient_files
+    for f in directory.glob("*pearson*.npz"):
+        patient_id = extract_patient_id(f.name)
+        if patient_id:
+            if patient_id not in patient_files:
+                patient_files[patient_id] = []
+            patient_files[patient_id].append(f.name)
+    return patient_files
+
+
+def get_gec_test_ids(gec_splits_path: Path) -> set:
+    with open(gec_splits_path, 'r') as f:
+        gec_splits = json.load(f)
+    return set(gec_splits["test"].keys())
+
+
+def stratified_split_by_files(patient_dict: dict, test_size: float, random_state: int):
+    """Split patients while trying to balance by number of files"""
+    if len(patient_dict) < 2:
+        return list(patient_dict.keys()), []
+
+    # Sort patients by number of files for better distribution
+    sorted_patients = sorted(patient_dict.items(),
+                             key=lambda x: len(x[1]), reverse=True)
+    patient_ids = [p[0] for p in sorted_patients]
+
+    # Use sklearn's split
+    actual_test_size = min(
+        test_size, (len(patient_ids) - 1) / len(patient_ids))
+    return train_test_split(patient_ids, test_size=actual_test_size, random_state=random_state)
+
+
+def main():
+    np.random.seed(RANDOM_SEED)
+
+    # Load GEC test IDs
+    gec_test_ids = get_gec_test_ids(GEC_SPLITS_PATH)
+    print(
+        f"GEC test patient IDs (reserved for GAAE test): {len(gec_test_ids)}")
+
+    # Get patient files by cohort
+    cohort_patients = {}
+    for cohort_name, raw_dir in RAW_DIRS.items():
+        cohort_patients[cohort_name] = get_patient_files(raw_dir)
+        n_files = sum(len(v) for v in cohort_patients[cohort_name].values())
+        print(
+            f"{cohort_name}: {len(cohort_patients[cohort_name])} patients, {n_files} files")
+
+    # Separate GEC test patients from available patients for each cohort
+    gec_test_by_cohort = {}
+    available_by_cohort = {}
+
+    for cohort_name, patient_files in cohort_patients.items():
+        gec_test_by_cohort[cohort_name] = {
+            pid: files for pid, files in patient_files.items() if pid in gec_test_ids}
+        available_by_cohort[cohort_name] = {
+            pid: files for pid, files in patient_files.items() if pid not in gec_test_ids}
+
+    # Calculate GEC test files per cohort
+    print("\n=== GEC Test Patients by Cohort ===")
+    for cohort in ["ad", "healthy", "converter", "mci"]:
+        n_patients = len(gec_test_by_cohort[cohort])
+        n_files = sum(len(v) for v in gec_test_by_cohort[cohort].values())
+        print(f"  {cohort}: {n_patients} patients, {n_files} files")
+
+    # Initialize splits
+    splits = {"train": {}, "validation": {}, "test": {}}
+
+    # Step 1: Add GEC test patients to GAAE test
+    for cohort_name in cohort_patients.keys():
+        for pid, files in gec_test_by_cohort[cohort_name].items():
+            splits["test"][pid] = {
+                "files": files,
+                "source": cohort_name,
+                "source_dir": str(RAW_DIRS[cohort_name])
+            }
+
+    # Step 2: For each cohort, split available patients with 60/20/20 ratio
+    for cohort_name in cohort_patients.keys():
+        available = available_by_cohort[cohort_name]
+        available_ids = list(available.keys())
+
+        if len(available_ids) >= 5:
+            # Split: first 80/20, then 75/25 of the 80%
+            trainval_ids, test_ids = stratified_split_by_files(
+                {pid: available[pid] for pid in available_ids},
+                test_size=0.20,
+                random_state=RANDOM_SEED
+            )
+            train_ids, val_ids = stratified_split_by_files(
+                {pid: available[pid] for pid in trainval_ids},
+                test_size=0.25,
+                random_state=RANDOM_SEED
+            )
+        elif len(available_ids) >= 2:
+            train_ids, val_ids = stratified_split_by_files(
+                {pid: available[pid] for pid in available_ids},
+                test_size=0.33,
+                random_state=RANDOM_SEED
+            )
+            test_ids = []
+        else:
+            train_ids = available_ids
+            val_ids, test_ids = [], []
+
+        # Add to splits
+        for pid in train_ids:
+            splits["train"][pid] = {
+                "files": available[pid],
+                "source": cohort_name,
+                "source_dir": str(RAW_DIRS[cohort_name])
+            }
+        for pid in val_ids:
+            splits["validation"][pid] = {
+                "files": available[pid],
+                "source": cohort_name,
+                "source_dir": str(RAW_DIRS[cohort_name])
+            }
+        for pid in test_ids:
+            splits["test"][pid] = {
+                "files": available[pid],
+                "source": cohort_name,
+                "source_dir": str(RAW_DIRS[cohort_name])
+            }
+
+    # Add metadata
+    splits["metadata"] = {
+        "random_seed": RANDOM_SEED,
+        "description": "GAAE stratified splits - cohort ratios maintained across splits",
+        "gec_splits_reference": str(GEC_SPLITS_PATH),
+        "source_directories": {name: str(path) for name, path in RAW_DIRS.items()},
+        "stratified": True
+    }
+
+    # Print detailed analysis
+    print("\n=== GAAE Split Summary (By Files) ===")
+    cohorts = ["ad", "healthy", "converter", "mci"]
+
+    # Calculate total files per cohort for reference
+    total_files_by_cohort = {
+        c: sum(len(v) for v in cohort_patients[c].values()) for c in cohorts}
+    print(f"\nTotal files by cohort: {total_files_by_cohort}")
+
+    for split in ["train", "validation", "test"]:
+        print(f"\n{split.upper()}:")
+        files_by_cohort = {c: sum(len(v["files"]) for v in splits[split].values(
+        ) if v["source"] == c) for c in cohorts}
+        total = sum(files_by_cohort.values())
+
+        for cohort in cohorts:
+            pct_of_split = files_by_cohort[cohort] / \
+                total * 100 if total > 0 else 0
+            pct_of_cohort = files_by_cohort[cohort] / total_files_by_cohort[cohort] * \
+                100 if total_files_by_cohort[cohort] > 0 else 0
+            print(
+                f"  {cohort:10}: {files_by_cohort[cohort]:3} files ({pct_of_split:5.1f}% of split, {pct_of_cohort:5.1f}% of cohort total)")
+
+    # Cohort ratio analysis
+    print("\n=== Cohort Ratios (files, relative to converter) ===")
+    for split in ["train", "validation", "test"]:
+        files_by_cohort = {c: sum(len(v["files"]) for v in splits[split].values(
+        ) if v["source"] == c) for c in cohorts}
+        conv = files_by_cohort['converter'] if files_by_cohort['converter'] > 0 else 1
+        ratios = [f"{c}:{files_by_cohort[c]/conv:.2f}" for c in cohorts]
+        print(f"{split.upper():12}: " + ", ".join(ratios))
+
+    # Per-cohort 60/20/20 check
+    print("\n=== Per-Cohort Distribution (files) ===")
+    for cohort in cohorts:
+        train_f = sum(len(v["files"])
+                      for v in splits["train"].values() if v["source"] == cohort)
+        val_f = sum(len(v["files"])
+                    for v in splits["validation"].values() if v["source"] == cohort)
+        test_f = sum(len(v["files"])
+                     for v in splits["test"].values() if v["source"] == cohort)
+        total_f = train_f + val_f + test_f
+        if total_f > 0:
+            print(f"{cohort:10}: train={train_f:3} ({train_f/total_f*100:5.1f}%), val={val_f:3} ({val_f/total_f*100:5.1f}%), test={test_f:3} ({test_f/total_f*100:5.1f}%)")
+
+    # Save
+    with open(OUTPUT_PATH, 'w') as f:
+        json.dump(splits, f, indent=2)
+
+    print(f"\nSplits saved to: {OUTPUT_PATH}")
+
+
+if __name__ == "__main__":
+    main()

@@ -26,6 +26,16 @@ The exact numbers in both images match these two runs' `run_summary.json` to 4 d
 places, so this is not a guess. Neither of these runs' configs are directly comparable,
 though — see below.
 
+**"Before"** (`BASELINE_MODEL_COMPARISON_DELCODE_WHOLE_BRAIN.ipynb`, GELSTM (no FDR): CV
+AUROC 0.944 ± 0.058, Test AUC 0.967):
+
+![Before: leaderboard + ROC, GELSTM no-FDR Test AUC=0.967](downstream-leak.png)
+
+**"After"** (`LONGITUDINAL_COMMON_DELCODE.ipynb`, `ethereal-planet-16`: OOF CV AUC 0.860,
+Test AUC 0.807):
+
+![After: OOF CV ROC and test ROC, ethereal-planet-16 Test AUC=0.807](new-lstm-auc.png)
+
 ## Confound 1: the GAAE encoder itself changed, not just the split
 
 `bright-disco-4` (2026-05-07) and `ethereal-planet-16` (2026-06-10) are two different
@@ -110,6 +120,25 @@ gitignored in every copy checked (`_ad-early-detection`, `ad-early-detection-bac
 current repo), and `ad-early-detection-backup` (2026-06-22 snapshot) contains no `DATA/`
 directory at all, only code.
 
+> **Follow-up (2026-07-16):** a recovery attempt is written up in
+> [`old-split/README.md`](old-split/README.md), which refines this section. Summary:
+>
+> - The *"before" run's* split remains unrecoverable, and the case is now stronger than
+>   "the file is gone" — the legacy split (106 test patients) and the "before" run
+>   (16 test subjects, inverted positive rate) are **different data generations**, not the
+>   same cohort. No subsetting relationship connects them.
+> - The *legacy Feb-2026 split itself* was never actually lost — both JSONs are preserved
+>   and are now archived under `old-split/`. The GEC half **regenerates exactly** from its
+>   generator (319/319 train, 106/106 val).
+> - The GAAE half **cannot** be regenerated: `stratified_split_by_files()` breaks
+>   file-count ties by unsorted `glob()` order, and 100% of patients sit in a tied group,
+>   so `RANDOM_SEED = 42` does not pin the split. The archived JSON is the only copy.
+> - **The 69/106 leak figure is unaffected by any of that** — an independent regeneration
+>   of the GAAE split (sharing only ~90% of its train set) still yields 70/106, because the
+>   leak is structural: the generator only ever reads `gec_splits["test"]`.
+> - Separately surfaced: `sub-dca63a3ab` carries **two contradictory cohort labels** in the
+>   raw data (a stale MCI baseline left behind after it was reclassified as a converter).
+
 ## A second, independent, currently-live leak-adjacent bug (unrelated to the split question)
 
 `CLASSIFIER/model/GELSTM/models.py`'s `freeze_encoder()` sets `requires_grad_(False)` on
@@ -162,10 +191,33 @@ factors that all changed in the same window (2026-05-20 to 2026-06-21):
    rewrite (smaller LSTM, added standardization and weight decay) bundled into the same
    commit — capable of moving AUC by a similar magnitude independent of any split issue.
 
-Isolating factor 2's exact contribution from factors 1 and 3 would require the
-controlled re-run described in the plan (same downstream code, old vs. new GAAE
-checkpoint) — not executed here, since this pass was scoped to investigation and
-write-up only.
+Isolating factor 2's exact contribution from factors 1 and 3 requires a controlled
+re-run (same downstream code, old vs. new GAAE checkpoint, evaluated on both splits).
+That re-run has since been carried out — see
+[`src/RERUN_OLD_CONFIG_NEW_SPLIT.ipynb`](src/RERUN_OLD_CONFIG_NEW_SPLIT.ipynb): it loads
+the extracted `bright-disco-4` encoder plus the old GELSTM hyperparameters
+(`lstm_hidden=128`, `lstm_layers=2`, `classifier_hidden=64`, no standardization/weight
+decay), but evaluates against the current, fixed split instead of the legacy leaky one.
+
+| Configuration | Test AUC |
+|---|---|
+| "before" — old encoder + old config + **leaky** split | 0.9667 |
+| old encoder + old config + **fixed** split (this re-run) | 0.8929 |
+| "after" — new encoder + new config + **fixed** split | 0.8071 |
+
+Holding the encoder and downstream hyperparameters fixed and only swapping the split
+drops test AUC by 0.074 (0.9667 → 0.8929) — a real effect, but well short of the full
+0.160 before/after gap. The remaining 0.086 (0.8929 → 0.8071) is attributable to the
+encoder swap and/or the hyperparameter shrink (confounds 1 and 3), not the split. So the
+result lands **in between** "before" and "after", slightly closer to "before": the split
+leak alone explains roughly 46% of the observed drop, and confounds 1+3 together account
+for the rest. This confirms the caution above — no single factor dominates, and the
+leak is real but not sufficient on its own to explain the ~0.1-0.15 AUC drop.
+
+This is still not a full decomposition (it varies only the split, holding encoder and
+config fixed together) — a complete ablation would also need "new encoder + old config +
+old split" and "old encoder + new config + new split" arms to separate confounds 1 and 3
+from each other.
 
 ## What to tell the supervisor
 
