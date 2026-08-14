@@ -33,30 +33,23 @@
 
 ## Fritz steps (1–2): quick-start
 
-The orchestrator script for Fritz is:
+There is no orchestrator — each step is one command you run deliberately, on
+one named machine. See
+[`DATA/PREPROCESSING/pipeline-Fritz-CORE.md`](../PREPROCESSING/pipeline-Fritz-CORE.md)
+for the full run order and the rationale.
 
-```
-DATA/PREPROCESSING/src/fritz/run_fritz_pipeline.sh
-```
-
-It runs Steps 1–2 for **both** datasets (or a single one), then rsyncs the
-BIDS output to CORE.
-
-Usage:
+Organising to BIDS is purely local and never touches CORE:
 
 ```bash
-# Run pipeline for both datasets and rsync to CORE
-bash DATA/PREPROCESSING/src/fritz/run_fritz_pipeline.sh --dataset both
+# Both datasets (or --dataset oasis3 / --dataset adni)
+bash DATA/PREPROCESSING/src/fritz/organize_bids.sh --dataset both
 
-# Run for OASIS3 only
-bash DATA/PREPROCESSING/src/fritz/run_fritz_pipeline.sh --dataset oasis3
-
-# Run for ADNI only
-bash DATA/PREPROCESSING/src/fritz/run_fritz_pipeline.sh --dataset adni
-
-# Dry-run (skip rsync)
-bash DATA/PREPROCESSING/src/fritz/run_fritz_pipeline.sh --dataset both --dry-run
+# Smoke test: first 2 subjects only, into DATA/<COHORT>/BIDS_smoketest
+bash DATA/PREPROCESSING/src/fritz/organize_bids.sh --dataset oasis3 --limit 2
 ```
+
+Inspect the output under `DATA/<COHORT>/BIDS/`, then push it as a separate
+step (see the CORE section below).
 
 ### Step 1.2 run merging — how BOLD runs are grouped
 
@@ -119,66 +112,77 @@ mapping doesn't distinguish SBRef from the real acquisition).
 
 ## CORE steps (3–4): SLURM array jobs
 
-Reference scripts (adapt paths before submitting):
-
-| Script | Purpose |
-|--------|---------|
-| [`src/core/fmriprep_array_v1.slurm`](src/core/fmriprep_array_v1.slurm) | fMRIPrep array job |
-| [`src/core/postprocessing_array_v1.slurm`](src/core/postprocessing_array_v1.slurm) | Postprocessing array job |
-
-Submit example:
-
-```bash
-# On CORE — after BIDS data has arrived via rsync
-sbatch --array=1-272%10 src/core/fmriprep_array_v1.slurm
-```
+The active OASIS3/ADNI scripts are `src/core/*_oasis_adni.slurm` (flat
+`sub-*/ses-*` BIDS layout). The `*_v1.slurm` scripts are the legacy
+DELCODE-non-converter versions (per-session `INPUT_BASE/<session>/sub-*`
+layout) — do not use them for OASIS3/ADNI.
 
 ---
 
-## OASIS3/ADNI overlap workflow: push, submit early, pull incrementally
+## OASIS3/ADNI workflow: push, submit on CORE, pull
 
-Raw→BIDS push is a one-time ~1–3h rsync; fMRIPrep + postprocessing is days of
-aggregate SLURM-array compute. Don't wait for the push to finish before
-submitting the array job — fMRIPrep processes subjects independently, and
-each array task waits (bounded, 30 min) for its own subject to land if the
-rsync hasn't reached it yet. This overlaps the transfer under the compute for
-free, without a bespoke streaming pipeline.
+Each step is a separate, independently rerunnable command — nothing is chained
+automatically, so you control when each one runs and can check its log
+(`DATA/PREPROCESSING/logs/`, color-coded) before triggering the next. Steps 1–3
+run on Fritz, 4–5 on CORE, 6 back on Fritz.
 
-Each step below is a separate, independently rerunnable command — nothing is
-chained automatically, so you control when each one runs and can check its
-log (`DATA/PREPROCESSING/logs/`, color-coded) before triggering the next.
+The array is sized **on CORE**, from the subjects actually present there — not
+guessed from a local count. So the push must finish before you submit: the
+fMRIPrep job fails loudly on a missing subject rather than waiting for one to
+arrive (the old 30-minute arrival poll was removed 2026-07-17, since a failed
+push was indistinguishable from a slow one).
 
 ```bash
-# 1. Push: organizes BIDS locally, then rsyncs to CORE — run in background
-nohup bash src/fritz/run_fritz_pipeline.sh --dataset both > push.log 2>&1 &
+# ── On Fritz ──
+# 1. Organise to BIDS locally (see the Fritz quick-start above)
+bash src/fritz/organize_bids.sh --dataset both
 
-# 2. Submit the fMRIPrep array immediately — sized from the local subject
-#    count, which is already final even though the remote rsync is still running
-bash src/fritz/submit_fmriprep_array_core.sh --dataset oasis3
-bash src/fritz/submit_fmriprep_array_core.sh --dataset adni
+# 2. Push BIDS to CORE — a one-time ~1–3h rsync. Let it finish.
+bash src/fritz/push_bids_to_core.sh --dataset both
 
-# Check progress at any time (color-coded by SLURM task state)
-bash src/fritz/submit_fmriprep_array_core.sh --status --dataset both
+# 3. Ship the CORE-side scripts + create the SLURM log dirs.
+#    Rerun whenever a .slurm file or submit_array.sh changes.
+bash src/fritz/push_scripts_to_core.sh
 
-# 3. Once fMRIPrep has processed enough subjects, submit postprocessing
-bash src/fritz/submit_fmriprep_array_core.sh --dataset oasis3 --stage postprocessing
+# ── On CORE ──
+ssh $CORE_USER@$CORE_HOST
+cd /data2/core-rad-fni/flakhal/preprocessing/scripts/core
 
-# 4. Pull derivatives back at any time — safe to rerun repeatedly as more
+# 4. Submit fMRIPrep — sizes --array from CORE's own subject count
+bash submit_array.sh --dataset oasis3 --stage fmriprep
+bash submit_array.sh --dataset adni   --stage fmriprep
+
+# Check progress at any time
+squeue -u "$USER" -n fmriprep_oasis_adni
+
+# 5. Once fMRIPrep has processed enough subjects, submit postprocessing
+bash submit_array.sh --dataset oasis3 --stage postprocessing
+
+# ── Back on Fritz ──
+# 6. Pull derivatives back at any time — safe to rerun repeatedly as more
 #    sessions finish (only transfers new/changed files)
 bash src/fritz/pull_derivatives_from_core.sh --dataset both
 ```
 
-New scripts:
+Scripts:
 
-| Script | Purpose |
-|--------|---------|
-| [`src/core/fmriprep_array_oasis_adni.slurm`](src/core/fmriprep_array_oasis_adni.slurm) | fMRIPrep array for OASIS3/ADNI's flat BIDS layout; waits (bounded) for a subject to arrive if the push hasn't reached it yet |
-| [`src/core/postprocessing_array_oasis_adni.slurm`](src/core/postprocessing_array_oasis_adni.slurm) | Postprocessing array for OASIS3/ADNI |
-| [`src/fritz/submit_fmriprep_array_core.sh`](src/fritz/submit_fmriprep_array_core.sh) | Sizes and submits either array job on CORE; `--status` shows a live squeue snapshot |
-| [`src/fritz/pull_derivatives_from_core.sh`](src/fritz/pull_derivatives_from_core.sh) | Incremental, rerunnable rsync of derivatives back to `DATA/<COHORT>/derivatives/` |
+| Script | Machine | Purpose |
+|--------|---------|---------|
+| [`src/fritz/organize_bids.sh`](src/fritz/organize_bids.sh) | Fritz | Steps 1.2/1.3/2/2.2 — merge runs, organise to BIDS. Purely local |
+| [`src/fritz/push_bids_to_core.sh`](src/fritz/push_bids_to_core.sh) | Fritz | rsync `DATA/<COHORT>/BIDS` → CORE fMRIPrep `INPUT_BASE` |
+| [`src/fritz/push_scripts_to_core.sh`](src/fritz/push_scripts_to_core.sh) | Fritz | rsync `src/core/*` → CORE; creates the SLURM log dirs |
+| [`src/core/submit_array.sh`](src/core/submit_array.sh) | **CORE** | Sizes `--array` from CORE's filesystem and `sbatch`es either stage |
+| [`src/core/fmriprep_array_oasis_adni.slurm`](src/core/fmriprep_array_oasis_adni.slurm) | CORE | fMRIPrep array for OASIS3/ADNI's flat BIDS layout |
+| [`src/core/postprocessing_array_oasis_adni.slurm`](src/core/postprocessing_array_oasis_adni.slurm) | CORE | Postprocessing array for OASIS3/ADNI |
+| [`src/fritz/pull_derivatives_from_core.sh`](src/fritz/pull_derivatives_from_core.sh) | Fritz | Incremental, rerunnable rsync of derivatives back to `DATA/<COHORT>/derivatives/` |
 
 Both `.slurm` files require `DATASET=oasis3|adni` to be exported at submit
-time (`submit_fmriprep_array_core.sh` does this for you).
+time (`submit_array.sh` does this for you).
+
+Add `--dry-run` to any push script or to `submit_array.sh` to see what it would
+do without transferring or submitting. `--limit N` on `organize_bids.sh` and
+`push_bids_to_core.sh` runs a 2-subject smoke test against a separate
+`_smoketest`-suffixed tree, never the real dataset.
 
 ---
 
