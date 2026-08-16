@@ -9,6 +9,13 @@ Lifts the logic of ``notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb``
     * FDR variants — ``use_fdr=true`` selects the top-K Fisher dims per fold and
       patches the recurrent core to a ``TOP_K (+Δt)`` input.
 
+    * Encoder arms — ``encoder_init`` selects which encoder the classifier gets
+      (``pretrained_frozen`` | ``pretrained_finetuned`` | ``random`` | ``none``),
+      the knob behind the reconstruction-value ablation. Omitted from a config,
+      the arm is derived from the legacy ``freeze_encoder`` flag, so existing
+      entries are untouched. See ``configs/encoder.py`` and
+      ``DOCS/reconstruction-value-ablation.md``.
+
 Per-fold ``StandardScaler`` standardisation of the pooled GAAE embeddings
 (``standardize_features``, applied via ``model.set_feature_norm``) and the FDR
 dim-filter both ride inside the returned composite ``state`` so the winning fold's
@@ -26,6 +33,7 @@ import torch
 import torch.nn as nn
 from common.crossval import Bundle
 from common.fdr import compute_fdr_filter
+from configs.encoder import encoder_arm, resolve_encoder_init
 from configs.gelstm import EvalConfig
 from model.GELSTM.dataset import LongitudinalSubjectDataset
 from model.GELSTM.models import GELSTMClassifier
@@ -54,7 +62,23 @@ class GELSTMAdapter(LongitudinalAdapter):
         self.classifier_norm = c.get("classifier_norm", "none")
         self.use_time_delta = c.get("use_time_delta", True)
         self.graph_pool = c.get("graph_pool", "mean")
-        self.freeze_encoder = c.get("freeze_encoder", True)
+        # Encoder arm. ``encoder_init`` absent (the norm outside the ablation) →
+        # resolved from the legacy ``freeze_encoder`` flag, i.e. unchanged
+        # behaviour. Set both to contradictory values and this raises.
+        self.encoder_init = resolve_encoder_init(
+            c.get("encoder_init"), c.get("freeze_encoder")
+        )
+        self.encoder_arm = encoder_arm(self.encoder_init)
+        self.freeze_encoder = not self.encoder_arm.trains_encoder
+        # encoder_grad is derived from the arm, never taken from the config. A
+        # config that asks for it on a non-trainable arm is a mistake worth
+        # hearing about rather than a silently ignored key.
+        if bool(c.get("encoder_grad", False)) and not self.encoder_arm.trains_encoder:
+            raise ValueError(
+                f"encoder_grad=True is meaningless for encoder_init={self.encoder_init!r} "
+                "(its encoder never receives gradients). Use encoder_init="
+                "'pretrained_finetuned' or 'random' to train the encoder."
+            )
         self.standardize_features = c.get("standardize_features", True)
         self.learning_rate = c.get("learning_rate", 1e-3)
         self.weight_decay = c.get("weight_decay", 1e-4)
@@ -84,10 +108,22 @@ class GELSTMAdapter(LongitudinalAdapter):
             classifier_hidden=self.classifier_hidden,
             rnn_type=self.rnn_type,
             classifier_norm=self.classifier_norm,
+            encoder_init=self.encoder_init,
         ).to(self.device)
-        m.load_gaae_weights(self.gaae_ckpt_path, device=self.device)
-        if not self.freeze_encoder:
-            m.unfreeze_encoder()
+        if self.encoder_arm.loads_pretrained:
+            # load_gaae_weights freezes the encoder; the finetuned arm reopens it.
+            m.load_gaae_weights(self.gaae_ckpt_path, device=self.device)
+            if self.encoder_arm.trains_encoder:
+                m.unfreeze_encoder()
+        else:
+            # random / none: the GAAE checkpoint is deliberately not consulted.
+            # The registry still carries checkpoint_path (the shared notebook
+            # requires one); say so rather than let it look like it was used.
+            m.unfreeze_encoder()  # no-op under encoder_init="none"
+            print(
+                f"[encoder_init={self.encoder_init}] GAAE checkpoint NOT loaded "
+                f"(ignoring {self.gaae_ckpt_path})."
+            )
         if self.use_fdr:
             self._patch_recurrent_core(m)
         return m
@@ -125,7 +161,8 @@ class GELSTMAdapter(LongitudinalAdapter):
         print(
             f"Model built [{str(self.rnn_type).upper()} h{self.lstm_hidden} "
             f"L{self.lstm_layers}]: trainable={trainable:,}  total={total:,}  "
-            f"use_fdr={self.use_fdr}"
+            f"use_fdr={self.use_fdr}  encoder_init={self.encoder_init}  "
+            f"embed_dim={m.embed_dim}"
         )
         return m
 
@@ -153,12 +190,25 @@ class GELSTMAdapter(LongitudinalAdapter):
                     labels.append(int(item["label"]))
         return np.stack(embs), np.array(labels, dtype=int)
 
-    def _eval_cfg(self, dim_filter, threshold: Optional[float] = None) -> EvalConfig:
+    def _eval_cfg(
+        self,
+        dim_filter,
+        threshold: Optional[float] = None,
+        *,
+        encoder_grad: bool = False,
+    ) -> EvalConfig:
+        """Build the per-call EvalConfig.
+
+        ``encoder_grad`` is set only for the training pass of an
+        encoder-trainable arm (see ``train_fold``); every evaluation path keeps
+        the default False so visits are always embedded under no-grad + eval mode.
+        """
         if threshold is None:
             return EvalConfig(
                 use_time_delta=self.use_time_delta,
                 graph_pool=self.graph_pool,
                 dim_filter=dim_filter,
+                encoder_grad=encoder_grad,
             )
         return EvalConfig(
             use_time_delta=self.use_time_delta,
@@ -166,6 +216,7 @@ class GELSTMAdapter(LongitudinalAdapter):
             dim_filter=dim_filter,
             threshold_mode="fixed",
             fixed_threshold=threshold,
+            encoder_grad=encoder_grad,
         )
 
     # ── data ────────────────────────────────────────────────────────────────
@@ -211,6 +262,9 @@ class GELSTMAdapter(LongitudinalAdapter):
             optimizer, mode="max", factor=0.5, patience=5
         )
         eval_cfg = self._eval_cfg(dim_filter)
+        # Only the training pass lets gradients into the encoder, and only for the
+        # arms whose encoder is meant to learn (pretrained_finetuned / random).
+        train_cfg = self._eval_cfg(dim_filter, encoder_grad=self.encoder_arm.trains_encoder)
 
         best_auc, best_state, no_improve = 0.0, None, 0
         for _epoch in range(self.epochs):
@@ -223,7 +277,7 @@ class GELSTMAdapter(LongitudinalAdapter):
                 criterion,
                 device,
                 grad_clip=self.grad_clip,
-                eval_cfg=eval_cfg,
+                eval_cfg=train_cfg,
             )
             va = evaluate(model, va_batches, device, eval_cfg=eval_cfg)
             scheduler.step(va["auc"])
@@ -333,6 +387,7 @@ class GELSTMAdapter(LongitudinalAdapter):
             "classifier_norm": self.classifier_norm,
             "use_time_delta": self.use_time_delta,
             "graph_pool": self.graph_pool,
+            "encoder_init": self.encoder_init,
             "freeze_encoder": self.freeze_encoder,
             "standardize_features": self.standardize_features,
             "use_fdr": self.use_fdr,
@@ -347,6 +402,7 @@ class GELSTMAdapter(LongitudinalAdapter):
             root / "model" / "GELSTM" / "train.py",
             root / "model" / "GELSTM" / "utils.py",
             root / "model" / "GAAE" / "models.py",
+            root / "configs" / "encoder.py",
             root / "adapters" / "gelstm.py",
         ]
 

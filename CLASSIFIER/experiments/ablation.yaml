@@ -1,0 +1,80 @@
+# Reconstruction-value ablation — how much does GAAE reconstruction pretraining
+# actually buy the downstream classifier?
+#
+# Four arms of one experiment. Everything except `encoder_init` is held fixed:
+# same notebook, same adapter, same config_path, same seed (42) and therefore the
+# same folds and the same train/val/test splits, so the arms are comparable
+# subject-for-subject.
+#
+#   pretrained_frozen     GAAE weights, encoder frozen      — the reference arm
+#                                                             (identical to
+#                                                             gelstm-trajectory-whole-brain
+#                                                             apart from the explicit flag)
+#   pretrained_finetuned  GAAE weights, gradients allowed    — value of adapting the features
+#   random                same architecture, random init,    — value of the reconstruction
+#                         trained end-to-end                   pretraining itself
+#   none                  no encoder; pooled raw node        — value of the graph encoder
+#                         features feed the LSTM               as such
+#
+# `checkpoint_path` is required by LONGITUDINAL_COMMON_DELCODE.ipynb for every
+# entry, but the `random` / `none` arms deliberately never read it — the adapter
+# prints "GAAE checkpoint NOT loaded" for those runs. Keep the path identical
+# across arms so the two pretrained arms start from the same encoder.
+#
+# Run order and interpretation: DOCS/reconstruction-value-ablation.md.
+experiments:
+  - id: recon-ablation-gelstm-pretrained-frozen
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Arm 1/4 (reference): reconstruction-pretrained GAAE encoder, frozen. Reproduces the current GELSTM setup with the arm stated explicitly."
+
+  - id: recon-ablation-gelstm-pretrained-finetuned
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_finetuned
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Arm 2/4: same pretrained encoder, gradients allowed. vs arm 1 = value of adapting the reconstruction features to the conversion task."
+
+  - id: recon-ablation-gelstm-random
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: random
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Arm 3/4: identical encoder architecture, randomly initialised, trained end-to-end. vs arms 1-2 = value of the reconstruction pretraining, architecture held constant. Checkpoint path is ignored."
+
+  - id: recon-ablation-gelstm-none
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: none
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Arm 4/4: no encoder — the mean-pooled raw node features (200-d Schaefer rows) go straight into the LSTM, whose input width is derived. vs arm 3 = value of the graph encoder itself. Checkpoint path is ignored."

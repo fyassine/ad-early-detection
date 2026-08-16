@@ -12,6 +12,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from .encoder import EncoderInit  # noqa: F401  (re-exported for config authors)
+
 
 @dataclass
 class GECTrainConfig:
@@ -29,6 +31,14 @@ class GECTrainConfig:
     lr_factor: float = 0.5
     lr_patience: int = 5
     lr_min: float = 1e-6
+    # Encoder arm for the reconstruction-value ablation (see configs/encoder.py).
+    # GEC pre-encodes each visit once, offline, before training the MLP — there is
+    # no training-time forward pass through the encoder — so only the two arms
+    # that don't require encoder gradients are meaningful here:
+    # "pretrained_frozen" (default via None, today's behaviour) or "none". The
+    # trainable arms ("pretrained_finetuned" / "random") raise in GECAdapter;
+    # use the GELSTM adapter for those. See DOCS/reconstruction-value-ablation.md.
+    encoder_init: str | None = None
 
 
 @dataclass

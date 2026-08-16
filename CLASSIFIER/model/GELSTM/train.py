@@ -42,6 +42,7 @@ def _eval_cfg_to_dict(eval_cfg: EvalConfig) -> Dict:
         "shuffle_order": eval_cfg.shuffle_order,
         "threshold_mode": eval_cfg.threshold_mode,
         "fixed_threshold": eval_cfg.fixed_threshold,
+        "encoder_grad": eval_cfg.encoder_grad,
     }
 
 
@@ -68,7 +69,9 @@ def train_epoch(
 
     ``encode_batch_sequences`` uses an internal ``eval_mode`` context manager
     that restores the caller's training state, so no defensive ``model.train()``
-    is needed after each batch.
+    is needed after each batch. ``eval_cfg.encoder_grad`` (default False) opens
+    that context so gradients reach the graph encoder — required by the
+    encoder-trainable ablation arms, inert for the frozen default.
     """
     cfg = _eval_cfg(eval_cfg)
     if use_time_delta is not None:
@@ -89,6 +92,7 @@ def train_epoch(
             zero_time_delta=cfg.zero_time_delta,
             graph_pool=cfg.graph_pool,
             dim_filter=cfg.dim_filter,
+            encoder_grad=cfg.encoder_grad,
         )
 
         logits = model(packed)  # (B,)
@@ -181,6 +185,10 @@ def evaluate(
         all_sids.extend([b.get("subject_id", "") for b in sorted_batch])
         all_nscans.extend([len(b["graphs"]) for b in sorted_batch])
 
+        # ``encoder_grad`` is deliberately NOT forwarded here: evaluation always
+        # encodes under no-grad + eval mode (this function is @torch.no_grad and
+        # has already called model.eval()). Training is the only path that needs
+        # gradients through the encoder.
         packed, labels, _ = encode_batch_sequences(
             batch,
             model,

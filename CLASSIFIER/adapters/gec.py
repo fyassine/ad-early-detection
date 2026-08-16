@@ -20,6 +20,12 @@ Leakage note: unlike the original GEC-FDR notebook (which ranked FDR dims once o
 the whole CV pool), the FDR dims here are selected **per fold from the training
 subjects only** — the leakage-free convention already used by the GELSTM-FDR
 notebook and ``common.fdr``.
+
+Encoder arm: ``encoder_init`` (see ``configs/encoder.py``) supports only
+``"pretrained_frozen"`` (default) and ``"none"`` here — GEC encodes every visit
+once, offline, before the MLP ever trains, so there is no training-time forward
+pass through the encoder for ``"pretrained_finetuned"`` / ``"random"`` to act on;
+those raise ``ValueError``. Use the GELSTM adapter for a trainable encoder.
 """
 
 from __future__ import annotations
@@ -34,6 +40,7 @@ import torch
 import torch.nn as nn
 from common.crossval import Bundle
 from common.fdr import compute_fdr_filter
+from configs.encoder import encoder_arm, resolve_encoder_init
 from model.GAAE.models import GraphAttentionAutoencoderConditioned
 from model.GELSTM.dataset import LongitudinalSubjectDataset
 from sklearn.metrics import roc_auc_score
@@ -85,10 +92,30 @@ class GECAdapter(LongitudinalAdapter):
         self.batch_size = c.get("batch_size", 32)
         self.grad_clip = c.get("grad_clip", 1.0)
 
+        # Encoder arm (see configs/encoder.py). GEC has no legacy freeze_encoder
+        # flag — it has always been frozen-only — so an unset encoder_init simply
+        # resolves to "pretrained_frozen", today's behaviour. GEC pre-encodes each
+        # visit once, offline, so only the two arms with no training-time forward
+        # pass through the encoder are meaningful here.
+        self.encoder_init = resolve_encoder_init(c.get("encoder_init"), None)
+        self.encoder_arm = encoder_arm(self.encoder_init)
+        if self.encoder_arm.trains_encoder:
+            raise ValueError(
+                f"GECAdapter does not support encoder_init={self.encoder_init!r}: GEC "
+                "encodes every visit once, offline, with a frozen encoder before the "
+                "MLP ever trains, so there is no training-time forward pass that "
+                "could carry gradients back into it. Use 'pretrained_frozen' or "
+                "'none'; for a trainable encoder use the GELSTM adapter instead."
+            )
+        # Per-visit embedding width the encoder produces: the GAAE latent dim when
+        # there is an encoder, the raw node-feature width when there is not
+        # (encoder_init='none').
+        self.embed_dim = self.gaae_latent if self.encoder_arm.has_encoder else self.in_features
+
         self._cfg_max_visits = c.get("max_visits")  # None -> auto-detect on CV pool
         self.max_visits: Optional[int] = None
-        # number of latent dims fed to the MLP per visit (top_k under FDR, else full)
-        self.k = self.top_k if self.use_fdr else self.gaae_latent
+        # number of dims fed to the MLP per visit (top_k under FDR, else full embed_dim)
+        self.k = self.top_k if self.use_fdr else self.embed_dim
         self.feat_dim: Optional[int] = None
 
         self._encoder_model: Optional[GraphAttentionAutoencoderConditioned] = None
@@ -96,7 +123,10 @@ class GECAdapter(LongitudinalAdapter):
         self._cached_model: Optional[nn.Module] = None
 
     # ── frozen GAAE encoder ─────────────────────────────────────────────────
-    def _encoder(self) -> GraphAttentionAutoencoderConditioned:
+    def _encoder(self) -> Optional[GraphAttentionAutoencoderConditioned]:
+        """The frozen encoder, or ``None`` under ``encoder_init='none'``."""
+        if not self.encoder_arm.has_encoder:
+            return None
         if self._encoder_model is None:
             enc = GraphAttentionAutoencoderConditioned(
                 in_features=self.in_features,
@@ -115,9 +145,17 @@ class GECAdapter(LongitudinalAdapter):
         return self._encoder_model
 
     def _encode_graph_full(self, enc, g) -> np.ndarray:
+        """Full per-visit embedding (dim selection is deferred to ``_records_to_X``).
+
+        ``enc is None`` under ``encoder_init='none'``: the embedding is then the
+        mean-pooled raw node features (``embed_dim == in_features``), bypassing
+        the encoder entirely.
+        """
+        if enc is None:
+            return g.x.to(self.device).mean(0).cpu().numpy()
         ea = g.edge_attr.to(self.device) if g.edge_attr is not None else None
         z_nodes = enc.encode(g.x.to(self.device), g.edge_index.to(self.device), ea)
-        return z_nodes.mean(0).cpu().numpy()  # full GAAE latent (dim selection is deferred)
+        return z_nodes.mean(0).cpu().numpy()
 
     # ── data ────────────────────────────────────────────────────────────────
     def prepare_data(self, df) -> Bundle:
@@ -130,7 +168,8 @@ class GECAdapter(LongitudinalAdapter):
         )
         enc = self._encoder()
         records: List[Dict[str, Any]] = []
-        enc.eval()
+        if enc is not None:
+            enc.eval()
         with torch.no_grad():
             for i in range(len(ds)):
                 item = ds[i]
@@ -200,7 +239,9 @@ class GECAdapter(LongitudinalAdapter):
             )
         m = self._build_mlp(self.feat_dim)
         print(
-            f"LongitudinalMLP: input={self.feat_dim}  params={sum(p.numel() for p in m.parameters()):,}"
+            f"LongitudinalMLP: input={self.feat_dim}  "
+            f"params={sum(p.numel() for p in m.parameters()):,}  "
+            f"encoder_init={self.encoder_init}"
         )
         return m
 
@@ -214,7 +255,7 @@ class GECAdapter(LongitudinalAdapter):
             dim_filter, _ = compute_fdr_filter(embs, labs, self.top_k)
             print(f"  [FDR] top-{self.top_k} dims: {dim_filter.tolist()}")
         else:
-            dim_filter = np.arange(self.gaae_latent)
+            dim_filter = np.arange(self.embed_dim)
 
         X_tr_raw, y_tr = self._records_to_X(items_tr, dim_filter, self.max_visits)
         X_va_raw, y_va = self._records_to_X(items_va, dim_filter, self.max_visits)
@@ -353,6 +394,7 @@ class GECAdapter(LongitudinalAdapter):
             "use_time_delta": self.use_time_delta,
             "append_visit_mask": self.append_visit_mask,
             "use_fdr": self.use_fdr,
+            "encoder_init": self.encoder_init,
             "gaae_latent": self.gaae_latent,
             "gaae_heads": self.gaae_heads,
             "gaae_cond_dim": self.gaae_cond_dim,
@@ -366,6 +408,7 @@ class GECAdapter(LongitudinalAdapter):
             root / "model" / "GAAE" / "dataset.py",
             root / "model" / "GAAE" / "utils.py",
             root / "model" / "GELSTM" / "dataset.py",
+            root / "configs" / "encoder.py",
             root / "adapters" / "gec.py",
         ]
 
