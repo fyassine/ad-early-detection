@@ -90,7 +90,7 @@ CKPT_GUARD = (
 
 def wb_init(exp_id, mode, model):
     return (
-        "from common import tracking\n"
+        "from SHARED import tracking\n"
         f"_wb_exp = {{'id': EXPERIMENT_ID or '{exp_id}', 'mode': MODE or '{mode}', "
         f"'model': MODEL or '{model}', 'dataset': DATASET or REGION, 'seed': SEED, "
         "'wandb': WANDB_ENABLED}\n"
@@ -387,7 +387,7 @@ def wire_first_n(nb):
         nb,
         9,
         "def run_cv(items, labels, sids, n_folds=N_FOLDS):",
-        "from common import tracking\n"
+        "from SHARED import tracking\n"
         "_wb_exp = {'id': EXPERIMENT_ID or 'gelstm-early-detection-first-n', 'mode': MODE or 'longitudinal',\n"
         "           'model': MODEL or 'GELSTM', 'dataset': DATASET, 'seed': SEED, 'wandb': WANDB_ENABLED}\n"
         "wandb_run = tracking.init_run(_wb_exp, {**(RESOLVED_CONFIG or {})})\n\n"
