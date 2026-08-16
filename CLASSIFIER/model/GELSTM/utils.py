@@ -10,7 +10,7 @@ v2 additions (vs CLASSIFIER/model/GELSTM/utils.py):
 
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -67,6 +67,7 @@ def encode_batch_sequences(
     dim_filter: "np.ndarray | None" = None,
     shuffle_order: bool = False,
     shuffle_rng: "np.random.Generator | None" = None,
+    encoder_grad: bool = False,
 ) -> Tuple[PackedSequence, torch.Tensor, torch.Tensor]:
     """
     Encode a list of subject dicts into a PackedSequence for GELSTMClassifier.
@@ -95,6 +96,17 @@ def encode_batch_sequences(
         destroying ordering. *Use only at evaluation time.*
     shuffle_rng : np.random.Generator, optional
         Pass to make the shuffle deterministic.
+    encoder_grad : bool
+        If False (default), visits are encoded inside ``eval_mode`` +
+        ``torch.no_grad()`` — the historical behaviour, in which the encoder is a
+        pure feature extractor and receives no gradient regardless of its
+        ``requires_grad`` flags. If True, neither context is entered: the encoder
+        stays in the caller's train/eval mode and gradients flow back into it.
+        Required by the encoder-trainable ablation arms (``encoder_init`` =
+        ``pretrained_finetuned`` / ``random``); without it a randomly-initialised
+        encoder would stay random forever. Callers that must not train
+        (``evaluate``) are already wrapped in ``torch.no_grad()`` and call
+        ``model.eval()``, so passing True there is inert.
 
     Returns
     -------
@@ -125,8 +137,12 @@ def encode_batch_sequences(
 
     # Use a context manager so the caller's training mode is restored on exit.
     # train_epoch can keep the model in .train() across the whole step without
-    # needing a defensive .train() after this call.
-    with eval_mode(encoder_model), torch.no_grad():
+    # needing a defensive .train() after this call. Under ``encoder_grad`` both
+    # contexts are skipped so the encoder trains with the classifier.
+    mode_ctx = nullcontext() if encoder_grad else eval_mode(encoder_model)
+    grad_ctx = nullcontext() if encoder_grad else torch.no_grad()
+
+    with mode_ctx, grad_ctx:
         for item in batch:
             graphs = item["graphs"]
             deltas = item["delta_t"]
