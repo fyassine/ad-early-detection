@@ -96,6 +96,12 @@ class BrainTokenGTAdapter(LongitudinalAdapter):
         self.readout = c.get("readout", "mean")
         self.force_single_head = bool(c.get("force_single_head", True))
         self.train_give = bool(c.get("train_give", False))
+        # Stability knobs for the newly-unfrozen GIVE/GRCU parameters when
+        # train_give=True (see "fix-stabilized" experiment, README.md). Default to
+        # the main optimizer settings so train_give=False (or an unset config) is
+        # byte-for-byte the pre-existing single-param-group behaviour.
+        self.give_weight_decay = c.get("give_weight_decay")
+        self.give_lr_scale = float(c.get("give_lr_scale", 1.0))
 
         # ── data / cohort ───────────────────────────────────────────────────
         self.edge_density = float(c.get("edge_density", UPSTREAM_EDGE_DENSITY))
@@ -217,6 +223,33 @@ class BrainTokenGTAdapter(LongitudinalAdapter):
             "subject_ids": [it["subject_id"] for it in items],
         }
 
+    def _build_optimizer(self, model: BrainTokenGT, params: List[torch.nn.Parameter]):
+        """Adam over ``params``, splitting off a GIVE/GRCU param group when
+        ``train_give=True`` and ``give_weight_decay`` is explicitly configured
+        (stabilization for the previously-frozen GIVE parameters — see
+        BRAINTOKENGT/README.md "fix-stabilized" experiment). Unset -> a single
+        param group identical to the pre-existing behaviour.
+        """
+        if not self.train_give or self.give_weight_decay is None:
+            return getattr(torch.optim, self.optimizer_name)(
+                params, lr=self.learning_rate, weight_decay=self.weight_decay
+            )
+
+        give_ids = {id(p) for p in model.GRCU_layers.parameters()}
+        give_params = [p for p in params if id(p) in give_ids]
+        other_params = [p for p in params if id(p) not in give_ids]
+        return getattr(torch.optim, self.optimizer_name)(
+            [
+                {"params": other_params, "weight_decay": self.weight_decay},
+                {
+                    "params": give_params,
+                    "weight_decay": float(self.give_weight_decay),
+                    "lr": self.learning_rate * self.give_lr_scale,
+                },
+            ],
+            lr=self.learning_rate,
+        )
+
     def train_fold(self, bundle_tr, bundle_va, cfg, *, rng, device) -> Dict[str, Any]:
         tr_items, va_items = list(bundle_tr.items), list(bundle_va.items)
         model = self._build_model()
@@ -229,9 +262,7 @@ class BrainTokenGTAdapter(LongitudinalAdapter):
             criterion = nn.BCEWithLogitsLoss()
 
         params = model.get_trainable_params()
-        optimizer = getattr(torch.optim, self.optimizer_name)(
-            params, lr=self.learning_rate, weight_decay=self.weight_decay
-        )
+        optimizer = self._build_optimizer(model, params)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, mode="max", factor=0.5, patience=5
         )
@@ -337,6 +368,8 @@ class BrainTokenGTAdapter(LongitudinalAdapter):
             "readout": self.readout,
             "force_single_head": self.force_single_head,
             "train_give": self.train_give,
+            "give_weight_decay": self.give_weight_decay,
+            "give_lr_scale": self.give_lr_scale,
             "upstream_faithful": self.is_upstream_faithful(),
         }
 

@@ -129,6 +129,23 @@ class TopK(nn.Module):
         vals, topk_indices = scores.view(-1).topk(self.k)
         topk_indices = topk_indices[vals > -float("Inf")]
 
+        if topk_indices.numel() == 0:
+            # Diagnostic guard (see BRAINTOKENGT/README.md "fix-failloud" experiment):
+            # every candidate score came back non-finite. With train_give=False this
+            # is a no-op (the scorer is frozen at a bounded random init and never
+            # produces NaN); with train_give=True it means the GIVE/GRCU parameters
+            # diverged during training. Fail with the diagnosis instead of the
+            # cryptic IndexError from indexing an empty tensor below.
+            raise ValueError(
+                "TopK.forward: every candidate node score is non-finite (NaN/-inf). "
+                f"scores: min={scores.min().item()!r} max={scores.max().item()!r} "
+                f"any_nan={bool(torch.isnan(scores).any())} any_inf={bool(torch.isinf(scores).any())}. "
+                "This means the GIVE/GRCU parameters (scorer or upstream node "
+                "embeddings) have diverged during training, not a data or masking "
+                "issue — see the 'What was changed' / stability note in "
+                "BRAINTOKENGT/README.md."
+            )
+
         if topk_indices.size(0) < self.k:
             topk_indices = pad_with_last_val(topk_indices, self.k)
 

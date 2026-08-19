@@ -1,0 +1,13 @@
+{
+  "experiment_id": "recon-ablation-gelstm-none",
+  "run_name": "risen-sky-2-20b595788-2026-08-17_18-57-53",
+  "state": "done",
+  "pid": 2581226,
+  "started_at": "2026-08-17T18:57:55",
+  "git_commit": "20b595788",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-17T18:58:35",
+  "exit_code": 0,
+  "duration_seconds": 39.2
+}

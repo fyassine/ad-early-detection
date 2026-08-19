@@ -1,0 +1,13 @@
+{
+  "experiment_id": "recon-ablation-gelstm-none",
+  "run_name": "worthy-zenith-1-20b595788-2026-08-17_18-39-36",
+  "state": "done",
+  "pid": 2574509,
+  "started_at": "2026-08-17T18:39:38",
+  "git_commit": "20b595788",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-17T18:40:19",
+  "exit_code": 0,
+  "duration_seconds": 40.6
+}
