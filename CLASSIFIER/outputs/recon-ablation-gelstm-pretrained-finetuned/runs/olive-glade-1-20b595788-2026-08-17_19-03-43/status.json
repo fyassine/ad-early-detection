@@ -1,0 +1,13 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-finetuned",
+  "run_name": "olive-glade-1-20b595788-2026-08-17_19-03-43",
+  "state": "done",
+  "pid": 2583885,
+  "started_at": "2026-08-17T19:03:45",
+  "git_commit": "20b595788",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-17T19:10:21",
+  "exit_code": 0,
+  "duration_seconds": 395.3
+}

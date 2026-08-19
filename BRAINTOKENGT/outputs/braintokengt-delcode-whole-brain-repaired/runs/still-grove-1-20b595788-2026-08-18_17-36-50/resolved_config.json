@@ -1,0 +1,29 @@
+{
+  "_comment": "Brain-TokenGT REPAIRED: the four released-code defects fixed per the paper. Report alongside the as-released row so the baseline cannot be accused of being handicapped.",
+  "in_features": 200,
+  "num_nodes": 200,
+  "output_sizes": [
+    32,
+    32
+  ],
+  "nhead": 2,
+  "num_layers": 2,
+  "static_edge_topk": 180,
+  "edge_weight_mode": "weighted",
+  "readout": "graph_token",
+  "force_single_head": false,
+  "train_give": true,
+  "edge_density": 0.15012345679012346,
+  "adjacency_metric": "raw",
+  "min_visits": 2,
+  "max_visits": 3,
+  "optimizer": "Adam",
+  "learning_rate": 0.001,
+  "weight_decay": 0.0,
+  "epochs": 50,
+  "early_stopping_patience": 15,
+  "batch_size": 8,
+  "use_class_cost_weights": true,
+  "grad_clip": 1.0,
+  "n_folds": 5
+}

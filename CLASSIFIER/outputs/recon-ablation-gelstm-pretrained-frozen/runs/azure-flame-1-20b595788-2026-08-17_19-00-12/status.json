@@ -1,0 +1,13 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-frozen",
+  "run_name": "azure-flame-1-20b595788-2026-08-17_19-00-12",
+  "state": "done",
+  "pid": 2582428,
+  "started_at": "2026-08-17T19:00:14",
+  "git_commit": "20b595788",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-17T19:03:35",
+  "exit_code": 0,
+  "duration_seconds": 200.6
+}

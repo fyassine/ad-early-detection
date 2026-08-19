@@ -51,3 +51,38 @@ experiments:
       FC edge weights reach VEE (§2.2), [graph]-token readout (Fig. 1), the
       configured head count is honoured, and GIVE is trainable. Report the better
       of this and the as-released row as the competitor's score.
+
+  - id: braintokengt-delcode-whole-brain-repaired-fix-failloud
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_failloud.json
+    threshold_mode: best-f1
+    notes: >-
+      DIAGNOSTIC fix for the repaired row's run-to-run crash (IndexError in
+      TopK.forward when train_give=True diverges to non-finite scores). Same
+      hyperparameters as the repaired row; model/grcu.py::TopK now raises a
+      descriptive ValueError instead of the cryptic IndexError. Does not address
+      the underlying instability -- expected to still fail if it recurs, just
+      with a readable error.
+
+  - id: braintokengt-delcode-whole-brain-repaired-fix-stabilized
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    threshold_mode: best-f1
+    notes: >-
+      STABILIZATION fix for the repaired row's run-to-run crash. Isolated replay
+      of the failing fold showed the same data/split/config completes cleanly on
+      its own -- the divergence is GPU floating-point-order sensitivity (only
+      cudnn is seeded deterministic; matmul/attention backward reduction order is
+      not), not a data-dependent bug. give_weight_decay=1e-3 and give_lr_scale=0.1
+      give the newly-unfrozen GIVE/GRCU parameters their own, more conservative
+      optimizer group instead of sharing the main LR/weight_decay.

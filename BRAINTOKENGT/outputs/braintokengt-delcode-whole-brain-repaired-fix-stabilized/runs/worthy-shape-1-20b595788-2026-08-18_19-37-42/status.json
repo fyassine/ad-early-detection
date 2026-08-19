@@ -1,0 +1,13 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-repaired-fix-stabilized",
+  "run_name": "worthy-shape-1-20b595788-2026-08-18_19-37-42",
+  "state": "done",
+  "pid": 2652379,
+  "started_at": "2026-08-18T19:37:44",
+  "git_commit": "20b595788",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb",
+  "finished_at": "2026-08-18T19:42:52",
+  "exit_code": 0,
+  "duration_seconds": 306.8
+}

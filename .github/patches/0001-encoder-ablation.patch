@@ -1,0 +1,1573 @@
+From b0fd19d7fd28dc2b1bbce8f09d4307575c3fb724 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 16 Aug 2026 17:13:04 +0000
+Subject: [PATCH] feat(classifier): add 4-arm encoder ablation
+
+Adds encoder_init (pretrained_frozen | pretrained_finetuned | random | none)
+to isolate the value of GAAE reconstruction pretraining from the encoder
+architecture and from the encoder itself, wired through GELSTMClassifier and
+the GELSTM/GEC adapters. Defaults preserve today's exact behaviour.
+
+Verification (tests, ruff, mypy) was skipped for this commit per explicit
+request; CLASSIFIER/tests/test_encoder_arms.py and the CI checks in
+.claude/rules/ci.md have not been (re-)run against the GEC changes above.
+---
+ CLASSIFIER/adapters/gec.py                    |  57 ++-
+ CLASSIFIER/adapters/gelstm.py                 |  70 +++-
+ CLASSIFIER/configs/__init__.py                |  12 +
+ CLASSIFIER/configs/encoder.py                 | 162 ++++++++
+ CLASSIFIER/configs/gec.py                     |  10 +
+ CLASSIFIER/configs/gelstm.py                  |  16 +
+ .../gelstm_recon_ablation_delcode.json        |  18 +
+ CLASSIFIER/experiments/ablation.yaml          |  80 ++++
+ CLASSIFIER/model/GELSTM/models.py             | 128 +++++--
+ CLASSIFIER/model/GELSTM/train.py              |  10 +-
+ CLASSIFIER/model/GELSTM/utils.py              |  22 +-
+ CLASSIFIER/tests/test_encoder_arms.py         | 353 ++++++++++++++++++
+ DOCS/reconstruction-value-ablation.md         | 174 +++++++++
+ 13 files changed, 1059 insertions(+), 53 deletions(-)
+ create mode 100644 CLASSIFIER/configs/encoder.py
+ create mode 100644 CLASSIFIER/configs/gelstm_recon_ablation_delcode.json
+ create mode 100644 CLASSIFIER/experiments/ablation.yaml
+ create mode 100644 CLASSIFIER/tests/test_encoder_arms.py
+ create mode 100644 DOCS/reconstruction-value-ablation.md
+
+diff --git a/CLASSIFIER/adapters/gec.py b/CLASSIFIER/adapters/gec.py
+index 6b013a9..92e5aa6 100644
+--- a/CLASSIFIER/adapters/gec.py
++++ b/CLASSIFIER/adapters/gec.py
+@@ -20,6 +20,12 @@ Leakage note: unlike the original GEC-FDR notebook (which ranked FDR dims once o
+ the whole CV pool), the FDR dims here are selected **per fold from the training
+ subjects only** — the leakage-free convention already used by the GELSTM-FDR
+ notebook and ``common.fdr``.
++
++Encoder arm: ``encoder_init`` (see ``configs/encoder.py``) supports only
++``"pretrained_frozen"`` (default) and ``"none"`` here — GEC encodes every visit
++once, offline, before the MLP ever trains, so there is no training-time forward
++pass through the encoder for ``"pretrained_finetuned"`` / ``"random"`` to act on;
++those raise ``ValueError``. Use the GELSTM adapter for a trainable encoder.
+ """
+ 
+ from __future__ import annotations
+@@ -34,6 +40,7 @@ import torch
+ import torch.nn as nn
+ from common.crossval import Bundle
+ from common.fdr import compute_fdr_filter
++from configs.encoder import encoder_arm, resolve_encoder_init
+ from model.GAAE.models import GraphAttentionAutoencoderConditioned
+ from model.GELSTM.dataset import LongitudinalSubjectDataset
+ from sklearn.metrics import roc_auc_score
+@@ -85,10 +92,30 @@ class GECAdapter(LongitudinalAdapter):
+         self.batch_size = c.get("batch_size", 32)
+         self.grad_clip = c.get("grad_clip", 1.0)
+ 
++        # Encoder arm (see configs/encoder.py). GEC has no legacy freeze_encoder
++        # flag — it has always been frozen-only — so an unset encoder_init simply
++        # resolves to "pretrained_frozen", today's behaviour. GEC pre-encodes each
++        # visit once, offline, so only the two arms with no training-time forward
++        # pass through the encoder are meaningful here.
++        self.encoder_init = resolve_encoder_init(c.get("encoder_init"), None)
++        self.encoder_arm = encoder_arm(self.encoder_init)
++        if self.encoder_arm.trains_encoder:
++            raise ValueError(
++                f"GECAdapter does not support encoder_init={self.encoder_init!r}: GEC "
++                "encodes every visit once, offline, with a frozen encoder before the "
++                "MLP ever trains, so there is no training-time forward pass that "
++                "could carry gradients back into it. Use 'pretrained_frozen' or "
++                "'none'; for a trainable encoder use the GELSTM adapter instead."
++            )
++        # Per-visit embedding width the encoder produces: the GAAE latent dim when
++        # there is an encoder, the raw node-feature width when there is not
++        # (encoder_init='none').
++        self.embed_dim = self.gaae_latent if self.encoder_arm.has_encoder else self.in_features
++
+         self._cfg_max_visits = c.get("max_visits")  # None -> auto-detect on CV pool
+         self.max_visits: Optional[int] = None
+-        # number of latent dims fed to the MLP per visit (top_k under FDR, else full)
+-        self.k = self.top_k if self.use_fdr else self.gaae_latent
++        # number of dims fed to the MLP per visit (top_k under FDR, else full embed_dim)
++        self.k = self.top_k if self.use_fdr else self.embed_dim
+         self.feat_dim: Optional[int] = None
+ 
+         self._encoder_model: Optional[GraphAttentionAutoencoderConditioned] = None
+@@ -96,7 +123,10 @@ class GECAdapter(LongitudinalAdapter):
+         self._cached_model: Optional[nn.Module] = None
+ 
+     # ── frozen GAAE encoder ─────────────────────────────────────────────────
+-    def _encoder(self) -> GraphAttentionAutoencoderConditioned:
++    def _encoder(self) -> Optional[GraphAttentionAutoencoderConditioned]:
++        """The frozen encoder, or ``None`` under ``encoder_init='none'``."""
++        if not self.encoder_arm.has_encoder:
++            return None
+         if self._encoder_model is None:
+             enc = GraphAttentionAutoencoderConditioned(
+                 in_features=self.in_features,
+@@ -115,9 +145,17 @@ class GECAdapter(LongitudinalAdapter):
+         return self._encoder_model
+ 
+     def _encode_graph_full(self, enc, g) -> np.ndarray:
++        """Full per-visit embedding (dim selection is deferred to ``_records_to_X``).
++
++        ``enc is None`` under ``encoder_init='none'``: the embedding is then the
++        mean-pooled raw node features (``embed_dim == in_features``), bypassing
++        the encoder entirely.
++        """
++        if enc is None:
++            return g.x.to(self.device).mean(0).cpu().numpy()
+         ea = g.edge_attr.to(self.device) if g.edge_attr is not None else None
+         z_nodes = enc.encode(g.x.to(self.device), g.edge_index.to(self.device), ea)
+-        return z_nodes.mean(0).cpu().numpy()  # full GAAE latent (dim selection is deferred)
++        return z_nodes.mean(0).cpu().numpy()
+ 
+     # ── data ────────────────────────────────────────────────────────────────
+     def prepare_data(self, df) -> Bundle:
+@@ -130,7 +168,8 @@ class GECAdapter(LongitudinalAdapter):
+         )
+         enc = self._encoder()
+         records: List[Dict[str, Any]] = []
+-        enc.eval()
++        if enc is not None:
++            enc.eval()
+         with torch.no_grad():
+             for i in range(len(ds)):
+                 item = ds[i]
+@@ -200,7 +239,9 @@ class GECAdapter(LongitudinalAdapter):
+             )
+         m = self._build_mlp(self.feat_dim)
+         print(
+-            f"LongitudinalMLP: input={self.feat_dim}  params={sum(p.numel() for p in m.parameters()):,}"
++            f"LongitudinalMLP: input={self.feat_dim}  "
++            f"params={sum(p.numel() for p in m.parameters()):,}  "
++            f"encoder_init={self.encoder_init}"
+         )
+         return m
+ 
+@@ -214,7 +255,7 @@ class GECAdapter(LongitudinalAdapter):
+             dim_filter, _ = compute_fdr_filter(embs, labs, self.top_k)
+             print(f"  [FDR] top-{self.top_k} dims: {dim_filter.tolist()}")
+         else:
+-            dim_filter = np.arange(self.gaae_latent)
++            dim_filter = np.arange(self.embed_dim)
+ 
+         X_tr_raw, y_tr = self._records_to_X(items_tr, dim_filter, self.max_visits)
+         X_va_raw, y_va = self._records_to_X(items_va, dim_filter, self.max_visits)
+@@ -353,6 +394,7 @@ class GECAdapter(LongitudinalAdapter):
+             "use_time_delta": self.use_time_delta,
+             "append_visit_mask": self.append_visit_mask,
+             "use_fdr": self.use_fdr,
++            "encoder_init": self.encoder_init,
+             "gaae_latent": self.gaae_latent,
+             "gaae_heads": self.gaae_heads,
+             "gaae_cond_dim": self.gaae_cond_dim,
+@@ -366,6 +408,7 @@ class GECAdapter(LongitudinalAdapter):
+             root / "model" / "GAAE" / "dataset.py",
+             root / "model" / "GAAE" / "utils.py",
+             root / "model" / "GELSTM" / "dataset.py",
++            root / "configs" / "encoder.py",
+             root / "adapters" / "gec.py",
+         ]
+ 
+diff --git a/CLASSIFIER/adapters/gelstm.py b/CLASSIFIER/adapters/gelstm.py
+index 6a3f8d3..0ffa971 100644
+--- a/CLASSIFIER/adapters/gelstm.py
++++ b/CLASSIFIER/adapters/gelstm.py
+@@ -9,6 +9,13 @@ Lifts the logic of ``notebooks/LONGITUDINAL/LONGITUDINAL_GELSTM_DELCODE.ipynb``
+     * FDR variants — ``use_fdr=true`` selects the top-K Fisher dims per fold and
+       patches the recurrent core to a ``TOP_K (+Δt)`` input.
+ 
++    * Encoder arms — ``encoder_init`` selects which encoder the classifier gets
++      (``pretrained_frozen`` | ``pretrained_finetuned`` | ``random`` | ``none``),
++      the knob behind the reconstruction-value ablation. Omitted from a config,
++      the arm is derived from the legacy ``freeze_encoder`` flag, so existing
++      entries are untouched. See ``configs/encoder.py`` and
++      ``DOCS/reconstruction-value-ablation.md``.
++
+ Per-fold ``StandardScaler`` standardisation of the pooled GAAE embeddings
+ (``standardize_features``, applied via ``model.set_feature_norm``) and the FDR
+ dim-filter both ride inside the returned composite ``state`` so the winning fold's
+@@ -26,6 +33,7 @@ import torch
+ import torch.nn as nn
+ from common.crossval import Bundle
+ from common.fdr import compute_fdr_filter
++from configs.encoder import encoder_arm, resolve_encoder_init
+ from configs.gelstm import EvalConfig
+ from model.GELSTM.dataset import LongitudinalSubjectDataset
+ from model.GELSTM.models import GELSTMClassifier
+@@ -54,7 +62,23 @@ class GELSTMAdapter(LongitudinalAdapter):
+         self.classifier_norm = c.get("classifier_norm", "none")
+         self.use_time_delta = c.get("use_time_delta", True)
+         self.graph_pool = c.get("graph_pool", "mean")
+-        self.freeze_encoder = c.get("freeze_encoder", True)
++        # Encoder arm. ``encoder_init`` absent (the norm outside the ablation) →
++        # resolved from the legacy ``freeze_encoder`` flag, i.e. unchanged
++        # behaviour. Set both to contradictory values and this raises.
++        self.encoder_init = resolve_encoder_init(
++            c.get("encoder_init"), c.get("freeze_encoder")
++        )
++        self.encoder_arm = encoder_arm(self.encoder_init)
++        self.freeze_encoder = not self.encoder_arm.trains_encoder
++        # encoder_grad is derived from the arm, never taken from the config. A
++        # config that asks for it on a non-trainable arm is a mistake worth
++        # hearing about rather than a silently ignored key.
++        if bool(c.get("encoder_grad", False)) and not self.encoder_arm.trains_encoder:
++            raise ValueError(
++                f"encoder_grad=True is meaningless for encoder_init={self.encoder_init!r} "
++                "(its encoder never receives gradients). Use encoder_init="
++                "'pretrained_finetuned' or 'random' to train the encoder."
++            )
+         self.standardize_features = c.get("standardize_features", True)
+         self.learning_rate = c.get("learning_rate", 1e-3)
+         self.weight_decay = c.get("weight_decay", 1e-4)
+@@ -84,10 +108,22 @@ class GELSTMAdapter(LongitudinalAdapter):
+             classifier_hidden=self.classifier_hidden,
+             rnn_type=self.rnn_type,
+             classifier_norm=self.classifier_norm,
++            encoder_init=self.encoder_init,
+         ).to(self.device)
+-        m.load_gaae_weights(self.gaae_ckpt_path, device=self.device)
+-        if not self.freeze_encoder:
+-            m.unfreeze_encoder()
++        if self.encoder_arm.loads_pretrained:
++            # load_gaae_weights freezes the encoder; the finetuned arm reopens it.
++            m.load_gaae_weights(self.gaae_ckpt_path, device=self.device)
++            if self.encoder_arm.trains_encoder:
++                m.unfreeze_encoder()
++        else:
++            # random / none: the GAAE checkpoint is deliberately not consulted.
++            # The registry still carries checkpoint_path (the shared notebook
++            # requires one); say so rather than let it look like it was used.
++            m.unfreeze_encoder()  # no-op under encoder_init="none"
++            print(
++                f"[encoder_init={self.encoder_init}] GAAE checkpoint NOT loaded "
++                f"(ignoring {self.gaae_ckpt_path})."
++            )
+         if self.use_fdr:
+             self._patch_recurrent_core(m)
+         return m
+@@ -125,7 +161,8 @@ class GELSTMAdapter(LongitudinalAdapter):
+         print(
+             f"Model built [{str(self.rnn_type).upper()} h{self.lstm_hidden} "
+             f"L{self.lstm_layers}]: trainable={trainable:,}  total={total:,}  "
+-            f"use_fdr={self.use_fdr}"
++            f"use_fdr={self.use_fdr}  encoder_init={self.encoder_init}  "
++            f"embed_dim={m.embed_dim}"
+         )
+         return m
+ 
+@@ -153,12 +190,25 @@ class GELSTMAdapter(LongitudinalAdapter):
+                     labels.append(int(item["label"]))
+         return np.stack(embs), np.array(labels, dtype=int)
+ 
+-    def _eval_cfg(self, dim_filter, threshold: Optional[float] = None) -> EvalConfig:
++    def _eval_cfg(
++        self,
++        dim_filter,
++        threshold: Optional[float] = None,
++        *,
++        encoder_grad: bool = False,
++    ) -> EvalConfig:
++        """Build the per-call EvalConfig.
++
++        ``encoder_grad`` is set only for the training pass of an
++        encoder-trainable arm (see ``train_fold``); every evaluation path keeps
++        the default False so visits are always embedded under no-grad + eval mode.
++        """
+         if threshold is None:
+             return EvalConfig(
+                 use_time_delta=self.use_time_delta,
+                 graph_pool=self.graph_pool,
+                 dim_filter=dim_filter,
++                encoder_grad=encoder_grad,
+             )
+         return EvalConfig(
+             use_time_delta=self.use_time_delta,
+@@ -166,6 +216,7 @@ class GELSTMAdapter(LongitudinalAdapter):
+             dim_filter=dim_filter,
+             threshold_mode="fixed",
+             fixed_threshold=threshold,
++            encoder_grad=encoder_grad,
+         )
+ 
+     # ── data ────────────────────────────────────────────────────────────────
+@@ -211,6 +262,9 @@ class GELSTMAdapter(LongitudinalAdapter):
+             optimizer, mode="max", factor=0.5, patience=5
+         )
+         eval_cfg = self._eval_cfg(dim_filter)
++        # Only the training pass lets gradients into the encoder, and only for the
++        # arms whose encoder is meant to learn (pretrained_finetuned / random).
++        train_cfg = self._eval_cfg(dim_filter, encoder_grad=self.encoder_arm.trains_encoder)
+ 
+         best_auc, best_state, no_improve = 0.0, None, 0
+         for _epoch in range(self.epochs):
+@@ -223,7 +277,7 @@ class GELSTMAdapter(LongitudinalAdapter):
+                 criterion,
+                 device,
+                 grad_clip=self.grad_clip,
+-                eval_cfg=eval_cfg,
++                eval_cfg=train_cfg,
+             )
+             va = evaluate(model, va_batches, device, eval_cfg=eval_cfg)
+             scheduler.step(va["auc"])
+@@ -333,6 +387,7 @@ class GELSTMAdapter(LongitudinalAdapter):
+             "classifier_norm": self.classifier_norm,
+             "use_time_delta": self.use_time_delta,
+             "graph_pool": self.graph_pool,
++            "encoder_init": self.encoder_init,
+             "freeze_encoder": self.freeze_encoder,
+             "standardize_features": self.standardize_features,
+             "use_fdr": self.use_fdr,
+@@ -347,6 +402,7 @@ class GELSTMAdapter(LongitudinalAdapter):
+             root / "model" / "GELSTM" / "train.py",
+             root / "model" / "GELSTM" / "utils.py",
+             root / "model" / "GAAE" / "models.py",
++            root / "configs" / "encoder.py",
+             root / "adapters" / "gelstm.py",
+         ]
+ 
+diff --git a/CLASSIFIER/configs/__init__.py b/CLASSIFIER/configs/__init__.py
+index 5fb42af..e2ed676 100644
+--- a/CLASSIFIER/configs/__init__.py
++++ b/CLASSIFIER/configs/__init__.py
+@@ -1,3 +1,10 @@
++from .encoder import (
++    ENCODER_INIT_ARMS,
++    EncoderArm,
++    EncoderInit,
++    encoder_arm,
++    resolve_encoder_init,
++)
+ from .gec import GECBatch, GECTrainConfig
+ from .gelstm import EvalConfig, GELSTMTrainConfig
+ 
+@@ -6,4 +13,9 @@ __all__ = [
+     "EvalConfig",
+     "GECTrainConfig",
+     "GECBatch",
++    "EncoderArm",
++    "EncoderInit",
++    "ENCODER_INIT_ARMS",
++    "encoder_arm",
++    "resolve_encoder_init",
+ ]
+diff --git a/CLASSIFIER/configs/encoder.py b/CLASSIFIER/configs/encoder.py
+new file mode 100644
+index 0000000..3953c4d
+--- /dev/null
++++ b/CLASSIFIER/configs/encoder.py
+@@ -0,0 +1,162 @@
++"""
++Encoder-arm configuration — the knob behind the "is reconstruction pretraining
++worth anything?" ablation.
++
++The GAAE is pretrained with a reconstruction objective and its encoder is then
++reused as a feature extractor by the downstream classifiers. ``encoder_init``
++names *which* encoder the downstream model gets, so the contribution of the
++pretraining, of the architecture, and of the encoder itself can be separated:
++
++===========================  ===========================================================
++arm                          what it isolates
++===========================  ===========================================================
++``pretrained_frozen``        Today's default: GAAE weights loaded, encoder frozen.
++                             The reference arm — everything else is compared to it.
++``pretrained_finetuned``     GAAE weights loaded, gradients allowed. Difference vs
++                             ``pretrained_frozen`` = value of adapting the pretrained
++                             features to the classification task.
++``random``                   Same encoder architecture, random init, trained end-to-end
++                             with the classifier. Difference vs ``pretrained_*`` =
++                             value of the *reconstruction pretraining itself* (the
++                             architecture prior is held constant).
++``none``                     No encoder at all; the pooled raw node features go
++                             straight into the downstream head. Difference vs
++                             ``random`` = value of the graph encoder as such.
++===========================  ===========================================================
++
++Back-compat contract
++--------------------
++``encoder_init=None`` (the default) means "derive the arm from the legacy
++``freeze_encoder`` flag", which is exactly what every existing config does. No
++existing run changes behaviour unless ``encoder_init`` is set explicitly. When
++both knobs are given and they contradict each other, ``resolve_encoder_init``
++raises rather than silently picking one (see ``.claude/rules/errors.md``).
++"""
++
++from __future__ import annotations
++
++from dataclasses import dataclass
++from typing import Literal, Optional
++
++EncoderInit = Literal["pretrained_frozen", "pretrained_finetuned", "random", "none"]
++
++#: Declaration order is the order the ablation table reads in.
++ENCODER_INIT_ARMS: tuple[str, ...] = (
++    "pretrained_frozen",
++    "pretrained_finetuned",
++    "random",
++    "none",
++)
++
++
++@dataclass(frozen=True)
++class EncoderArm:
++    """Behavioural flags for one ``encoder_init`` value.
++
++    Single source of truth shared by the model (``GELSTMClassifier``) and the
++    adapter, so the two can never disagree about what an arm means.
++
++    Attributes
++    ----------
++    name : str
++        The ``encoder_init`` value this describes.
++    has_encoder : bool
++        Whether a graph encoder module is constructed at all.
++    loads_pretrained : bool
++        Whether GAAE reconstruction-pretrained weights are loaded into it.
++    trains_encoder : bool
++        Whether encoder parameters receive gradients from the classification loss.
++    """
++
++    name: str
++    has_encoder: bool
++    loads_pretrained: bool
++    trains_encoder: bool
++
++
++_ARMS: dict[str, EncoderArm] = {
++    "pretrained_frozen": EncoderArm(
++        name="pretrained_frozen", has_encoder=True, loads_pretrained=True, trains_encoder=False
++    ),
++    "pretrained_finetuned": EncoderArm(
++        name="pretrained_finetuned", has_encoder=True, loads_pretrained=True, trains_encoder=True
++    ),
++    "random": EncoderArm(
++        name="random", has_encoder=True, loads_pretrained=False, trains_encoder=True
++    ),
++    "none": EncoderArm(
++        name="none", has_encoder=False, loads_pretrained=False, trains_encoder=False
++    ),
++}
++
++
++def encoder_arm(name: str) -> EncoderArm:
++    """Look up the :class:`EncoderArm` for an ``encoder_init`` value.
++
++    Raises ``ValueError`` listing the valid arms for anything else — a typo must
++    never fall back to the default arm, or the ablation silently measures the
++    wrong thing.
++    """
++    key = str(name).strip().lower()
++    arm = _ARMS.get(key)
++    if arm is None:
++        raise ValueError(
++            f"Unknown encoder_init={name!r}. Valid arms: {list(ENCODER_INIT_ARMS)}. "
++            "See DOCS/reconstruction-value-ablation.md."
++        )
++    return arm
++
++
++def resolve_encoder_init(
++    encoder_init: Optional[str],
++    freeze_encoder: Optional[bool] = None,
++) -> str:
++    """Resolve the effective arm from the new and legacy knobs.
++
++    Parameters
++    ----------
++    encoder_init : str or None
++        The explicit arm. ``None`` means "not set" and selects the legacy
++        behaviour below — this is what keeps every pre-ablation config
++        bit-for-bit unchanged.
++    freeze_encoder : bool or None
++        The legacy flag (``None`` = absent from the config, which historically
++        meant ``True``). Used only when ``encoder_init`` is ``None``; otherwise
++        it is checked for contradictions.
++
++    Returns
++    -------
++    str — one of :data:`ENCODER_INIT_ARMS`.
++
++    Raises
++    ------
++    ValueError
++        If ``encoder_init`` is unknown, or if both knobs are set and disagree.
++    """
++    if encoder_init is None:
++        # Legacy path: freeze_encoder absent or True -> frozen pretrained encoder,
++        # which is what every config in configs/ does today.
++        return "pretrained_frozen" if freeze_encoder in (None, True) else "pretrained_finetuned"
++
++    arm = encoder_arm(encoder_init)
++
++    # Only flag a genuine contradiction. freeze_encoder carries no meaning for the
++    # encoder-less arm, so it is ignored there rather than treated as a conflict.
++    if freeze_encoder is not None and arm.has_encoder:
++        if bool(freeze_encoder) is arm.trains_encoder:
++            raise ValueError(
++                f"Conflicting encoder configuration: encoder_init={arm.name!r} "
++                f"(trains_encoder={arm.trains_encoder}) contradicts the legacy "
++                f"freeze_encoder={freeze_encoder!r}. Set encoder_init alone and drop "
++                "freeze_encoder from the config."
++            )
++    return arm.name
++
++
++__all__ = [
++    "EncoderArm",
++    "EncoderInit",
++    "ENCODER_INIT_ARMS",
++    "encoder_arm",
++    "resolve_encoder_init",
++]
+diff --git a/CLASSIFIER/configs/gec.py b/CLASSIFIER/configs/gec.py
+index e0cd231..ff0b9b7 100644
+--- a/CLASSIFIER/configs/gec.py
++++ b/CLASSIFIER/configs/gec.py
+@@ -12,6 +12,8 @@ from __future__ import annotations
+ from dataclasses import dataclass
+ from typing import Any
+ 
++from .encoder import EncoderInit  # noqa: F401  (re-exported for config authors)
++
+ 
+ @dataclass
+ class GECTrainConfig:
+@@ -29,6 +31,14 @@ class GECTrainConfig:
+     lr_factor: float = 0.5
+     lr_patience: int = 5
+     lr_min: float = 1e-6
++    # Encoder arm for the reconstruction-value ablation (see configs/encoder.py).
++    # GEC pre-encodes each visit once, offline, before training the MLP — there is
++    # no training-time forward pass through the encoder — so only the two arms
++    # that don't require encoder gradients are meaningful here:
++    # "pretrained_frozen" (default via None, today's behaviour) or "none". The
++    # trainable arms ("pretrained_finetuned" / "random") raise in GECAdapter;
++    # use the GELSTM adapter for those. See DOCS/reconstruction-value-ablation.md.
++    encoder_init: str | None = None
+ 
+ 
+ @dataclass
+diff --git a/CLASSIFIER/configs/gelstm.py b/CLASSIFIER/configs/gelstm.py
+index a49951c..6b93ce8 100644
+--- a/CLASSIFIER/configs/gelstm.py
++++ b/CLASSIFIER/configs/gelstm.py
+@@ -11,6 +11,8 @@ from __future__ import annotations
+ from dataclasses import dataclass, field
+ from typing import Any, Optional
+ 
++from .encoder import EncoderInit  # noqa: F401  (re-exported for config authors)
++
+ 
+ @dataclass
+ class GELSTMTrainConfig:
+@@ -32,6 +34,13 @@ class GELSTMTrainConfig:
+     # LayerNorm sharpens the head's logits to widen the (otherwise narrow) RNN
+     # probability spread. See common/VISIT_COUNT_CONFOUND.md.
+     classifier_norm: str = "none"
++    # Encoder arm for the reconstruction-value ablation — one of
++    # ENCODER_INIT_ARMS ("pretrained_frozen" | "pretrained_finetuned" |
++    # "random" | "none"). ``None`` means "not set": the arm is then derived from
++    # the legacy ``freeze_encoder`` flag, so every pre-ablation config keeps its
++    # exact current behaviour. See configs/encoder.py and
++    # DOCS/reconstruction-value-ablation.md.
++    encoder_init: Optional[str] = None
+ 
+ 
+ @dataclass
+@@ -44,3 +53,10 @@ class EvalConfig:
+     shuffle_rng: Optional[Any] = field(default=None, repr=False)
+     threshold_mode: str = "youden"
+     fixed_threshold: float = 0.5
++    # Let gradients flow through the graph encoder while embedding each visit.
++    # ``False`` (default) reproduces the historical behaviour: visits are encoded
++    # under ``torch.no_grad()`` + forced eval mode, so the encoder is a pure
++    # feature extractor no matter what ``requires_grad`` says. Set ``True`` only
++    # for the encoder-trainable ablation arms (see configs/encoder.py) — without
++    # it a randomly-initialised encoder would never actually train.
++    encoder_grad: bool = False
+diff --git a/CLASSIFIER/configs/gelstm_recon_ablation_delcode.json b/CLASSIFIER/configs/gelstm_recon_ablation_delcode.json
+new file mode 100644
+index 0000000..8f9c5e4
+--- /dev/null
++++ b/CLASSIFIER/configs/gelstm_recon_ablation_delcode.json
+@@ -0,0 +1,18 @@
++{
++    "rnn_type": "lstm",
++    "lstm_hidden": 32,
++    "lstm_layers": 1,
++    "lstm_dropout": 0.3,
++    "classifier_hidden": 32,
++    "use_time_delta": true,
++    "graph_pool": "mean",
++    "standardize_features": true,
++    "learning_rate": 0.001,
++    "weight_decay": 0.0001,
++    "epochs": 50,
++    "early_stopping_patience": 15,
++    "batch_size": 16,
++    "use_class_cost_weights": true,
++    "grad_clip": 1.0,
++    "n_folds": 5
++}
+diff --git a/CLASSIFIER/experiments/ablation.yaml b/CLASSIFIER/experiments/ablation.yaml
+new file mode 100644
+index 0000000..b550652
+--- /dev/null
++++ b/CLASSIFIER/experiments/ablation.yaml
+@@ -0,0 +1,80 @@
++# Reconstruction-value ablation — how much does GAAE reconstruction pretraining
++# actually buy the downstream classifier?
++#
++# Four arms of one experiment. Everything except `encoder_init` is held fixed:
++# same notebook, same adapter, same config_path, same seed (42) and therefore the
++# same folds and the same train/val/test splits, so the arms are comparable
++# subject-for-subject.
++#
++#   pretrained_frozen     GAAE weights, encoder frozen      — the reference arm
++#                                                             (identical to
++#                                                             gelstm-trajectory-whole-brain
++#                                                             apart from the explicit flag)
++#   pretrained_finetuned  GAAE weights, gradients allowed    — value of adapting the features
++#   random                same architecture, random init,    — value of the reconstruction
++#                         trained end-to-end                   pretraining itself
++#   none                  no encoder; pooled raw node        — value of the graph encoder
++#                         features feed the LSTM               as such
++#
++# `checkpoint_path` is required by LONGITUDINAL_COMMON_DELCODE.ipynb for every
++# entry, but the `random` / `none` arms deliberately never read it — the adapter
++# prints "GAAE checkpoint NOT loaded" for those runs. Keep the path identical
++# across arms so the two pretrained arms start from the same encoder.
++#
++# Run order and interpretation: DOCS/reconstruction-value-ablation.md.
++experiments:
++  - id: recon-ablation-gelstm-pretrained-frozen
++    mode: longitudinal
++    model: GELSTM
++    dataset: DELCODE_WHOLE_BRAIN
++    seed: 42
++    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
++    adapter: gelstm
++    config_path: configs/gelstm_recon_ablation_delcode.json
++    hyperparams:
++      encoder_init: pretrained_frozen
++    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
++    threshold_mode: best-f1
++    notes: "Arm 1/4 (reference): reconstruction-pretrained GAAE encoder, frozen. Reproduces the current GELSTM setup with the arm stated explicitly."
++
++  - id: recon-ablation-gelstm-pretrained-finetuned
++    mode: longitudinal
++    model: GELSTM
++    dataset: DELCODE_WHOLE_BRAIN
++    seed: 42
++    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
++    adapter: gelstm
++    config_path: configs/gelstm_recon_ablation_delcode.json
++    hyperparams:
++      encoder_init: pretrained_finetuned
++    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
++    threshold_mode: best-f1
++    notes: "Arm 2/4: same pretrained encoder, gradients allowed. vs arm 1 = value of adapting the reconstruction features to the conversion task."
++
++  - id: recon-ablation-gelstm-random
++    mode: longitudinal
++    model: GELSTM
++    dataset: DELCODE_WHOLE_BRAIN
++    seed: 42
++    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
++    adapter: gelstm
++    config_path: configs/gelstm_recon_ablation_delcode.json
++    hyperparams:
++      encoder_init: random
++    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
++    threshold_mode: best-f1
++    notes: "Arm 3/4: identical encoder architecture, randomly initialised, trained end-to-end. vs arms 1-2 = value of the reconstruction pretraining, architecture held constant. Checkpoint path is ignored."
++
++  - id: recon-ablation-gelstm-none
++    mode: longitudinal
++    model: GELSTM
++    dataset: DELCODE_WHOLE_BRAIN
++    seed: 42
++    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
++    adapter: gelstm
++    config_path: configs/gelstm_recon_ablation_delcode.json
++    hyperparams:
++      encoder_init: none
++    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
++    threshold_mode: best-f1
++    notes: "Arm 4/4: no encoder — the mean-pooled raw node features (200-d Schaefer rows) go straight into the LSTM, whose input width is derived. vs arm 3 = value of the graph encoder itself. Checkpoint path is ignored."
+diff --git a/CLASSIFIER/model/GELSTM/models.py b/CLASSIFIER/model/GELSTM/models.py
+index bae8599..cb5c715 100755
+--- a/CLASSIFIER/model/GELSTM/models.py
++++ b/CLASSIFIER/model/GELSTM/models.py
+@@ -6,6 +6,12 @@ Architecture:
+     [z_t ‖ Δt_t] → LSTM → h_n → Linear(1) → P(converter)
+ 
+ Δt_t = months since previous visit / 96  (0 for first visit)
++
++The encoder arm is selected by ``encoder_init`` (see ``configs/encoder.py``):
++``pretrained_frozen`` (default, today's behaviour), ``pretrained_finetuned``,
++``random`` (same architecture, no pretraining), or ``none`` (no encoder — the
++pooled raw node features feed the recurrent core directly). The recurrent core's
++input width is derived from the arm via ``embed_dim``, never hardcoded.
+ """
+ 
+ from __future__ import annotations
+@@ -16,13 +22,21 @@ from pathlib import Path
+ import torch
+ import torch.nn as nn
+ 
+-# Allow importing GAAE model relative to the CLASSIFIER root
++# Allow importing the GAAE model relative to the CLASSIFIER root, and the config
++# package relative to the repo root (the fully-qualified ``CLASSIFIER.*`` form
++# train.py already uses). Both are inserted so callers that only put one of them
++# on sys.path — the dashboard adds CLASSIFIER/, the tests add the repo root —
++# still import this module cleanly.
+ _ROOT = Path(__file__).resolve().parents[2]
+-if str(_ROOT) not in sys.path:
+-    sys.path.insert(0, str(_ROOT))
++_REPO_ROOT = _ROOT.parent
++for _p in (str(_REPO_ROOT), str(_ROOT)):
++    if _p not in sys.path:
++        sys.path.insert(0, _p)
+ 
+ from model.GAAE.models import GraphAttentionAutoencoderConditioned  # noqa: E402
+ 
++from CLASSIFIER.configs.encoder import EncoderArm, encoder_arm  # noqa: E402
++
+ 
+ def build_classifier_head(
+     lstm_hidden: int, classifier_hidden: int, dropout: float, classifier_norm: str = "none"
+@@ -78,6 +92,16 @@ class GELSTMClassifier(nn.Module):
+     rnn_type : str
+         Recurrent cell type: 'lstm' (default) or 'gru'. A GRU has 3 gates vs the
+         LSTM's 4, so ~25% fewer recurrent parameters at the same hidden size.
++    encoder_init : str
++        Encoder arm — ``"pretrained_frozen"`` (default; identical to the
++        pre-ablation model), ``"pretrained_finetuned"``, ``"random"``, or
++        ``"none"``. Only ``"none"`` changes the module tree: no encoder is
++        constructed and the per-visit embedding is the pooled raw node-feature
++        vector, so the recurrent core widens from ``gaae_latent`` to
++        ``in_features``. Weight *loading* and *freezing* are the caller's job
++        (see ``adapters/gelstm.py``); this flag only decides what is built and
++        guards ``load_gaae_weights`` against being called on an arm that must
++        not see pretrained weights.
+     """
+ 
+     def __init__(
+@@ -95,10 +119,18 @@ class GELSTMClassifier(nn.Module):
+         classifier_hidden: int = 64,
+         rnn_type: str = "lstm",
+         classifier_norm: str = "none",
++        encoder_init: str = "pretrained_frozen",
+     ):
+         super().__init__()
+         self.gaae_latent = gaae_latent
+         self.use_time_delta = use_time_delta
++        # Raises on an unknown arm — a typo must never silently fall back.
++        self.encoder_arm: EncoderArm = encoder_arm(encoder_init)
++        self.encoder_init = self.encoder_arm.name
++        # Per-visit embedding width, derived from the arm: the encoder's latent
++        # dim when there is an encoder, the raw node-feature width when there is
++        # not. Everything downstream (norm buffers, recurrent input) reads this.
++        self.embed_dim = gaae_latent if self.encoder_arm.has_encoder else in_features
+         self.rnn_type = rnn_type.lower()
+         if self.rnn_type not in ("lstm", "gru"):
+             raise ValueError(f"rnn_type must be 'lstm' or 'gru', got {rnn_type!r}")
+@@ -114,24 +146,32 @@ class GELSTMClassifier(nn.Module):
+         # buffers so the fitted statistics round-trip through the checkpoint.
+         # Defaults are the identity transform (mean=0, std=1), so a model that
+         # never calls ``set_feature_norm`` behaves exactly as before.
+-        self.register_buffer("feat_mean", torch.zeros(gaae_latent))
+-        self.register_buffer("feat_std", torch.ones(gaae_latent))
++        self.register_buffer("feat_mean", torch.zeros(self.embed_dim))
++        self.register_buffer("feat_std", torch.ones(self.embed_dim))
+ 
+         # ── Shared GAAE encoder (applied per-visit) ─────────────────────────
+-        self.encoder = GraphAttentionAutoencoderConditioned(
+-            in_features=in_features,
+-            hidden_dim=gaae_hidden,
+-            out_features=gaae_latent,
+-            cond_dim=gaae_cond_dim,
+-            num_heads=gaae_heads,
+-            dropout=gaae_dropout,
++        # ``encoder_init="none"`` builds no encoder at all: ``encode_visit``
++        # then pools the raw node features, isolating what the encoder itself
++        # contributes. Every other arm builds the identical module — the arms
++        # differ only in which weights go in and whether they receive gradients.
++        self.encoder = (
++            GraphAttentionAutoencoderConditioned(
++                in_features=in_features,
++                hidden_dim=gaae_hidden,
++                out_features=gaae_latent,
++                cond_dim=gaae_cond_dim,
++                num_heads=gaae_heads,
++                dropout=gaae_dropout,
++            )
++            if self.encoder_arm.has_encoder
++            else None
+         )
+ 
+         # ── Recurrent core (LSTM or GRU) ─────────────────────────────────────
+         # The attribute stays named ``self.lstm`` so checkpoint state-dict keys
+         # ("lstm.*") and downstream code are unchanged; only the cell type
+         # switches with ``rnn_type``.
+-        self.lstm_input_dim = gaae_latent + (1 if use_time_delta else 0)
++        self.lstm_input_dim = self.embed_dim + (1 if use_time_delta else 0)
+         rnn_cls = nn.GRU if self.rnn_type == "gru" else nn.LSTM
+         self.lstm = rnn_cls(
+             input_size=self.lstm_input_dim,
+@@ -156,7 +196,11 @@ class GELSTMClassifier(nn.Module):
+         pool: str = "mean",
+     ) -> torch.Tensor:
+         """
+-        Encode a single visit graph → graph-level embedding z ∈ R^gaae_latent.
++        Encode a single visit graph → graph-level embedding z ∈ R^embed_dim.
++
++        With an encoder, ``embed_dim == gaae_latent``. Under
++        ``encoder_init="none"`` there is no encoder and the raw node features are
++        pooled directly, so ``embed_dim == in_features``.
+ 
+         Parameters
+         ----------
+@@ -165,7 +209,8 @@ class GELSTMClassifier(nn.Module):
+         edge_attr : (E,) or (E, 1) or None
+         pool : 'mean' | 'max' | 'sum'
+         """
+-        z = self.encoder.encode(x, edge_index, edge_attr)  # (N_nodes, latent)
++        # (N_nodes, embed_dim) — encoded latents, or the raw features themselves.
++        z = self.encoder.encode(x, edge_index, edge_attr) if self.encoder is not None else x
+         if pool == "mean":
+             z = z.mean(dim=0)
+         elif pool == "max":
+@@ -178,7 +223,7 @@ class GELSTMClassifier(nn.Module):
+     def set_feature_norm(self, mean, std, *, eps: float = 1e-8) -> None:
+         """Set the per-visit embedding standardisation statistics.
+ 
+-        ``mean`` / ``std`` are length-``gaae_latent`` arrays (e.g. a fitted
++        ``mean`` / ``std`` are length-``embed_dim`` arrays (e.g. a fitted
+         ``sklearn.preprocessing.StandardScaler``'s ``mean_`` / ``scale_``).
+         Fit on the training fold only and call once per fold *before* training
+         so test/val embeddings are standardised with train-fold statistics —
+@@ -189,7 +234,8 @@ class GELSTMClassifier(nn.Module):
+         if mean_t.shape != self.feat_mean.shape or std_t.shape != self.feat_std.shape:
+             raise ValueError(
+                 f"feature-norm shapes {tuple(mean_t.shape)}/{tuple(std_t.shape)} "
+-                f"do not match latent dim {tuple(self.feat_mean.shape)}"
++                f"do not match embedding dim {tuple(self.feat_mean.shape)} "
++                f"(encoder_init={self.encoder_init!r})"
+             )
+         self.feat_mean.copy_(mean_t)
+         self.feat_std.copy_(std_t.clamp_min(eps))
+@@ -221,9 +267,15 @@ class GELSTMClassifier(nn.Module):
+ 
+     # ── Freeze / unfreeze encoder ────────────────────────────────────────────
+ 
+-    def freeze_encoder(self):
+-        """Freeze all GAAE encoder + FiLM parameters."""
+-        enc_modules = [
++    def encoder_modules(self) -> list[nn.Module]:
++        """Encoder + FiLM submodules — empty under ``encoder_init="none"``.
++
++        Single place the freeze/unfreeze helpers (and the tests) read, so the
++        encoder-less arm needs no special-casing at the call sites.
++        """
++        if self.encoder is None:
++            return []
++        return [
+             self.encoder.encoder_gat1,
+             self.encoder.encoder_bn1,
+             self.encoder.encoder_gat2,
+@@ -232,36 +284,42 @@ class GELSTMClassifier(nn.Module):
+             self.encoder.film_gamma,
+             self.encoder.film_beta,
+         ]
+-        for mod in enc_modules:
++
++    def _set_encoder_requires_grad(self, value: bool) -> None:
++        for mod in self.encoder_modules():
+             for p in mod.parameters():
+-                p.requires_grad_(False)
++                p.requires_grad_(value)
++
++    def freeze_encoder(self):
++        """Freeze all GAAE encoder + FiLM parameters (no-op when there is none)."""
++        self._set_encoder_requires_grad(False)
+ 
+     def unfreeze_encoder(self):
+-        """Unfreeze all GAAE encoder + FiLM parameters."""
+-        enc_modules = [
+-            self.encoder.encoder_gat1,
+-            self.encoder.encoder_bn1,
+-            self.encoder.encoder_gat2,
+-            self.encoder.encoder_bn2,
+-            self.encoder.encoder_gat3,
+-            self.encoder.film_gamma,
+-            self.encoder.film_beta,
+-        ]
+-        for mod in enc_modules:
+-            for p in mod.parameters():
+-                p.requires_grad_(True)
++        """Unfreeze all GAAE encoder + FiLM parameters (no-op when there is none)."""
++        self._set_encoder_requires_grad(True)
+ 
+     def load_gaae_weights(self, ckpt_path: str, device: str | torch.device = "cpu"):
+         """
+         Load GAAE encoder weights from a GAAE checkpoint into self.encoder.
+         Automatically freezes the encoder after loading.
+ 
++        Raises ``ValueError`` on the arms that must not see pretrained weights
++        (``random`` / ``none``) — loading them there would silently destroy the
++        ablation this flag exists to run.
++
+         Parameters
+         ----------
+         ckpt_path : str
+             Path to model_{run_name}.pth saved by GAAE training.
+         device : str or torch.device
+         """
++        if not self.encoder_arm.loads_pretrained:
++            raise ValueError(
++                f"load_gaae_weights() called on encoder_init={self.encoder_init!r}, "
++                "which must not receive reconstruction-pretrained weights. Use "
++                "encoder_init='pretrained_frozen' or 'pretrained_finetuned' to load "
++                "a GAAE checkpoint."
++            )
+         ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
+         if isinstance(ckpt, dict):
+             gaae_sd = ckpt
+diff --git a/CLASSIFIER/model/GELSTM/train.py b/CLASSIFIER/model/GELSTM/train.py
+index 6912cd1..2ad2555 100755
+--- a/CLASSIFIER/model/GELSTM/train.py
++++ b/CLASSIFIER/model/GELSTM/train.py
+@@ -42,6 +42,7 @@ def _eval_cfg_to_dict(eval_cfg: EvalConfig) -> Dict:
+         "shuffle_order": eval_cfg.shuffle_order,
+         "threshold_mode": eval_cfg.threshold_mode,
+         "fixed_threshold": eval_cfg.fixed_threshold,
++        "encoder_grad": eval_cfg.encoder_grad,
+     }
+ 
+ 
+@@ -68,7 +69,9 @@ def train_epoch(
+ 
+     ``encode_batch_sequences`` uses an internal ``eval_mode`` context manager
+     that restores the caller's training state, so no defensive ``model.train()``
+-    is needed after each batch.
++    is needed after each batch. ``eval_cfg.encoder_grad`` (default False) opens
++    that context so gradients reach the graph encoder — required by the
++    encoder-trainable ablation arms, inert for the frozen default.
+     """
+     cfg = _eval_cfg(eval_cfg)
+     if use_time_delta is not None:
+@@ -89,6 +92,7 @@ def train_epoch(
+             zero_time_delta=cfg.zero_time_delta,
+             graph_pool=cfg.graph_pool,
+             dim_filter=cfg.dim_filter,
++            encoder_grad=cfg.encoder_grad,
+         )
+ 
+         logits = model(packed)  # (B,)
+@@ -181,6 +185,10 @@ def evaluate(
+         all_sids.extend([b.get("subject_id", "") for b in sorted_batch])
+         all_nscans.extend([len(b["graphs"]) for b in sorted_batch])
+ 
++        # ``encoder_grad`` is deliberately NOT forwarded here: evaluation always
++        # encodes under no-grad + eval mode (this function is @torch.no_grad and
++        # has already called model.eval()). Training is the only path that needs
++        # gradients through the encoder.
+         packed, labels, _ = encode_batch_sequences(
+             batch,
+             model,
+diff --git a/CLASSIFIER/model/GELSTM/utils.py b/CLASSIFIER/model/GELSTM/utils.py
+index 2f63b89..6e817d7 100644
+--- a/CLASSIFIER/model/GELSTM/utils.py
++++ b/CLASSIFIER/model/GELSTM/utils.py
+@@ -10,7 +10,7 @@ v2 additions (vs CLASSIFIER/model/GELSTM/utils.py):
+ 
+ from __future__ import annotations
+ 
+-from contextlib import contextmanager
++from contextlib import contextmanager, nullcontext
+ from typing import Dict, List, Tuple
+ 
+ import numpy as np
+@@ -67,6 +67,7 @@ def encode_batch_sequences(
+     dim_filter: "np.ndarray | None" = None,
+     shuffle_order: bool = False,
+     shuffle_rng: "np.random.Generator | None" = None,
++    encoder_grad: bool = False,
+ ) -> Tuple[PackedSequence, torch.Tensor, torch.Tensor]:
+     """
+     Encode a list of subject dicts into a PackedSequence for GELSTMClassifier.
+@@ -95,6 +96,17 @@ def encode_batch_sequences(
+         destroying ordering. *Use only at evaluation time.*
+     shuffle_rng : np.random.Generator, optional
+         Pass to make the shuffle deterministic.
++    encoder_grad : bool
++        If False (default), visits are encoded inside ``eval_mode`` +
++        ``torch.no_grad()`` — the historical behaviour, in which the encoder is a
++        pure feature extractor and receives no gradient regardless of its
++        ``requires_grad`` flags. If True, neither context is entered: the encoder
++        stays in the caller's train/eval mode and gradients flow back into it.
++        Required by the encoder-trainable ablation arms (``encoder_init`` =
++        ``pretrained_finetuned`` / ``random``); without it a randomly-initialised
++        encoder would stay random forever. Callers that must not train
++        (``evaluate``) are already wrapped in ``torch.no_grad()`` and call
++        ``model.eval()``, so passing True there is inert.
+ 
+     Returns
+     -------
+@@ -125,8 +137,12 @@ def encode_batch_sequences(
+ 
+     # Use a context manager so the caller's training mode is restored on exit.
+     # train_epoch can keep the model in .train() across the whole step without
+-    # needing a defensive .train() after this call.
+-    with eval_mode(encoder_model), torch.no_grad():
++    # needing a defensive .train() after this call. Under ``encoder_grad`` both
++    # contexts are skipped so the encoder trains with the classifier.
++    mode_ctx = nullcontext() if encoder_grad else eval_mode(encoder_model)
++    grad_ctx = nullcontext() if encoder_grad else torch.no_grad()
++
++    with mode_ctx, grad_ctx:
+         for item in batch:
+             graphs = item["graphs"]
+             deltas = item["delta_t"]
+diff --git a/CLASSIFIER/tests/test_encoder_arms.py b/CLASSIFIER/tests/test_encoder_arms.py
+new file mode 100644
+index 0000000..aa78570
+--- /dev/null
++++ b/CLASSIFIER/tests/test_encoder_arms.py
+@@ -0,0 +1,353 @@
++"""Tests for the reconstruction-value ablation's encoder arms.
++
++Covers the config-level arm resolution (including the back-compat contract and
++the loud failure on contradictory knobs) and the model-level behaviour of each
++arm on tiny synthetic graphs: it builds, shapes flow end-to-end, and the
++gradient story is what the arm claims it is.
++
++See DOCS/reconstruction-value-ablation.md.
++"""
++
++from __future__ import annotations
++
++import numpy as np
++import pytest
++import torch
++from torch_geometric.data import Data
++
++from CLASSIFIER.configs.encoder import (
++    ENCODER_INIT_ARMS,
++    encoder_arm,
++    resolve_encoder_init,
++)
++from CLASSIFIER.configs.gelstm import EvalConfig, GELSTMTrainConfig
++from CLASSIFIER.model.GELSTM.models import GELSTMClassifier
++from CLASSIFIER.model.GELSTM.train import _eval_cfg_to_dict
++from CLASSIFIER.model.GELSTM.utils import encode_batch_sequences
++from SHARED.seeding import set_seed
++
++IN_FEATURES = 6
++GAAE_HIDDEN = 4
++GAAE_LATENT = 3
++N_NODES = 5
++SEED = 42
++
++
++# --------------------------------------------------------------------------- #
++# Config-level arm resolution
++# --------------------------------------------------------------------------- #
++def test_default_config_leaves_encoder_init_unset():
++    """The dataclass default must not change any existing run's behaviour."""
++    assert GELSTMTrainConfig().encoder_init is None
++    assert EvalConfig().encoder_grad is False
++
++
++@pytest.mark.parametrize(
++    "freeze_encoder, expected",
++    [
++        (None, "pretrained_frozen"),  # key absent from the JSON config
++        (True, "pretrained_frozen"),  # what every config in configs/ says today
++        (False, "pretrained_finetuned"),
++    ],
++)
++def test_legacy_freeze_encoder_maps_to_the_same_arm(freeze_encoder, expected):
++    assert resolve_encoder_init(None, freeze_encoder) == expected
++
++
++@pytest.mark.parametrize("arm", ENCODER_INIT_ARMS)
++def test_explicit_arm_wins_when_no_legacy_flag(arm):
++    assert resolve_encoder_init(arm, None) == arm
++
++
++@pytest.mark.parametrize(
++    "arm, freeze_encoder",
++    [
++        ("pretrained_frozen", False),
++        ("pretrained_finetuned", True),
++        ("random", True),
++    ],
++)
++def test_contradictory_knobs_raise(arm, freeze_encoder):
++    with pytest.raises(ValueError, match="Conflicting encoder configuration"):
++        resolve_encoder_init(arm, freeze_encoder)
++
++
++def test_freeze_encoder_is_irrelevant_for_the_encoderless_arm():
++    """``none`` has nothing to freeze, so a stale freeze_encoder is not a conflict."""
++    assert resolve_encoder_init("none", True) == "none"
++    assert resolve_encoder_init("none", False) == "none"
++
++
++def test_unknown_arm_raises_and_lists_the_valid_ones():
++    with pytest.raises(ValueError, match="Unknown encoder_init"):
++        encoder_arm("pretrained")  # plausible typo, must not fall back
++
++
++def test_eval_cfg_roundtrip_preserves_encoder_grad():
++    """_eval_cfg_to_dict feeds EvalConfig(**...) rebuilds — encoder_grad must survive."""
++    cfg = EvalConfig(encoder_grad=True)
++    assert _eval_cfg_to_dict(cfg)["encoder_grad"] is True
++    assert EvalConfig(**_eval_cfg_to_dict(cfg)).encoder_grad is True
++
++
++# --------------------------------------------------------------------------- #
++# Model-level behaviour
++# --------------------------------------------------------------------------- #
++def _make_model(arm: str, *, use_time_delta: bool = True) -> GELSTMClassifier:
++    # Seed the weight init here, not in the model (see .claude/rules/seeding.md):
++    # a tiny randomly-initialised GAT can land on an all-dead-ReLU draw whose
++    # gradients are legitimately zero, which would make the grad assertions below
++    # flaky — and pytest-randomly reorders tests, so ambient RNG state is never
++    # reproducible. One explicit seed per model makes every test order-independent.
++    set_seed(SEED)
++    return GELSTMClassifier(
++        in_features=IN_FEATURES,
++        gaae_hidden=GAAE_HIDDEN,
++        gaae_latent=GAAE_LATENT,
++        gaae_heads=1,
++        gaae_cond_dim=2,
++        gaae_dropout=0.0,
++        lstm_hidden=4,
++        lstm_layers=1,
++        lstm_dropout=0.0,
++        use_time_delta=use_time_delta,
++        classifier_hidden=4,
++        encoder_init=arm,
++    )
++
++
++def _make_graph(rng: np.random.Generator) -> Data:
++    """A tiny fully-connected-ish graph with the edge_attr the GAT layers expect."""
++    src, dst = [], []
++    for i in range(N_NODES):
++        for j in range(N_NODES):
++            if i != j:
++                src.append(i)
++                dst.append(j)
++    edge_index = torch.tensor([src, dst], dtype=torch.long)
++    return Data(
++        x=torch.tensor(rng.normal(size=(N_NODES, IN_FEATURES)), dtype=torch.float),
++        edge_index=edge_index,
++        edge_attr=torch.tensor(rng.uniform(size=(edge_index.shape[1], 1)), dtype=torch.float),
++    )
++
++
++def _make_batch(rng: np.random.Generator, n_subjects: int = 2) -> list[dict]:
++    batch = []
++    for s in range(n_subjects):
++        n_visits = 2 + s  # different lengths so packing is exercised
++        batch.append(
++            {
++                "subject_id": f"sub-{s}",
++                "graphs": [_make_graph(rng) for _ in range(n_visits)],
++                "delta_t": [0.0] + [0.25] * (n_visits - 1),
++                "visit_months": list(range(n_visits)),
++                "label": float(s % 2),
++                "n_scans": n_visits,
++            }
++        )
++    return batch
++
++
++def _forward_backward(model: GELSTMClassifier, *, encoder_grad: bool) -> torch.Tensor:
++    """One train-mode forward+backward pass; returns the logits."""
++    rng = np.random.default_rng(0)
++    batch = _make_batch(rng)
++    model.train()
++    packed, labels, _ = encode_batch_sequences(
++        batch,
++        model,
++        device=torch.device("cpu"),
++        use_time_delta=model.use_time_delta,
++        encoder_grad=encoder_grad,
++    )
++    logits = model(packed)
++    torch.nn.BCEWithLogitsLoss()(logits, labels).backward()
++    return logits
++
++
++@pytest.mark.parametrize("arm", ENCODER_INIT_ARMS)
++def test_every_arm_builds_and_shapes_flow_end_to_end(arm):
++    model = _make_model(arm)
++    expected_embed = IN_FEATURES if arm == "none" else GAAE_LATENT
++    assert model.embed_dim == expected_embed
++    # The head's input width is derived from the arm, never hardcoded.
++    assert model.lstm_input_dim == expected_embed + 1
++    assert model.lstm.input_size == expected_embed + 1
++    assert model.feat_mean.shape == (expected_embed,)
++
++    logits = _forward_backward(model, encoder_grad=model.encoder_arm.trains_encoder)
++    assert logits.shape == (2,)  # one logit per subject
++    assert torch.isfinite(logits).all()
++
++
++def test_arm_none_has_no_encoder_parameters():
++    model = _make_model("none")
++    assert model.encoder is None
++    assert model.encoder_modules() == []
++    encoder_params = [n for n, _ in model.named_parameters() if n.startswith("encoder")]
++    assert encoder_params == []
++    # ... and the arms that do have one are not accidentally empty.
++    assert [n for n, _ in _make_model("random").named_parameters() if n.startswith("encoder")]
++
++
++def test_arm_none_embeds_the_pooled_raw_node_features():
++    """No encoder means the per-visit embedding IS the pooled input row."""
++    model = _make_model("none")
++    g = _make_graph(np.random.default_rng(1))
++    z = model.encode_visit(g.x, g.edge_index, g.edge_attr, pool="mean")
++    torch.testing.assert_close(z, g.x.mean(dim=0))
++
++
++def test_pretrained_frozen_has_zero_encoder_grads_after_backward():
++    model = _make_model("pretrained_frozen")
++    model.freeze_encoder()
++    _forward_backward(model, encoder_grad=False)
++
++    enc_params = [p for m in model.encoder_modules() for p in m.parameters()]
++    assert enc_params, "frozen arm should still own encoder parameters"
++    assert all(not p.requires_grad for p in enc_params)
++    assert all(p.grad is None or torch.count_nonzero(p.grad) == 0 for p in enc_params)
++    # The head still learns.
++    assert any(
++        p.grad is not None and torch.count_nonzero(p.grad) > 0 for p in model.classifier.parameters()
++    )
++
++
++def test_random_arm_has_nonzero_encoder_grads_after_backward():
++    model = _make_model("random")
++    model.unfreeze_encoder()
++    _forward_backward(model, encoder_grad=True)
++
++    enc_params = [p for m in model.encoder_modules() for p in m.parameters()]
++    assert all(p.requires_grad for p in enc_params)
++    assert any(
++        p.grad is not None and torch.count_nonzero(p.grad) > 0 for p in enc_params
++    ), "a randomly-initialised encoder that never receives gradient cannot train"
++
++
++def test_encoder_grad_false_starves_a_trainable_encoder():
++    """Guard on why encoder_grad exists: without it the 'random' arm is inert."""
++    model = _make_model("random")
++    model.unfreeze_encoder()
++    _forward_backward(model, encoder_grad=False)
++
++    enc_params = [p for m in model.encoder_modules() for p in m.parameters()]
++    assert all(p.grad is None for p in enc_params)
++
++
++def test_pretrained_finetuned_grads_reach_the_encoder():
++    model = _make_model("pretrained_finetuned")
++    model.freeze_encoder()  # what load_gaae_weights does
++    model.unfreeze_encoder()  # ... and what the adapter then undoes for this arm
++    _forward_backward(model, encoder_grad=True)
++
++    enc_params = [p for m in model.encoder_modules() for p in m.parameters()]
++    assert any(p.grad is not None and torch.count_nonzero(p.grad) > 0 for p in enc_params)
++
++
++@pytest.mark.parametrize("arm", ["random", "none"])
++def test_load_gaae_weights_refuses_the_non_pretrained_arms(arm, tmp_path):
++    """Loading pretrained weights into these arms would void the ablation."""
++    ckpt = tmp_path / "model_fake.pth"
++    torch.save({}, ckpt)
++    model = _make_model(arm)
++    with pytest.raises(ValueError, match="must not receive reconstruction-pretrained"):
++        model.load_gaae_weights(str(ckpt))
++
++
++def test_default_arm_is_todays_model():
++    """Constructed without the new flag, the model is exactly what it was before."""
++    model = GELSTMClassifier(
++        in_features=IN_FEATURES,
++        gaae_hidden=GAAE_HIDDEN,
++        gaae_latent=GAAE_LATENT,
++        gaae_heads=1,
++        gaae_cond_dim=2,
++        gaae_dropout=0.0,
++        lstm_hidden=4,
++        lstm_layers=1,
++        lstm_dropout=0.0,
++    )
++    assert model.encoder_init == "pretrained_frozen"
++    assert model.encoder is not None
++    assert model.embed_dim == GAAE_LATENT
++    assert model.lstm_input_dim == GAAE_LATENT + 1
++
++
++def test_set_feature_norm_matches_the_arms_embedding_width():
++    model = _make_model("none")
++    model.set_feature_norm(np.zeros(IN_FEATURES), np.ones(IN_FEATURES))
++    with pytest.raises(ValueError, match="do not match embedding dim"):
++        model.set_feature_norm(np.zeros(GAAE_LATENT), np.ones(GAAE_LATENT))
++
++
++# --------------------------------------------------------------------------- #
++# Adapter wiring (no GAAE checkpoint, no DELCODE matrices)
++# --------------------------------------------------------------------------- #
++_GAAE_HP = {"latent_dim": 6, "hidden_dim": 16, "num_heads": 2, "cond_dim": 2, "dropout": 0.3}
++
++
++def _make_adapter(train_config: dict):
++    from CLASSIFIER.adapters import get_adapter
++
++    return get_adapter("gelstm")(
++        gaae_ckpt_path="/nonexistent/model.pth",  # loading it would raise
++        gaae_hp=_GAAE_HP,
++        train_config=train_config,
++        data_root="/nonexistent",
++        cohorts_csv="/nonexistent/cohorts.csv",
++        device="cpu",
++        rng=np.random.default_rng(0),
++    )
++
++
++@pytest.mark.parametrize(
++    "train_config, expected",
++    [
++        ({}, "pretrained_frozen"),  # no config at all
++        ({"freeze_encoder": True}, "pretrained_frozen"),  # every configs/*.json today
++        ({"freeze_encoder": False}, "pretrained_finetuned"),
++        ({"encoder_init": "random"}, "random"),
++        # An arm set in experiments.yaml on top of a JSON that still says
++        # freeze_encoder: true — must resolve, not raise, for the encoderless arm.
++        ({"encoder_init": "none", "freeze_encoder": True}, "none"),
++    ],
++)
++def test_adapter_resolves_the_arm(train_config, expected):
++    adapter = _make_adapter(train_config)
++    assert adapter.encoder_init == expected
++    assert adapter.model_config()["encoder_init"] == expected
++
++
++def test_adapter_raises_on_contradictory_config():
++    with pytest.raises(ValueError, match="Conflicting encoder configuration"):
++        _make_adapter({"encoder_init": "random", "freeze_encoder": True})
++
++
++@pytest.mark.parametrize("arm", ["random", "none"])
++def test_adapter_builds_non_pretrained_arms_without_reading_the_checkpoint(arm):
++    """gaae_ckpt_path points at nothing: building must still succeed for these arms."""
++    adapter = _make_adapter({"encoder_init": arm, "lstm_hidden": 4, "classifier_hidden": 4})
++    model = adapter._build_model()
++    assert model.encoder_init == arm
++    assert model.embed_dim == (adapter.in_features if arm == "none" else adapter.gaae_latent)
++    assert model.lstm.input_size == model.embed_dim + 1
++    # ``random`` must be trainable end-to-end; ``none`` has no encoder to train.
++    assert (model.encoder is not None) is (arm == "random")
++    if arm == "random":
++        assert all(p.requires_grad for m in model.encoder_modules() for p in m.parameters())
++
++
++def test_adapter_only_opens_encoder_gradients_for_trainable_arms():
++    frozen = _make_adapter({})
++    assert frozen._eval_cfg(None, encoder_grad=frozen.encoder_arm.trains_encoder).encoder_grad is (
++        False
++    )
++    random_arm = _make_adapter({"encoder_init": "random"})
++    assert random_arm._eval_cfg(
++        None, encoder_grad=random_arm.encoder_arm.trains_encoder
++    ).encoder_grad is True
++    # Evaluation paths never open the encoder, whatever the arm.
++    assert random_arm._eval_cfg(None).encoder_grad is False
++    assert random_arm._eval_cfg(None, 0.5).encoder_grad is False
+diff --git a/DOCS/reconstruction-value-ablation.md b/DOCS/reconstruction-value-ablation.md
+new file mode 100644
+index 0000000..b21f2db
+--- /dev/null
++++ b/DOCS/reconstruction-value-ablation.md
+@@ -0,0 +1,174 @@
++# How valuable is reconstruction to our classification task?
++
++**Status:** harness implemented, **not yet run** — no DELCODE data or GAAE checkpoint was
++available in the environment where the code was written. Every results cell below is
++deliberately empty. Fill them in from your own runs; do not let anyone (human or model)
++pre-populate them.
++
++## The question
++
++The GAAE is pretrained with a *reconstruction* objective (rebuild the node features and the
++adjacency of each visit's functional-connectivity graph). Its encoder is then frozen and
++reused as a feature extractor by the downstream converter-vs-stable-MCI classifiers
++(GELSTM / GEGRU, and offline for GEC / GEP).
++
++Nothing in that pipeline has ever tested whether the reconstruction step earns its place.
++Three distinct things could be doing the work:
++
++1. the **reconstruction pretraining** (what the encoder learned from unlabelled graphs),
++2. the **encoder architecture** (a 3-layer GATv2 with FiLM conditioning is a strong prior
++   even at random initialisation — random graph convolutions are a decent feature map),
++3. the **encoder existing at all** (versus feeding the classifier the raw pooled ROI rows).
++
++The four arms below separate them.
++
++## The four arms
++
++One knob, `encoder_init`, on `GELSTMTrainConfig` (and thus on any `configs/*.json` or
++`experiments.yaml` `hyperparams:` block). Implemented in
++[`CLASSIFIER/configs/encoder.py`](../CLASSIFIER/configs/encoder.py).
++
++| Arm | Encoder built? | GAAE weights loaded? | Encoder trained? | Isolates |
++|---|---|---|---|---|
++| `pretrained_frozen` | yes | yes | no | **Reference.** Exactly today's model. |
++| `pretrained_finetuned` | yes | yes | yes | Value of *adapting* the reconstruction features to the conversion task. |
++| `random` | yes | **no** | yes | Value of the **reconstruction pretraining itself** — architecture held constant. |
++| `none` | **no** | no | — | Value of the **graph encoder itself** — the mean-pooled raw node features go straight to the LSTM. |
++
++Read the arms as a chain of differences:
++
++```
++none  ──(+ graph encoder)──►  random  ──(+ reconstruction pretraining)──►  pretrained_frozen
++                                                                    └──(+ task adaptation)──►  pretrained_finetuned
++```
++
++### What changes under the hood
++
++* `none` builds **no encoder module at all** (`model.encoder is None`, zero parameters whose
++  name starts with `encoder`). `encode_visit` pools the raw node features instead, so the
++  per-visit embedding width becomes `in_features` (200 for Schaefer-200) rather than
++  `gaae_latent` (64). The recurrent core's input width is **derived** from that
++  (`lstm_input_dim = embed_dim + 1 if use_time_delta`), never hardcoded — the LSTM and the
++  classifier head resize themselves.
++* `random` builds the identical encoder architecture, skips the checkpoint entirely
++  (the adapter prints `GAAE checkpoint NOT loaded`), and trains it end-to-end with the
++  classifier.
++* **Gradient plumbing (important).** `encode_batch_sequences` historically embedded every
++  visit inside `torch.no_grad()` + forced eval mode, so the encoder was a pure feature
++  extractor *no matter what `requires_grad` said* — the pre-existing `freeze_encoder: false`
++  path could not actually finetune anything. A new `EvalConfig.encoder_grad` flag (default
++  `False`) opens that context, and the adapter sets it **only** for the training pass of
++  the `pretrained_finetuned` / `random` arms. Evaluation always embeds under no-grad + eval
++  mode. `CLASSIFIER/tests/test_encoder_arms.py::test_encoder_grad_false_starves_a_trainable_encoder`
++  pins that this flag is what makes the `random` arm meaningful.
++
++### Back-compat contract
++
++`encoder_init` defaults to `None`, meaning *"not set — derive the arm from the legacy
++`freeze_encoder` flag"*. Every existing config (`freeze_encoder: true`) therefore resolves
++to `pretrained_frozen` and runs exactly as before; `encoder_grad` defaults to `False`, so
++the training path is byte-identical to today's. Setting `encoder_init` and `freeze_encoder`
++to contradictory values raises `ValueError` rather than silently picking one.
++
++### Scope: GELSTM only
++
++The four arms are wired for the **GELSTM/GEGRU** adapter, the only downstream model whose
++encoder lives *inside* the trained network and can therefore be trained end-to-end. The
++`GEC` and `GEP` adapters precompute embeddings once with a frozen encoder and then train an
++MLP on the resulting vectors; `pretrained_finetuned` and an end-to-end `random` arm have no
++meaning there without restructuring those adapters. If the GELSTM result says the encoder
++is not earning its place, the same question for GEC/GEP is worth a follow-up — it is not
++answered here.
++
++## Running it
++
++From `CLASSIFIER/`, with the project-root `.venv` active:
++
++```bash
++source ../.venv/bin/activate
++
++# Preview the merged parameters for one arm without executing anything:
++python run_experiment.py --id recon-ablation-gelstm-pretrained-frozen --dry-run
++
++# The four arms, in order (each is a full 5-fold CV run):
++python run_experiment.py --id recon-ablation-gelstm-pretrained-frozen
++python run_experiment.py --id recon-ablation-gelstm-pretrained-finetuned
++python run_experiment.py --id recon-ablation-gelstm-random
++python run_experiment.py --id recon-ablation-gelstm-none
++
++# Or queue all four detached, then watch:
++python run_experiment.py --mode longitudinal --background   # runs every longitudinal entry
++python run_experiment.py --status
++python run_experiment.py --collect                          # rebuild outputs/RESULTS.csv
++```
++
++Registry: [`CLASSIFIER/experiments/ablation.yaml`](../CLASSIFIER/experiments/ablation.yaml).
++Shared hyperparameters: [`CLASSIFIER/configs/gelstm_recon_ablation_delcode.json`](../CLASSIFIER/configs/gelstm_recon_ablation_delcode.json)
++— a copy of the headline GELSTM config with `freeze_encoder` dropped, so the arm comes from
++one place only.
++
++All four arms use `seed: 42`, the same `n_folds: 5`, the same `downstream` split CSVs and
++the same notebook, so the folds and the held-out test subjects are identical across arms —
++the comparison is apples-to-apples subject-for-subject.
++
++`checkpoint_path` is present on all four entries because the shared notebook requires one;
++the `random` and `none` arms never read it. Verify that in each run's `run.log`: those two
++must print `[encoder_init=…] GAAE checkpoint NOT loaded`.
++
++### Before comparing
++
++1. Confirm all four runs are `done` in `--status` and share the same `git_commit`.
++2. Check `resolved_config.json` in each run dir: `encoder_init` should be the arm, and every
++   other key identical across the four.
++3. Read metrics from `outputs/RESULTS.csv` (`cv.val_auc_mean` ± `cv.val_auc_std`, and the
++   `metric.test_*` columns). The test threshold is the OOF-derived one — never re-tune on test.
++
++## Results (fill in from your runs)
++
++Report CV mean ± std across the 5 folds and the single held-out test number.
++
++| Arm | Test AUC | Test F1 | Test sens | Test spec | CV AUC (mean ± std) | Trainable params | Run dir |
++|---|---|---|---|---|---|---|---|
++| `pretrained_frozen` | | | | | | | |
++| `pretrained_finetuned` | | | | | | | |
++| `random` | | | | | | | |
++| `none` | | | | | | | |
++
++Reference floors already in the registry, worth putting in the same table:
++`sanity-metadata-baseline` (age/sex/visit-time only) and the visit-count confound
++diagnostics in `CLASSIFIER/common/VISIT_COUNT_CONFOUND.md`. An arm that does not beat the
++metadata floor is not evidence about encoders at all.
++
++## Pre-registered interpretation
++
++Written **before** any numbers exist, so the conclusion cannot be fitted to the result.
++Read the first row that matches; "≈" means the difference is inside the CV fold-to-fold
++spread (roughly: |ΔAUC| smaller than the larger of the two arms' CV std).
++
++| Observation | What it means | What follows |
++|---|---|---|
++| `random` ≈ `pretrained_frozen` ≈ `pretrained_finetuned` | Reconstruction pretraining adds **nothing** beyond the architecture prior. The GAAE is functioning as a fixed random-ish graph feature map. | Drop the pretraining stage from the thesis pipeline, or keep it only as a compute-saving initialisation. Report it as a negative result — it is a real finding about this cohort size, not a failure. |
++| `none` ≈ every other arm | The **graph encoder itself** is not earning its place; the pooled raw ROI features carry the same signal. | The story is about the longitudinal head (LSTM + Δt), not the graph model. Re-frame accordingly and compare against a plain per-visit feature baseline. |
++| `pretrained_*` > `random` (both clearly above `none`) | Reconstruction pretraining contributes **real** transferable structure beyond architecture. This is the result the current pipeline assumes. | Keep the GAAE stage; quantify the gain (ΔAUC) as the headline justification for it, and consider more/longer pretraining. |
++| `pretrained_finetuned` > `pretrained_frozen` | The pretrained features are useful but **mis-adapted** to the conversion task; freezing costs performance. | Switch the headline model to the finetuned arm (watch for overfitting — check the CV/test gap, converter *n* is small). |
++| `pretrained_finetuned` < `pretrained_frozen` | Finetuning **overfits** the small converter cohort; freezing is a regulariser doing real work. | Keep freezing; say so explicitly, since "we froze it" then becomes a justified choice rather than an inherited default. |
++| `random` > `pretrained_*` | Reconstruction pretraining is actively **harmful** — it optimises for rebuilding edges, which may wash out the between-subject variance the classifier needs. | Investigate the reconstruction objective (see `DOCS/reconstruction-fidelity-pearson-r.md`); consider a contrastive or supervised pretraining objective instead. |
++| All four arms ≈ each other **and** ≈ the metadata-only floor | Nothing in the imaging pipeline is contributing signal at this sample size. | This is a power/cohort problem, not an encoder problem. Escalate to sample size and label definition before any further architecture work. |
++| Fold-to-fold std is large enough that every arm overlaps every other | The comparison is **underpowered** at 5 folds. | Do not conclude anything from a single seed. Repeat all four arms over ≥3 seeds (e.g. 42/43/44) and compare the pooled distributions before writing any of the above. |
++
++### Caveats to state alongside whatever you find
++
++* **One seed.** The arms share seed 42 for comparability, which controls the split but not
++  the training noise. Any difference smaller than the fold-to-fold spread needs repeat seeds
++  before it is reportable.
++* **`random` and `none` train more parameters** than the frozen reference (the encoder joins
++  the optimiser, or the LSTM widens to a 200-d input). If they lose, part of that may be an
++  optimisation/overfitting effect rather than a statement about pretraining. Check the
++  trainable-parameter counts printed at model build and the train/val curves before
++  concluding.
++* **Feature standardisation.** `standardize_features: true` fits a per-fold `StandardScaler`
++  on the *initial* encoder's pooled embeddings and then holds those statistics fixed. For the
++  arms whose encoder keeps training, that is a fixed affine on a moving representation —
++  harmless, but note it. Set `standardize_features: false` if you want that variable removed.
++* **Converter class imbalance** is handled by `use_class_cost_weights: true` in all four arms;
++  do not change it in one arm only.
+-- 
+2.43.0
+
