@@ -1,9 +1,7 @@
 # How valuable is reconstruction to our classification task?
 
-**Status:** harness implemented, **not yet run** — no DELCODE data or GAAE checkpoint was
-available in the environment where the code was written. Every results cell below is
-deliberately empty. Fill them in from your own runs; do not let anyone (human or model)
-pre-populate them.
+**Status:** initial single-seed (seed 42) results below — all four arms run 2026-08-17 on
+commit `20b5957`. Not yet repeated across seeds; see caveats before drawing conclusions.
 
 ## The question
 
@@ -123,16 +121,34 @@ must print `[encoder_init=…] GAAE checkpoint NOT loaded`.
 3. Read metrics from `outputs/RESULTS.csv` (`cv.val_auc_mean` ± `cv.val_auc_std`, and the
    `metric.test_*` columns). The test threshold is the OOF-derived one — never re-tune on test.
 
-## Results (fill in from your runs)
+## Results (initial — single seed, 2026-08-17)
 
 Report CV mean ± std across the 5 folds and the single held-out test number.
 
 | Arm | Test AUC | Test F1 | Test sens | Test spec | CV AUC (mean ± std) | Trainable params | Run dir |
 |---|---|---|---|---|---|---|---|
-| `pretrained_frozen` | | | | | | | |
-| `pretrained_finetuned` | | | | | | | |
-| `random` | | | | | | | |
-| `none` | | | | | | | |
+| `pretrained_frozen` | 0.7821 | 0.6207 | 0.6429 | 0.7000 | 0.9084 ± 0.0264 | 520,905 / 965,897 | `outputs/recon-ablation-gelstm-pretrained-frozen/runs/azure-flame-1-20b595788-2026-08-17_19-00-12/` |
+| `pretrained_finetuned` | 0.7821 | 0.6250 | 0.7143 | 0.6000 | 0.8461 ± 0.0488 | 965,897 / 965,897 | `outputs/recon-ablation-gelstm-pretrained-finetuned/runs/olive-glade-1-20b595788-2026-08-17_19-03-43/` |
+| `random` | 0.5714 | 0.5833 | 1.0000 | 0.0000 | 0.7003 ± 0.0970 | 965,897 / 965,897 | `outputs/recon-ablation-gelstm-random/runs/balmy-mountain-1-20b595788-2026-08-17_19-10-31/` |
+| `none` | 0.7607 | 0.7222 | 0.9286 | 0.5500 | 0.9010 ± 0.0811 | 31,169 / 31,169 | `outputs/recon-ablation-gelstm-none/runs/risen-sky-2-20b595788-2026-08-17_18-57-53/` |
+
+Sanity checks (per "Before comparing" above) all passed: all four runs share git commit
+`20b5957`; `resolved_config.json` differs only in `encoder_init` across arms; `random` and
+`none` both print `[encoder_init=…] GAAE checkpoint NOT loaded` in `run.log`.
+
+### Initial read (single seed — not yet a conclusion)
+
+`none` (no encoder, raw pooled features) matches or beats both pretrained arms on every
+test metric while using ~17x fewer trainable parameters, and its CV AUC (0.901±0.081)
+overlaps `pretrained_frozen`'s (0.908±0.026) well inside fold-to-fold noise — closest to
+the pre-registered row *"`none` ≈ every other arm: the graph encoder itself is not earning
+its place."* `random` is the outlier: CV AUC 0.700±0.097 (largest spread of the four) and
+test spec = 0.000 (predicted every test subject as converter) — this looks like an
+optimization collapse from training the encoder end-to-end from a random init on ~130
+training subjects, not clean evidence about pretraining value on its own. Per the doc's own
+caveats, this single-seed comparison — especially the unstable `random` arm — needs ≥3
+seeds before any row of the pre-registered interpretation table above is treated as a
+finding.
 
 Reference floors already in the registry, worth putting in the same table:
 `sanity-metadata-baseline` (age/sex/visit-time only) and the visit-count confound
