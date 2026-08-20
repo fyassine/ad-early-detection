@@ -20,7 +20,17 @@ exactly the class of bug A.0 exists to catch immediately rather than three
 weeks later.
 
 Expected counts (re-verified 2026-08-21, superseding the plan's 2026-08-20
-snapshot): 128 contributing subjects, 239 sessions.
+snapshot): 128 contributing subjects, 239 raw BOLD files on disk.
+
+Five subjects (OAS30001, OAS30007, OAS30181, OAS30572, OAS30612) have two
+BOLD acquisitions on the same elapsed day: a paired ``task-restingstate`` /
+``task-restingstateMB4`` protocol variant. Which one feeds FC extraction is
+a modeling decision, not something this builder should pick silently — so
+``_select_canonical_scan`` resolves it explicitly by keeping the non-MB4
+acquisition as canonical (decision recorded 2026-08-21) and dropping its
+MB4 pair. That drops the manifest to 234 sessions across the same 128
+subjects. Any other same-day duplicate pattern this resolution doesn't
+cover still fails loudly via ``assert_delta_t_monotonic``, per A.0.
 """
 
 from __future__ import annotations
@@ -45,7 +55,7 @@ DEFAULT_FMRI_ROOT = _REPO_ROOT / "DATA" / "OASIS3" / "__fmri_wholebrain_sch200_f
 DEFAULT_OUTPUT_CSV = _METADATA_DIR / "cohort_manifest.csv"
 
 EXPECTED_SUBJECTS = 128
-EXPECTED_SESSIONS = 239
+EXPECTED_SESSIONS = 234
 
 # OASIS3_MR_json.csv is inconsistent about 'ses-' vs 'sess-' in its filename column.
 _MR_JSON_SESSION_RE = re.compile(r"sub-(OAS\d+)_sess?-d(\d+)")
@@ -55,6 +65,30 @@ def _subjects_with_duplicate_days(df: pd.DataFrame) -> set[str]:
     """Subject IDs with >1 session sharing the same days_from_baseline."""
     counts = df.groupby(["subject_id", "days_from_baseline"]).size()
     return {subject_id for subject_id, _ in counts[counts > 1].index}
+
+
+def _select_canonical_scan(sessions: list) -> list:
+    """Drop the MB4 half of a same-day ``restingstate``/``restingstateMB4`` pair.
+
+    Keeps the non-MB4 acquisition as canonical (see module docstring for the
+    rationale and the affected subject list). Any same-day duplicate that
+    isn't this specific MB4 pairing is passed through unresolved, so
+    ``assert_delta_t_monotonic`` still catches it as an unacknowledged gap.
+    """
+    by_day: dict[int, list] = {}
+    for session in sessions:
+        by_day.setdefault(session.day, []).append(session)
+
+    canonical: list = []
+    for day_sessions in by_day.values():
+        if len(day_sessions) == 2:
+            mb4 = [s for s in day_sessions if "restingstateMB4" in s.bold_path.name]
+            non_mb4 = [s for s in day_sessions if "restingstateMB4" not in s.bold_path.name]
+            if len(mb4) == 1 and len(non_mb4) == 1:
+                canonical.append(non_mb4[0])
+                continue
+        canonical.extend(day_sessions)
+    return canonical
 
 
 def _latest_csv(pattern: str) -> Path:
@@ -105,6 +139,7 @@ def build_oasis3_manifest(
 
     rows: list[dict] = []
     for subject_id, sessions in sessions_by_subject.items():
+        sessions = _select_canonical_scan(sessions)
         sessions = sorted(sessions, key=lambda s: s.day)
         days = [s.day for s in sessions]
         visit_index, delta_t_months = visit_identity("oasis3", days)
@@ -158,10 +193,12 @@ def main(argv: list[str] | None = None) -> None:
         "--acknowledge-duplicate-day-sessions",
         action="store_true",
         help=(
-            "Explicitly acknowledge subjects with two BOLD scans on the same "
-            "elapsed day (e.g. paired task-restingstate / task-restingstateMB4 "
-            "acquisitions) and build the manifest anyway. Without this, the "
-            "build fails loudly and lists them — see assert_delta_t_monotonic."
+            "Explicitly acknowledge subjects with same-day duplicate BOLD scans "
+            "that _select_canonical_scan does not already resolve (the known "
+            "task-restingstate/task-restingstateMB4 pairing is resolved "
+            "automatically — this flag is for any other pattern) and build the "
+            "manifest anyway. Without this, the build fails loudly and lists "
+            "them — see assert_delta_t_monotonic."
         ),
     )
     args = parser.parse_args(argv)
