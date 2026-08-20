@@ -1,0 +1,81 @@
+# Brain-TokenGT — seed repeats of the two rows that go in the comparison table.
+#
+# Same rationale as CLASSIFIER/experiments/ablation_seeds.yaml: everything else in
+# this registry runs at seed 42 only, and a single seed is not a measurement. The
+# competitor's score is reported as the better of the as-released and repaired
+# rows, so BOTH need a spread before either number is quoted against GELSTM.
+#
+# Every entry is byte-identical to its seed-42 parent except `id` (suffixed
+# -seed<N>) and `seed`. Same notebook, same adapter, same config_path.
+#
+# The repaired arm here is the fix-stabilized variant, not the bare repaired one:
+# the bare one diverged to non-finite TopK scores on two of its runs, so repeating
+# it across seeds would measure the crash rate, not the model. If you want the
+# crash rate, run braintokengt-delcode-whole-brain-repaired itself — that is a
+# separate question with a separate answer.
+experiments:
+  - id: braintokengt-delcode-whole-brain-seed43
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_delcode_whole_brain.json
+    threshold_mode: best-f1
+    notes: "Seed repeat of braintokengt-delcode-whole-brain (as released) at seed 43."
+
+  - id: braintokengt-delcode-whole-brain-seed44
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_delcode_whole_brain.json
+    threshold_mode: best-f1
+    notes: "Seed repeat of braintokengt-delcode-whole-brain (as released) at seed 44."
+
+  - id: braintokengt-delcode-whole-brain-seed45
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_delcode_whole_brain.json
+    threshold_mode: best-f1
+    notes: "Seed repeat of braintokengt-delcode-whole-brain (as released) at seed 45."
+
+  - id: braintokengt-delcode-whole-brain-repaired-fix-stabilized-seed43
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    threshold_mode: best-f1
+    notes: "Seed repeat of braintokengt-delcode-whole-brain-repaired-fix-stabilized at seed 43."
+
+  - id: braintokengt-delcode-whole-brain-repaired-fix-stabilized-seed44
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    threshold_mode: best-f1
+    notes: "Seed repeat of braintokengt-delcode-whole-brain-repaired-fix-stabilized at seed 44."
+
+  - id: braintokengt-delcode-whole-brain-repaired-fix-stabilized-seed45
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    threshold_mode: best-f1
+    notes: "Seed repeat of braintokengt-delcode-whole-brain-repaired-fix-stabilized at seed 45."
