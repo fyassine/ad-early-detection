@@ -33,7 +33,11 @@ import pandas as pd
 
 from CLASSIFIER.common.visits import visit_identity
 from DATA.manifest._day_coded import iter_flat_sessions, subject_dirs_on_disk
-from DATA.manifest.schema import MANIFEST_COLUMNS, assert_no_cross_label_duplicates, validate_manifest
+from DATA.manifest.schema import (
+    MANIFEST_COLUMNS,
+    assert_no_cross_label_duplicates,
+    validate_manifest,
+)
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _METADATA_DIR = _REPO_ROOT / "DATA" / "OASIS3" / "__metadata__"

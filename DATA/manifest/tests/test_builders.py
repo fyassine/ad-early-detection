@@ -19,23 +19,37 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from CLASSIFIER.common.visits import DAYS_PER_MONTH
+from DATA.manifest._day_coded import subject_dirs_on_disk
 from DATA.manifest.build_adni_manifest import (
     DEFAULT_FMRI_ROOT as ADNI_FMRI_ROOT,
+)
+from DATA.manifest.build_adni_manifest import (
     EXPECTED_SESSIONS as ADNI_EXPECTED_SESSIONS,
+)
+from DATA.manifest.build_adni_manifest import (
     EXPECTED_SUBJECTS as ADNI_EXPECTED_SUBJECTS,
+)
+from DATA.manifest.build_adni_manifest import (
     build_adni_manifest,
 )
 from DATA.manifest.build_delcode_manifest import (
     DEFAULT_FMRI_ROOT as DELCODE_FMRI_ROOT,
+)
+from DATA.manifest.build_delcode_manifest import (
     build_delcode_manifest,
 )
 from DATA.manifest.build_oasis3_manifest import (
     DEFAULT_FMRI_ROOT as OASIS3_FMRI_ROOT,
+)
+from DATA.manifest.build_oasis3_manifest import (
     EXPECTED_SESSIONS as OASIS3_EXPECTED_SESSIONS,
+)
+from DATA.manifest.build_oasis3_manifest import (
     EXPECTED_SUBJECTS as OASIS3_EXPECTED_SUBJECTS,
+)
+from DATA.manifest.build_oasis3_manifest import (
     build_oasis3_manifest,
 )
-from DATA.manifest._day_coded import subject_dirs_on_disk
 from DATA.manifest.schema import MANIFEST_COLUMNS, validate_manifest
 
 
