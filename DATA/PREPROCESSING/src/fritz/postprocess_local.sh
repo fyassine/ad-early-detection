@@ -26,16 +26,27 @@
 # entry) to pick up subjects that finished on CORE since the last run. Already
 # flattened subjects are skipped, so reruns are cheap and idempotent.
 #
+# --flatten-only: skip steps 1/2/4 (CORE gate, pull, denoise) entirely — for
+# subjects whose denoised output already exists locally (e.g. pulled via the
+# CORE-side batch path + pull_derivatives_from_core.sh, which rsyncs raw
+# output but never QC/reorient/flattens it). The subject list is instead every
+# sub-* already present in DATA/<COHORT>/derivatives/postprocessed/, and only
+# QC (step 3) + reorient + flatten (5+6) run, reading confounds from the
+# already-local derivatives/fmriprep. No CORE SSH/credentials/apptainer needed
+# in this mode.
+#
 # Credentials: CORE_USER / CORE_HOST / CORE_PASSWORD are read from the repo-root
 # .env. Key-based SSH auth is the default; pass --use-password to use sshpass.
+# Not needed at all with --flatten-only.
 #
 # The postprocessing image must be staged onto Fritz once (it is only read from
 # CORE otherwise). See --stage-sif below, or set POSTPROC_SIMG to its path.
+# Not needed with --flatten-only (no denoising happens in that mode).
 #
 # Usage:
 #   bash postprocess_local.sh [--dataset oasis3|adni|both] [--jobid N]
 #        [--max-parallel N] [--fd-threshold MM] [--limit N]
-#        [--stage-sif] [--overwrite] [--dry-run] [--use-password]
+#        [--stage-sif] [--overwrite] [--dry-run] [--use-password] [--flatten-only]
 # =============================================================================
 
 set -euo pipefail
@@ -87,6 +98,7 @@ STAGE_SIF=false
 OVERWRITE=false
 DRY_RUN=false
 USE_PASSWORD=false
+FLATTEN_ONLY=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -99,35 +111,51 @@ while [[ $# -gt 0 ]]; do
         --overwrite)    OVERWRITE=true; shift ;;
         --dry-run)      DRY_RUN=true; shift ;;
         --use-password) USE_PASSWORD=true; shift ;;
-        -h|--help)      sed -n '2,45p' "$0"; exit 0 ;;
+        --flatten-only) FLATTEN_ONLY=true; shift ;;
+        -h|--help)      sed -n '2,50p' "$0"; exit 0 ;;
         *) die "Unknown argument: $1" ;;
     esac
 done
+
+if $FLATTEN_ONLY && $STAGE_SIF; then
+    die "--flatten-only and --stage-sif are mutually exclusive (flatten-only never touches the SIF)."
+fi
 
 [[ "$DATASET" =~ ^(oasis3|adni|both)$ ]] || die "--dataset must be oasis3, adni, or both"
 [[ "$MAX_PARALLEL" =~ ^[0-9]+$ && "$MAX_PARALLEL" -ge 1 ]] || die "--max-parallel must be a positive integer"
 
 # ─── Runtime + interpreter ──────────────────────────────────────────────────
+# apptainer/singularity is only needed to run the denoise container, which
+# --flatten-only never does.
 RUNTIME="$(command -v apptainer || command -v singularity || true)"
-[[ -n "$RUNTIME" ]] || die "neither apptainer nor singularity found on Fritz — cannot run the postprocessing container."
+if ! $FLATTEN_ONLY; then
+    [[ -n "$RUNTIME" ]] || die "neither apptainer nor singularity found on Fritz — cannot run the postprocessing container."
+fi
 
 PYTHON="${REPO_ROOT}/.venv/bin/python"
 [[ -x "$PYTHON" ]] || PYTHON="$(command -v python3)"
 [[ -n "$PYTHON" ]] || die "no python interpreter found (need the project .venv for pandas/nibabel)."
 
 # ─── Credentials ────────────────────────────────────────────────────────────
-[[ -f "${REPO_ROOT}/.env" ]] || die "${REPO_ROOT}/.env not found (need CORE_USER/CORE_HOST)."
-# shellcheck disable=SC1091
-source "${REPO_ROOT}/.env"
-[[ -n "${CORE_USER:-}" && -n "${CORE_HOST:-}" ]] || die "CORE_USER and CORE_HOST must be set in ${REPO_ROOT}/.env."
+# --flatten-only never talks to CORE, so it needs neither the .env file nor
+# SSH/rsync setup.
+if $FLATTEN_ONLY; then
+    SSH_CMD=()
+    RSYNC_RSH=""
+else
+    [[ -f "${REPO_ROOT}/.env" ]] || die "${REPO_ROOT}/.env not found (need CORE_USER/CORE_HOST)."
+    # shellcheck disable=SC1091
+    source "${REPO_ROOT}/.env"
+    [[ -n "${CORE_USER:-}" && -n "${CORE_HOST:-}" ]] || die "CORE_USER and CORE_HOST must be set in ${REPO_ROOT}/.env."
 
-SSH_CMD=(ssh -o BatchMode=yes "${CORE_USER}@${CORE_HOST}")
-RSYNC_RSH="ssh"
-if $USE_PASSWORD; then
-    [[ -n "${CORE_PASSWORD:-}" ]] || die "--use-password passed but CORE_PASSWORD unset in .env."
-    command -v sshpass &>/dev/null || die "--use-password needs sshpass installed."
-    SSH_CMD=(sshpass -p "${CORE_PASSWORD}" ssh "${CORE_USER}@${CORE_HOST}")
-    RSYNC_RSH="sshpass -p ${CORE_PASSWORD} ssh"
+    SSH_CMD=(ssh -o BatchMode=yes "${CORE_USER}@${CORE_HOST}")
+    RSYNC_RSH="ssh"
+    if $USE_PASSWORD; then
+        [[ -n "${CORE_PASSWORD:-}" ]] || die "--use-password passed but CORE_PASSWORD unset in .env."
+        command -v sshpass &>/dev/null || die "--use-password needs sshpass installed."
+        SSH_CMD=(sshpass -p "${CORE_PASSWORD}" ssh "${CORE_USER}@${CORE_HOST}")
+        RSYNC_RSH="sshpass -p ${CORE_PASSWORD} ssh"
+    fi
 fi
 
 mkdir -p "$LOG_DIR"
@@ -217,6 +245,20 @@ done < <(sacct -j "$JOBID" -X -n -P --format=JobID,State 2>/dev/null | awk -F'|'
 REMOTE
 }
 
+# ─── Subjects already denoised locally (for --flatten-only) ────────────────
+# Prints one BARE subject id per line, sourced from
+# DATA/<COHORT>/derivatives/postprocessed/sub-* — no CORE round-trip.
+# -type d matters: sibling fMRIPrep output dirs place subject-level
+# sub-<ID>.html REPORT FILES next to sub-<ID>/ dirs (see flatten_fmriprep.sh's
+# local_fmriprep_subjects() for a confirmed instance of this); restricting to
+# directories keeps this immune even though postprocessed/ has none today.
+local_postprocessed_subjects() {
+    local ds_name="$1"
+    find "${REPO_ROOT}/DATA/${ds_name}/derivatives/postprocessed" -mindepth 1 -maxdepth 1 -type d -name 'sub-*' 2>/dev/null \
+        | xargs -r -n1 basename \
+        | sed 's/^sub-//'
+}
+
 # ─── Process one subject end-to-end ─────────────────────────────────────────
 # Runs in a subshell (backgrounded by the pool). Logs are prefixed with the sub.
 process_subject() {
@@ -238,17 +280,23 @@ process_subject() {
     fi
 
     if $DRY_RUN; then
-        info "${tag} (--dry-run) would: rsync <- ${core_fmriprep} ; QC ; ${RUNTIME##*/} run ${STRATEGY} ; reorient ; flatten -> ${flat_sub}"
+        if $FLATTEN_ONLY; then
+            info "${tag} (--dry-run, --flatten-only) would: QC (local) ; reorient (already-denoised, local) ; flatten -> ${flat_sub}"
+        else
+            info "${tag} (--dry-run) would: rsync <- ${core_fmriprep} ; QC ; ${RUNTIME##*/} run ${STRATEGY} ; reorient ; flatten -> ${flat_sub}"
+        fi
         return 0
     fi
 
-    # 2. Pull (COPY) this subject's fMRIPrep dir.
-    info "${tag} pulling fMRIPrep output from CORE ..."
-    mkdir -p "${local_fmriprep_root}/sub-${sub}"
-    rsync -az -e "$RSYNC_RSH" \
-        "${CORE_USER}@${CORE_HOST}:${core_fmriprep}/" \
-        "${local_fmriprep_root}/sub-${sub}/" \
-        || { error "${tag} rsync failed — skipping."; return 1; }
+    if ! $FLATTEN_ONLY; then
+        # 2. Pull (COPY) this subject's fMRIPrep dir.
+        info "${tag} pulling fMRIPrep output from CORE ..."
+        mkdir -p "${local_fmriprep_root}/sub-${sub}"
+        rsync -az -e "$RSYNC_RSH" \
+            "${CORE_USER}@${CORE_HOST}:${core_fmriprep}/" \
+            "${local_fmriprep_root}/sub-${sub}/" \
+            || { error "${tag} rsync failed — skipping."; return 1; }
+    fi
 
     # 3. QC gate → passing sessions (stdout of qc_motion_gate.py).
     info "${tag} QC (mean-FD > ${FD_THRESHOLD}mm excluded) ..."
@@ -266,17 +314,19 @@ process_subject() {
     fi
     info "${tag} QC-passing sessions: $(echo "$passing" | tr '\n' ' ')"
 
-    # 4. Denoise (container processes ALL sessions of the subject).
-    info "${tag} running postprocessing container (${STRATEGY}) ..."
-    mkdir -p "$local_postproc_root"
-    if ! "$RUNTIME" run --contain --cleanenv \
-            -B "${local_fmriprep_root}":/input \
-            -B "${local_postproc_root}":/out \
-            "$LOCAL_SIMG" \
-            --bids_dir /input --out_dir /out --subject_id "$sub" \
-            --strategy "$STRATEGY" --dummy "$DUMMY" --FWHM "$FWHM" --LPF "$LPF" --HPF "$HPF"; then
-        error "${tag} postprocessing container failed — skipping."
-        return 1
+    if ! $FLATTEN_ONLY; then
+        # 4. Denoise (container processes ALL sessions of the subject).
+        info "${tag} running postprocessing container (${STRATEGY}) ..."
+        mkdir -p "$local_postproc_root"
+        if ! "$RUNTIME" run --contain --cleanenv \
+                -B "${local_fmriprep_root}":/input \
+                -B "${local_postproc_root}":/out \
+                "$LOCAL_SIMG" \
+                --bids_dir /input --out_dir /out --subject_id "$sub" \
+                --strategy "$STRATEGY" --dummy "$DUMMY" --FWHM "$FWHM" --LPF "$LPF" --HPF "$HPF"; then
+            error "${tag} postprocessing container failed — skipping."
+            return 1
+        fi
     fi
 
     # 5 + 6. Reorient QC-passing sessions and flatten into the product.
@@ -326,12 +376,15 @@ info " Continuous Fritz-side postprocessing"
 info " Dataset      : $DATASET"
 info " Max parallel : $MAX_PARALLEL   FD threshold: ${FD_THRESHOLD}mm   strategy: $STRATEGY"
 info " Dry-run      : $DRY_RUN        Overwrite: $OVERWRITE"
+info " Flatten-only : $FLATTEN_ONLY"
 info " Log          : $LOG_FILE"
 info "================================================================"
 
-$STAGE_SIF && stage_sif
-if [[ ! -f "$LOCAL_SIMG" ]] && ! $DRY_RUN; then
-    die "postprocessing SIF not found at $LOCAL_SIMG. Stage it once with --stage-sif (or set POSTPROC_SIMG)."
+if ! $FLATTEN_ONLY; then
+    $STAGE_SIF && stage_sif
+    if [[ ! -f "$LOCAL_SIMG" ]] && ! $DRY_RUN; then
+        die "postprocessing SIF not found at $LOCAL_SIMG. Stage it once with --stage-sif (or set POSTPROC_SIMG)."
+    fi
 fi
 
 TOTAL_ELIGIBLE=0
@@ -340,18 +393,22 @@ for ds_key in oasis3 adni; do
     ds_name="$(folder_name "$ds_key")"
     ds_value="$ds_key"   # literal value exported to the fMRIPrep job
 
-    if [[ -n "$JOBID" ]]; then
-        info "${ds_name}: gating on fMRIPrep completion (sub-*.html), restricted to job(s) ${JOBID} ..."
+    if $FLATTEN_ONLY; then
+        info "${ds_name}: gating on already-local derivatives/postprocessed/sub-* (no CORE round-trip) ..."
+        mapfile -t subs < <(local_postprocessed_subjects "$ds_name" | sort -u)
     else
-        info "${ds_name}: gating on fMRIPrep completion (sub-*.html reports under outputs/${ds_value}/fmriprep) ..."
+        if [[ -n "$JOBID" ]]; then
+            info "${ds_name}: gating on fMRIPrep completion (sub-*.html), restricted to job(s) ${JOBID} ..."
+        else
+            info "${ds_name}: gating on fMRIPrep completion (sub-*.html reports under outputs/${ds_value}/fmriprep) ..."
+        fi
+        mapfile -t subs < <(completed_subjects "$ds_value" "$JOBID" | sort -u)
     fi
-
-    mapfile -t subs < <(completed_subjects "$ds_value" "$JOBID" | sort -u)
     if [[ ${#subs[@]} -eq 0 ]]; then
-        warn "${ds_name}: no COMPLETED subjects with output yet — nothing to do."
+        warn "${ds_name}: no eligible subjects found — nothing to do."
         continue
     fi
-    info "${ds_name}: ${#subs[@]} COMPLETED subject(s) eligible."
+    info "${ds_name}: ${#subs[@]} eligible subject(s)."
 
     count=0
     for sub in "${subs[@]}"; do
