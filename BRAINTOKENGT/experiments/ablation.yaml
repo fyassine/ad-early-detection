@@ -1,0 +1,125 @@
+# Brain-TokenGT fidelity ablation — which released-code defect actually moves the
+# number, and how much does the cohort window matter?
+#
+# Two blocks, both built the same way as CLASSIFIER/experiments/ablation.yaml:
+# one factor is varied, EVERYTHING else is held fixed (same notebook, same adapter,
+# same config_path, same seed 42 and therefore the same folds and the same
+# train/val/test splits), so the arms are comparable subject-for-subject.
+#
+# Block 1 — fidelity flags, one at a time.
+#   The as-released row (braintokengt-delcode-whole-brain, longitudinal.yaml) and
+#   the repaired row (…-repaired) differ in FOUR flags at once, so neither says
+#   which defect is responsible for the gap. Each arm below starts from the
+#   as-released config and repairs exactly ONE flag:
+#
+#     edge-weights     edge_weight_mode  binary -> weighted     paper §2.2: FC weights should reach VEE
+#     graph-token      readout           mean   -> graph_token  paper Fig. 1: read out the [graph] token
+#     multi-head       force_single_head true   -> false        honour the configured nhead
+#     trainable-give   train_give        false  -> true         GIVE/INE is frozen at random init upstream
+#
+#   Read against braintokengt-delcode-whole-brain (the common baseline) and
+#   against …-repaired-fix-stabilized (all four at once): the four deltas summing
+#   to less than the joint delta means the repairs interact.
+#
+# Block 2 — cohort window.
+#   The primary rows restrict DELCODE to the authors' 2-3 visit regime. This arm
+#   keeps every hyperparameter and lets the sequence run to the full 6 visits, so
+#   the window's contribution can be reported separately from the model's.
+#
+# Interpretation note: hyperparams overrides are layered ON TOP of config_path
+# (dataclass defaults < JSON config < YAML hyperparams), so each arm is literally
+# the as-released JSON plus one key.
+experiments:
+  # ── Block 1: fidelity flags, one at a time ────────────────────────────────
+  - id: braintokengt-ablation-edge-weights
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_delcode_whole_brain.json
+    hyperparams:
+      edge_weight_mode: weighted
+    threshold_mode: best-f1
+    notes: >-
+      Arm 1/4. As-released except FC edge weights actually reach the hypergraph
+      convolution (paper §2.2). Upstream feeds VEE an all-ones vector, so this is
+      the only arm whose delta measures "does the model use connectivity strength
+      at all". run_summary.json -> model_config.upstream_faithful is false here.
+
+  - id: braintokengt-ablation-graph-token-readout
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_delcode_whole_brain.json
+    hyperparams:
+      readout: graph_token
+    threshold_mode: best-f1
+    notes: >-
+      Arm 2/4. As-released except the classifier head reads the [graph] token
+      (paper Fig. 1) instead of averaging all ~1.4k tokens. Isolates how much
+      signal the mean-over-everything readout dilutes.
+
+  - id: braintokengt-ablation-multi-head
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_delcode_whole_brain.json
+    hyperparams:
+      force_single_head: false
+    threshold_mode: best-f1
+    notes: >-
+      Arm 3/4. As-released except the configured nhead=2 is honoured; upstream
+      overwrites it with 1 on the line after it is set. Cheapest of the four
+      repairs to justify in the write-up — it repairs a self-evident typo.
+
+  - id: braintokengt-ablation-trainable-give
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_delcode_whole_brain.json
+    hyperparams:
+      train_give: true
+      give_weight_decay: 0.001
+      give_lr_scale: 0.1
+    threshold_mode: best-f1
+    notes: >-
+      Arm 4/4. As-released except the GIVE/INE (EvolveGCN) parameters reach the
+      optimizer instead of staying frozen at random init. Carries the same
+      give_weight_decay / give_lr_scale as the fix-stabilized row: unfreezing GIVE
+      without them is what diverged to non-finite TopK scores in
+      outputs/braintokengt-delcode-whole-brain-repaired. That makes this arm
+      "trainable GIVE, stabilized" rather than a pure single-flag flip — state it
+      that way in the table, and compare against
+      braintokengt-delcode-whole-brain-repaired-fix-stabilized, which uses the
+      identical GIVE optimizer settings.
+
+  # ── Block 2: cohort window ────────────────────────────────────────────────
+  - id: braintokengt-ablation-window-all-visits
+    mode: longitudinal
+    model: BRAINTOKENGT
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_delcode_whole_brain.json
+    hyperparams:
+      max_visits: 6
+    threshold_mode: best-f1
+    notes: >-
+      As-released model on DELCODE's full visit range (min_visits stays 2 — a T=1
+      sequence has no temporal edges and is a path upstream never executes).
+      Quantifies how much of the head-to-head gap is the 2-3 visit window rather
+      than the model. If GELSTM is re-run at max_visits=3 for the fair-comparison
+      table (README.md §"Fair-comparison contract"), this is the arm that says
+      what that restriction cost the competitor.

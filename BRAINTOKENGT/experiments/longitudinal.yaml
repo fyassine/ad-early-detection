@@ -13,7 +13,7 @@ experiments:
     model: BRAINTOKENGT
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
     adapter: braintokengt
     config_path: configs/braintokengt_smoke.json
     threshold_mode: best-f1
@@ -28,7 +28,7 @@ experiments:
     model: BRAINTOKENGT
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
     adapter: braintokengt
     config_path: configs/braintokengt_delcode_whole_brain.json
     threshold_mode: best-f1
@@ -42,7 +42,7 @@ experiments:
     model: BRAINTOKENGT
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
     adapter: braintokengt
     config_path: configs/braintokengt_repaired_delcode.json
     threshold_mode: best-f1
@@ -57,7 +57,7 @@ experiments:
     model: BRAINTOKENGT
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
     adapter: braintokengt
     config_path: configs/braintokengt_repaired_delcode_fix_failloud.json
     threshold_mode: best-f1
@@ -74,7 +74,7 @@ experiments:
     model: BRAINTOKENGT
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
-    notebook: notebooks/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb
     adapter: braintokengt
     config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
     threshold_mode: best-f1
