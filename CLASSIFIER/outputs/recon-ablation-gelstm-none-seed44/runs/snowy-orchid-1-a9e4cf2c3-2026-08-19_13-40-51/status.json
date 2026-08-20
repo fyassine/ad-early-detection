@@ -1,0 +1,13 @@
+{
+  "experiment_id": "recon-ablation-gelstm-none-seed44",
+  "run_name": "snowy-orchid-1-a9e4cf2c3-2026-08-19_13-40-51",
+  "state": "done",
+  "pid": 2815293,
+  "started_at": "2026-08-19T13:40:55",
+  "git_commit": "a9e4cf2c3",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-19T13:41:55",
+  "exit_code": 0,
+  "duration_seconds": 59.7
+}

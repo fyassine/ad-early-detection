@@ -1,0 +1,180 @@
+# Reconstruction-value ablation — seed repeats.
+#
+# The initial run (CLASSIFIER/experiments/ablation.yaml) covers all four arms
+# at seed 42 only. DOCS/reconstruction-value-ablation.md's own caveats say not
+# to conclude anything from that single seed — especially the `random` arm,
+# which looked like an optimisation collapse (test spec = 0.000) rather than a
+# clean measurement. This file repeats the same four arms at seeds 43, 44, 45
+# so the seed-42 result can be checked against the pooled distribution before
+# any row of the pre-registered interpretation table is treated as a finding.
+#
+# Everything is identical to ablation.yaml except `id` (suffixed -seed<N>) and
+# `seed`. Same notebook, same adapter, same config_path, same checkpoint_path.
+experiments:
+  - id: recon-ablation-gelstm-pretrained-frozen-seed43
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Seed repeat of recon-ablation-gelstm-pretrained-frozen at seed 43."
+
+  - id: recon-ablation-gelstm-pretrained-finetuned-seed43
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_finetuned
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Seed repeat of recon-ablation-gelstm-pretrained-finetuned at seed 43."
+
+  - id: recon-ablation-gelstm-random-seed43
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: random
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Seed repeat of recon-ablation-gelstm-random at seed 43. Checkpoint path is ignored."
+
+  - id: recon-ablation-gelstm-none-seed43
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: none
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Seed repeat of recon-ablation-gelstm-none at seed 43. Checkpoint path is ignored."
+
+  - id: recon-ablation-gelstm-pretrained-frozen-seed44
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Seed repeat of recon-ablation-gelstm-pretrained-frozen at seed 44."
+
+  - id: recon-ablation-gelstm-pretrained-finetuned-seed44
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_finetuned
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Seed repeat of recon-ablation-gelstm-pretrained-finetuned at seed 44."
+
+  - id: recon-ablation-gelstm-random-seed44
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: random
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Seed repeat of recon-ablation-gelstm-random at seed 44. Checkpoint path is ignored."
+
+  - id: recon-ablation-gelstm-none-seed44
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: none
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Seed repeat of recon-ablation-gelstm-none at seed 44. Checkpoint path is ignored."
+
+  - id: recon-ablation-gelstm-pretrained-frozen-seed45
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Seed repeat of recon-ablation-gelstm-pretrained-frozen at seed 45."
+
+  - id: recon-ablation-gelstm-pretrained-finetuned-seed45
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_finetuned
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Seed repeat of recon-ablation-gelstm-pretrained-finetuned at seed 45."
+
+  - id: recon-ablation-gelstm-random-seed45
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: random
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Seed repeat of recon-ablation-gelstm-random at seed 45. Checkpoint path is ignored."
+
+  - id: recon-ablation-gelstm-none-seed45
+    mode: longitudinal
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: none
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "Seed repeat of recon-ablation-gelstm-none at seed 45. Checkpoint path is ignored."
