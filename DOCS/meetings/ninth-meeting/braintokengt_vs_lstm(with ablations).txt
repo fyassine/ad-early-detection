@@ -1,0 +1,195 @@
+Good — no changes to CLASSIFIER/model, common, or configs between the seed-42 run and the seed 43–45 runs, so the pooled comparison is apples-to-apples on the code side (git_dirty=True just reflects untracked output dirs, not code diffs). Now let me compute the pooled stats to check against the pre-registered interpretation table.
+
+  Ran 2 shell commands
+
+Sanity checks pass. All 12 seed-repeat runs are done, share commit a9e4cf2c3 (no model/common/configs code changed since the seed-42 baseline run), and the checkpoint-loading log lines confirm each arm did what it claims.
+
+Pooled results (seeds 42, 43, 44, 45)
+
+┌──────────────────────┬─────────────────────────┬────────────────┬────────────────────────────────────────┐
+│         Arm          │ Test AUC (mean±sd, n=4) │ Test F1 (mean) │ CV AUC (mean of per-seed 5-fold means) │
+├──────────────────────┼─────────────────────────┼────────────────┼────────────────────────────────────────┤
+│ pretrained_frozen    │ 0.781 ± 0.011           │ 0.605          │ 0.921 ± 0.008                          │
+├──────────────────────┼─────────────────────────┼────────────────┼────────────────────────────────────────┤
+│ none (no encoder)    │ 0.831 ± 0.046           │ 0.698          │ 0.891 ± 0.006                          │
+├──────────────────────┼─────────────────────────┼────────────────┼────────────────────────────────────────┤
+│ pretrained_finetuned │ 0.711 ± 0.169           │ 0.584          │ 0.851 ± 0.017                          │
+├──────────────────────┼─────────────────────────┼────────────────┼────────────────────────────────────────┤
+│ random init          │ 0.731 ± 0.096           │ 0.608          │ 0.768 ± 0.045                          │
+└──────────────────────┴─────────────────────────┴────────────────┴────────────────────────────────────────┘
+
+pretrained_finetuned at seed 43 collapsed (test AUC 0.421, spec 0.25) — a second instance of the same kind of end-to-end optimization instability the seed-42 doc flagged for random.
+
+Reading against the pre-registered table
+
+None of the single pre-registered rows cleanly fits — the result is a mix of two of them:
+
+- none ≈ pretrained_frozen holds (CV AUC 0.891 vs 0.921, well inside the per-run fold-to-fold spread; none actually wins on test AUC/F1 with ~17x fewer trainable params). This matches row 2: the graph encoder itself isn't earning its place — raw pooled ROI features carry the same signal as the frozen GAAE embedding.
+- pretrained_finetuned < pretrained_frozen, and finetuning is far noisier across seeds (test AUC sd 0.169 vs 0.011). This matches row 5: finetuning overfits the small converter cohort; freezing is doing real regularization work.
+- random is clearly the worst and most unstable arm on CV AUC (0.768±0.045, lowest of the four) — so pretraining does beat random init when the encoder is trained end-to-end. But none (no encoder at all) beats random too, which undercuts a clean "pretraining transfers real structure" story (row 3) — a simpler model with no graph encoder outperforms a trained-from-scratch graph encoder.
+
+Net read: the graph encoder's architecture isn't adding value over plain pooled features (none ≈ frozen), and the reconstruction pretraining's main measurable benefit is stabilizing optimization relative to random init, not lifting peak performance. Freezing beats finetuning on this cohort size.
+
+The three-seed data isn't in DOCS/reconstruction-value-ablation.md yet — the file's ## Results section still says "initial single-seed" and only has the seed-42 row. Want me to update it with this pooled table and rewrite the "Initial read" section to match?
+
+✻ Cooked for 1m 35s
+
+※ recap: We're testing whether GAAE reconstruction pretraining actually helps the GELSTM classifier; pooled 4-seed results show it mostly doesn't. Next: update DOCS/reconstruction-value-ablation.md with these results if you want me to. (disable recaps in /config)
+
+❯ Does the LSTM use the graph data or the graph notes and the graph edges or what is your explanation for a clean better without a pre-trained graph neural network?
+
+● Explore(Find GELSTM graph/node-feature/edge pipeline)
+Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+I'm digging into the exact data pipeline (what the node features and edges actually represent, and whether the LSTM ever sees the graph directly) so I can give you a grounded explanation rather than a speculative one. One sentence while that runs: architecturally, in every arm the LSTM only ever consumes a fixed-width per-visit vector — either the GAAE's 64-d encoded embedding, or (in the none arm) a mean-pooled raw node-feature vector — so the LSTM itself is graph-agnostic regardless of arm; I'm confirming the node-feature semantics now to explain why pooling them directly did as well as routing them through the pretrained encoder.
+
+  Read 1 file, ran 1 shell command
+Loaded .claude/rules/checkpoints.md
+Loaded .claude/rules/configs.md
+Loaded .claude/rules/evaluation.md
+Loaded .claude/rules/seeding.md
+
+I've confirmed the key architectural fact directly in the code (CLASSIFIER/model/GELSTM/models.py:213): encode_visit does z = self.encoder.encode(x, edge_index, edge_attr) if self.encoder is not None else x — in the none arm, edge_index/edge_attr are simply never touched; the raw node-feature matrix x is pooled directly. The LSTM downstream only ever sees this pooled fixed-width vector, so it's graph-agnostic in every arm — the graph structure only matters if something reads the edges to build that vector. I've got a background agent confirming what the 200 raw per-node features actually encode (functional-connectivity-derived stats, ROI activity stats, etc.) so I can explain why skipping the edges didn't cost anything — I'll report back once that lands.
+
+✻ Churned for 47s
+
+● Agent "Find GELSTM graph/node-feature/edge pipeline" finished · 1m 13s
+
+Good — now I have the exact data flow. Here's the answer, grounded in the code the agent found.
+
+What actually feeds the LSTM
+
+The LSTM never sees the graph, in any arm. encode_batch_sequences (CLASSIFIER/model/GELSTM/utils.py:60) turns each visit into one fixed-width vector, stacks those into a sequence, and only that sequence reaches self.lstm. The recurrent core is graph-agnostic by construction — the only question that varies between arms is how that per-visit vector gets built.
+
+The node features are the FC matrix itself. Each visit's graph comes from a 200×200 whole-brain functional-connectivity matrix (Schaefer-200 atlas, Pearson correlation, z-transformed — CLASSIFIER/model/GELSTM/dataset.py:184). Node i's feature vector is literally that ROI's row of correlations to all 200 other ROIs. So x isn't some separate signal alongside the graph — x is the connectivity data.
+
+The edges are derived from that same matrix, not an independent source. adj = knn_binary_adjacency_matrix_no_diag(torch.abs(feat), k=8) (dataset.py:187) — each ROI connects to its 8 highest-|correlation| partners, and edge_attr is a binary 0/1 mask (correlation magnitude is dropped once it decides which edges exist). So the graph structure is a sparsified, binarized view of x, not new information.
+
+With an encoder: 3 GATv2 layers with FiLM conditioning message-pass over that sparsified 8-nearest-neighbor graph, compressing to a 64-d latent optimized during GAAE pretraining for reconstruction (rebuild x and the adjacency), then mean-pooled.
+
+Without an encoder (none): z = x directly (models.py:213), mean-pooled over the 200 ROIs → a 200-d vector that's literally the column-mean of the FC matrix — a global "average connectivity profile," no learned transformation, no edges touched at all.
+
+Why none came out ahead
+
+1. No information is actually lost by skipping the encoder — the raw pooled vector is a direct summary of the same connectivity data the GNN would have processed, just without the lossy steps in between (kNN sparsification down to 8 edges, binarizing away correlation strength, compressing to 64-d through a bottleneck).
+2. The GNN's bottleneck is optimized for the wrong objective. GAAE pretraining targets reconstruction fidelity (rebuild the graph), not conversion prediction. If AD-relevant variance isn't important for reconstruction, the encoder has no incentive to preserve it through the 64-d bottleneck — mean-pooling the raw 200-d row, by contrast, can't discard anything, since there's no learned compression step at all.
+3. Small-sample instability compounds it. none trains only 31K params vs. 966K for random/finetuned. On ~130 training subjects with a handful of converters, the heavier encoder is much easier to overfit or destabilize during end-to-end training — which is exactly what you saw: random's highest CV fold-to-fold spread of any arm, and pretrained_finetuned collapsing outright at seed 43 (test AUC 0.421).
+
+So the honest characterization isn't "the graph structure doesn't matter" — it's "for this cohort size, compressing the FC matrix through a sparsified, reconstruction-pretrained GNN bottleneck throws away more signal than it adds, and a parameter-light global summary of the same raw connectivity data is a safer bet."
+
+Want this folded into the DOCS/reconstruction-value-ablation.md update we discussed?
+
+✻ Cogitated for 2m 17s
+
+※ recap: We're validating whether the pretrained graph encoder helps AD-conversion prediction; pooled 3-seed ablation results show a plain "no encoder" baseline beats it. Next: update DOCS/reconstruction-value-ablation.md with these results, if you want me to proceed. (disable recaps in /config)
+
+❯ Compared to the brain token GT paper I think my LST M performs better because maybe the trajectory is more important than the reconstruction fidelity to distinguish between converters and non-converters is this a correct statement?
+
+● Explore(Understand BRAINTOKENGT model and compare to GELSTM results)
+Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+Checking what BRAINTOKENGT actually is (architecture, whether it has temporal/trajectory modeling, and what results exist for it on DELCODE) before I can judge whether "trajectory beats reconstruction fidelity" is the right explanation for the gap versus a same-cohort, same-metric comparison being apples-to-apples at all. I'll report back once that lands.
+
+✻ Cogitated for 23s
+
+● Agent "Understand BRAINTOKENGT model and compare to GELSTM results" finished · 1m 50s
+
+No — that comparison isn't supportable yet, for a few concrete reasons:
+
+1. BrainTokenGT never actually tested reconstruction fidelity as a lever. It's a port of Dong et al. (MICCAI 2023, "Beyond the Snapshot"), and per its own README it trains end-to-end with no GAAE-style reconstruction pretraining at all (gaae_checkpoint: "none (end-to-end)" in both run summaries). So you can't attribute GELSTM's edge to "trajectory > reconstruction fidelity," because BrainTokenGT was never given a reconstruction-pretrained encoder to lose against — it's a different pipeline shape, not GELSTM-minus-pretraining-plus-trajectory.
+
+2. Its temporal component is either off or broken. BrainTokenGT does have a recurrent piece (EvolveGCN-H / GRCU, a GRU whose hidden state is the GCN's own weight matrix), but in the as-released config train_give=false — it's frozen at random init, contributing nothing learned. The one config that turns it on (-repaired) crashed twice with GRCU parameters diverging to NaN, and the "fixed" version that finally ran scored test AUC 0.357 (below chance) despite CV AUC 0.827 — a large train/test gap that reads as an unstable one-off, not a real trajectory signal.
+
+3. The runs aren't on the same cohort. BrainTokenGT restricts to min_visits=2, max_visits=3 (matching the original paper's cohort), while DELCODE has 1–6 visits and the existing GELSTM numbers include that full variable-length cohort. The BRAINTOKENGT README itself says explicitly that GELSTM needs to be re-run on the same 2–3-visit window before the two numbers can go in a table together — and that re-run hasn't happened (CLASSIFIER/experiments/longitudinal.yaml has no matching entry).
+
+4. The as-released BrainTokenGT number is degenerate anyway (test spec=0.0, sens=1.0 — predicts "converter" for everyone), which is the classic pattern for "the model didn't learn a real decision boundary," not evidence about trajectory vs. reconstruction.
+
+So the honest version of your intuition would be: "trajectory modeling might matter more than reconstruction fidelity" is a hypothesis worth testing, but this repo doesn't yet have the controlled comparison to say it — BrainTokenGT's temporal module hasn't been trained successfully, its cohort window doesn't match GELSTM's, and it never had a reconstruction objective to ablate in the first place. If you want an actual answer to that hypothesis, the honest paths are: (a) get BrainTokenGT's train_give=true variant to converge and compare on the matched 2–3-visit cohort, or (b) treat this as a separate, better-scoped ablation on the GELSTM side (e.g. an LSTM-with-Δt vs. a no-Δt/order-shuffled variant), since that's the trajectory-specific knob you actually control and can compare cleanly.
+
+✻ Worked for 2m 29s
+
+❯ So how's the way to go about it now? Should I try to fix the temporal component on brain to GT and run it on decode where the LST M also is shown either two or three visits? Or run the tests on oasis three, and acne, which I have the post processing data of?
+
+My take: neither of those two is the fastest path to actually testing your hypothesis. Fixing BrainTokenGT's diverging GRCU and matching cohorts is real engineering risk on someone else's port, and even if it converges, a BrainTokenGT-with-trajectory-vs-GELSTM comparison is confounded by every other architectural difference between them (tokenization, pooling, loss) — a win wouldn't cleanly prove "trajectory > reconstruction," just "this other model can also work." Running on OASIS-3/ADNI answers a different question (does the result generalize across cohorts), not why GELSTM does well — that's worth doing, but after you have a finding worth generalizing.
+
+The direct, cheap, fully-controlled test of your actual hypothesis is inside GELSTM itself: an ablation on the trajectory-modeling knob (e.g. shuffle visit order, or drop Δt / zero it out) with everything else — encoder, data, cohort, seed — held fixed. That isolates "does the model benefit from knowing visit order/timing" with none of the cross-architecture or cross-cohort confounds. Want me to sketch that ablation (which config flags already exist for it — I saw EvalConfig.shuffle_order/zero_time_delta referenced in the configs doc) before you commit engineering time to BrainTokenGT or a new cohort?
+
+✻ Churned for 19s
+
+❯ But I am working on the related work section and results section. I want my model to show that my mother perform better but to say the statement I need to say that test was fair.
+
+For a comparison you can defend in a Results/Related Work section, "fair" has a specific meaning to reviewers, and right now none of the boxes are checked:
+
+What "fair" requires here:
+
+1. Matched cohort/visit window. BrainTokenGT's configs restrict to subjects with 2–3 visits (matching the original paper). Your GELSTM numbers are on the full 1–6 visit DELCODE cohort. Different subjects, different task difficulty — not comparable as-is. GELSTM needs a re-run restricted to the same 2–3 visit subset before any number goes in a shared table.
+2. BrainTokenGT's temporal component actually has to work. Right now it's either frozen (train_give=false, contributes nothing learned) or diverges to NaN when trained. A model that never learned is not a baseline — it's a null result. You can't claim "we beat BrainTokenGT" when BrainTokenGT never got a chance to compete.
+3. Same evaluation rigor on both sides. You now know GELSTM needs ≥3 seeds before a number is trustworthy (you just saw pretrained_finetuned swing from AUC 0.42 to 0.84 across seeds). BrainTokenGT has exactly one non-crashing run, scoring below chance on test. Reporting GELSTM's 4-seed mean against BrainTokenGT's one lucky/unlucky run isn't a comparison, it's noise vs. noise.
+4. Comparable tuning effort. If GELSTM had hyperparameter search and BrainTokenGT is running whatever config didn't crash, a reviewer will flag that as an unfair fight even if everything else is matched.
+
+Where that leaves the section right now: you don't have a defensible "GELSTM > BrainTokenGT" result today — you have a BrainTokenGT implementation that hasn't converged. That's actually a legitimate thing to write up honestly ("we reimplemented X per the published method; despite N attempts at stabilizing the temporal module [describe the NaN divergence], we could not reach stable convergence on this cohort at this sample size") — but that's a different, weaker claim than "our model performs better," and reviewers will tell the difference immediately if you write the strong claim on top of a weak comparison.
+
+Given that, the actual next step isn't "run on OASIS-3" or "pick a cohort" — it's deciding how much engineering time you're willing to spend making BrainTokenGT a real, converged baseline. Want me to scope what fixing the GRCU divergence would actually take (I'd need to look at the NaN traceback and the -repaired-fix-stabilized run that did complete to see how close it is), so you can decide if that's a day of work or a rabbit hole?
+
+✻ Baked for 29s
+
+❯ OK, I'm willing to spend a bit more time to make the comparison fair so how would you design the experiment and give me the exact steps
+
+● fork(Gather technical facts for fair GELSTM-vs-BrainTokenGT experiment design)
+Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+I'm gathering the specific technical facts I need first — the actual cause of BrainTokenGT's NaN divergence and whether the "stabilized" fix is principled, whether GELSTM and BrainTokenGT currently share the same split/fold CSVs (which determines whether we can do a paired comparison), and whether seed-repeats are mechanically available for BrainTokenGT the same way as GELSTM's ablation_seeds.yaml pattern. Once that's back I'll turn it into a concrete numbered plan for you to review.
+
+✻ Brewed for 40s
+
+● Agent "Gather technical facts for fair GELSTM-vs-BrainTokenGT experiment design" finished · 1m 56s
+
+Now I have everything needed. Here's the exact plan, in dependency order — a few things below aren't optional if you want "fair" to hold up under review.
+
+Phase 0 — Gate: is BrainTokenGT's temporal fix actually stable? (do this first, before anything else)
+
+The -repaired-fix-stabilized result you have is one run, and its own resolved-config notes say the divergence was found to be "GPU floating-point-order sensitive, not data-dependent" — i.e., nondeterministic, not root-caused. Before investing in seed repeats or cohort-matching, re-run that exact config 2–3 more times at seed 42 to see if it reliably converges without NaN.
+
+- If it converges reliably → proceed to Phase 1.
+- If it still diverges intermittently → that instability is a legitimate finding to report ("BrainTokenGT's temporal module does not converge reliably on this cohort size, even after gradient-scale/weight-decay stabilization"), and the plan changes to reporting that rather than a clean head-to-head. Worth knowing before you sink more time in.
+
+Phase 1 — Close the cohort-window gap (code change, GELSTM side)
+
+Right now GELSTM's dataset (CLASSIFIER/model/GELSTM/dataset.py) has max_visits/require_full_window but no min_visits floor, and the adapter wires neither through configs. BrainTokenGT filters to n_scans >= min_visits then truncates to max_visits=3. To match subject sets exactly:
+
+1. Add min_visits: int | None = None to the relevant GELSTM config dataclass (configs/configs.py or wherever EvalConfig/dataset params live), per configs.md — typed field with a default, not a loose kwarg.
+2. Mirror BrainTokenGT's exact filter semantics in CLASSIFIER/model/GELSTM/dataset.py (same n_scans >= min_visits keep-rule, same truncation order as window_item in BRAINTOKENGT/model/sequences.py:92) — don't just add a floor with different tie-breaking.
+3. Wire it through CLASSIFIER/adapters/__init__.py.
+4. Verification, not assumption: dump the resulting subject ID list from both pipelines (GELSTM with min_visits=2,max_visits=3 vs BrainTokenGT's existing windowed set) and diff them. If they don't match exactly, the "fair" claim is dead on arrival — fix the mismatch before running anything.
+
+Phase 2 — Confirm folds are actually paired, not just same-seed
+
+Both already read the same split CSVs (DATA/DELCODE/__metadata__/SPLITS/downstream/*.csv) and the same SHARED.seeding helpers — good sign. But confirm the per-fold subject membership is identical for a given seed by comparing fold assignments from a GELSTM run and a BrainTokenGT run at seed 42, not just trusting "same seed → same folds." If they match, you get a paired comparison (much stronger statistically at this sample size); if not, you're stuck with an unpaired one.
+
+Phase 3 — Register the matched-cohort experiments
+
+- CLASSIFIER/experiments/: new entries recon-ablation-gelstm-pretrained-frozen-2to3v-seed{42,43,44,45} with min_visits=2, max_visits=3, same headline hyperparams (no new tuning — parity with BrainTokenGT's fixed-config state per its README's explicit rule: "leave both fixed, or give both the same search budget — don't let one search and not the other").
+- BRAINTOKENGT/experiments/: seed-suffixed entries for braintokengt-delcode-whole-brain-repaired-fix-stabilized at 43/44/45, same ablation_seeds.yaml pattern already used for GELSTM — mechanically just new YAML entries, no code needed.
+
+Phase 4 — Run
+
+# BrainTokenGT reliability check + seeds (from BRAINTOKENGT/)
+python run_experiment.py --id braintokengt-delcode-whole-brain-repaired-fix-stabilized --dry-run
+python run_experiment.py --id braintokengt-delcode-whole-brain-repaired-fix-stabilized   # Phase 0 repeats
+
+# once Phase 0-3 done, background both sets
+python run_experiment.py --background   # BrainTokenGT seeds
+python run_experiment.py --status
+python run_experiment.py --collect
+
+# from CLASSIFIER/
+python run_experiment.py --background   # GELSTM 2-3v seeds
+python run_experiment.py --collect
+
+Phase 5 — Compare and write up
+
+- Pull metric.test_auc/test_f1/CV numbers from both outputs/RESULTS.csv, 4 seeds each.
+- If Phase 2 confirmed paired folds: paired test (Wilcoxon signed-rank or paired t-test across the 4 seeds × 5 folds) rather than just comparing pooled means.
+- New doc, DOCS/gelstm-vs-braintokengt-comparison.md: state the fairness checklist explicitly (matched cohort ✓, matched seeds ✓, matched folds ✓/✗, no tuning either side ✓, BrainTokenGT convergence reliability — report Phase 0's finding honestly either way).
+
+This is real work — a dataset code change, new experiment registry entries, and several hours of GPU runs across two codebases. Want me to start with Phase 0 (the reliability re-run) right now, since it's cheap and determines whether the rest of the plan is worth doing at all?
