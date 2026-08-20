@@ -1,0 +1,13 @@
+{
+  "experiment_id": "recon-ablation-gelstm-none-seed45",
+  "run_name": "splendid-stone-1-a9e4cf2c3-2026-08-19_14-11-07",
+  "state": "done",
+  "pid": 2829759,
+  "started_at": "2026-08-19T14:11:10",
+  "git_commit": "a9e4cf2c3",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-19T14:12:21",
+  "exit_code": 0,
+  "duration_seconds": 69.9
+}

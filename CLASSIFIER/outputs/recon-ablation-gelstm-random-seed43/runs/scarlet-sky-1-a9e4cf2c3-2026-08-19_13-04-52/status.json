@@ -1,0 +1,13 @@
+{
+  "experiment_id": "recon-ablation-gelstm-random-seed43",
+  "run_name": "scarlet-sky-1-a9e4cf2c3-2026-08-19_13-04-52",
+  "state": "done",
+  "pid": 2796543,
+  "started_at": "2026-08-19T13:04:55",
+  "git_commit": "a9e4cf2c3",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-19T13:15:57",
+  "exit_code": 0,
+  "duration_seconds": 661.2
+}

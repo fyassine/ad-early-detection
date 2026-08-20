@@ -1,0 +1,13 @@
+{
+  "experiment_id": "recon-ablation-gelstm-none-seed43",
+  "run_name": "celestial-glimmer-1-a9e4cf2c3-2026-08-19_13-16-09",
+  "state": "done",
+  "pid": 2801579,
+  "started_at": "2026-08-19T13:16:12",
+  "git_commit": "a9e4cf2c3",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-19T13:17:04",
+  "exit_code": 0,
+  "duration_seconds": 51.6
+}
