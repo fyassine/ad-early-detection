@@ -67,9 +67,9 @@ DATA/**
 !DATA/**/src/**
 !DATA/**/*.md
 !DATA/**/*.sh
-# Cohort-metadata generator scripts — the provenance for the derived CSVs that
-# sit beside them (which stay ignored, being data).
-!DATA/**/__metadata__/**/*.py
+# Every script under DATA/ is tracked, regardless of subdirectory — only the
+# data/artifacts beside them (csv, npz, nii.gz, ...) stay ignored below.
+!DATA/**/*.py
 
 # Ignore all subject data directories (recursive)
 **/sub-*/
