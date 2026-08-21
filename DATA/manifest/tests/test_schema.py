@@ -19,6 +19,7 @@ from DATA.manifest.schema import (
     assert_counts_match,
     assert_delta_t_monotonic,
     assert_every_subject_dir_contributes_sessions,
+    assert_fc_paths_present,
     assert_no_cross_label_duplicates,
     assert_paths_exist_and_nonempty,
     assert_schema,
@@ -166,6 +167,17 @@ class TestAssertDeltaTMonotonic:
         )
         with pytest.raises(ValueError):
             assert_delta_t_monotonic(df)
+
+
+class TestAssertFcPathsPresent:
+    def test_all_present_passes(self):
+        df = _manifest([{"subject_id": "A", "fc_path": "/x.npz"}, {"subject_id": "B", "fc_path": "/y.npz"}])
+        assert_fc_paths_present(df, cohort="test")  # no raise
+
+    def test_missing_raises(self):
+        df = _manifest([{"subject_id": "A", "fc_path": "/x.npz"}, {"subject_id": "B", "fc_path": None}])
+        with pytest.raises(ValueError, match="fc_path"):
+            assert_fc_paths_present(df, cohort="test")
 
 
 class TestAssertNoCrossLabelDuplicates:

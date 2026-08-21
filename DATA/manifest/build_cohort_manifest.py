@@ -20,6 +20,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cohort", choices=(*_COHORTS, "all"), required=True)
     parser.add_argument(
+        "--require-fc",
+        action="store_true",
+        help=(
+            "ADNI/OASIS-3 only: fail loudly if any session's fc_path is missing "
+            "(run after A.3 FC extraction). No-op for DELCODE (always checked)."
+        ),
+    )
+    parser.add_argument(
         "--acknowledge-empty-subjects",
         action="store_true",
         help="OASIS-3 only: see DATA.manifest.build_oasis3_manifest for what this acknowledges.",
@@ -36,9 +44,12 @@ def main() -> int:
         if cohort == "delcode":
             build_delcode_manifest.main([])
         elif cohort == "adni":
-            build_adni_manifest.main([])
+            adni_argv = ["--require-fc"] if args.require_fc else []
+            build_adni_manifest.main(adni_argv)
         elif cohort == "oasis3":
             oasis3_argv = []
+            if args.require_fc:
+                oasis3_argv.append("--require-fc")
             if args.acknowledge_empty_subjects:
                 oasis3_argv.append("--acknowledge-empty-subjects")
             if args.acknowledge_duplicate_day_sessions:

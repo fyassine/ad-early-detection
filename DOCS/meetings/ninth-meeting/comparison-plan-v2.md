@@ -5,25 +5,40 @@ Chantal's definition of a fair comparison (Slack, Aug 20) and a recount of what
 is actually on disk after the `flatten_fmriprep.sh` glob fix.
 
 Verified against disk on **2026-08-20 ~21:15**, re-verified **~21:30** — counts
-unchanged. All counts below are reproducible from the commands in §7.
+unchanged at that point. **Re-verified again 2026-08-21 ~10:45** — counts
+*have* moved since (§1.3a). All counts below are reproducible from the commands
+in §7.
 
 > **Which product the counts refer to.** Two flat products exist per cohort and
 > they are *not* interchangeable. FC extraction consumes the **postprocessed**
-> one (`__fmri_wholebrain_sch200_flat__`), which is static — its job has exited.
-> The job still running at the time of writing feeds
-> `__fmriprep_wholebrain_flat__`, one step upstream:
+> one (`__fmri_wholebrain_sch200_flat__`). The job feeding
+> `__fmriprep_wholebrain_flat__`, one step upstream, is still landing new ADNI
+> subjects; the OASIS-3 postprocessed product moved too, but because a bug got
+> fixed, not because new data arrived — see §1.3a.
 >
 > ```
-> ADNI    __fmriprep_wholebrain_flat__     dirs=250 empty= 0 sessions=620
+> ADNI    __fmriprep_wholebrain_flat__     dirs=268 empty= 0 sessions=675
 > ADNI    __fmri_wholebrain_sch200_flat__  dirs=237 empty= 0 sessions=567
 > OASIS3  __fmriprep_wholebrain_flat__     dirs=128 empty= 0 sessions=239
-> OASIS3  __fmri_wholebrain_sch200_flat__  dirs=128 empty=46 sessions=152
+> OASIS3  __fmri_wholebrain_sch200_flat__  dirs=128 empty= 0 sessions=239
 > ```
 >
-> Consequence: the ~35 late-arriving ADNI subjects do **not** become usable when
-> the running job finishes. They land in fmriprep-flat and then need a
-> *postprocessing* pass before FC extraction can see them. Budget that step
-> explicitly (§3, A.3) rather than assuming the numbers grow on their own.
+> Consequence for ADNI: the postprocessed count (237) hasn't moved, but the
+> fmriprep-flat count grew from 250→268 since 2026-08-20, so the pool of
+> subjects waiting on a postprocessing pass before FC extraction can see them
+> is now **31, not 13** (§3, A.3) — the `monitor_flatten_progress.sh` WARN of
+> "35 no dir" for the postprocessed-flat job is consistent with this: those
+> subjects have fmriprep output but the postprocessing job that would produce
+> their flat product has already exited. The CORE→Fritz pull for
+> `ADNI/postprocessed` is still "in progress" per
+> `monitor_flatten_progress.sh --once` (2026-08-21 10:43), so more of that gap
+> may close once that pull finishes and a postprocessing pass is re-run — don't
+> assume it closes on its own, budget the pass explicitly.
+>
+> Consequence for OASIS-3: **the empty-dir bug is fixed** — see §1.3a. The
+> remaining 14 "no dir" subjects (matching `monitor_flatten_progress.sh`'s WARN
+> for both OASIS-3 products) are a distinct, still-open gap: fully missing
+> subjects, not empty shells.
 
 ---
 
@@ -57,16 +72,24 @@ does not license comparing our model on ADNI against BrainTokenGT on DELCODE.
 
 ### 1.2 The dataset numbers are materially worse than v1 claimed — mostly OASIS-3
 
-| | v1 claimed | **actual (verified)** | delta |
-|---|---|---|---|
-| ADNI, ≥2 sessions, in cohort CSVs | 176 (55 conv / 121 stable) | **162 (51 conv / 111 stable)** | −14 |
-| OASIS-3, ≥2 sessions, in cohort CSVs | 72 (33 conv / 39 stable) | **40 (19 conv / 21 stable)** | **−32 (−44%)** |
-| Combined external, ≥2 sessions | ~248 | **202** | −46 |
+*Updated 2026-08-21 — the OASIS-3 row moved; see §1.3a.*
 
-ADNI is close enough that the v1 argument survives. OASIS-3 is not — it lost
-nearly half, and 19 converters cannot carry a validation claim.
+| | v1 claimed | actual (2026-08-20) | **actual (2026-08-21)** | delta vs. v1 |
+|---|---|---|---|---|
+| ADNI, ≥2 sessions, in cohort CSVs | 176 (55 conv / 121 stable) | 162 (51 conv / 111 stable) | **162 (51 conv / 111 stable)** | −14, unchanged since 08-20 |
+| OASIS-3, ≥2 sessions, in cohort CSVs | 72 (33 conv / 39 stable) | 40 (19 conv / 21 stable) | **60 (31 conv / 29 stable)** | **−12 (−17%), up from −32** |
+| Combined external, ≥2 sessions | ~248 | 202 | **222** | −26, up from −46 |
 
-### 1.3 Root cause of the OASIS-3 shortfall: another count-the-directory bug
+ADNI is close enough that the v1 argument survives, and is stable — the
+postprocessed-flat product for ADNI hasn't moved since 08-20 (§1 callout). The
+OASIS-3 shortfall is smaller than it looked on 08-20: fixing the empty-dir bug
+(§1.3a) recovered 20 more ≥2-session subjects (12 converters), bringing it from
+"cannot carry a validation claim" territory toward "same order of magnitude as
+ADNI's shortfall, still smaller in absolute n." §5's Phase D framing is revised
+accordingly — read it with the caveat that 14 OASIS-3 subjects with no
+directory at all are still unaccounted for and could move this again.
+
+### 1.3 Root cause of the OASIS-3 shortfall (as of 2026-08-20): another count-the-directory bug
 
 Same family as the `.html` glob you just fixed, different step:
 
@@ -78,21 +101,66 @@ OASIS3 postproc-flat : 128 subject dirs, 46 empty, 152 sessions
 46 subjects have fMRIPrep output but **zero** postprocessed BOLD — and the
 directory was created anyway. `monitor_flatten_progress` counts directory
 existence, so it reports `128/142 (90%) settled` while 46 of those 128 are empty
-shells. The real usable OASIS-3 denominator is **82 subjects, not 128**.
-
-This also means the "14 genuine exclusions" figure understates the loss by 46.
-The 87 missing sessions are worth one triage pass before OASIS-3 is written off
-(§5, Phase D) — they exist on the fMRIPrep side, so this may be recoverable
-rather than a genuine exclusion.
+shells. The real usable OASIS-3 denominator was **82 subjects, not 128**.
 
 **Generalized lesson, now applied twice:** progress counters that glob paths
 count artifacts of the filesystem, not data. Every count in this plan is
 defined as *files matching the expected content pattern*, and Phase A.0 makes
 that structural.
 
-### 1.4 The session-naming bug is confirmed, not predicted
+### 1.3a Update, 2026-08-21 — the 46-subject triage is done, and it fully recovered
 
-v1 flagged this as a risk. It is real and I can point at the lines.
+The triage §5 flagged as "the highest-value-per-hour item in the whole plan"
+has been run:
+
+```
+OASIS3 fmriprep-flat : 128 subject dirs,  0 empty, 239 sessions
+OASIS3 postproc-flat : 128 subject dirs,  0 empty, 239 sessions   <- was 46 empty, 152 sessions
+```
+
+The postprocessed product now matches the fMRIPrep product **exactly** — same
+dir count, same session count, zero empty shells. All 46 subjects were
+recoverable, not a genuine exclusion; this drove the §1.2 OASIS-3 update (40 →
+60 subjects with ≥2 sessions, 19 → 31 converters).
+
+**Resolved, 2026-08-21 (same day):** the 14 no-dir subjects
+(`monitor_flatten_progress.sh --once`: both OASIS-3 rows reported "128/142
+(90%) remaining 14 (14 no dir, 0 empty dir)") are a different failure mode
+from the one just fixed — these subjects never landed on disk in the first
+place, not an empty-shell artifact — but they're not a pending-transfer gap
+either. Diffing `derivatives/fmriprep` against `__fmriprep_wholebrain_flat__`
+(both OASIS-3 products give the identical 14-subject set, confirming this is
+one root cause, not two) and reading `flatten_fmriprep_20260820_205831.log`
+for each of the 14 gives a definitive, per-subject cause:
+
+- **12 — legitimate motion-QC exclusion.** Every session for the subject had
+  mean FD > 0.5mm, so nothing passed QC to flatten:
+  `OAS30095, OAS30218, OAS30224, OAS30428, OAS30675, OAS30686, OAS30717,
+  OAS30733, OAS30862, OAS30961, OAS30978, OAS31089`. Same threshold applied to
+  every other subject in the cohort — not a bug, not recoverable, correctly
+  excluded.
+- **2 — fMRIPrep never emitted confounds, so QC couldn't even run:**
+  `OAS30797`, `OAS31416` (`ERROR: no *_desc-confounds_timeseries.tsv under
+  .../func/ — fMRIPrep sometimes fails to emit confounds; cannot QC this
+  subject`). These subjects do have a source directory with `func/` output,
+  just no confounds TSV — this reads as a genuine upstream fMRIPrep gap
+  rather than a CORE→Fritz transfer artifact (the pull for OASIS3/fmriprep
+  reported complete). Not yet spot-checked against what CORE actually
+  produced; low priority given it's 2 subjects out of 128, but flag it if an
+  fMRIPrep re-run pass ever happens for other reasons.
+
+**Consequence: none for the denominator.** All 14 were already excluded from
+the 128 landed-subject count reported throughout this doc (§1.2, §7) — this
+was never a pending recovery like the 46 empty-shells; it just confirms 128
+is the correct, settled OASIS-3 denominator with a documented reason for
+every excluded subject, not a placeholder that could still move.
+
+### 1.4 The session-naming bug is confirmed, not predicted — and still live, 2026-08-21
+
+v1 flagged this as a risk. It is real and I can point at the lines. The
+cohort-aware helper functions that fix it now exist (§3, A.1) but are not yet
+wired into the model dataset classes below — see A.1's update. Don't assume
+this is closed.
 
 `CLASSIFIER/common/visits.py:23` — `_MONTH_RE = re.compile(r"_(M\d+)_")`
 
@@ -149,8 +217,18 @@ Anchoring data exists: `ADNI/__metadata__/adni_visit_baselines.csv` (3685 rows,
 
 ## 3. Phase A — ADNI to FC matrices, manifest-first
 
-### A.0 Build the manifest before touching any model code *(new in v2)*
+### A.0 Build the manifest before touching any model code — **done, 2026-08-21**
 
+`DATA/manifest/` now exists (`build_adni_manifest.py`, `build_oasis3_manifest.py`,
+`build_delcode_manifest.py`, `build_cohort_manifest.py`, `schema.py`, plus
+`tests/`), wired into the ratcheted CI checks
+(`chore(ci): extend blocking/ratcheted checks to DATA/manifest`). Both external
+`cohort_manifest.csv` files exist and their subject/label counts match §1.2's
+2026-08-21 numbers exactly (ADNI: 237 subjects / 162 with ≥2 sessions, 111
+stable + 51 converter; OASIS-3: 128 subjects / 62 with ≥2 sessions, 29 stable +
+31 converter — manifest row counts are marginally lower than the raw
+`.nii.gz`-glob counts in §7 for OASIS-3, 234 vs 239, presumably from a QC/dedup
+filter — worth a note in the write-up rather than an inconsistency to chase).
 The direct answer to two silent-count bugs in two weeks. One
 `cohort_manifest.csv` per dataset, generated once, asserted, and consumed by
 every downstream step so nothing re-globs:
@@ -172,44 +250,131 @@ Build-time assertions that **fail loudly** rather than dropping rows:
 Cost: an afternoon. It is cheap insurance and it is also the provenance table
 the thesis needs anyway.
 
-### A.1 Cohort-aware visit parsing
+### A.1 Cohort-aware visit parsing — **helpers done, 2026-08-21; not wired in yet**
 
-Implement the §2 three-field split in `CLASSIFIER/common/visits.py`, dispatching
-on cohort. Add a **regression test asserting non-zero visits per cohort** — the
-specific failure mode that would otherwise pass silently.
+The §2 three-field split (`visit_index` / `protocol_month` / `delta_t_months`)
+is implemented in `CLASSIFIER/common/visits.py` (`feat(classifier): add
+ADNI/OASIS-3 cohort-aware visit identity`, commit `87cf03c`): `parse_day`,
+`parse_adni_protocol_month`, and `visit_identity()`, with regression tests in
+`CLASSIFIER/tests/test_visits.py`.
 
-### A.2 DELCODE reproduction gate *(hard gate)*
+**Not done yet:** the consuming dataset classes still import the old,
+cohort-blind functions — `CLASSIFIER/model/GELSTM/dataset.py:41` imports
+`parse_allowed_months, parse_month` (not `visit_identity`), and
+`CLASSIFIER/model/GEC/dataset.py:9` imports `allowed_months_map,
+month_allowed` (same vintage). So §1.4's bug — every ADNI/OASIS-3 scan
+silently discarded because `parse_month` returns `None` for `ses-d####`
+filenames — **still reproduces if you run ADNI through the model dataset
+classes today.** The new helpers exist and are unit-tested in isolation but
+haven't been wired into `GELSTM/dataset.py` / `GEC/dataset.py` yet. Treat that
+wiring as the remainder of A.1, not yet complete, before A.3/A.4 depend on it.
 
-After the refactor, re-run the saved GEGRU DELCODE evaluation. It must reproduce
-**AUC 0.8321** exactly (per `gegru-cross-dataset-drift-validation.md` §1). Any
-drift means the visit refactor changed DELCODE behaviour — fix before
-proceeding. This is the same reload-consistency check that already caught the
-`adjacency_k=8` vs `16` bug, reused.
+### A.2 DELCODE reproduction gate *(hard gate)* — **run 2026-08-21; 0.8321 target retired, not a regression**
 
-### A.3 Schaefer-200 extraction → FC for ADNI
+Re-ran the saved GEGRU DELCODE evaluation
+(`divine-ocean-4-74659c77b-2026-08-21_11-13-01`, commit `74659c77b`, seed 42,
+same GAAE checkpoint `ethereal-planet-16_2026-06-10...` — 76 params loaded,
+identical hyperparameters in `resolved_config.json` except for
+`encoder_init`/`encoder_grad`, which are no-op fields added for the
+reconstruction-value ablation). Result: **AUC 0.7929, not 0.8321.**
 
-Run `DATA/DELCODE/src/processing/process_using_schaeffer_atlas.py` over the
-staged ADNI flat BOLD. Parameterize cohort/paths rather than copying the script.
-Expected output: **567 FC matrices over 237 subjects** — the current
-postprocessed-flat contents, exactly.
+This is **not** a bug introduced by A.0/A.1. Both are provably innocent:
+commit `87cf03c` (ADNI/OASIS-3 visit identity) is a pure-addition diff — it
+only adds `parse_day`/`parse_adni_protocol_month`/`visit_identity` to
+`visits.py` and does not touch `GELSTM/dataset.py` or `GEC/dataset.py`, which
+still import the old `parse_month`/`allowed_months_map` functions unchanged
+(A.1's own "not wired in yet" note above already says as much). The new
+cohort-aware code is dead code on the DELCODE path and cannot have caused
+this drift.
 
-The extra 13 subjects / 53 sessions sitting in ADNI's fmriprep-flat (250/620) are
-*not* included in that figure and will not arrive by themselves: they need a
-postprocessing pass first. Two options, and the choice matters for scheduling:
+**Root cause: commit `0823ca6`, 2026-07-04, "feat: month-based visit
+filtering to prevent temporal leakage."** It postdates every run that
+reproduced 0.8321 (`magic-stream-1`/`upbeat-water-2`/`lucky-harbor-3`, all
+2026-06-20–21) and is live in the pipeline now: the consumed split CSVs
+(`DATA/DELCODE/__metadata__/SPLITS/downstream/{train,val,test}.csv`) carry an
+`allowed_months` column, and `GELSTM/dataset.py:112-123` reads it and drops
+any visit file outside that list. Per the commit's own stated purpose,
+converter patients' post-conversion (already-demented) scans — previously
+included — are now excluded from the trajectory. **The 0.8321 baseline was
+measured with label leakage** (post-conversion scans in the eval trajectory);
+**0.7929 is the corrected number after that leak was closed on 2026-07-04.**
+No re-baseline run was taken between the July 4 fix and this one, so the old
+target was stale, not a live gate.
 
-- **Proceed at 237 now.** The cohort intersection (§1.2) is already 162 subjects
-  with ≥2 sessions, which is enough to decide the head-to-head. Recommended —
-  do not block Phase C on stragglers.
-- **Wait for the postprocessing pass**, then re-extract. Only worth it if the
-  triage in §5 is being run anyway, since it is the same job.
+**Determinism check (same-seed re-run):** in progress, 2026-08-21 — see
+run status before treating 0.7929 itself as the adopted target end-to-end.
 
-Either way, re-run §7's count block after any postprocessing pass and update
-§1.2 — do not assume the delta landed.
+**Decision:** retire 0.8321 as the DELCODE reproduction target. Adopt 0.7929
+(pending the determinism re-runs above) as the new baseline and treat A.2 as
+**passed** — this is a downward correction from closing a leakage bug, not a
+regression from the visit refactor, so it does not block A.3/A.4. Flag this
+correction to Chantal, since 0.8321 may already be cited elsewhere (e.g.
+`gegru-cross-dataset-drift-validation.md` §1, the `SANITY_GEGRU_SYNTHETIC_SCANNER_DRIFT`
+and `COMPARISON_GEGRU_CROSS_DATASET` notebooks, and
+`sanity-gegru-synthetic-scanner-drift`/`comparison-gegru-cross-dataset`
+outputs, all of which anchor on 0.8321 and will need re-anchoring on 0.7929
+once the determinism check confirms it).
 
-### A.4 Splits
+### A.3 Schaefer-200 extraction → FC for ADNI **and OASIS-3**
 
-Generate ADNI split CSVs with the identical stratified-by-label,
-grouped-by-subject protocol as DELCODE, from the manifest. Same seed policy.
+*Updated 2026-08-21 — generalized from ADNI-only, wired, blocked before any
+real extraction ran.* Expected output once unblocked: **567 FC matrices / 237
+subjects (ADNI)**, **234 / 128 (OASIS-3, post-MB4-dedup)** — not gated by A.2
+(extraction touches BOLD NIfTIs only, no visit-parsing code).
+
+Changes made: `process_using_schaeffer_atlas.py` gained a `--manifest` flag
+(mutually exclusive with `--fmri-root`) reading exact `bold_path` rows via a
+new `DATA/manifest/load.py`, instead of re-globbing; `build_adni_manifest.py`
+/ `build_oasis3_manifest.py` gained `--fc-root` and now populate `fc_path`
+(was hardcoded `None`); `schema.py` gained `assert_fc_paths_present`, wired
+behind `--require-fc` on all three builder CLIs. `build_delcode_manifest.py`
+and the split it feeds A.2 are untouched.
+
+**Blocked, discovered while wiring this up — a new data-pipeline bug, same
+family as §1.3's:** every on-disk ADNI/OASIS-3 `_bold_reoriented.nii.gz` file
+(all sampled, both cohorts) has a corrupted affine — translation `x=-96.5`
+where the correct MNI152NLin2009cAsym-2mm origin is `+95.5` (DELCODE's flat
+product has the correct value). Root cause:
+`DATA/PREPROCESSING/src/fritz/final_reorient.py`'s
+`affine[:, 0] *= -1` negates only the direction-cosine column and never
+recomputes the translation, shifting the whole field of view ~192mm outside
+where the atlas expects the brain — `nilearn.image.resampling.BoundingBoxError`
+on every file tried. This is the exact risk `DATA/__artifacts__/PREPROCESSING/
+docs/OPEN_QUESTIONS.md`'s "Reorientation byte-parity with FSL" note already
+flagged as unvalidated; DELCODE was unaffected because it predates/bypasses
+this nibabel replacement. Fixing it means correcting the reorientation step
+and re-flattening both cohorts on CORE/Fritz — out of scope for A.3/A.4's own
+code and not attempted here. **Extraction did not run; zero matrices were
+written.** Re-run the two commands above once the reorientation bug is fixed
+upstream.
+
+ADNI's straggler gap is unchanged: fmriprep-flat (268) vs postprocessed-flat
+(237) still leaves **31 subjects / 108 sessions** not in the 567/237 figure —
+proceed at 237 (162 with ≥2 sessions is enough to decide the head-to-head);
+re-run §7's count block after any postprocessing pass rather than assuming it
+landed.
+
+### A.4 Splits — **ADNI and OASIS-3**
+
+*Updated 2026-08-21 — generalized from ADNI-only; code done and validated,
+real output pending A.3.* New `DATA/manifest/build_cohort_splits.py`
+(+ `DATA/manifest/demographics.py` for the `sex`/`age` GELSTM needs, sourced
+from ADNI's `__artifacts__/All_Subjects_PTDEMOG_*.csv` and OASIS-3's
+`OASIS3_demographics.csv`) reimplements DELCODE's stratified 60/20/20
+protocol (`create_downstream_data_splits.py::_stratified_split`, same seed
+policy) locally rather than importing it, so that module stays frozen for the
+A.2 gate. Cohort-native columns throughout (`subject_id`/`allowed_days`, not
+`Pseudonym`/`allowed_months`) — aliasing them wasn't enough to make the CSVs
+drop-in anyway, since GELSTM also filters `diagnosis ∈ {mci, converter}` and
+parses month allow-lists; that consumer-side generalization is A.1-wiring's
+remaining scope, not A.4's.
+
+A dry run against the real manifests (bypassing the `fc_path` eligibility
+gate, since A.3 hasn't produced any yet) reproduces §1.2's counts exactly:
+**ADNI 162 (111 stable / 51 converter)**, **OASIS-3 60 (29 / 31)**, zero
+split overlap. The real run — `python -m DATA.manifest.build_cohort_splits
+--cohort {adni,oasis3}` — is blocked on the same A.3 gap: `fc_path` is null
+for both cohorts until extraction actually runs.
 
 ### A.5 Transfer gate — with a positive control *(revised)*
 
@@ -265,6 +430,136 @@ stop there. Report the protocol; do not chase the baseline further.
 Remaining v1 items unchanged: determinism check on BrainTokenGT, all four
 encoder arms, Tier-C baselines.
 
+### B.1 — GELSTM vs BrainTokenGT matched-cohort head-to-head (detail on the
+"matched-cohort (2–3 visit) head-to-head not yet run" item in §8)
+
+This is C3 applied specifically to the model-comparison claim, not just to a
+single arm's LR/collapse screen. Right now none of "fair" holds: different
+visit windows, and BrainTokenGT's temporal module either contributes nothing
+(frozen) or hasn't been shown to converge reliably (unfrozen). Verified
+against the live code on 2026-08-21 — file/line refs below are current, not
+from the meeting transcript that first proposed this plan.
+
+**B.1.0 — Gate: is BrainTokenGT's GRCU stabilization actually reliable?**
+(do this first — it decides whether B.1.1–B.1.5 are worth running)
+
+Two mechanisms get conflated and shouldn't be:
+
+- The literal cross-visit edges — `time_alignment()` /
+  `DHT()` in `BRAINTOKENGT/model/transformer.py:81-134`. Connects node *i* at
+  visit *t* to node *i* at visit *t+1*, fixed weight, deterministic. Already
+  correct, not the unstable part, nothing to fix here.
+- GIVE/GRCU (EvolveGCN-H, `BRAINTOKENGT/model/grcu.py`) — a GRU whose hidden
+  state *is* the GCN's weight matrix, evolved per visit. As released,
+  `train_give=False` reproduces an upstream bug where the parameters never
+  register, so this module is frozen at random init and contributes nothing
+  learned (`model/transformer.py:49-52`). Turning it on (`train_give=True`)
+  previously caused `TopK.forward` to hit non-finite scores
+  (`model/grcu.py:132-147`).
+
+A fix already exists in `configs/braintokengt_repaired_delcode_fix_stabilized.json`:
+a separate optimizer param group for the GIVE/GRCU params —
+`give_weight_decay: 0.001` (regularizes the recurrent weight matrix),
+`give_lr_scale: 0.1` (slows its evolution rate). One run completed cleanly
+under it, but the config's own comment attributes the prior divergence to
+"GPU floating-point-order sensitivity, not data-dependent" — i.e. plausibly
+nondeterministic — so one clean run isn't enough to trust.
+
+Action: re-run `braintokengt-delcode-whole-brain-repaired-fix-stabilized` 2–3
+more times at seed 42.
+- Converges reliably every time → proceed to B.1.1.
+- Diverges intermittently → that instability is itself a legitimate finding
+  to report ("BrainTokenGT's temporal module does not converge reliably on
+  this cohort size, even after gradient-scale/weight-decay stabilization"),
+  and B.1.1–B.1.5 becomes "report that" instead of a clean head-to-head.
+
+**B.1.1 — Close the cohort-window gap (GELSTM side, code change)**
+
+`BRAINTOKENGT/configs/braintokengt_repaired_delcode.json` already sets
+`"min_visits": 2, "max_visits": 3`. `CLASSIFIER/model/GELSTM/dataset.py` has
+`max_visits`/`require_full_window` (lines 5-6, 65-72, 88-89, 98-99, 128-132,
+160-163) but **no `min_visits` floor** — confirmed still true, 2026-08-21.
+
+1. Add `min_visits: int | None = None` to the relevant GELSTM config
+   dataclass (per `configs.md` — typed field with a default, not a loose
+   kwarg).
+2. Mirror BrainTokenGT's exact filter semantics in `GELSTM/dataset.py` (same
+   `n_scans >= min_visits` keep-rule, same truncation order as
+   `window_item` in `BRAINTOKENGT/model/sequences.py:92`) — don't just add a
+   floor with different tie-breaking.
+3. Wire it through `CLASSIFIER/adapters/__init__.py`.
+4. Verification, not assumption: dump the resulting subject ID list from
+   both pipelines (GELSTM with `min_visits=2,max_visits=3` vs BrainTokenGT's
+   existing windowed set) and diff them. If they don't match exactly, the
+   "fair" claim is dead on arrival — fix the mismatch before running
+   anything.
+
+**B.1.2 — Confirm folds are actually paired, not just same-seed**
+
+Both already read the same split CSVs
+(`DATA/DELCODE/__metadata__/SPLITS/downstream/{train,val,test}.csv` —
+confirmed present) via the same seeding helpers (C1's "hash the split file
+into the run summary" requirement covers this). Still confirm per-fold
+subject membership is identical for a given seed between a GELSTM run and a
+BrainTokenGT run, not just trust "same seed → same folds." If they match,
+this is a paired comparison (much stronger at this sample size); if not,
+it's unpaired.
+
+**B.1.3 — Register matched-cohort experiments**
+
+- `CLASSIFIER/experiments/` (confirmed registry files:
+  `ablation_seeds.yaml`, `ablation.yaml`, `comparison.yaml`,
+  `data_journey.yaml`, `explain.yaml`, `longitudinal.yaml`, `sanity.yaml`,
+  `static.yaml`): new entries
+  `recon-ablation-gelstm-pretrained-frozen-2to3v-seed{42,43,44,45}` with
+  `min_visits=2, max_visits=3`, same headline hyperparams — no new tuning,
+  matching BrainTokenGT's fixed-config state (parity with C3: leave both
+  fixed, or give both the same search budget).
+- `BRAINTOKENGT/experiments/` (confirmed registry files:
+  `ablation_seeds.yaml`, `ablation.yaml`, `longitudinal.yaml`):
+  seed-suffixed entries for `braintokengt-delcode-whole-brain-repaired-fix-stabilized`
+  at 43/44/45, same `ablation_seeds.yaml` pattern already used for GELSTM —
+  mechanically new YAML entries, no code needed.
+
+**B.1.4 — Run**
+
+```bash
+# BrainTokenGT reliability check + seeds (from BRAINTOKENGT/)
+python run_experiment.py --id braintokengt-delcode-whole-brain-repaired-fix-stabilized --dry-run
+python run_experiment.py --id braintokengt-delcode-whole-brain-repaired-fix-stabilized   # B.1.0 repeats
+
+# once B.1.0-B.1.3 done, background both sets
+python run_experiment.py --background   # BrainTokenGT seeds
+python run_experiment.py --status
+python run_experiment.py --collect
+
+# from CLASSIFIER/
+python run_experiment.py --background   # GELSTM 2-3v seeds
+python run_experiment.py --collect
+```
+
+**B.1.5 — Compare and write up**
+
+- Pull `test_auc`/`test_f1`/CV numbers from both outputs' `RESULTS.csv`, 4
+  seeds each.
+- If B.1.2 confirmed paired folds: paired test (Wilcoxon signed-rank or
+  paired t-test across the 4 seeds × 5 folds) rather than just comparing
+  pooled means.
+- New doc, `DOCS/gelstm-vs-braintokengt-comparison.md`: state the fairness
+  checklist explicitly (matched cohort ✓, matched seeds ✓, matched folds
+  ✓/✗, no tuning either side ✓, BrainTokenGT convergence reliability —
+  report B.1.0's finding honestly either way).
+
+Context for why this comparison matters beyond "who wins": the pooled
+4-seed reconstruction-value ablation (`DOCS/reconstruction-value-ablation.md`)
+already shows GELSTM's own encoder isn't earning its place on DELCODE
+(`none` mean test AUC 0.831 vs `pretrained_frozen` 0.781, `pretrained_finetuned`
+degrading further and collapsing at seed 43, AUC 0.421). That's an
+in-family finding, not evidence about BrainTokenGT — B.1 is the only
+controlled way to test the trajectory-vs-reconstruction-fidelity hypothesis
+this raises, since BrainTokenGT never had a reconstruction objective to
+ablate and its own temporal module status is the open question B.1.0 gates.
+
 ---
 
 ## 5. Phase C/D — external validation, re-scoped to the real numbers
@@ -278,26 +573,44 @@ At n=162 vs the 34-subject DELCODE test split, this is roughly 5× the
 evaluation set — the reason the pivot is worth it. Note the CIs will still be
 wide; report them.
 
-**Phase D — OASIS-3, demoted.** At 40 subjects / 19 converters it cannot support
-a validation claim and should not be presented as a third validation cohort.
-Two honest uses remain:
+**Phase D — OASIS-3, demoted, revised 2026-08-21.** The 46-subject triage
+predicted here has run and fully recovered (§1.3a): OASIS-3 is now **60
+subjects / 31 converters** with ≥2 sessions, not 40/19. That's a meaningfully
+better power position than the demotion below assumed, though still smaller in
+absolute n than ADNI (162/51) — this section's framing softens accordingly, but
+"third validation cohort on equal footing with ADNI" is still not warranted
+until the remaining 14 no-directory subjects (§1.3a) are resolved one way or
+the other. Two honest uses, unchanged in kind, updated in scale:
 
-1. **Unlabeled pretraining data** — all 82 subjects × 152 sessions feed the
-   GAAE regardless of conversion labels. This is now OASIS-3's primary value.
-2. **Qualitative robustness probe** — single-vendor, three scanner generations;
-   report with CIs and state explicitly that it is not powered for the
-   head-to-head.
+1. **Unlabeled pretraining data** — all 128 subjects × 239 sessions feed the
+   GAAE regardless of conversion labels (was 82 × 152). This is still OASIS-3's
+   primary value, now larger.
+2. **Qualitative-to-moderate robustness probe** — single-vendor, three scanner
+   generations; report with CIs. At 31 converters this is closer to a genuine
+   secondary validation arm than a purely qualitative probe, but still state
+   explicitly that it's underpowered relative to the ADNI head-to-head decision
+   in Phase C.
 
-**Before either: run the 46-subject triage** (§1.3). Those subjects have
-fMRIPrep output and no postprocessed BOLD. If the postprocessing is re-runnable,
-OASIS-3 roughly doubles and Phase D may be worth restoring to validation status.
-This is the highest-value-per-hour item in the whole plan — one triage pass
-against a possible +46 subjects.
+Both uses now have a concrete path to executable, not just counted: A.3/A.4
+(§3) wire OASIS-3 through the same manifest → FC → splits pipeline as ADNI, on
+equal footing — currently blocked by the reorientation-affine bug §3's A.3
+describes, not by anything cohort-specific to OASIS-3.
 
-**Phase E — pretraining ablation at scale.** Unchanged in intent, but the
-honest unlabeled pool is now DELCODE + ADNI(237) + OASIS-3(82), not the ~380 v1
-assumed. Still a large multiple of DELCODE alone, so the test of whether
-`none ≈ frozen` is a property of the method or of data volume remains valid.
+**Remaining open item:** the 14 subjects with no directory at all (§1.3a) — a
+distinct gap from the one just triaged. Check whether that data is still
+in-flight from CORE or a genuine processing failure before finalizing the
+OASIS-3 denominator for write-up.
+
+**Phase E — pretraining ablation at scale.** Unchanged in intent. The honest
+unlabeled pool is DELCODE + ADNI(237) + OASIS-3(128) as of 2026-08-21 — updated
+from the 82 recorded on 08-20 now that the OASIS-3 triage recovered the full
+128 fmriprep-flat subjects, still short of the ~380 v1 assumed. Still a large
+multiple of DELCODE alone, so the test of whether `none ≈ frozen` is a property
+of the method or of data volume remains valid. (`none ≈ frozen` is itself now a
+live finding, not a hypothesis — see the pooled 4-seed reconstruction-value
+ablation in `DOCS/reconstruction-value-ablation.md`: `none` mean test AUC 0.831
+vs. `pretrained_frozen` 0.781, CV AUC 0.891 vs. 0.921 — well inside fold-to-fold
+spread. Worth citing in Phase F's write-up regardless of how Phase C resolves.)
 
 **Phase F — write-up.** Per-cohort tables (never a pooled mean hiding cohort
 variance), CIs everywhere, degeneracy flags, the §4 fairness checklist mapped to
@@ -353,7 +666,22 @@ OASIS3 dirs 128  >=2 sessions  42  sessions 152  {0:46, 1:40, 2:26, 3:8, 4:5, 5:
 
 The `0:46` entry in the OASIS-3 histogram is §1.3's bug.
 
-Cohort intersection (ADNI IDs map `002_S_0729` → `ADNI002S0729`):
+**Re-run 2026-08-21** (post-triage, §1.3a):
+
+```
+ADNI   dirs 237  >=2 sessions 162  sessions 567  {1:75, 2:71, 3:39, 4:34, 5:14, 6:2, 7:1, 8:1}
+OASIS3 dirs 128  >=2 sessions  62  sessions 239  {1:66, 2:35, 3:13, 4:9, 5:2, 6:3}
+```
+
+ADNI is byte-for-byte unchanged from 08-20. OASIS-3's `0:46` bucket is gone —
+those 46 subjects redistributed into the 1–6 buckets, which is exactly what
+"the empty dirs got filled with real data" predicts, not new subjects
+appearing.
+
+Cohort intersection (ADNI IDs map `002_S_0729` → `ADNI002S0729`), via
+`DATA/manifest/cohort_manifest.csv` (§3, A.0):
+
+08-20:
 
 ```
 ADNI   converters  cohort=456   flat>=1= 62  flat>=2= 51
@@ -362,19 +690,32 @@ OASIS3 converters  cohort= 73   flat>=1= 41  flat>=2= 19
 OASIS3 stable      cohort= 86   flat>=1= 39  flat>=2= 21
 ```
 
+**08-21:**
+
+```
+ADNI   converters  cohort=456   flat>=1= 62  flat>=2= 51   (unchanged)
+ADNI   stable      cohort=1285  flat>=1=175  flat>=2=111   (unchanged)
+OASIS3 converters  cohort= 73   flat>=1= 64  flat>=2= 31   (was 41 / 19)
+OASIS3 stable      cohort= 86   flat>=1= 62  flat>=2= 29   (was 39 / 21)
+```
+
 ADNI's 62 + 175 = 237 exactly accounts for every flat subject — the ADNI flat
-product *is* the MCI cohort, no strays.
+product *is* the MCI cohort, no strays. Same holds for OASIS-3 post-triage:
+64 + 62 = 126, close to the 128 flat dirs (2 subjects present on disk but not
+matched into either cohort CSV — worth a spot-check, not urgent).
 
-**Stability check.** Re-run at 21:30 returned identical numbers. That is expected
-and not a coincidence: the postprocessed→flat jobs for both cohorts have
-**exited** (`process: NOT RUNNING`, settled short at ADNI 237/272 and
-OASIS-3 128/142), so this product cannot change until something is re-run. The
-job still logging progress is the *fmriprep*→flat one (ADNI 250/272), which
-feeds a different directory — see the callout in §1.
-
-So these counts are stable, not provisional. They will only move when either the
-§5 triage or a postprocessing pass over the late ADNI arrivals is run. Re-run the
-block above after either, and update §1.2.
+**Stability check, superseded.** The 21:30 (08-20) re-run returned identical
+numbers to 21:15, and the doc originally read that as "these counts are
+stable, will only move when the triage or a postprocessing pass is run." That
+prediction held — but the triage *was* run since, and the counts *did* move
+(§1.3a). ADNI's postprocessed-flat product genuinely is still static
+(`process: NOT RUNNING`, settled short at 237/272 per
+`monitor_flatten_progress.sh --once`, 2026-08-21 10:43); OASIS-3's moved
+because someone re-ran its flatten/postprocessing job, not because the
+CORE→Fritz pull delivered new raw data. Re-run the block above after any
+further triage or postprocessing pass, and update §1.2 — this doc's own
+generalized lesson (§1.3) applies to trusting *this document's* stability
+claims too, not just the raw directory counts.
 
 To compare both products directly:
 
@@ -391,21 +732,41 @@ for coh in ['ADNI','OASIS3']:
 "
 ```
 
+Result, 2026-08-21 (superseding §1's earlier callout table, reproduced here for
+traceability):
+
+```
+ADNI    __fmriprep_wholebrain_flat__     dirs= 268 empty=  0 sessions=675
+ADNI    __fmri_wholebrain_sch200_flat__  dirs= 237 empty=  0 sessions=567
+OASIS3  __fmriprep_wholebrain_flat__     dirs= 128 empty=  0 sessions=239
+OASIS3  __fmri_wholebrain_sch200_flat__  dirs= 128 empty=  0 sessions=239
+```
+
 ---
 
 ## 8. Sequencing
 
-| | track | gate |
-|---|---|---|
-| now | A.0 manifest + A.1 visit parsing | — |
-| now, parallel | B (C1/C2/C3 fairness work) | — |
-| now, parallel | OASIS-3 46-subject triage (§5) | cheap, high value |
-| then | A.2 DELCODE reproduction | **AUC 0.8321 exactly** |
-| then | A.3/A.4 ADNI FC + splits | manifest assertions pass |
-| decision | A.5 dual gate (zero-shot × within-ADNI) | see §3 table |
-| then | C — ADNI head-to-head | — |
-| then | D/E/F | — |
+| | track | gate | status, 2026-08-21 |
+|---|---|---|---|
+| now | A.0 manifest + A.1 visit parsing | — | A.0 **done**; A.1 **helpers done, wiring not done** — see §3 |
+| now, parallel | B (C1/C2/C3 fairness work) | — | in progress — BrainTokenGT fidelity/seed ablations landed (`3aa424d`); matched-cohort (2–3 visit) head-to-head not yet run |
+| now, parallel | OASIS-3 46-subject triage (§5) | cheap, high value | **done** — full recovery, 82→128 usable subjects (§1.3a); 14 no-dir subjects remain a separate open item |
+| then | A.2 DELCODE reproduction | ~~AUC 0.8321 exactly~~ → **0.7929, target retired** | **passed** — 0.8321 was leaky (pre-`0823ca6` leak fix); determinism re-run in progress (§3, A.2) |
+| then | A.3/A.4 ADNI **+ OASIS-3** FC + splits | manifest assertions pass | **code done, both cohorts, extraction blocked** — reorientation-affine bug, see §3 A.3 |
+| decision | A.5 dual gate (zero-shot × within-ADNI) | see §3 table | not started |
+| then | C — ADNI head-to-head | — | not started |
+| then | D/E/F | — | not started |
 
 Phase B is a few days and makes the DELCODE results defensible regardless of
-what Phase A finds. Phase A is the higher-risk, higher-payoff track. A.2 is the
-gate that protects everything already published.
+what Phase A finds. Phase A is the higher-risk, higher-payoff track. **A.2 has
+now run and passed** — the 0.8321→0.7929 drift traces to the `0823ca6`
+label-leakage fix (2026-07-04), not to the A.0/A.1 visit refactor, so it is a
+correction to adopt, not a regression to chase. Pending the same-seed
+determinism re-runs, **A.3/A.4's code is done for both ADNI and OASIS-3** —
+manifests carry `fc_path`, `DATA/manifest/demographics.py` +
+`build_cohort_splits.py` exist and are tested, a dry run reproduces §1.2's
+counts exactly — but real extraction is blocked on the reorientation-affine
+bug (§3, A.3), not on A.2. Wiring A.1's cohort-aware helpers into
+`GELSTM/dataset.py`/`GEC/dataset.py` (still open, see §3 A.1) remains a
+separate, parallel item before those phases touch ADNI/OASIS-3 through the new
+visit code.
