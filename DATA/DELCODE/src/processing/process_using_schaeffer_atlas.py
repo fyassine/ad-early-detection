@@ -134,21 +134,34 @@ def main(
     fmri_root: Path | None = None,
     output_dir: Path | None = None,
     overwrite: bool = False,
+    manifest: Path | None = None,
 ) -> None:
-    fmri_root = fmri_root or DEFAULT_FMRI_ROOT
+    if manifest is not None and fmri_root is not None:
+        raise ValueError(
+            "Pass either --manifest or --fmri-root, not both — --manifest already pins the "
+            "exact BOLD file list (DATA.manifest.load.bold_paths), so a separate --fmri-root "
+            "would silently glob a possibly different set."
+        )
     output_dir = output_dir or DEFAULT_OUTPUT_DIR
-
-    if not fmri_root.exists():
-        raise FileNotFoundError(f"fMRI root directory not found: {fmri_root}")
-
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    bold_files = list(iter_bold_files(fmri_root))
+    if manifest is not None:
+        from DATA.manifest.load import bold_paths, load_manifest
+
+        source_label = str(manifest)
+        bold_files = bold_paths(load_manifest(manifest))
+    else:
+        fmri_root = fmri_root or DEFAULT_FMRI_ROOT
+        if not fmri_root.exists():
+            raise FileNotFoundError(f"fMRI root directory not found: {fmri_root}")
+        source_label = str(fmri_root)
+        bold_files = list(iter_bold_files(fmri_root))
+
     if not bold_files:
-        print(f"No rest-state BOLD files found under {fmri_root}")
+        print(f"No rest-state BOLD files found under {source_label}")
         return
 
-    print(f"Source:  {fmri_root}  ({len(bold_files)} BOLD files)")
+    print(f"Source:  {source_label}  ({len(bold_files)} BOLD files)")
     print(f"Output:  {output_dir}")
     print(f"Overwrite: {overwrite}")
 
@@ -216,11 +229,22 @@ def main(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--fmri-root", type=Path, default=DEFAULT_FMRI_ROOT,
-                        help="Root directory containing sub-*/ directories with BOLD NIfTI files")
+    parser.add_argument("--fmri-root", type=Path, default=None,
+                        help="Root directory containing sub-*/ directories with BOLD NIfTI files "
+                             f"(default {DEFAULT_FMRI_ROOT} when neither this nor --manifest is given). "
+                             "Mutually exclusive with --manifest.")
+    parser.add_argument("--manifest", type=Path, default=None,
+                        help="A built cohort_manifest.csv (DATA.manifest) — extracts exactly its "
+                             "bold_path rows instead of globbing --fmri-root. Mutually exclusive "
+                             "with --fmri-root.")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR,
                         help="Flat output directory for .npz matrix files")
     parser.add_argument("--overwrite", action="store_true",
                         help="Re-compute matrices that already exist in output-dir")
     args = parser.parse_args()
-    main(fmri_root=args.fmri_root, output_dir=args.output_dir, overwrite=args.overwrite)
+    main(
+        fmri_root=args.fmri_root,
+        output_dir=args.output_dir,
+        overwrite=args.overwrite,
+        manifest=args.manifest,
+    )

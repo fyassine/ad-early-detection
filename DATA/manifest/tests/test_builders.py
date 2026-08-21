@@ -138,6 +138,14 @@ def test_adni_delta_t_matches_days_formula(adni_manifest):
     assert (adni_manifest["delta_t_months"] - expected).abs().max() < 1e-9
 
 
+def test_adni_manifest_fc_path_populated_only_when_matrix_exists(adni_manifest):
+    for fc_path in adni_manifest["fc_path"].dropna():
+        assert Path(fc_path).exists()
+    # fc_path may legitimately be all-null before A.3 extraction has run — this
+    # only asserts the invariant "never claim a matrix that isn't on disk",
+    # not that extraction has happened.
+
+
 def test_adni_manifest_passes_validation(adni_manifest):
     summary = validate_manifest(
         adni_manifest,
@@ -169,6 +177,11 @@ def test_oasis3_matches_section_7_counts(oasis3_manifest):
     # in build_oasis3_manifest.py) — all 128 on-disk dirs now contribute.
     assert oasis3_manifest["subject_id"].nunique() == OASIS3_EXPECTED_SUBJECTS
     assert len(oasis3_manifest) == OASIS3_EXPECTED_SESSIONS
+
+
+def test_oasis3_manifest_fc_path_populated_only_when_matrix_exists(oasis3_manifest):
+    for fc_path in oasis3_manifest["fc_path"].dropna():
+        assert Path(fc_path).exists()
 
 
 def test_oasis3_protocol_month_is_always_none(oasis3_manifest):

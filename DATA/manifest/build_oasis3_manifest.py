@@ -43,8 +43,10 @@ import pandas as pd
 
 from CLASSIFIER.common.visits import visit_identity
 from DATA.manifest._day_coded import iter_flat_sessions, subject_dirs_on_disk
+from DATA.manifest.load import fc_path_for
 from DATA.manifest.schema import (
     MANIFEST_COLUMNS,
+    assert_fc_paths_present,
     assert_no_cross_label_duplicates,
     validate_manifest,
 )
@@ -52,6 +54,7 @@ from DATA.manifest.schema import (
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _METADATA_DIR = _REPO_ROOT / "DATA" / "OASIS3" / "__metadata__"
 DEFAULT_FMRI_ROOT = _REPO_ROOT / "DATA" / "OASIS3" / "__fmri_wholebrain_sch200_flat__" / "fmri"
+DEFAULT_FC_ROOT = _REPO_ROOT / "DATA" / "OASIS3" / "__fc_wholebrain_sch200_flat__" / "matrices"
 DEFAULT_OUTPUT_CSV = _METADATA_DIR / "cohort_manifest.csv"
 
 EXPECTED_SUBJECTS = 128
@@ -121,6 +124,7 @@ def _scanner_lookup() -> dict[tuple[str, int], tuple[str | None, str | None]]:
 def build_oasis3_manifest(
     *,
     fmri_root: Path = DEFAULT_FMRI_ROOT,
+    fc_root: Path = DEFAULT_FC_ROOT,
     converters_csv: Path | None = None,
     non_converters_csv: Path | None = None,
 ) -> pd.DataFrame:
@@ -156,6 +160,7 @@ def build_oasis3_manifest(
             scanner_vendor, scanner_model = scanner_lookup.get(
                 (subject_id, session.day), (None, None)
             )
+            fc_candidate = fc_path_for(session.bold_path, fc_root)
             rows.append(
                 {
                     "cohort": "oasis3",
@@ -166,7 +171,7 @@ def build_oasis3_manifest(
                     "protocol_month": None,
                     "delta_t_months": delta_t_months[idx],
                     "bold_path": str(session.bold_path),
-                    "fc_path": None,
+                    "fc_path": str(fc_candidate) if fc_candidate.exists() else None,
                     "label": label,
                     "scanner_vendor": scanner_vendor,
                     "scanner_model": scanner_model,
@@ -180,6 +185,12 @@ def build_oasis3_manifest(
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT_CSV)
+    parser.add_argument("--fc-root", type=Path, default=DEFAULT_FC_ROOT)
+    parser.add_argument(
+        "--require-fc",
+        action="store_true",
+        help="Fail loudly if any session's fc_path is missing (run after FC extraction).",
+    )
     parser.add_argument(
         "--acknowledge-empty-subjects",
         action="store_true",
@@ -203,7 +214,7 @@ def main(argv: list[str] | None = None) -> None:
     )
     args = parser.parse_args(argv)
 
-    df = build_oasis3_manifest()
+    df = build_oasis3_manifest(fc_root=args.fc_root)
     on_disk = subject_dirs_on_disk(DEFAULT_FMRI_ROOT)
     contributing = set(df["subject_id"].unique())
     known_empty = frozenset(on_disk - contributing) if args.acknowledge_empty_subjects else frozenset()
@@ -222,6 +233,8 @@ def main(argv: list[str] | None = None) -> None:
         known_empty_subjects=known_empty,
         known_duplicate_day_subjects=known_duplicate_day,
     )
+    if args.require_fc:
+        assert_fc_paths_present(df, cohort="oasis3")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(args.output, index=False)

@@ -169,6 +169,25 @@ def assert_delta_t_monotonic(
     return sorted(set(bad) & known_duplicate_day_subjects)
 
 
+def assert_fc_paths_present(df: pd.DataFrame, *, cohort: str) -> None:
+    """Every manifest row must have a non-null ``fc_path`` (post-extraction check).
+
+    Deliberately separate from ``assert_paths_exist_and_nonempty``, which only
+    checks *non-null* paths exist on disk — a manifest built before FC
+    extraction has run legitimately has ``fc_path=None`` everywhere, and that
+    must not raise. This assertion is the "extraction actually finished"
+    check, opt-in via ``--require-fc`` on the builder CLIs.
+    """
+    missing = df[df["fc_path"].isna()]
+    if not missing.empty:
+        subjects = sorted(missing["subject_id"].astype(str).unique())
+        raise ValueError(
+            f"{cohort}: {len(missing)} manifest row(s) across {len(subjects)} subject(s) have no "
+            f"fc_path: {subjects[:20]}. Run the Schaefer-200 extraction (A.3) over this manifest "
+            "before requiring fc_path, or drop --require-fc if extraction hasn't run yet."
+        )
+
+
 def assert_no_cross_label_duplicates(
     converter_ids: set[str], stable_ids: set[str], *, cohort: str
 ) -> None:
