@@ -10,10 +10,15 @@ returns ``None`` for ADNI's unscheduled ``'v'``-coded visits rather than
 guessing a month, per §2 of the comparison plan.
 
 Expected counts (DOCS/meetings/ninth-meeting/comparison-plan-v2.md §7,
-verified 2026-08-20): 237 subjects, 567 sessions in
-``__fmri_wholebrain_sch200_flat__``. Re-run §7's count block and update these
-after any postprocessing pass over the late-arriving ADNI subjects — do not
-assume the numbers grew on their own.
+verified 2026-08-22): 268 subjects, 674 sessions in
+``__fmri_wholebrain_sch200_flat__``. Was 237/567 as of 2026-08-20 — the
+2026-08-21 evening ``postprocess_local.sh --flatten-only --overwrite`` run
+both applied the reorientation-affine fix (§3, A.3) and caught up the 31
+ADNI subjects that were denoised but stuck unflattened (same bug family as
+OASIS-3's §1.3 empty-dir gap), landing on 268/272 eligible (4 excluded by
+motion QC) with zero duplicate-same-day sessions. Re-run §7's count block
+and update these after any further postprocessing pass over the
+late-arriving ADNI subjects — do not assume the numbers grew on their own.
 """
 
 from __future__ import annotations
@@ -34,8 +39,8 @@ DEFAULT_FMRI_ROOT = _REPO_ROOT / "DATA" / "ADNI" / "__fmri_wholebrain_sch200_fla
 DEFAULT_FC_ROOT = _REPO_ROOT / "DATA" / "ADNI" / "__fc_wholebrain_sch200_flat__" / "matrices"
 DEFAULT_OUTPUT_CSV = _METADATA_DIR / "cohort_manifest.csv"
 
-EXPECTED_SUBJECTS = 237
-EXPECTED_SESSIONS = 567
+EXPECTED_SUBJECTS = 268
+EXPECTED_SESSIONS = 674
 
 # How close a session's elapsed-day count must be to a label-CSV row's
 # elapsed-day-from-baseline (derived from its examdate) to inherit that row's

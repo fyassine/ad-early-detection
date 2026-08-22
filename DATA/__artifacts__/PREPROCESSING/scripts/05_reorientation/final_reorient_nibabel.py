@@ -42,8 +42,14 @@ def reorient_to_radiological(img: nib.Nifti1Image) -> nib.Nifti1Image:
 
     # Step 2: header-only sign flip of the x (left-right) axis to mark radiological convention,
     # without touching the voxel array (mirrors fslorient -forceradiological).
+    # Negating the direction cosine alone anchors the flip at world x=0 instead of the
+    # image's own bounding box, translating the whole volume by (nx-1)*voxel_size_x — the
+    # translation term must be compensated to keep the image in the same physical location.
     affine = canonical.affine.copy()
-    affine[:, 0] *= -1
+    x_dir = affine[:3, 0].copy()
+    nx = canonical.shape[0]
+    affine[:3, 0] = -x_dir
+    affine[:3, 3] += x_dir * (nx - 1)
     return nib.Nifti1Image(canonical.dataobj, affine, canonical.header)
 
 
