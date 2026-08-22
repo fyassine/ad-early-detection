@@ -21,6 +21,7 @@
 - [Checkpoints](../.claude/rules/checkpoints.md) — full-state schema, `outputs/` vs legacy `checkpoints/`
 - [Notebooks](../.claude/rules/notebooks.md) — `BASELINE_` / `LONGITUDINAL_` / `STATIC_` / `SANITY_` prefix, splits via `common.splits`, sanity audit at head; three mandatory interactive prompts: (1) GAAE checkpoint index selection, (2) train vs load existing checkpoint, (3) threshold mode with Best-F1 as default (Youden as option 2)
 - [CI](../.claude/rules/ci.md) — run `python scripts/run_checks.py` once, after all steps of a multi-step plan are finished (not after each step — intermediate steps can leave the tree transiently broken); lint/tests block, mypy/format/complexity/bandit/pip-audit are ratcheted against `CHECKS.json` (pre-existing backlog ok, new findings fail the run)
+- [GPU dispatch](../.claude/rules/gpu-dispatch.md) — fritz + frieda share one NFS tree; run `gpus` to see which box is freer, launch with `scripts/dispatch.sh --id <exp-id>` (picks the box with more free GPU memory; more than 2 ids uses BOTH boxes at once), and never run one experiment id twice (it races `outputs/<id>/latest`)
 
 ## Reference docs
 

@@ -33,10 +33,8 @@ yaml files, etc. — is project code and **must** be included in searches.
 @.claude/rules/seeding.md
 @.claude/rules/configs.md
 @.claude/rules/evaluation.md
-@.claude/rules/checkpoints.md
-@.claude/rules/notebooks.md
+@.claude/rules/gpu-dispatch.md
 @.claude/rules/ci.md
-@.claude/rules/credentials.md
 
 ## Reference docs (load on demand — do not embed)
 
@@ -45,6 +43,9 @@ yaml files, etc. — is project code and **must** be included in searches.
 - `PROGNOSER/README.md` — survival pipeline
 - `ABI/README.md` — Abnormality Index experiment runner, registry schema
 - `DASHBOARD/README.md` — app setup, venv contract
+- `.claude/rules/credentials.md` — read before touching HPC/external-service auth (env var names, hosts)
+- `.claude/rules/checkpoints.md` — read before touching model checkpoint save/load
+- `.claude/rules/notebooks.md` — read before writing/editing notebooks
 
 ## Tests and commands
 
