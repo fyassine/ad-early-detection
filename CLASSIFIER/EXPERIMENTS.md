@@ -11,9 +11,16 @@ Run from the `CLASSIFIER/` directory:
 ```bash
 python run_experiment.py --id gelstm-trajectory-whole-brain    # one experiment
 python run_experiment.py --id <id> --background                # detach, returns immediately
+python run_experiment.py --follow <run_name>                   # stream live logs for specific run name
+python run_experiment.py --follow <exp_id>                     # stream live logs for latest run of experiment
+python run_experiment.py --id <id> --follow                    # stream live logs for latest run of experiment
 python run_experiment.py --all                                  # sequential queue, continue-on-error
 python run_experiment.py --mode longitudinal                    # filter then queue
 python run_experiment.py --status                                # table of every run
+python run_experiment.py --status --id <id>                      # filter table to single experiment
+python run_experiment.py --status --watch                        # continuously update status in terminal
+python run_experiment.py --status -n 5                           # limit table to 5 most recent runs
+python run_experiment.py --status --watch -n 5                   # live watch limited to 5 runs
 python run_experiment.py --collect                                # rebuild outputs/RESULTS.csv
 python run_experiment.py --dry-run --id <id>                     # preview merged params, no execution
 python run_experiment.py --id <id> --no-wandb                    # force WANDB_MODE=disabled

@@ -26,7 +26,7 @@ from __future__ import annotations
 import copy
 import pickle
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 import torch
@@ -179,7 +179,16 @@ class GEPAdapter(LongitudinalAdapter):
         return m
 
     # ── training ─────────────────────────────────────────────────────────────
-    def train_fold(self, bundle_tr, bundle_va, cfg, *, rng, device) -> Dict[str, Any]:
+    def train_fold(
+        self,
+        bundle_tr,
+        bundle_va,
+        cfg,
+        *,
+        rng,
+        device,
+        epoch_log_fn: Optional[Callable[[Dict[str, Any]], None]] = None,
+    ) -> Dict[str, Any]:
         items_tr, items_va = bundle_tr.items, bundle_va.items
         X_tr_raw, y_tr = self._records_to_X(items_tr)
         X_va_raw, y_va = self._records_to_X(items_va)
@@ -207,8 +216,9 @@ class GEPAdapter(LongitudinalAdapter):
         )
 
         best_auc, best_state, no_improve = 0.0, None, 0
-        for _epoch in range(self.epochs):
+        for epoch in range(self.epochs):
             model.train()
+            total_loss, n_batches = 0.0, 0
             for xb, yb in tr_dl:
                 xb, yb = xb.to(device), yb.to(device)
                 loss = criterion(model(xb), yb)
@@ -217,11 +227,21 @@ class GEPAdapter(LongitudinalAdapter):
                 if self.grad_clip > 0:
                     torch.nn.utils.clip_grad_norm_(model.parameters(), self.grad_clip)
                 opt.step()
+                total_loss += loss.item()
+                n_batches += 1
             model.eval()
             with torch.no_grad():
                 probs_va = torch.sigmoid(model(X_va.to(device))).cpu().numpy()
             va_auc = roc_auc_score(y_va, probs_va) if len(np.unique(y_va)) > 1 else 0.0
             sched.step(va_auc)
+            if epoch_log_fn is not None:
+                epoch_log_fn(
+                    {
+                        "epoch": epoch,
+                        "train_loss": total_loss / max(n_batches, 1),
+                        "val_auc": va_auc,
+                    }
+                )
             if va_auc > best_auc:
                 best_auc, best_state, no_improve = va_auc, copy.deepcopy(model.state_dict()), 0
             else:
