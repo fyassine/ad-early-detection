@@ -14,11 +14,13 @@ from __future__ import annotations
 import csv
 import dataclasses
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
 import yaml
 
+from SHARED.runner_io import infer_run_duration, reconcile_run_status
 from ..configs import EvalConfig, GECTrainConfig, GELSTMTrainConfig
 
 _REQUIRED_FIELDS = ("id", "mode", "model", "dataset", "seed", "notebook")
@@ -234,9 +236,22 @@ def collect_results(outputs_root: str | Path) -> List[Dict[str, Any]]:
             "run_dir": str(run_dir.relative_to(outputs_root.parent)),
             "timestamp": summary.get("timestamp"),
         }
+        duration = summary.get("duration_seconds")
+        if duration is None:
+            dur = infer_run_duration(run_dir)
+            if dur is not None:
+                duration = round(float(dur), 1)
+        if duration is not None:
+            row["duration_seconds"] = duration
+
         git = summary.get("git") or {}
         row["git_commit"] = git.get("short_commit")
         row["git_dirty"] = git.get("dirty")
+        if summary.get("state") or summary.get("status"):
+            row["state"] = summary.get("state") or summary.get("status")
+            row["status"] = summary.get("status") or summary.get("state")
+        if summary.get("error"):
+            row["error"] = summary.get("error")
         # Preferred: a uniform `metrics` block. Fallback: scalar top-level
         # `test_*` keys, which the existing notebooks already write — this keeps
         # the ledger populated even for notebooks not yet fully wired.
@@ -269,16 +284,124 @@ def collect_results(outputs_root: str | Path) -> List[Dict[str, Any]]:
     return rows
 
 
-def read_statuses(outputs_root: str | Path) -> List[Dict[str, Any]]:
-    """Gather every run's ``status.json`` (most recent first) for ``--status``."""
+def find_run_dir(outputs_root: str | Path, target: str) -> Path | None:
+    """Find a run directory given a run name, run name prefix, path, or experiment id.
+
+    Parameters
+    ----------
+    outputs_root : str | Path
+        Root outputs directory (e.g. CLASSIFIER/outputs).
+    target : str
+        Run name (e.g. 'crimson-galaxy-4-5e33e2170-2026-08-22_12-54-20'),
+        run name prefix, experiment id (e.g. 'gelstm-trajectory-whole-brain'),
+        or relative/absolute path to a run dir.
+    """
+    outputs_root = Path(outputs_root).resolve()
+    target = target.strip()
+    if not target:
+        return None
+
+    # 1. Direct path check
+    direct = Path(target)
+    if direct.is_dir():
+        return direct.resolve()
+    if (outputs_root / target).is_dir() and not (outputs_root / target / "runs").is_dir():
+        return (outputs_root / target).resolve()
+
+    # 2. Exact match for run name anywhere under outputs/*/runs/<target>
+    matching_runs = list(outputs_root.glob(f"*/runs/{target}"))
+    if matching_runs:
+        return matching_runs[0].resolve()
+
+    # 3. Partial / prefix match for run name (e.g. crimson-galaxy-4)
+    matching_runs_prefix = list(outputs_root.glob(f"*/runs/{target}*"))
+    if matching_runs_prefix:
+        def _sort_key(d: Path) -> str:
+            status_file = d / "status.json"
+            if status_file.is_file():
+                try:
+                    data = json.loads(status_file.read_text())
+                    return str(data.get("started_at") or "")
+                except Exception:
+                    pass
+            return str(d.stat().st_mtime)
+
+        matching_runs_prefix.sort(key=_sort_key, reverse=True)
+        return matching_runs_prefix[0].resolve()
+
+    # 4. Target is an experiment ID (check outputs/<target>/latest or outputs/<target>/runs/*)
+    exp_dir = outputs_root / target
+    if exp_dir.is_dir():
+        latest_link = exp_dir / "latest"
+        if latest_link.is_symlink() or latest_link.is_dir():
+            try:
+                resolved = latest_link.resolve()
+                if resolved.is_dir():
+                    return resolved
+            except Exception:
+                pass
+
+        latest_txt = exp_dir / "latest.txt"
+        if latest_txt.is_file():
+            try:
+                run_name = latest_txt.read_text().strip()
+                t = exp_dir / "runs" / run_name
+                if t.is_dir():
+                    return t.resolve()
+            except Exception:
+                pass
+
+        runs_dir = exp_dir / "runs"
+        if runs_dir.is_dir():
+            run_dirs = [d for d in runs_dir.iterdir() if d.is_dir()]
+            if run_dirs:
+                def _sort_key(d: Path) -> str:
+                    status_file = d / "status.json"
+                    if status_file.is_file():
+                        try:
+                            data = json.loads(status_file.read_text())
+                            return str(data.get("started_at") or "")
+                        except Exception:
+                            pass
+                    return str(d.stat().st_mtime)
+
+                run_dirs.sort(key=_sort_key, reverse=True)
+                return run_dirs[0].resolve()
+
+    return None
+
+
+find_latest_run = find_run_dir
+
+
+def read_statuses(
+    outputs_root: str | Path,
+    *,
+    experiment_id: str | None = None,
+    limit: int | None = None,
+    reconcile: bool = True,
+) -> List[Dict[str, Any]]:
+    """Gather run ``status.json`` files (most recent first) for ``--status``."""
     outputs_root = Path(outputs_root)
     statuses: List[Dict[str, Any]] = []
-    for status_path in outputs_root.glob("*/runs/*/status.json"):
-        try:
-            status = json.loads(status_path.read_text())
-        except Exception:
-            continue
+    pattern = f"{experiment_id}/runs/*/status.json" if experiment_id else "*/runs/*/status.json"
+    for status_path in outputs_root.glob(pattern):
+        if reconcile:
+            try:
+                status = reconcile_run_status(status_path, write_disk=True)
+            except Exception:
+                try:
+                    status = json.loads(status_path.read_text())
+                except Exception:
+                    continue
+        else:
+            try:
+                status = json.loads(status_path.read_text())
+            except Exception:
+                continue
         status["_path"] = str(status_path)
         statuses.append(status)
     statuses.sort(key=lambda s: s.get("started_at") or "", reverse=True)
+    if limit is not None and limit >= 0:
+        return statuses[:limit]
     return statuses
