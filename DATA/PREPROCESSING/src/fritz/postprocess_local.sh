@@ -338,7 +338,9 @@ process_subject() {
         for bold in "${local_postproc_root}/sub-${sub}/${ses}/"*"desc-${STRATEGY}_bold.nii.gz"; do
             [[ -e "$bold" ]] || { warn "${tag} ${ses}: no *desc-${STRATEGY}_bold.nii.gz produced."; continue; }
             local reoriented="${bold%.nii.gz}_reoriented.nii.gz"
-            "$PYTHON" "${SCRIPT_DIR}/final_reorient.py" "$bold" "$reoriented" \
+            local -a reorient_flags=()
+            $OVERWRITE && reorient_flags+=(--overwrite)
+            "$PYTHON" "${SCRIPT_DIR}/final_reorient.py" "$bold" "$reoriented" "${reorient_flags[@]}" \
                 || { error "${tag} reorient failed for $(basename "$bold")."; continue; }
             cp -f "$reoriented" "${flat_sub}/" && n_flat=$((n_flat + 1))
         done

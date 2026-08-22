@@ -1,4 +1,4 @@
-# Model-comparison plan v2 — external validation + Chantal's fairness bar
+# Model-comparison plan v2 — external validation
 
 **Supersedes** the previous cross-dataset plan. Two inputs forced the revision:
 Chantal's definition of a fair comparison (Slack, Aug 20) and a recount of what
@@ -317,42 +317,44 @@ once the determinism check confirms it).
 
 ### A.3 Schaefer-200 extraction → FC for ADNI **and OASIS-3**
 
-*Updated 2026-08-21 — generalized from ADNI-only, wired, blocked before any
-real extraction ran.* Expected output once unblocked: **567 FC matrices / 237
-subjects (ADNI)**, **234 / 128 (OASIS-3, post-MB4-dedup)** — not gated by A.2
-(extraction touches BOLD NIfTIs only, no visit-parsing code).
+*Done, 2026-08-22.* **674 FC matrices / 268 subjects (ADNI)**, **234 / 128
+(OASIS-3, post-MB4-dedup)** — `fc_path` populated for every manifest row in
+both cohorts, `--require-fc` passes clean on both.
 
-Changes made: `process_using_schaeffer_atlas.py` gained a `--manifest` flag
-(mutually exclusive with `--fmri-root`) reading exact `bold_path` rows via a
-new `DATA/manifest/load.py`, instead of re-globbing; `build_adni_manifest.py`
-/ `build_oasis3_manifest.py` gained `--fc-root` and now populate `fc_path`
-(was hardcoded `None`); `schema.py` gained `assert_fc_paths_present`, wired
-behind `--require-fc` on all three builder CLIs. `build_delcode_manifest.py`
-and the split it feeds A.2 are untouched.
+Changes made (2026-08-21 wiring): `process_using_schaeffer_atlas.py` gained a
+`--manifest` flag (mutually exclusive with `--fmri-root`) reading exact
+`bold_path` rows via a new `DATA/manifest/load.py`, instead of re-globbing;
+`build_adni_manifest.py` / `build_oasis3_manifest.py` gained `--fc-root` and
+now populate `fc_path` (was hardcoded `None`); `schema.py` gained
+`assert_fc_paths_present`, wired behind `--require-fc` on all three builder
+CLIs. `build_delcode_manifest.py` and the split it feeds A.2 are untouched.
 
-**Blocked, discovered while wiring this up — a new data-pipeline bug, same
-family as §1.3's:** every on-disk ADNI/OASIS-3 `_bold_reoriented.nii.gz` file
-(all sampled, both cohorts) has a corrupted affine — translation `x=-96.5`
-where the correct MNI152NLin2009cAsym-2mm origin is `+95.5` (DELCODE's flat
-product has the correct value). Root cause:
-`DATA/PREPROCESSING/src/fritz/final_reorient.py`'s
-`affine[:, 0] *= -1` negates only the direction-cosine column and never
-recomputes the translation, shifting the whole field of view ~192mm outside
-where the atlas expects the brain — `nilearn.image.resampling.BoundingBoxError`
-on every file tried. This is the exact risk `DATA/__artifacts__/PREPROCESSING/
-docs/OPEN_QUESTIONS.md`'s "Reorientation byte-parity with FSL" note already
-flagged as unvalidated; DELCODE was unaffected because it predates/bypasses
-this nibabel replacement. Fixing it means correcting the reorientation step
-and re-flattening both cohorts on CORE/Fritz — out of scope for A.3/A.4's own
-code and not attempted here. **Extraction did not run; zero matrices were
-written.** Re-run the two commands above once the reorientation bug is fixed
-upstream.
+**Reorientation-affine bug (same family as §1.3's), found and fixed
+2026-08-21:** every on-disk ADNI/OASIS-3 `_bold_reoriented.nii.gz` file had a
+corrupted affine — translation `x=-96.5` where the correct
+MNI152NLin2009cAsym-2mm origin is `+95.5` (DELCODE's flat product had the
+correct value). Root cause: `DATA/PREPROCESSING/src/fritz/final_reorient.py`'s
+`affine[:, 0] *= -1` negated only the direction-cosine column and never
+recomputed the translation, shifting the whole field of view ~192mm outside
+where the atlas expects the brain. Fixed by compensating the translation term
+(`affine[:3,3] += x_dir*(nx-1)`); `flatten_fmriprep.sh` /
+`postprocess_local.sh` threaded `--overwrite` through to the reorient call so
+already-flattened (corrupted) files got redone.
 
-ADNI's straggler gap is unchanged: fmriprep-flat (268) vs postprocessed-flat
-(237) still leaves **31 subjects / 108 sessions** not in the 567/237 figure —
-proceed at 237 (162 with ≥2 sessions is enough to decide the head-to-head);
-re-run §7's count block after any postprocessing pass rather than assuming it
-landed.
+**ADNI's straggler gap, closed the same evening:** the 2026-08-21
+`postprocess_local.sh --dataset both --flatten-only --overwrite` run both
+applied the affine fix and caught up the 31 subjects / 108 sessions that were
+denoised but stuck unflattened (fmriprep-flat 268 vs postprocessed-flat 237,
+same bug family as §1.3's OASIS-3 empty-dir gap) — landing on 268/272 eligible
+ADNI subjects (4 excluded by motion QC), zero duplicate-same-day sessions.
+`build_adni_manifest.py`'s `EXPECTED_SUBJECTS`/`EXPECTED_SESSIONS` were stale
+at 237/567 (built from a manifest snapshot taken *before* that evening's run
+completed) and needed bumping to 268/674 — see §7's 2026-08-22 re-run. Real
+extraction was launched against the stale 237/567 manifest first, missing the
+31 recovered subjects; re-running against the corrected 268/674 manifest
+picked up exactly the missing 107 sessions (`skipped=567, processed=107,
+failed=0`) with no wasted recomputation, since the extractor skips any BOLD
+file whose `.npz` pair already exists.
 
 ### A.4 Splits — **ADNI and OASIS-3**
 
@@ -370,11 +372,13 @@ parses month allow-lists; that consumer-side generalization is A.1-wiring's
 remaining scope, not A.4's.
 
 A dry run against the real manifests (bypassing the `fc_path` eligibility
-gate, since A.3 hasn't produced any yet) reproduces §1.2's counts exactly:
+gate, back when A.3 hadn't produced any yet) reproduced §1.2's counts exactly:
 **ADNI 162 (111 stable / 51 converter)**, **OASIS-3 60 (29 / 31)**, zero
-split overlap. The real run — `python -m DATA.manifest.build_cohort_splits
---cohort {adni,oasis3}` — is blocked on the same A.3 gap: `fc_path` is null
-for both cohorts until extraction actually runs.
+split overlap. `fc_path` is now fully populated for both cohorts (A.3, done
+2026-08-22) — those counts were against the stale 237-subject ADNI manifest,
+though, so the real run — `python -m DATA.manifest.build_cohort_splits
+--cohort {adni,oasis3}` — still needs to happen against the corrected 268/674
+ADNI manifest and hasn't been run yet.
 
 ### A.5 Transfer gate — with a positive control *(revised)*
 
@@ -742,6 +746,24 @@ OASIS3  __fmriprep_wholebrain_flat__     dirs= 128 empty=  0 sessions=239
 OASIS3  __fmri_wholebrain_sch200_flat__  dirs= 128 empty=  0 sessions=239
 ```
 
+**Re-run 2026-08-22, ADNI only** (OASIS-3 unchanged from 08-21 — no
+postprocessing pass touched it in between): the 08-21 evening
+`postprocess_local.sh --flatten-only --overwrite` run (applying the
+reorientation-affine fix, §3 A.3) landed *after* the snapshot above was taken.
+ADNI's `__fmri_wholebrain_sch200_flat__` is no longer stuck at 237 — it now
+matches `__fmriprep_wholebrain_flat__`'s subject count exactly (session count
+differs by 1, 674 vs 675, plausibly one file that didn't pass QC/day-parsing;
+not investigated further, immaterial at this margin):
+
+```
+ADNI    __fmri_wholebrain_sch200_flat__  dirs= 268 empty=  0 sessions=674
+```
+
+`build_adni_manifest.py`'s `EXPECTED_SUBJECTS`/`EXPECTED_SESSIONS` (used by
+`assert_counts_match`) were updated from 237/567 to 268/674 to match. A.3's
+Schaefer-200 extraction has since been run to completion against the
+corrected manifest for both cohorts — see §3, A.3.
+
 ---
 
 ## 8. Sequencing
@@ -752,7 +774,8 @@ OASIS3  __fmri_wholebrain_sch200_flat__  dirs= 128 empty=  0 sessions=239
 | now, parallel | B (C1/C2/C3 fairness work) | — | in progress — BrainTokenGT fidelity/seed ablations landed (`3aa424d`); matched-cohort (2–3 visit) head-to-head not yet run |
 | now, parallel | OASIS-3 46-subject triage (§5) | cheap, high value | **done** — full recovery, 82→128 usable subjects (§1.3a); 14 no-dir subjects remain a separate open item |
 | then | A.2 DELCODE reproduction | ~~AUC 0.8321 exactly~~ → **0.7929, target retired** | **passed** — 0.8321 was leaky (pre-`0823ca6` leak fix); determinism re-run in progress (§3, A.2) |
-| then | A.3/A.4 ADNI **+ OASIS-3** FC + splits | manifest assertions pass | **code done, both cohorts, extraction blocked** — reorientation-affine bug, see §3 A.3 |
+| then | A.3 ADNI **+ OASIS-3** FC extraction | manifest assertions pass | **done, 2026-08-22** — both cohorts, `fc_path` 100% populated (ADNI 268/674, OASIS-3 128/234); see §3 A.3 |
+| then | A.4 ADNI **+ OASIS-3** splits | fc_path eligibility gate | code done; real run not yet executed against the corrected 268/674 ADNI manifest — see §3 A.4 |
 | decision | A.5 dual gate (zero-shot × within-ADNI) | see §3 table | not started |
 | then | C — ADNI head-to-head | — | not started |
 | then | D/E/F | — | not started |
