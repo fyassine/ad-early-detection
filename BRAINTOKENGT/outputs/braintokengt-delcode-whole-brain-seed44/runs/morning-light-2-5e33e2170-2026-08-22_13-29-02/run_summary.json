@@ -1,0 +1,15 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-seed44",
+  "run_name": "morning-light-2-5e33e2170-2026-08-22_13-29-02",
+  "state": "failed",
+  "status": "failed",
+  "error": "SystemExit: 143",
+  "duration_seconds": 78.6,
+  "started_at": "2026-08-22T13:29:05",
+  "finished_at": "2026-08-22T13:30:24",
+  "git": {
+    "short_commit": "5e33e2170",
+    "dirty": true
+  },
+  "metrics": {}
+}

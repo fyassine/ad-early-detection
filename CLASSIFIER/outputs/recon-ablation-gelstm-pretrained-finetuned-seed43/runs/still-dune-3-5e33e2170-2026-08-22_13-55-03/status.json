@@ -1,0 +1,11 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-finetuned-seed43",
+  "run_name": "still-dune-3-5e33e2170-2026-08-22_13-55-03",
+  "state": "running",
+  "pid": 4084523,
+  "host": "fritz",
+  "started_at": "2026-08-22T13:55:07",
+  "git_commit": "5e33e2170",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb"
+}

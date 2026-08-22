@@ -1,0 +1,13 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-repaired-fix-stabilized-seed45",
+  "run_name": "olive-feather-3-5e33e2170-2026-08-22_12-39-58",
+  "state": "done",
+  "pid": 4039486,
+  "started_at": "2026-08-22T12:40:00",
+  "git_commit": "5e33e2170",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb",
+  "finished_at": "2026-08-22T12:54:01",
+  "exit_code": 0,
+  "duration_seconds": 840.2
+}

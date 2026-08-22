@@ -1,0 +1,13 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-frozen-2to3v-seed43",
+  "run_name": "zesty-wind-1-5e33e2170-2026-08-21_19-57-54",
+  "state": "done",
+  "pid": 3583188,
+  "started_at": "2026-08-21T19:58:01",
+  "git_commit": "5e33e2170",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-21T20:13:31",
+  "exit_code": 0,
+  "duration_seconds": 929.2
+}

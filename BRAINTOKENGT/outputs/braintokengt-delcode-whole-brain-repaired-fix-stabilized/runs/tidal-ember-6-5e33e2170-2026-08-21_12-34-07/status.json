@@ -1,0 +1,10 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-repaired-fix-stabilized",
+  "run_name": "tidal-ember-6-5e33e2170-2026-08-21_12-34-07",
+  "state": "interrupted",
+  "pid": 3385005,
+  "started_at": "2026-08-21T12:34:10",
+  "git_commit": "5e33e2170",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb"
+}

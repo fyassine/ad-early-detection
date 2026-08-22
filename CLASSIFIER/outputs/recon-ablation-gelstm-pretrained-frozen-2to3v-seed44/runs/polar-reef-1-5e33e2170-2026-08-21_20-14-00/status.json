@@ -1,0 +1,10 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-frozen-2to3v-seed44",
+  "run_name": "polar-reef-1-5e33e2170-2026-08-21_20-14-00",
+  "state": "interrupted",
+  "pid": 3600717,
+  "started_at": "2026-08-21T20:14:07",
+  "git_commit": "5e33e2170",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb"
+}

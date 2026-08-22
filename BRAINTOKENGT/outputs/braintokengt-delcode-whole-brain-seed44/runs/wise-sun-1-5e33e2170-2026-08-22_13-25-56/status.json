@@ -1,0 +1,15 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-seed44",
+  "run_name": "wise-sun-1-5e33e2170-2026-08-22_13-25-56",
+  "state": "failed",
+  "pid": 1184123,
+  "started_at": "2026-08-22T13:26:07",
+  "git_commit": "5e33e2170",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb",
+  "duration_seconds": 159.6,
+  "finished_at": "2026-08-22T13:28:46",
+  "error": "SystemExit: 143",
+  "signal": "SIGTERM",
+  "exit_code": 143
+}

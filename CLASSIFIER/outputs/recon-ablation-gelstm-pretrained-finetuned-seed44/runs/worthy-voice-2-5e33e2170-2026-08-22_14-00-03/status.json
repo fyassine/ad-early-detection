@@ -1,0 +1,11 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-finetuned-seed44",
+  "run_name": "worthy-voice-2-5e33e2170-2026-08-22_14-00-03",
+  "state": "running",
+  "pid": 1187425,
+  "host": "frieda",
+  "started_at": "2026-08-22T14:00:07",
+  "git_commit": "5e33e2170",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb"
+}

@@ -1,0 +1,13 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-repaired-fix-stabilized",
+  "run_name": "laced-mountain-2-74659c77b-2026-08-21_12-05-40",
+  "state": "done",
+  "pid": 3361021,
+  "started_at": "2026-08-21T12:05:42",
+  "git_commit": "74659c77b",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb",
+  "finished_at": "2026-08-21T12:18:46",
+  "exit_code": 0,
+  "duration_seconds": 783.0
+}

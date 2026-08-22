@@ -1,0 +1,13 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-frozen-2to3v-seed42",
+  "run_name": "serene-morning-1-5e33e2170-2026-08-21_19-43-08",
+  "state": "done",
+  "pid": 3575549,
+  "started_at": "2026-08-21T19:43:12",
+  "git_commit": "5e33e2170",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-21T19:56:36",
+  "exit_code": 0,
+  "duration_seconds": 803.6
+}

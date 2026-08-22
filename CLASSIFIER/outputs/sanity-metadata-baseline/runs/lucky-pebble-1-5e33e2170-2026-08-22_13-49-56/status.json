@@ -1,0 +1,16 @@
+{
+  "experiment_id": "sanity-metadata-baseline",
+  "run_name": "lucky-pebble-1-5e33e2170-2026-08-22_13-49-56",
+  "state": "failed",
+  "pid": 1186287,
+  "host": "frieda",
+  "started_at": "2026-08-22T13:50:01",
+  "git_commit": "5e33e2170",
+  "git_dirty": false,
+  "notebook": "notebooks/SANITY/SANITY_BASELINE_METADATA_TIME.ipynb",
+  "finished_at": "2026-08-22T13:50:11",
+  "duration_seconds": 8.8,
+  "error": "ModuleNotFoundError: No module named 'SHARED'",
+  "notebook_traceback": "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m\n\u001b[0;31mModuleNotFoundError\u001b[0m                       Traceback (most recent call last)\nCell \u001b[0;32mIn[3], line 16\u001b[0m\n\u001b[1;32m     13\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m \u001b[38;5;28mstr\u001b[39m(V2_ROOT) \u001b[38;5;129;01mnot\u001b[39;00m \u001b[38;5;129;01min\u001b[39;00m sys\u001b[38;5;241m.\u001b[39mpath:\n\u001b[1;32m     14\u001b[0m     sys\u001b[38;5;241m.\u001b[39mpath\u001b[38;5;241m.\u001b[39minsert(\u001b[38;5;241m0\u001b[39m, \u001b[38;5;28mstr\u001b[39m(V2_ROOT))\n\u001b[0;32m---> 16\u001b[0m \u001b[38;5;28;01mfrom\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mSHARED\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01msanity\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;28;01mimport\u001b[39;00m run_full_audit\n\n\u001b[0;31mModuleNotFoundError\u001b[0m: No module named 'SHARED'",
+  "cell": "In [3]"
+}

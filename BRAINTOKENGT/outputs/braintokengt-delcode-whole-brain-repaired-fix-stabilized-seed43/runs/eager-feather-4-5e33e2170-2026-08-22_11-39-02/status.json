@@ -1,0 +1,13 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-repaired-fix-stabilized-seed43",
+  "run_name": "eager-feather-4-5e33e2170-2026-08-22_11-39-02",
+  "state": "done",
+  "pid": 4015299,
+  "started_at": "2026-08-22T11:39:05",
+  "git_commit": "5e33e2170",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb",
+  "finished_at": "2026-08-22T11:55:39",
+  "exit_code": 0,
+  "duration_seconds": 993.9
+}

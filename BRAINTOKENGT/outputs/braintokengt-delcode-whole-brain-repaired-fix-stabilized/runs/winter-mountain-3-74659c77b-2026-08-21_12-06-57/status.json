@@ -1,0 +1,13 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-repaired-fix-stabilized",
+  "run_name": "winter-mountain-3-74659c77b-2026-08-21_12-06-57",
+  "state": "done",
+  "pid": 3362811,
+  "started_at": "2026-08-21T12:07:01",
+  "git_commit": "74659c77b",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb",
+  "finished_at": "2026-08-21T12:21:26",
+  "exit_code": 0,
+  "duration_seconds": 864.6
+}
