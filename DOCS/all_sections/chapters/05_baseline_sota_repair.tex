@@ -1,0 +1,275 @@
+\chapter{Baseline Investigation \& The SOTA Repair Framework}
+\label{ch:sota-repair}
+
+A comparison against a published state-of-the-art model is only as meaningful as the
+baseline it runs. This chapter documents what happened when Brain-TokenGT --- a MICCAI 2023
+spatiotemporal graph transformer for longitudinal connectome embedding --- was taken from
+its open-source release and run on the DELCODE cohort. The short version is that the
+baseline required three successive interventions before it produced a number at all, and
+that the number it eventually produced is \emph{not reproducible at a fixed random seed}.
+That second finding is the more important one, and it generalises well beyond this
+particular model.
+
+%==============================================================================
+\section{Brain-TokenGT as a Published Benchmark}
+\label{sec:btgt-what}
+
+Brain-TokenGT was selected as the comparison baseline because it is the closest published
+match to this thesis's problem statement: it consumes a \emph{sequence} of functional
+connectomes rather than a snapshot, it was evaluated on dementia-conversion prediction in
+MCI among its three tasks, and a reference implementation is publicly available.
+
+Architecturally it comprises two modules. Graph Invariant and Variant Embedding (GIVE)
+produces node and spatio-temporal edge embeddings, which are tokenised. The Brain Informed
+Graph Transformer Readout (BIGTR) then augments those tokens with trainable type
+identifiers and non-trainable node identifiers and passes them to a standard transformer
+encoder. The temporal mechanism inside GIVE derives from EvolveGCN-H, whose graph
+convolutional recurrent unit (GRCU) evolves the graph convolution's \emph{weight matrix}
+through a GRU rather than propagating a node hidden state.
+
+The tokenisation is where the capacity goes. With $K = 8$ nodes per ROI clique, one visit
+yields roughly 460 tokens; across a three-visit sequence the transformer attends over
+approximately $1{,}381$ spatio-temporal tokens per subject, through $603{,}849$ trainable
+parameters. For context, the cross-validation folds used here contain roughly 76 training
+subjects each.
+
+%==============================================================================
+\section{Uncovering Baseline Failure Modes}
+\label{sec:btgt-failures}
+
+\subsection{The as-released recurrent core is inert}
+
+In the released configuration, the flag \texttt{train\_give} is set to \texttt{false}. The
+consequence is not a reduced learning rate on the recurrent component --- it is that the
+GRCU weights are frozen at their random Gaussian initialisation and never registered with
+the optimiser at all. The model has a temporal module in the architectural sense and no
+learned trajectory in any operational sense.
+
+The behaviour on DELCODE is the signature of a model that never learned a decision
+boundary: test AUC $0.5779$, sensitivity $1.000$, specificity $0.000$ --- every test
+subject predicted as a converter --- with cross-validation AUC $0.5538 \pm 0.1258$.
+
+\risk{Reporting a win over the as-released configuration would be a null comparison.}{%
+A model whose temporal core was never trained is not a baseline; it is an untrained
+control. Any claim of the form ``our model beats Brain-TokenGT'' resting on the
+\texttt{train\_give=false} number is indefensible, and this thesis does not make it. The
+as-released number is reported only to document why repair was necessary.}
+
+\subsection{Enabling the recurrent core diverges}
+
+Setting \texttt{train\_give=true} and allowing end-to-end gradient updates to the recurrent
+weights produces numerical collapse rather than learning. Gradient norms in the GRCU
+parameters explode, non-finite scores reach \texttt{TopK.forward}, and training crashes
+within approximately ten epochs. Two consecutive attempts failed outright with a non-zero
+exit code.
+
+This is itself a finding worth stating plainly: standard EvolveGCN-H is intrinsically
+unstable when trained end-to-end on clinical cohorts of $N < 100$.
+
+%==============================================================================
+\section{The Stabilisation Protocol --- and What It Does Not Achieve}
+\label{sec:btgt-repair}
+
+The intervention that produced completing runs was a parameter-group decoupling: the
+newly-unfrozen recurrent parameters were placed in their own optimiser group with a damped
+learning rate (\texttt{give\_lr\_scale} $= 0.1$) and weight decay
+(\texttt{give\_weight\_decay} $= 10^{-3}$), leaving the remaining parameters untouched.
+Under this configuration the model completes training reliably --- $5/5$ runs in the
+initial batch, and $19/19$ across the full sweep reported below.
+
+It is tempting, and it was initially tempting in this project, to call that arm
+``stabilised'' and move on. That label is wrong, and the distinction it obscures is the
+subject of the rest of this chapter.
+
+\begin{quote}
+  \textbf{``Stabilised'' as established here means \emph{crashes less often}. It does not
+  mean \emph{reproducible}.}
+\end{quote}
+
+%==============================================================================
+\section{The Reproducibility Audit}
+\label{sec:btgt-reproducibility}
+
+\subsection{Design}
+
+The audit asks a question that the brain-graph literature does not appear to ask anywhere
+(Section~\ref{sec:gap-determinism}): \emph{if the identical configuration is run twice at
+the identical seed, does it produce the identical result?} Answering it requires repeat
+runs at a fixed seed, not a multi-seed sweep. Nineteen runs of the stabilised configuration
+were collected --- seven at seed 42, four each at seeds 43, 44, and 45 --- all completing
+successfully, all sharing the same code state.
+
+\subsection{Result}
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \begin{tabular}{@{}rrrrl@{}}
+    \toprule
+    \textbf{Seed} & \textbf{$n$ runs} & \textbf{Mean test AUC} & \textbf{Within-seed SD} & \textbf{Range} \\
+    \midrule
+    42 & 7 & 0.5779 & 0.1167 & 0.3571 -- 0.7078 \\
+    43 & 4 & 0.6802 & 0.1024 & 0.5779 -- 0.8182 \\
+    44 & 4 & 0.5227 & 0.0849 & 0.4156 -- 0.6234 \\
+    45 & 4 & 0.6477 & 0.1002 & 0.5195 -- 0.7338 \\
+    \midrule
+    \multicolumn{2}{@{}l}{\textbf{All 19 runs}} & \textbf{0.6025} & 0.1123 (pooled) & 0.3571 -- 0.8182 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Brain-TokenGT (stabilised) held-out test AUC across 19 completed runs of the
+    identical configuration. Seed 42 alone spans an AUC range of $0.35$ --- from well below
+    chance to the best result obtained at any seed.}
+  \label{tab:btgt-19runs}
+\end{table}
+
+The decomposition is the headline:
+
+\begin{align*}
+  \text{mean within-seed SD} &= 0.1011 \\
+  \text{between-seed-mean SD} &= 0.0706
+\end{align*}
+
+\textbf{Run-to-run variance exceeds seed-to-seed variance, at every seed, not merely at
+seed 42.} A ``four-seed'' summary of this model is therefore four draws from run-to-run
+noise wearing the label of a seed effect. The four seeds are not four measurements of four
+conditions; they are four samples from one distribution.
+
+\subsection{Mechanism}
+
+The cause is not mysterious and is documented in the experiment registry itself: only
+\texttt{cudnn.deterministic} is set by the shared seeding helper. The codebase never calls
+\texttt{torch.use\_deterministic\_algorithms(True)} and never sets
+\texttt{CUBLAS\_WORKSPACE\_CONFIG}, so operations whose backward pass accumulates through
+non-deterministic GPU atomics remain non-deterministic regardless of seeding. Brain-TokenGT
+reaches two such operations that the recurrent trajectory models of Chapter~\ref{ch:methodology}
+do not: \texttt{TopKPooling} in the transformer module, and the index-gather over
+\texttt{node\_embs} in the GRCU. Floating-point reduction order varies between runs, and on
+a model already sitting near an optimisation cliff, that is sufficient to move the outcome
+by a third of an AUC point.
+
+\subsection{The contrast: this thesis's own pipeline is bit-reproducible}
+
+The same experiment harness, the same seeding helper, the same GPU. The \texttt{none}-arm
+GELSTM configuration was run twice at seed 42 and produced \textbf{byte-identical} results
+(test AUC $0.7607$, CV AUC $0.9010$ both times). The non-determinism is therefore a
+property of the audited baseline's operations, not of the shared infrastructure.
+
+\edge{Reproducibility itself is a reportable result of this comparison.}{%
+``Our pipeline re-runs byte-identically at a fixed seed; the published baseline spans
+$0.35$ AUC at a fixed seed'' is a stronger, more defensible, and more useful statement than
+any accuracy margin between the two --- and unlike an accuracy margin on $N=25$ test
+subjects, it does not depend on cohort size.}
+
+\risk{The determinism of this thesis's \emph{frozen-encoder} arm is asserted from the
+\texttt{none} arm, not measured directly.}{%
+Bit-reproducibility was verified for the \texttt{none} arm, which builds no encoder and so
+executes no scatter backward. The \texttt{pretrained\_frozen} arm used in the matched-cohort
+comparison has exactly one run per seed, so its own within-seed variance is unmeasured. The
+frozen encoder is not trained, so no scatter \emph{backward} runs through it --- but this is
+an argument, not a measurement, and it should be replaced by a repeat run before the claim
+is generalised to the whole pipeline.}
+
+%==============================================================================
+\section{Consequences for the Statistical Comparison}
+\label{sec:btgt-stats}
+
+Two paired significance tests were computed in an earlier iteration of the matched-cohort
+comparison. Both are invalid, for distinct reasons, and both are withdrawn.
+
+\begin{enumerate}
+  \item \textbf{Held-out test AUC, paired $t$-test, $n = 4$ seeds ($p = 0.0299$).} This
+    treats seed as the sole source of variance. Section~\ref{sec:btgt-reproducibility}
+    shows the within-seed term is the \emph{larger} one, so the quantity the test assumes
+    it is measuring is not the quantity that varies. The $p$-value is uninterpretable.
+  \item \textbf{Cross-validation AUC, paired $t$-test, $n = 20$ folds
+    ($p = 1.59 \times 10^{-6}$).} This treats the five folds within a seed as five
+    independent paired units. Folds within a seed share training data by construction and
+    are strongly correlated; the effective sample size is nearer 4 than 20. No correction
+    rescues a test whose independence assumption fails this directly, and the reported
+    $p$-value is inflated by roughly the fold-correlation factor.
+\end{enumerate}
+
+\risk{An earlier version of this comparison quoted one run per seed out of seven available
+on disk.}{%
+The comparison notebook hard-coded a single run path per seed, so seed 42 was represented
+by a run scoring $0.6104$ while six other completed seed-42 runs --- spanning $0.3571$ to
+$0.7078$ --- sat unexamined in the same output tree. This was selection by accident rather
+than by intent, but the effect is identical: a reported mean of $0.6672$ against a true
+grand mean of $0.6025$. The reporting path now globs every run directory per experiment
+identifier so that a stale or unrepresentative path cannot silently become ``the'' result.}
+
+\paragraph{What survives.} The \emph{direction} of the comparison is robust and does not
+depend on any of the withdrawn statistics. The GELSTM matched-cohort arm attains
+$0.8782 \pm 0.0256$ across four seeds; the Brain-TokenGT distribution over 19 runs has a
+grand mean of $0.6025$ and a maximum of $0.8182$. The best Brain-TokenGT run ever observed
+is below the GELSTM mean. That comparison is properly reported as two distributions and an
+effect size, never as a $p$-value.
+
+%==============================================================================
+\section{Methodological Fairness \& Discrepancy Alignment}
+\label{sec:btgt-fairness}
+
+Three asymmetries remain between the two arms and are stated rather than minimised.
+
+\subsection{Cohort windowing --- resolved}
+
+Brain-TokenGT requires $2 \le T \le 3$ visits, whereas the full DELCODE longitudinal cohort
+spans $1 \le T \le 6$. Comparing across that difference would confound architecture with
+sequence length and with a shifted task difficulty: single-visit subjects test static
+separability, not trajectory modelling. The comparison reported here therefore restricts
+\emph{both} models to the identical $2 \le T \le 3$ window ($N_{\text{CV}} = 95$: 37
+converters, 58 stable MCI; $N_{\text{test}} = 25$: 11 converters, 14 stable MCI), with
+subject-identifier and fold-membership parity verified programmatically rather than assumed
+from a shared seed.
+
+\subsection{Capacity and tokenisation --- not resolved, and not resolvable}
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \begin{tabular}{@{}lrrr@{}}
+    \toprule
+    \textbf{Architecture} & \textbf{Trainable params} & \textbf{Temporal-core input} & \textbf{CV $\rightarrow$ test gap} \\
+    \midrule
+    GELSTM (\texttt{none})   & $31{,}169$  & 1 vector / visit       & $+0.060$ \\
+    GELSTM (frozen GAAE)     & $520{,}905$ & 1 vector / visit       & $+0.140$ \\
+    Brain-TokenGT (stabilised) & $603{,}849$ & ${\sim}1{,}381$ tokens & $-0.198$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Parameter and representation asymmetry. The sign of the CV-to-test gap is the
+    interpretable quantity: Brain-TokenGT's high validation performance does not transfer,
+    which is the classic small-sample overfitting signature.}
+  \label{tab:capacity}
+\end{table}
+
+This asymmetry cannot be engineered away, and arguably should not be: it \emph{is} the
+finding. A transformer attending over ${\sim}1{,}381$ tokens per subject, trained on ${\sim}76$
+subjects per fold, is being asked to do something the sample size does not support. Its
+validation AUC of $0.8142 \pm 0.0838$ collapsing to a test AUC of $0.6156 \pm 0.0705$ is
+what that looks like from the outside.
+
+\subsection{Tuning budget}
+
+The recurrent trajectory models were developed iteratively across many experiments, while
+Brain-TokenGT was run at its author-recommended defaults with only the minimal
+learning-rate and weight-decay adjustment required to prevent divergence. Under the
+fairness criterion adopted for this project --- that all models be \emph{decently}
+optimised, meaning no collapsed learning rate and no training continued past obvious
+overfitting, without requiring exhaustive search --- this is acceptable. It is not
+equivalent tuning, and no claim in this thesis depends on it being equivalent.
+
+\risk{Brain-TokenGT received no search over its own structural hyperparameters.}{%
+Token count $K$ and transformer depth $L$ were left at published defaults. Given that the
+capacity/sample-size mismatch of Table~\ref{tab:capacity} is central to the interpretation,
+a reviewer may reasonably ask whether a smaller $K$ would have closed the gap. The honest
+answer is that it was not tested, and that a fair version of that test would require an
+equivalent structural search on the recurrent side.}
+
+\subsection{Temporal representation}
+
+The recurrent models condition their gate updates on the actual inter-visit interval in
+months, distinguishing a six-month follow-up from a twenty-four-month one. Brain-TokenGT
+treats visits as uniform discrete steps. This is a genuine architectural difference in
+favour of the models developed here rather than an unfairness in the setup --- but it does
+mean the comparison measures ``$\Delta t$-aware recurrence versus $\Delta t$-agnostic
+attention,'' not ``recurrence versus attention'' in isolation.

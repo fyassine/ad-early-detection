@@ -1,0 +1,105 @@
+\appendix
+
+%==============================================================================
+\chapter{Mathematical Derivations \& Loss Formulations}
+\label{app:math}
+
+\draftnote{Expand each of the following from the definitions already given in
+  Chapter~\ref{ch:methodology}, with full derivations rather than statements.}
+
+\begin{itemize}
+  \item \textbf{Cosine reconstruction loss} for the GAAE, with both the topological and
+    feature terms and the weighting between them.
+  \item \textbf{VGAE evidence lower bound} --- derivation of the KL term against the
+    standard normal prior, and the posterior-collapse condition that motivates the
+    anti-collapse configurations.
+  \item \textbf{Weighted binary cross-entropy} with $\texttt{pos\_weight} =
+    n_{\mathrm{neg}} / n_{\mathrm{pos}}$, and its relationship to threshold placement.
+  \item \textbf{Youden's $J$ and the $F_1$-optimal point} as threshold rules, and why both
+    must be estimated out-of-fold (Section~\ref{sec:thresholds}).
+  \item \textbf{Cox partial likelihood}, retained for the scoped survival extension
+    (Section~\ref{sec:prognoser-scope}).
+\end{itemize}
+
+%==============================================================================
+\chapter{Data Split Integrity \& Overlap Verification Logs}
+\label{app:splits}
+
+\draftnote{This appendix must be \emph{evidence}, not summary. Reproduce the actual
+  \texttt{run\_full\_audit} output for the downstream splits --- the pairwise-disjoint
+  assertions and per-split subject counts --- as emitted by the
+  \texttt{sanity-split-hygiene} experiment, plus the cohort-parity verification output for
+  the matched $2 \le T \le 3$ window showing byte-level subject-identifier and fold-membership
+  agreement between the two models compared in Chapter~\ref{ch:sota-repair}. Generate,
+  do not transcribe.}
+
+%==============================================================================
+\chapter{Hyperparameters \& Complete Cross-Validation Metrics}
+\label{app:hyperparams}
+
+\draftnote{Auto-generate from the results ledger (\texttt{CLASSIFIER/outputs/RESULTS.csv})
+  and the per-run \texttt{resolved\_config.json} artifacts described in
+  Section~\ref{sec:runner}. Two tables: (i) the resolved hyperparameters of every
+  experiment referenced in Chapters~\ref{ch:sota-repair} and~\ref{ch:results}, and (ii) the
+  complete per-fold cross-validation metrics behind every summary statistic quoted in those
+  chapters. Hand-transcription is explicitly not acceptable here --- the ledger exists so
+  that this appendix cannot drift from the runs.}
+
+%==============================================================================
+\chapter{Software Dependencies \& Hardware Environment}
+\label{app:environment}
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Component} & \textbf{Version} \\
+    \midrule
+    Python              & 3.10.12 \\
+    PyTorch             & 2.10.0+cu128 \\
+    PyTorch Geometric   & 2.7.0 \\
+    NumPy               & 1.26.4 \\
+    pandas              & 2.2.0 \\
+    scikit-learn        & 1.7.2 \\
+    \midrule
+    GPU                 & NVIDIA TITAN RTX, 24\,GB \\
+    Driver              & 550.163.01 \\
+    Hosts               & two identical workstations on a shared network export \\
+    \bottomrule
+  \end{tabular}
+  \caption{Pinned software and hardware environment for every run reported in this thesis.}
+  \label{tab:environment}
+\end{table}
+
+\draftnote{Add the fMRIPrep and denoising toolchain versions from the preprocessing cluster,
+  which are not part of the project virtual environment.}
+
+\paragraph{Determinism settings, stated explicitly.} All runs set the standard random seeds
+and \texttt{cudnn.deterministic}. No run sets
+\texttt{torch.use\_deterministic\_algorithms(True)} or \texttt{CUBLAS\_WORKSPACE\_CONFIG}.
+This is disclosed rather than omitted because it is the exact condition under which the
+non-determinism of Section~\ref{sec:btgt-reproducibility} arises, and a reader needs it to
+interpret every error bar in this thesis.
+
+%==============================================================================
+\chapter{Reviewer Risk Register}
+\label{app:register}
+
+Every annotation raised in the body of this thesis is collected below, in order of
+appearance, with its page. Four kinds appear:
+
+\begin{description}[leftmargin=3.2cm,style=nextline]
+  \item[RESEARCH GAP] An open problem in the field that this work engages with.
+  \item[GREY AREA] A point on which the evidence is genuinely contested.
+  \item[OUR EDGE] A point where this work is defensibly ahead of published practice.
+  \item[EXPOSURE] A point where this work is vulnerable --- what a hostile reviewer, or an
+    examiner, should be expected to attack first.
+\end{description}
+
+The register is assembled by the typesetting engine from the annotations themselves, so it
+cannot fall out of sync with the text. The exposures are listed as prominently as the
+strengths deliberately: a defence is easier when the weaknesses have already been named by
+the candidate.
+
+\listofannotations

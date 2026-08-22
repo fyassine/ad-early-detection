@@ -1,0 +1,129 @@
+\contentsline {chapter}{Front Matter}{4}{chapter*.2}%
+\contentsline {chapter}{\numberline {1}Introduction \& Motivation}{9}{chapter.1}%
+\contentsline {section}{\numberline {1.1}The Shifting Alzheimer's Diagnostic Paradigm}{9}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Resting-State fMRI as a Non-Invasive Window}{9}{section.1.2}%
+\contentsline {section}{\numberline {1.3}The Actual Research Setting: Deep Learning Under Severe Sample Constraint}{10}{section.1.3}%
+\contentsline {paragraph}{Dimensionality against sample size.}{10}{section*.11}%
+\contentsline {paragraph}{Irregular follow-up and attrition.}{10}{section*.12}%
+\contentsline {paragraph}{Regularity where irregularity was expected.}{10}{section*.13}%
+\contentsline {section}{\numberline {1.4}Research Objectives \& Core Contributions}{10}{section.1.4}%
+\contentsline {section}{\numberline {1.5}Thesis Organization}{11}{section.1.5}%
+\contentsline {chapter}{\numberline {2}Foundations \& Related Work}{12}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Brain Connectivity \& Parcellation Schemes}{12}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Graph Representation Learning in Neuroimaging}{13}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Longitudinal \& Spatiotemporal Modelling}{13}{section.2.3}%
+\contentsline {paragraph}{Recurrent approaches.}{13}{section*.14}%
+\contentsline {paragraph}{Spatiotemporal graph transformers.}{14}{section*.15}%
+\contentsline {paragraph}{Foundation models.}{14}{section*.16}%
+\contentsline {section}{\numberline {2.4}Time-to-Event \& Survival Analysis in Clinical Settings}{14}{section.2.4}%
+\contentsline {section}{\numberline {2.5}What Is Actually Unsettled: Grey Areas and Research Gaps}{14}{section.2.5}%
+\contentsline {subsection}{\numberline {2.5.1}Does graph topology carry signal beyond the connectivity matrix itself?}{14}{subsection.2.5.1}%
+\contentsline {subsection}{\numberline {2.5.2}Does message aggregation help at all?}{15}{subsection.2.5.2}%
+\contentsline {subsection}{\numberline {2.5.3}What counts as a fair floor at $N < 150$?}{15}{subsection.2.5.3}%
+\contentsline {subsection}{\numberline {2.5.4}Nobody reports same-seed replicate variance}{16}{subsection.2.5.4}%
+\contentsline {subsection}{\numberline {2.5.5}Longitudinal evaluation protocols are not standardised --- and the choice changes the conclusion}{17}{subsection.2.5.5}%
+\contentsline {subsection}{\numberline {2.5.6}Follow-up duration is a confound, and it is almost never checked}{17}{subsection.2.5.6}%
+\contentsline {subsection}{\numberline {2.5.7}Is reconstruction the right pretext task for a connectome?}{18}{subsection.2.5.7}%
+\contentsline {subsection}{\numberline {2.5.8}Cross-cohort visit-time semantics: the silent-drop failure mode}{18}{subsection.2.5.8}%
+\contentsline {subsection}{\numberline {2.5.9}Summary of positions}{19}{subsection.2.5.9}%
+\contentsline {chapter}{\numberline {3}Data, Cohort Stratification \& Preprocessing}{20}{chapter.3}%
+\contentsline {section}{\numberline {3.1}The DELCODE Cohort}{20}{section.3.1}%
+\contentsline {paragraph}{Label definition.}{20}{section*.17}%
+\contentsline {paragraph}{Cohort composition.}{20}{annotation.11}%
+\contentsline {paragraph}{The matched comparison window.}{21}{section*.19}%
+\contentsline {section}{\numberline {3.2}The Regularity of DELCODE Follow-Up --- and Why It Matters}{21}{section.3.2}%
+\contentsline {section}{\numberline {3.3}External Validation Cohorts}{22}{section.3.3}%
+\contentsline {section}{\numberline {3.4}fMRI Preprocessing \& Confound Management}{23}{section.3.4}%
+\contentsline {paragraph}{Attrition is fully accounted.}{23}{section*.20}%
+\contentsline {section}{\numberline {3.5}Cross-Cohort Visit Semantics}{24}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Methodological Rigour \& Data Leakage Prevention}{24}{section.3.6}%
+\contentsline {paragraph}{Patient-level splitting.}{24}{section*.21}%
+\contentsline {paragraph}{An isolated test manifest.}{24}{section*.22}%
+\contentsline {paragraph}{Post-conversion visit exclusion.}{25}{section*.23}%
+\contentsline {paragraph}{Thresholds derived from validation only.}{25}{section*.24}%
+\contentsline {paragraph}{An executable audit.}{25}{section*.25}%
+\contentsline {chapter}{\numberline {4}Methodology: Spatiotemporal Graph Modelling}{26}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Architecture Overview}{26}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Graph Construction}{26}{section.4.2}%
+\contentsline {paragraph}{Node features.}{26}{section*.26}%
+\contentsline {paragraph}{Edges.}{26}{section*.27}%
+\contentsline {section}{\numberline {4.3}Stage 1: Static Graph Pretraining}{27}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}Graph Attention Autoencoder (GAAE)}{27}{subsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.3.2}Variational Graph Autoencoder (VGAE)}{27}{subsection.4.3.2}%
+\contentsline {subsection}{\numberline {4.3.3}What the pretext objective optimises for}{28}{subsection.4.3.3}%
+\contentsline {section}{\numberline {4.4}Stage 2: Longitudinal Trajectory Modelling (GE-LSTM / GE-GRU)}{28}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}The recurrent core}{28}{subsection.4.4.1}%
+\contentsline {paragraph}{On the strength of the time-conditioning claim.}{28}{section*.28}%
+\contentsline {subsection}{\numberline {4.4.2}Regularisation}{28}{subsection.4.4.2}%
+\contentsline {section}{\numberline {4.5}The Four Encoder Arms}{28}{section.4.5}%
+\contentsline {paragraph}{The \texttt {none} arm.}{29}{section*.29}%
+\contentsline {paragraph}{A gradient-plumbing subtlety that makes the ablation meaningful.}{29}{section*.30}%
+\contentsline {section}{\numberline {4.6}Baseline Classifiers \& Static Formulations}{29}{section.4.6}%
+\contentsline {section}{\numberline {4.7}Class Imbalance, Thresholds \& Evaluation Protocol}{30}{section.4.7}%
+\contentsline {paragraph}{Imbalance.}{30}{section*.31}%
+\contentsline {paragraph}{Threshold selection --- the project's hard rule.}{30}{section*.32}%
+\contentsline {paragraph}{Reported metrics.}{30}{section*.33}%
+\contentsline {paragraph}{Reference floors.}{30}{section*.34}%
+\contentsline {section}{\numberline {4.8}Scope of the Time-to-Event Extension (PROGNOSER)}{31}{section.4.8}%
+\contentsline {chapter}{\numberline {5}Baseline Investigation \& The SOTA Repair Framework}{32}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Brain-TokenGT as a Published Benchmark}{32}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Uncovering Baseline Failure Modes}{33}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}The as-released recurrent core is inert}{33}{subsection.5.2.1}%
+\contentsline {subsection}{\numberline {5.2.2}Enabling the recurrent core diverges}{33}{subsection.5.2.2}%
+\contentsline {section}{\numberline {5.3}The Stabilisation Protocol --- and What It Does Not Achieve}{33}{section.5.3}%
+\contentsline {section}{\numberline {5.4}The Reproducibility Audit}{34}{section.5.4}%
+\contentsline {subsection}{\numberline {5.4.1}Design}{34}{subsection.5.4.1}%
+\contentsline {subsection}{\numberline {5.4.2}Result}{34}{subsection.5.4.2}%
+\contentsline {subsection}{\numberline {5.4.3}Mechanism}{34}{subsection.5.4.3}%
+\contentsline {subsection}{\numberline {5.4.4}The contrast: this thesis's own pipeline is bit-reproducible}{35}{subsection.5.4.4}%
+\contentsline {section}{\numberline {5.5}Consequences for the Statistical Comparison}{35}{section.5.5}%
+\contentsline {paragraph}{What survives.}{36}{section*.35}%
+\contentsline {section}{\numberline {5.6}Methodological Fairness \& Discrepancy Alignment}{36}{section.5.6}%
+\contentsline {subsection}{\numberline {5.6.1}Cohort windowing --- resolved}{36}{subsection.5.6.1}%
+\contentsline {subsection}{\numberline {5.6.2}Capacity and tokenisation --- not resolved, and not resolvable}{36}{subsection.5.6.2}%
+\contentsline {subsection}{\numberline {5.6.3}Tuning budget}{37}{subsection.5.6.3}%
+\contentsline {subsection}{\numberline {5.6.4}Temporal representation}{37}{subsection.5.6.4}%
+\contentsline {chapter}{\numberline {6}Experimental Results \& Comprehensive Ablations}{38}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Reporting Rules for This Chapter}{38}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Longitudinal Conversion Prediction Benchmark}{39}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Comparative Evaluation: GE-LSTM vs.\ Brain-TokenGT}{39}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Encoder Ablation: Does the Graph Encoder Earn Its Place?}{39}{section.6.4}%
+\contentsline {section}{\numberline {6.5}Trajectory Ablations: Order, Timing, and Horizon}{40}{section.6.5}%
+\contentsline {section}{\numberline {6.6}External Validation on ADNI}{40}{section.6.6}%
+\contentsline {section}{\numberline {6.7}Latent Space Interpretability}{41}{section.6.7}%
+\contentsline {section}{\numberline {6.8}Ablations Not Run}{41}{section.6.8}%
+\contentsline {chapter}{\numberline {7}Software System \& Experiment Infrastructure}{42}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Registry-Driven Experiment Execution}{42}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Layered Architecture}{43}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Failing Loudly by Design}{43}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Testing and Continuous Integration}{44}{section.7.4}%
+\contentsline {section}{\numberline {7.5}Dual-Host GPU Dispatch}{44}{section.7.5}%
+\contentsline {section}{\numberline {7.6}Interactive Research Dashboard}{44}{section.7.6}%
+\contentsline {chapter}{\numberline {8}Discussion \& Limitations}{45}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Inductive Bias Against Capacity in Sample-Constrained Neuroimaging}{45}{section.8.1}%
+\contentsline {section}{\numberline {8.2}What Reconstruction Pretraining Actually Bought}{45}{section.8.2}%
+\contentsline {section}{\numberline {8.3}On ``Stability'' Claims About Non-Deterministic Baselines}{46}{section.8.3}%
+\contentsline {section}{\numberline {8.4}Threats to Validity}{46}{section.8.4}%
+\contentsline {paragraph}{Cohort size dominates everything.}{46}{section*.36}%
+\contentsline {paragraph}{The label is a censored observation in disguise.}{46}{section*.37}%
+\contentsline {paragraph}{Informative attrition.}{47}{section*.38}%
+\contentsline {paragraph}{Single-site development.}{47}{section*.39}%
+\contentsline {paragraph}{A negative result is not proof of absence.}{47}{section*.40}%
+\contentsline {section}{\numberline {8.5}Clinical Relevance \& Translation}{47}{section.8.5}%
+\contentsline {chapter}{\numberline {9}Conclusion \& Future Outlook}{48}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Concluding Remarks}{48}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Future Research Directions}{49}{section.9.2}%
+\contentsline {paragraph}{Complete the external replication.}{49}{section*.41}%
+\contentsline {paragraph}{Test the graph construction, not just the encoder.}{49}{section*.42}%
+\contentsline {paragraph}{Replace the pretext objective.}{49}{section*.43}%
+\contentsline {paragraph}{The parcellation ablation.}{49}{section*.44}%
+\contentsline {paragraph}{The time-to-event head.}{49}{section*.45}%
+\contentsline {paragraph}{Multimodal fusion.}{49}{section*.46}%
+\contentsline {paragraph}{Adopt same-seed replication as protocol.}{49}{section*.47}%
+\contentsline {chapter}{\numberline {A}Mathematical Derivations \& Loss Formulations}{50}{appendix.A}%
+\contentsline {chapter}{\numberline {B}Data Split Integrity \& Overlap Verification Logs}{51}{appendix.B}%
+\contentsline {chapter}{\numberline {C}Hyperparameters \& Complete Cross-Validation Metrics}{52}{appendix.C}%
+\contentsline {chapter}{\numberline {D}Software Dependencies \& Hardware Environment}{53}{appendix.D}%
+\contentsline {paragraph}{Determinism settings, stated explicitly.}{53}{section*.48}%
+\contentsline {chapter}{\numberline {E}Reviewer Risk Register}{54}{appendix.E}%
+\contentsline {chapter}{References}{56}{appendix*.49}%

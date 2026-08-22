@@ -1,0 +1,22 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {2.1}{\ignorespaces The eight open questions of Section\nobreakspace {}\ref {sec:gaps}, the assumption the literature usually makes about each, and the position this thesis takes.}}{19}{table.2.1}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {3.1}{\ignorespaces DELCODE longitudinal MCI cohort as used throughout this thesis. Train and validation together form the 133-subject cross-validation pool; the 34-subject test split is held out and touched only for final evaluation.}}{21}{table.3.1}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces Distribution of all inter-visit intervals across the 167 DELCODE subjects. Nine intervals in ten are identical.}}{21}{table.3.2}%
+\contentsline {table}{\numberline {3.3}{\ignorespaces The three cohorts after identical preprocessing and motion QC. ADNI's longitudinal subset is the larger of the two external cohorts and is the primary external validation target; OASIS-3 is retained as a second replication.}}{22}{table.3.3}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {4.1}{\ignorespaces The four encoder arms. All four share one seed, one fold assignment, one test manifest and one hyperparameter file, so the comparison is subject-for-subject.}}{29}{table.4.1}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {5.1}{\ignorespaces Brain-TokenGT (stabilised) held-out test AUC across 19 completed runs of the identical configuration. Seed 42 alone spans an AUC range of $0.35$ --- from well below chance to the best result obtained at any seed.}}{34}{table.5.1}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces Parameter and representation asymmetry. The sign of the CV-to-test gap is the interpretable quantity: Brain-TokenGT's high validation performance does not transfer, which is the classic small-sample overfitting signature.}}{36}{table.5.2}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {D.1}{\ignorespaces Pinned software and hardware environment for every run reported in this thesis.}}{53}{table.D.1}%
+\addvspace {10\p@ }

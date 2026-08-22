@@ -1,0 +1,266 @@
+% Single-file draft paper for supervisor review — not the thesis template.
+% Prognosis/survival (PROGNOSER) work is intentionally left out per request.
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+\sloppy
+\emergencystretch=3em
+
+% Inline draft/caveat callout — flags content that is not yet settled.
+\newcommand{\draftnote}[1]{%
+  \par\noindent\textbf{Draft note:} \textit{#1}\par\vspace{0.5\baselineskip}%
+}
+
+\title{Longitudinal Graph Representation Learning\\
+  for Early Detection of Alzheimer's Disease\\[0.3em]
+  \large Draft --- Progress Summary for Supervisor Review}
+\author{Fraj Yassine Lakhal}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We study early detection of Alzheimer's disease progression from longitudinal
+resting-state fMRI in the DELCODE cohort. A graph attention/variational
+autoencoder (GAAE/VGAE) is pretrained on static functional-connectivity graphs
+to produce frozen per-visit embeddings; a recurrent trajectory head
+(GE-LSTM/GE-GRU), conditioned on inter-scan time elapsed, consumes the
+resulting embedding sequence to predict MCI-to-AD conversion. Three findings
+have emerged that reshape the argument. First, a published
+spatiotemporal-transformer baseline (Brain-TokenGT) ships with its recurrent
+core untrained, diverges when it is enabled, and after stabilisation is
+\emph{not reproducible at a fixed seed}: across 19 runs of one configuration
+within-seed SD ($0.1011$) exceeds between-seed SD ($0.0706$), while our own
+pipeline re-runs byte-identically. Second, a pre-registered four-arm ablation
+finds that removing the graph encoder entirely does not degrade performance,
+extending to the longitudinal small-$N$ regime a result previously shown only
+cross-sectionally at large $N$. Third, $\Delta t$ conditioning cannot be
+evidenced on this cohort at all, because 90\% of DELCODE's inter-visit
+intervals are identical by protocol. This draft omits the
+time-to-event/survival extension (PROGNOSER), which is scoped rather than
+delivered.
+\end{abstract}
+
+\section{Introduction \& Motivation}
+\begin{itemize}
+  \item The AD continuum: Subjective Cognitive Decline (SCD) $\to$ Mild
+    Cognitive Impairment (MCI) $\to$ AD dementia, and the push toward early
+    biomarker confirmation now that disease-modifying therapies (Lecanemab /
+    Donanemab) require it.
+  \item Resting-state fMRI as a non-invasive window onto functional
+    dysconnectivity that can precede macrostructural atrophy, versus the
+    cost/invasiveness of PET and CSF gold standards.
+  \item Core modeling challenge: high-dimensional graph data under extreme
+    sample constraints ($N < 150$), with irregular longitudinal follow-up
+    ($\Delta t$) and patient attrition.
+  \item Contributions: (1) self-supervised brain-graph pretraining on static
+    connectomes, (2) time-aware recurrent modeling of longitudinal functional
+    trajectories, (3) an empirical audit and repair of a published SOTA
+    baseline.
+\end{itemize}
+
+\section{Related Work}
+\begin{itemize}
+  \item Brain connectivity \& parcellation: BOLD-derived FC matrices;
+    Schaefer 100/200, Harvard-Oxford, AAL parcellations; Yeo functional
+    networks (DMN, Limbic, Dorsal Attention).
+  \item Graph representation learning: GCN / GAT / GATv2 message passing;
+    self-supervised graph autoencoders (GAE/VGAE) as pretext tasks.
+  \item Longitudinal \& spatiotemporal modeling: LSTM/GRU with continuous
+    $\Delta t$ integration; spatiotemporal graph transformers and dynamic
+    graph updates (Brain-TokenGT, EvolveGCN).
+  \item Gaps this work targets: cross-sectional evaluation bias in prior
+    work, under-audited pretext-to-downstream leakage, and unexamined
+    failure modes of high-capacity transformers on small clinical cohorts.
+\end{itemize}
+
+\section{Data \& Preprocessing}
+\begin{itemize}
+  \item DELCODE cohort: diagnostic groups (\texttt{prmdiag}), longitudinal
+    follow-up structure, Converter-vs-Stable-MCI definition, scanning
+    interval statistics.
+  \item External validation on ADNI and OASIS-3 (harmonization, visit
+    alignment, cohort matching).
+  \item fMRI preprocessing: motion correction, nuisance regression, bandpass
+    filtering, linear-model age-effect regression.
+  \item Leakage prevention: nested patient-level stratified cross-validation
+    with strictly isolated held-out test manifests; historical
+    pretext-to-downstream leakage identified and closed.
+\end{itemize}
+
+\section{Methodology}
+
+\subsection{Architecture Overview}
+Raw BOLD $\to$ FC graphs $\to$ frozen latent embedding (Stage 1) $\to$
+recurrent trajectory classifier (Stage 2) $\to$ conversion risk output.
+
+\subsection{Stage 1 --- Static Graph Pretraining}
+\begin{itemize}
+  \item Graph Attention Autoencoder (GAAE) and Variational Graph Autoencoder
+    (VGAE); GATv2 message passing, cosine-similarity reconstruction, latent
+    mean pooling.
+  \item Latent dimensionality selection via latent-space analysis and FDR
+    feature filtering.
+\end{itemize}
+
+\subsection{Stage 2 --- Longitudinal Trajectory Modeling (GE-LSTM / GE-GRU)}
+\begin{itemize}
+  \item Recurrent gate updates conditioned on inter-scan time elapsed
+    ($\Delta t$).
+  \item LayerNorm, dropout, and frozen-encoder BatchNorm kept in eval mode.
+\end{itemize}
+
+\subsection{Baselines \& Optimization}
+\begin{itemize}
+  \item Static baselines: Graph Encoder Classifier (GEC), Graph Embedding
+    Perceptron (GEP), direct raw-FC classifier.
+  \item Class imbalance handled via weighted cost averaging; decision
+    threshold selected on validation via $F_1$-optimal or Youden's $J$, never
+    from test metrics.
+\end{itemize}
+
+\section{Baseline Audit: Brain-TokenGT}
+\begin{itemize}
+  \item Brain-TokenGT tokenizes ROI cliques and applies cross-visit
+    self-attention; evaluated here as a published spatiotemporal-transformer
+    benchmark.
+  \item In the as-released implementation, the recurrent core is disabled
+    (\texttt{train\_give=False}), and end-to-end training of the
+    EvolveGCN-H/GRCU component is unstable (gradient explosions, NaNs)
+    without further intervention.
+  \item Partial repair applied: parameter-group decoupling, learning-rate
+    damping ($0.1\times$) and weight decay ($10^{-3}$) on the recurrent
+    parameters, which reduces outright training collapse.
+\end{itemize}
+
+\draftnote{\textbf{Resolved, 2026-08-22 --- the audit is complete and the
+  statistics previously reported here are withdrawn.} Nineteen completed runs of the
+  identical stabilised configuration (7 at seed 42, 4 each at seeds 43/44/45) give a grand
+  mean test AUC of $0.6025$ (pooled SD $0.1123$), against the $0.6672 \pm 0.1008$
+  previously quoted from one hand-picked run per seed. The variance decomposition is the
+  finding: mean within-seed SD $= 0.1011$ exceeds between-seed-mean SD $= 0.0706$, at every
+  seed and not only at 42, where the range spans $0.3571$--$0.7078$. ``Stabilised''
+  therefore means \emph{crashes less often}, not \emph{reproducible}. Both paired
+  significance tests are consequently invalid --- the $n{=}4$ test-AUC $t$-test
+  ($p = 0.0299$) treats seed as the only variance source when within-seed variance is
+  larger, and the $n{=}20$ CV-AUC $t$-test ($p = 1.59\times10^{-6}$) treats correlated
+  folds as independent --- and are dropped rather than corrected. The \emph{direction}
+  survives and should be reported as two distributions plus an effect size: GE-LSTM
+  $0.8782 \pm 0.0256$ over 4 seeds, against a Brain-TokenGT distribution whose best run
+  ever observed ($0.8182$) sits below the GE-LSTM mean. Mechanism: the repo seeds
+  \texttt{cudnn.deterministic} but never calls
+  \texttt{torch.use\_deterministic\_algorithms(True)} nor sets
+  \texttt{CUBLAS\_WORKSPACE\_CONFIG}, so \texttt{TopKPooling} and an index-gather in the
+  GRCU backward hit nondeterministic CUDA kernels. Our \texttt{none}-arm GE-LSTM, which
+  executes no scatter backward, re-runs byte-identically --- making
+  \emph{``our pipeline is reproducible and theirs is not''} the stronger claim.}
+
+\begin{itemize}
+  \item Fairness caveats: cohort-windowing disparity between the baseline's
+    published setup (1--6 visits) and our matched-cohort setup (2--3 visits);
+    parameter-count disparity ($\sim$1{,}380 tokens / 604k params for
+    Brain-TokenGT vs.\ 31k--520k params for the recurrent trajectory models).
+\end{itemize}
+
+\section{Results \& Ablations}
+
+\subsection{Longitudinal Conversion Prediction}
+5-fold cross-validation and held-out test evaluation on DELCODE, reported as
+AUC-ROC, sensitivity, specificity, and balanced accuracy.
+\draftnote{Insert current best-model table here once the reconstruction-value
+  ablation branch (\texttt{ablation/reconstruction-value}) settles.}
+
+\subsection{Architectural Ablation Suite}
+\begin{itemize}
+  \item Encoder (4 pre-registered arms, 4 seeds): \texttt{none} (no encoder,
+    31k params) $0.8313 \pm 0.0529$; \texttt{pretrained\_frozen} (520k)
+    $0.7812 \pm 0.0122$; \texttt{random} $0.7312 \pm 0.1113$;
+    \texttt{pretrained\_finetuned} $0.7107 \pm 0.1946$. Metadata-only floor:
+    CV AUC $0.6157 \pm 0.0653$, test AUC $0.4929$.
+  \item Temporal head: LSTM vs.\ GRU vs.\ static pooling.
+  \item Trajectory ablations (eval-time, fixed checkpoint): shuffling visit order costs
+    $0.9071 \rightarrow 0.8486 \pm 0.0258$; zeroing $\Delta t$ costs \emph{nothing}
+    ($0.9071 \rightarrow 0.9071$, identical sens/spec).
+  \item \textbf{Parcellation (whole brain vs.\ DMN vs.\ DMN + limbic): cut.} No such
+    experiment exists in the registry; it moves to future work rather than being implied.
+\end{itemize}
+\draftnote{\textbf{The fine-tuning conclusion is withdrawn, not caveated.} The
+  \texttt{pretrained\_finetuned} arm optimises the unfrozen pretrained GATv2 encoder and
+  the freshly initialised head at a \emph{single shared} learning rate, so it measures
+  naive fine-tuning rather than fine-tuning. It is additionally confirmed
+  non-deterministic (a re-run at seed 43 diverged on folds 1 and 4), so its $\pm 0.1946$
+  conflates seed and run noise exactly as Brain-TokenGT's does. A repeat sweep
+  ($R \ge 3 \times 4$ seeds) is running; an \texttt{encoder\_lr\_scale} arm is needed
+  before any claim about fine-tuning can be made.}
+
+\subsection{Early Detection Horizon}
+Discriminative capacity as a function of truncated visit history
+($T = 1, 2, 3, \ldots$).
+
+\subsection{Latent Space Interpretability}
+UMAP cluster separation and Integrated-Gradients (\texttt{captum}) region
+contribution maps on the frozen GAAE/VGAE encoders.
+
+\section{Discussion \& Limitations}
+\begin{itemize}
+  \item Inductive bias vs.\ model capacity in sample-constrained
+    neuroimaging: a lightweight recurrent model over frozen graph embeddings
+    matches or beats a much larger end-to-end transformer on this cohort
+    size.
+  \item Threats to validity: censoring/dropout patterns, small held-out test
+    set, GPU nondeterminism as a general risk for ``stability'' claims about
+    baselines (see Section~5) --- same-seed replicate runs, not just
+    multi-seed spread, are needed to verify reproducibility claims.
+  \item Clinical translation: current results are cross-sectional-adjacent
+    (conversion by end of follow-up), not yet a calibrated time-to-event
+    estimate.
+\end{itemize}
+
+\section{Conclusion \& Next Steps}
+
+Three results are robust to the caveats above and are what the thesis will be built on:
+(i) the published Brain-TokenGT baseline is not reproducible at a fixed seed, and its
+multi-seed error bar misattributes run-to-run noise as seed sensitivity, while our pipeline
+re-runs byte-identically; (ii) removing the graph encoder entirely does not degrade
+performance, which extends a published cross-sectional, large-$N$ finding into the
+longitudinal, small-$N$ regime; and (iii) $\Delta t$ conditioning cannot be evidenced on a
+protocol-driven cohort whose inter-visit intervals are 90\% identical.
+
+\paragraph{Next steps, in priority order.}
+\begin{enumerate}
+  \item \textbf{ADNI external validation of the \texttt{none} and
+    \texttt{pretrained\_frozen} arms.} This is the highest-value open item by a wide
+    margin: it converts a single-cohort negative result into a cross-cohort one, and it is
+    the \emph{only} setting in which the $\Delta t$ mechanism can be tested, since ADNI
+    encodes actual elapsed days rather than scheduled protocol months. The blocker is one
+    wiring change --- the GE-LSTM dataset still imports the DELCODE-only month parser ---
+    gated on a byte-equality check that DELCODE results are unchanged.
+  \item \textbf{Rewrite the comparison notebook to glob all runs per experiment id} and
+    drop both invalid paired tests, reporting distributions and an effect size instead.
+  \item \textbf{Repeat sweep for the fine-tuned arm}, plus an \texttt{encoder\_lr\_scale}
+    arm, before any claim about fine-tuning is made.
+  \item Finalise the visit-horizon analysis in both cohort constructions, and the
+    interpretability maps framed descriptively rather than as biomarker discovery.
+\end{enumerate}
+
+\paragraph{Explicitly not being done.} Chasing full CUDA determinism for Brain-TokenGT.
+\texttt{torch.use\_deterministic\_algorithms(True)} would raise on operations that then
+need replacing inside a third-party port, with no bounded time estimate. The 19-run
+distribution is both cheaper and a stronger result than a repaired point estimate would be.
+
+
+\begin{thebibliography}{9}
+\bibitem{placeholder} Placeholder --- populate once source list is final.
+\end{thebibliography}
+
+\end{document}

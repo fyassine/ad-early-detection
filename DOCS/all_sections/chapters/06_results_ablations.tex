@@ -1,0 +1,182 @@
+\chapter{Experimental Results \& Comprehensive Ablations}
+\label{ch:results}
+
+\draftnote{\textbf{This chapter is deliberately held as a data contract, not prose.} Two of
+  its inputs are still in motion --- the fine-tuned-arm repeat sweep
+  (Section~\ref{sec:res-encoder}) and the ADNI external validation
+  (Section~\ref{sec:external-validation}) --- and the headline framing of the thesis is to
+  be decided \emph{after} they land rather than before. Every section below therefore
+  declares the table or figure it will contain, the artifact that will supply it, and the
+  condition under which it may be filled. Nothing is written here that the artifacts do not
+  yet support. Chapters~\ref{ch:foundations}, \ref{ch:data}, \ref{ch:methodology}
+  and~\ref{ch:sota-repair} are complete and can be read independently of this one.}
+
+%==============================================================================
+\section{Reporting Rules for This Chapter}
+\label{sec:reporting-rules}
+
+These rules are fixed in advance so that no table in this chapter can be assembled in a way
+that flatters a result.
+
+\begin{enumerate}
+  \item \textbf{Every table carries the floors.} The metadata-only baseline
+    (CV AUC $0.6157 \pm 0.0653$, test AUC $0.4929$) and the raw-FC representation floor
+    appear as rows in every model comparison, not in a separate section.
+  \item \textbf{Every model number is a distribution, not a point.} Cross-validation results
+    are reported over folds; multi-seed results over seeds; and where an arm is known to be
+    non-deterministic, over \emph{repeats nested in seeds}.
+  \item \textbf{Sample standard deviation throughout} ($\mathtt{ddof}=1$), so that error
+    bars across documents are comparable.
+  \item \textbf{No $p$-value is reported where its independence assumption fails.}
+    Specifically: no paired test over cross-validation folds within a seed (folds share
+    training data), and no paired test over seeds for an arm whose within-seed variance is
+    unmeasured or dominant (Section~\ref{sec:btgt-stats}).
+  \item \textbf{Every reported number globs all runs for its experiment identifier.} No
+    single run path is hard-coded, since that is precisely how an unrepresentative run
+    previously became ``the'' result (Section~\ref{sec:btgt-stats}).
+  \item \textbf{Test-set size is printed beside every test metric}, because at
+    $N_{\text{test}} = 34$ (or 25 in the matched window) one subject is worth
+    $\sim 0.03$ AUC.
+\end{enumerate}
+
+%==============================================================================
+\section{Longitudinal Conversion Prediction Benchmark}
+\label{sec:res-benchmark}
+
+\draftnote{\textbf{Table 6.1 --- main DELCODE benchmark.} Rows: metadata floor, raw-FC
+  floor, GEP, GEC, GE-GRU, GE-LSTM. Columns: CV AUC (mean $\pm$ SD over 5 folds), test AUC,
+  sensitivity, specificity, balanced accuracy, trainable parameters. Source:
+  \texttt{CLASSIFIER/outputs/RESULTS.csv}, columns \texttt{cv.val\_auc\_mean},
+  \texttt{cv.val\_auc\_std}, \texttt{metric.test\_*}. \emph{Fill condition:} immediately ---
+  all runs exist.}
+
+\risk{The static GEC classifier currently outscores every recurrent model on this cohort,
+and the thesis must confront that rather than table it.}{%
+\texttt{gec-trajectory-whole-brain} reaches test AUC $0.964$ against GE-LSTM's $0.921$ and
+GE-GRU's $0.832$ on the full cohort. If a per-visit classifier with an explicit visit-count
+mask beats the recurrent models, then either (a) the recurrence is not contributing, or
+(b) GEC is exploiting the length shortcut that its mask makes available and the recurrent
+models do not receive (Section~\ref{sec:static-baselines}). The within-subject slope
+diagnostics of Section~\ref{sec:res-horizon} are what distinguishes these, and this section
+must state the answer explicitly. Quietly reporting the recurrent models as the headline
+while GEC sits higher in the same table is the single most likely thing to be challenged in
+a defence.}
+
+%==============================================================================
+\section{Comparative Evaluation: GE-LSTM vs.\ Brain-TokenGT}
+\label{sec:res-comparison}
+
+\draftnote{\textbf{Table 6.2 + Figure 6.1 --- matched-window head-to-head.} Both models
+  restricted to $2 \le T \le 3$ ($N_{\text{CV}} = 95$, $N_{\text{test}} = 25$), byte-matched
+  subject identifiers and fold membership. GE-LSTM: 4 seeds, one run each. Brain-TokenGT:
+  \textbf{all 19 runs}, reported as repeats nested in seeds per
+  Table~\ref{tab:btgt-19runs}. Report as two distributions plus an effect size. \emph{No
+  $p$-value} --- see Section~\ref{sec:btgt-stats} for why both previously computed tests are
+  withdrawn. Figures already generated under
+  \texttt{DOCS/per\_section/results/figures/}: ROC/PR curves, confusion matrices,
+  calibration, parameter-efficiency frontier. \emph{Fill condition:} after the comparison
+  notebook is re-executed with the glob-all-runs fix (Phase B).}
+
+\draftnote{\textbf{Table 6.3 --- the reproducibility contrast.} GE-LSTM \texttt{none} arm:
+  two runs at seed 42, byte-identical. Brain-TokenGT stabilised: 7 runs at seed 42, range
+  $0.3571$--$0.7078$. This is a result in its own right and should be presented as one, not
+  as a caveat inside Table 6.2.}
+
+%==============================================================================
+\section{Encoder Ablation: Does the Graph Encoder Earn Its Place?}
+\label{sec:res-encoder}
+
+\draftnote{\textbf{Table 6.4 --- the four encoder arms} of
+  Table~\ref{tab:encoder-arms}, across seeds 42--45, against both floors. Source:
+  \texttt{recon-ablation-gelstm-\{none,random,pretrained-frozen,pretrained-finetuned\}}
+  and their \texttt{-seed4\{3,4,5\}} repeats. \emph{Fill condition:} the
+  \texttt{pretrained\_finetuned} arm is confirmed non-deterministic (folds diverged on
+  re-run at seed 43), so its row must report repeats nested in seeds, not one run per
+  seed. The repeat sweep is running; this table is filled when it completes.}
+
+\draftnote{\textbf{Read the result against the pre-registered interpretation table}
+  in \texttt{DOCS/reconstruction-value-ablation.md} --- reproduce that table here verbatim
+  and mark which row the observed pattern matches, before stating any conclusion. That
+  ordering is the point of pre-registration and must be visible to the reader.}
+
+\risk{The current fine-tuning conclusion is withdrawn, not merely caveated.}{%
+The earlier reading --- that fine-tuning ``destabilises optimisation and severely
+overfits'' --- rests on an arm in which the pretrained GATv2 encoder and the freshly
+initialised classifier head were optimised at a \emph{single shared learning rate}. That is
+the textbook way to destroy pretrained features, and it is precisely the treatment
+Brain-TokenGT's own stabilisation applied to \emph{its} newly unfrozen parameters and this
+arm did not. The arm therefore measures naive fine-tuning, not fine-tuning. Until either a
+learning-rate-scaled arm is run or the claim is restated, no conclusion about fine-tuning
+belongs in this chapter.}
+
+%==============================================================================
+\section{Trajectory Ablations: Order, Timing, and Horizon}
+\label{sec:res-horizon}
+
+\draftnote{\textbf{Table 6.5 --- eval-time trajectory ablations} against a fixed trained
+  checkpoint: baseline; shuffled visit order ($5$ repeats); $\Delta t$ zeroed; first-2-visit
+  window; metadata floor. Source: \texttt{sanity-gelstm-ablations}. These results
+  \emph{exist} and are partially reported already in Section~\ref{sec:delta-t-finding};
+  this section presents the full table.}
+
+\draftnote{\textbf{Table 6.6 + Figure 6.2 --- AUC versus visit horizon, both
+  constructions.} Variable-cohort and fixed-cohort curves side by side with per-$N$
+  converter/non-converter composition printed beside each point
+  (Section~\ref{sec:gap-protocol}). The fixed-cohort curve is the claim-bearing one.
+  Source: \texttt{common/early\_detection.py} and \texttt{common/visit\_confound.py} via
+  \texttt{sanity-visit-confound-*}.}
+
+\draftnote{\textbf{Table 6.7 --- the follow-up-duration confound.} Visit-count distribution
+  by group (converters 3.43 vs.\ stable 2.74 scans, Mann--Whitney $p = 0.002$); between-subject
+  Spearman correlations; and the decisive within-subject probability slopes. This is what
+  answers the GEC exposure raised in Section~\ref{sec:res-benchmark}, and it must be
+  reported for GEC, GE-LSTM and GE-GRU together.}
+
+%==============================================================================
+\section{External Validation on ADNI}
+\label{sec:external-validation}
+
+\draftnote{\textbf{Table 6.8 --- ADNI replication.} Two arms only --- \texttt{none} and
+  \texttt{pretrained\_frozen} --- across 4 seeds, on the ADNI longitudinal cohort
+  ($162$ subjects with $\ge 2$ sessions, $51$ converters). \emph{Fill condition:} the
+  cohort-aware visit parser must be wired into the GE-LSTM dataset \emph{and} pass the
+  byte-equality gate on DELCODE first (Section~\ref{sec:visit-semantics}); if the gate fails,
+  this section is cut and moved to Chapter~\ref{ch:conclusion}.}
+
+\draftnote{\textbf{This section carries two claims that DELCODE cannot support.} First,
+  whether the encoder ablation result of Section~\ref{sec:res-encoder} is a property of the
+  method or of the cohort. Second --- and only here --- whether the $\Delta t$ conditioning
+  contributes anything at all, since ADNI's follow-up is genuinely irregular where
+  DELCODE's is 90\% uniform (Section~\ref{sec:delta-t-finding}). Report the ADNI inter-visit
+  interval distribution beside Table~\ref{tab:delcode-intervals} so the contrast is visible.}
+
+%==============================================================================
+\section{Latent Space Interpretability}
+\label{sec:res-interpretability}
+
+\draftnote{\textbf{Figure 6.3 --- UMAP projections} of the frozen GAAE and VGAE latent
+  spaces, coloured by diagnosis and by visit. \textbf{Figure 6.4 --- Integrated Gradients
+  attribution} (\texttt{captum}) over the frozen encoders, aggregated to Schaefer-200
+  parcels and summarised by Yeo network. Source: existing run artifacts under
+  \texttt{CLASSIFIER/outputs/explain-gaae/} and \texttt{explain-vgae-gcn/}.}
+
+\risk{Interpretability of an encoder whose contribution is unproven needs framing, not
+suppression.}{%
+If the encoder ablation shows that removing the graph encoder does not hurt performance,
+then attribution maps computed \emph{over that encoder} explain a component that may not be
+carrying the prediction. The honest framing is that these maps characterise what the
+pretrained representation encodes --- a legitimate descriptive question --- and not what
+drives the classifier's decisions. Presenting them as biomarker discovery would overstate
+them.}
+
+%==============================================================================
+\section{Ablations Not Run}
+\label{sec:res-not-run}
+
+\edge{Stating which planned ablations were not run is part of the result.}{%
+The \textbf{parcellation ablation} (whole brain vs.\ DMN vs.\ DMN + limbic/hippocampus) was
+planned and is \emph{not} reported: no such experiment exists in the registry, and
+fabricating or hand-waving it would be worse than omitting it. It is carried to
+Chapter~\ref{ch:conclusion} as future work. Likewise the imaging-based survival head
+(Section~\ref{sec:prognoser-scope}). A reader can verify both claims against the experiment
+registry, which is the point.}
