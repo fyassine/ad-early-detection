@@ -62,6 +62,12 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
         k for kNN adjacency construction.
     file_variant : str
         'z_transformed' | 'raw'
+    min_visits : int | None
+        If set, drop subjects whose total (untruncated) visit count is below
+        this floor, evaluated BEFORE any `max_visits` truncation — mirrors
+        BrainTokenGT's cohort window (`BrainTokenGTAdapter.prepare_data`:
+        `it["n_scans"] >= min_visits`, then `window_item(..., max_visits=...)`).
+        Default None → no floor (legacy behaviour).
     max_visits : int | None
         If set, keep only the first `max_visits` (earliest) visits per subject.
         Δt is re-normalised over the kept window so the model never sees future
@@ -70,7 +76,9 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
         Only meaningful with max_visits != None. If True, subjects with fewer
         than `max_visits` scans are dropped entirely so every retained subject
         has exactly `max_visits` visits — this neutralises "longer sequence =
-        more likely converter" leakage. Default False.
+        more likely converter" leakage. Default False. Independent of
+        `min_visits`: a subject with exactly `min_visits` visits and
+        `min_visits < max_visits` is kept unpadded unless this is also set.
     """
 
     _VARIANT_SUFFIX: Dict[str, str] = {
@@ -85,12 +93,14 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
         cohorts_csv: str,
         adjacency_k: int = 8,
         file_variant: str = "z_transformed",
+        min_visits: Optional[int] = None,
         max_visits: Optional[int] = None,
         require_full_window: bool = False,
     ):
         self.matrices_dir = matrices_dir
         self.adjacency_k = adjacency_k
         self.file_variant = file_variant
+        self.min_visits = min_visits
         self.max_visits = max_visits
         self.require_full_window = require_full_window
         self.suffix = self._VARIANT_SUFFIX.get(file_variant, self._VARIANT_SUFFIX["z_transformed"])
@@ -108,6 +118,7 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
         cohorts["visit_m"] = cohorts["visit"].str.replace("M", "", regex=False).astype(float)
 
         self.subjects: List[Dict] = []
+        n_dropped_min_visits = 0
         n_dropped_full_window = 0
         has_allowed_months = "allowed_months" in sub_df.columns
         for _, row in sub_df.iterrows():
@@ -122,6 +133,13 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
             )
             visit_files = self._find_visit_files(pid, allowed_months)
             if not visit_files:
+                continue
+
+            # min_visits is a floor on the FULL (untruncated) visit count —
+            # evaluated before any truncation, matching BrainTokenGT's
+            # `it["n_scans"] >= min_visits` keep-rule.
+            if min_visits is not None and len(visit_files) < min_visits:
+                n_dropped_min_visits += 1
                 continue
 
             # Truncate to the first N (earliest) visits BEFORE computing Δt.
@@ -157,6 +175,8 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
             f"LongitudinalSubjectDataset[v2]: {len(self.subjects)} subjects "
             f"({n_pos} converter, {n_neg} stable MCI)"
         )
+        if min_visits is not None:
+            print(f"  min_visits={min_visits}; dropped (too few visits)={n_dropped_min_visits}")
         if max_visits is not None:
             print(
                 f"  Window: first {max_visits} visit(s); "
