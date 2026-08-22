@@ -191,3 +191,91 @@ class TestLongitudinalSubjectDatasetVisitWindow:
             cohorts_csv=str(cohorts_csv),
         )
         assert set(ds.get_subject_ids()) == {"X1", "X2"}
+
+
+class TestLongitudinalSubjectDatasetCohortAware:
+    def test_adni_day_coded_loading(self, tmp_path):
+        d = tmp_path / "adni_matrices"
+        d.mkdir()
+        arr = np.eye(4, dtype=np.float32)
+        for day in (0, 381, 762):
+            np.savez(
+                d / f"sub-ADNI002S2043_ses-d{day:04d}_task-rest_whole_brain_correlation_matrix_z_transformed.npz",
+                array=arr,
+            )
+
+        subject_df = pd.DataFrame(
+            {
+                "subject_id": ["ADNI002S2043"],
+                "label": ["converter"],
+                "converter_status": [1],
+                "sex": ["m"],
+                "age": [72.5],
+                "allowed_days": ["0;381"],
+            }
+        )
+
+        ds = LongitudinalSubjectDataset(
+            matrices_dir=str(d),
+            subject_df=subject_df,
+            cohort="adni",
+        )
+        assert len(ds) == 1
+        item = ds[0]
+        assert item["subject_id"] == "ADNI002S2043"
+        assert item["label"] == 1
+        assert item["visit_months"] == [0, 381]
+        assert item["n_scans"] == 2
+        assert len(item["delta_t"]) == 2
+        assert item["delta_t"][0] == 0.0
+        expected_dt = (381 / 30.44) / 108.0
+        assert item["delta_t"][1] == pytest.approx(expected_dt)
+
+    def test_oasis3_day_coded_loading(self, tmp_path):
+        d = tmp_path / "oasis3_matrices"
+        d.mkdir()
+        arr = np.eye(4, dtype=np.float32)
+        for day in (0, 653):
+            np.savez(
+                d / f"sub-OAS30001_ses-d{day:04d}_task-rest_whole_brain_correlation_matrix_z_transformed.npz",
+                array=arr,
+            )
+
+        subject_df = pd.DataFrame(
+            {
+                "subject_id": ["OAS30001"],
+                "label": ["stable"],
+                "converter_status": [0],
+                "sex": ["f"],
+                "age": [68.0],
+                "allowed_days": ["0;653"],
+            }
+        )
+
+        ds = LongitudinalSubjectDataset(
+            matrices_dir=str(d),
+            subject_df=subject_df,
+            cohort="oasis3",
+        )
+        assert len(ds) == 1
+        item = ds[0]
+        assert item["subject_id"] == "OAS30001"
+        assert item["label"] == 0
+        assert item["visit_months"] == [0, 653]
+        assert item["n_scans"] == 2
+
+    def test_missing_label_columns_raises_rather_than_defaulting(self, tmp_path):
+        """A subject with no converter_status/label/diagnosis must fail loudly,
+        not silently become a non-converter (see .claude/rules/errors.md)."""
+        d = tmp_path / "matrices"
+        d.mkdir()
+        np.savez(
+            d / "sub-X9_ses-01_M0_task-rest_whole_brain_correlation_matrix_z_transformed.npz",
+            array=np.eye(4, dtype=np.float32),
+        )
+        subject_df = pd.DataFrame(
+            {"subject_id": ["X9"], "sex": ["f"], "age": [70.0], "allowed_months": ["0"]}
+        )
+
+        with pytest.raises(ValueError, match="no usable label"):
+            LongitudinalSubjectDataset(matrices_dir=str(d), subject_df=subject_df)

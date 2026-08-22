@@ -64,6 +64,7 @@ class GEPAdapter(LongitudinalAdapter):
         self.batch_size = c.get("batch_size", 32)
         self.grad_clip = c.get("grad_clip", 1.0)
         self.graph_pool = c.get("graph_pool", "mean")
+        self.cohort = str(c.get("cohort", "delcode")).lower()
 
         # Encoder backbone. For VGAE the arch + graph-construction knobs come from
         # the training config (gaae_hp describes the GAAE encoder, not the VGAE).
@@ -137,6 +138,7 @@ class GEPAdapter(LongitudinalAdapter):
             self.cohorts_csv,
             adjacency_k=self.adjacency_k,
             file_variant=self.file_variant,
+            cohort=self.cohort,
         )
         enc = self._encoder()
         records: List[Dict[str, Any]] = []

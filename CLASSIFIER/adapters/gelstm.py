@@ -67,6 +67,7 @@ class GELSTMAdapter(LongitudinalAdapter):
         # matched-cohort comparison — see BRAINTOKENGT/adapter.py "Cohort window".
         self.min_visits = c.get("min_visits")
         self.max_visits = c.get("max_visits")
+        self.cohort = str(c.get("cohort", "delcode")).lower()
         # Encoder arm. ``encoder_init`` absent (the norm outside the ablation) →
         # resolved from the legacy ``freeze_encoder`` flag, i.e. unchanged
         # behaviour. Set both to contradictory values and this raises.
@@ -232,6 +233,7 @@ class GELSTMAdapter(LongitudinalAdapter):
             file_variant=self.file_variant,
             min_visits=self.min_visits,
             max_visits=self.max_visits,
+            cohort=self.cohort,
         )
         items = [ds[i] for i in range(len(ds))]
         return Bundle(ds.get_labels(), ds.get_subject_ids(), items)

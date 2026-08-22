@@ -91,6 +91,7 @@ class GECAdapter(LongitudinalAdapter):
         self.early_stopping_patience = c.get("early_stopping_patience", 20)
         self.batch_size = c.get("batch_size", 32)
         self.grad_clip = c.get("grad_clip", 1.0)
+        self.cohort = str(c.get("cohort", "delcode")).lower()
 
         # Encoder arm (see configs/encoder.py). GEC has no legacy freeze_encoder
         # flag — it has always been frozen-only — so an unset encoder_init simply
@@ -165,6 +166,7 @@ class GECAdapter(LongitudinalAdapter):
             self.cohorts_csv,
             adjacency_k=self.adjacency_k,
             file_variant=self.file_variant,
+            cohort=self.cohort,
         )
         enc = self._encoder()
         records: List[Dict[str, Any]] = []
