@@ -96,9 +96,11 @@ def run_kfold_cv(
         The CV pool (train+val). Split is stratified on ``bundle.labels`` and
         grouped on ``bundle.groups`` so no subject crosses the fold boundary.
     train_fold : callable
-        ``train_fold(bundle_tr, bundle_va, cfg, *, rng, device) -> dict`` with keys:
-        ``state_dict``, ``val_metrics`` ({'auc','sensitivity','specificity','f1'}),
-        ``best_threshold``, ``oof_probs``, ``oof_targets``, ``oof_sids``.
+        ``train_fold(bundle_tr, bundle_va, cfg, *, rng, device, epoch_log_fn) -> dict``
+        with keys: ``state_dict``, ``val_metrics``
+        ({'auc','sensitivity','specificity','f1'}), ``best_threshold``,
+        ``oof_probs``, ``oof_targets``, ``oof_sids``. ``epoch_log_fn`` is the
+        per-epoch sink described below, already scoped to the current fold.
     cfg : Any
         Opaque per-model training config, forwarded to ``train_fold`` unchanged.
     n_folds : int
@@ -110,7 +112,12 @@ def run_kfold_cv(
         Forwarded to ``train_fold``.
     log_fn : callable, optional
         Per-fold metric sink, e.g. ``lambda d: tracking.log_metrics(run, d)``.
-        Keeps this module free of any W&B import.
+        Keeps this module free of any W&B import. Also the sink for per-epoch
+        metrics: each fold's ``train_fold`` receives an ``epoch_log_fn`` wrapper
+        that stamps the current 1-based fold number onto every dict before
+        forwarding it to ``log_fn``, so adapters that log per-epoch
+        ``train_loss`` / ``val_auc`` / ``val_f1`` produce a genuine epoch-level
+        time series in W&B instead of one point per fold.
 
     Returns
     -------
@@ -138,8 +145,16 @@ def run_kfold_cv(
         print("=" * 55)
         print(f"Fold {fold + 1}/{n_folds}  train={len(tr_idx)}  val={len(va_idx)}")
 
+        epoch_log_fn = (
+            (lambda d, _fold=fold + 1: log_fn({"fold": _fold, **d})) if log_fn is not None else None
+        )
         fold_out = train_fold(
-            bundle.subset(tr_idx), bundle.subset(va_idx), cfg, rng=rng, device=device
+            bundle.subset(tr_idx),
+            bundle.subset(va_idx),
+            cfg,
+            rng=rng,
+            device=device,
+            epoch_log_fn=epoch_log_fn,
         )
         vm = fold_out["val_metrics"]
 

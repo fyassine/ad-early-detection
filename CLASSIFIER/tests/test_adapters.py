@@ -275,6 +275,26 @@ def test_gelstm_model_config_reports_classifier_norm():
     assert ln.model_config()["classifier_norm"] == "layernorm"
 
 
+def test_gelstm_min_max_visits_default_none_legacy():
+    """Unset -> None (all-visits legacy behaviour), not BrainTokenGT's 2/3
+    default — GELSTM is shared by experiments outside this ablation."""
+    adapter = _make(get_adapter("gelstm"), {})
+    assert adapter.min_visits is None
+    assert adapter.max_visits is None
+    cfg = adapter.model_config()
+    assert cfg["min_visits"] is None
+    assert cfg["max_visits"] is None
+
+
+def test_gelstm_min_max_visits_read_from_config():
+    adapter = _make(get_adapter("gelstm"), {"min_visits": 2, "max_visits": 3})
+    assert adapter.min_visits == 2
+    assert adapter.max_visits == 3
+    cfg = adapter.model_config()
+    assert cfg["min_visits"] == 2
+    assert cfg["max_visits"] == 3
+
+
 def test_build_classifier_head_layernorm():
     import torch.nn as nn
 

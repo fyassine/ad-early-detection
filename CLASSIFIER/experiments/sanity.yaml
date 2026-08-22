@@ -22,7 +22,17 @@ experiments:
     dataset: DELCODE_WHOLE_BRAIN
     seed: 42
     notebook: notebooks/SANITY/SANITY_LONGITUDINAL_GELSTM.ipynb
-    notes: Shuffled-order, no-Δt, fixed-N ablations.
+    # Pinned rather than left to the notebook's headless "latest checkpoint"
+    # fallback: that fallback resolves by sort order, so adding any newer GELSTM
+    # checkpoint would silently change what this ablation was measured against.
+    checkpoint_path: notebooks/checkpoints/checkpoints_gelstm_whole_brain/gelstm_wholebrain_2026-06-12_15-44-49/model_gelstm_wholebrain_2026-06-12_15-44-49.pth
+    threshold_mode: youden
+    notes: >-
+      Shuffled-order, no-Δt, fixed-N ablations. Eval-only against an already
+      trained GELSTM checkpoint — no retraining, so this is minutes not hours.
+      Supplies the only controlled evidence that the recurrence uses temporal
+      order and Δt at all (baseline vs. checks 2 and 3), plus the metadata-only
+      floor every results table is anchored against.
 
   # Visit-count confound diagnostics — reload each model's latest trajectory run
   # (no retraining) and quantify the converters-have-fewer-visits confound.

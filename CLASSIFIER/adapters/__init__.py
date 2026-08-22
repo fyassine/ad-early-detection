@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 import numpy as np
 from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score
@@ -219,7 +219,22 @@ class LongitudinalAdapter:
     def prepare_data(self, df):  # pragma: no cover - overridden
         raise NotImplementedError
 
-    def train_fold(self, bundle_tr, bundle_va, cfg, *, rng, device):  # pragma: no cover
+    def train_fold(
+        self,
+        bundle_tr,
+        bundle_va,
+        cfg,
+        *,
+        rng,
+        device,
+        epoch_log_fn: Optional[Callable[[Dict[str, Any]], None]] = None,
+    ):  # pragma: no cover
+        """Train one fold. ``epoch_log_fn``, if given, is called once per epoch
+        with a dict (typically ``{'epoch', 'train_loss', 'val_auc', ...}``) so
+        ``common.crossval.run_kfold_cv`` can surface a genuine per-epoch time
+        series to W&B instead of a single fold-summary point. Optional: an
+        adapter with no natural per-epoch signal may ignore it.
+        """
         raise NotImplementedError
 
     def eval_split(self, state, bundle, threshold, *, device):  # pragma: no cover

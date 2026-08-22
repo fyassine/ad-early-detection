@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import copy
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 import torch
@@ -62,12 +62,15 @@ class GELSTMAdapter(LongitudinalAdapter):
         self.classifier_norm = c.get("classifier_norm", "none")
         self.use_time_delta = c.get("use_time_delta", True)
         self.graph_pool = c.get("graph_pool", "mean")
+        # Cohort window (None = legacy: all available visits, no floor). Set both
+        # to match BrainTokenGT's default (min_visits=2, max_visits=3) for the
+        # matched-cohort comparison — see BRAINTOKENGT/adapter.py "Cohort window".
+        self.min_visits = c.get("min_visits")
+        self.max_visits = c.get("max_visits")
         # Encoder arm. ``encoder_init`` absent (the norm outside the ablation) →
         # resolved from the legacy ``freeze_encoder`` flag, i.e. unchanged
         # behaviour. Set both to contradictory values and this raises.
-        self.encoder_init = resolve_encoder_init(
-            c.get("encoder_init"), c.get("freeze_encoder")
-        )
+        self.encoder_init = resolve_encoder_init(c.get("encoder_init"), c.get("freeze_encoder"))
         self.encoder_arm = encoder_arm(self.encoder_init)
         self.freeze_encoder = not self.encoder_arm.trains_encoder
         # encoder_grad is derived from the arm, never taken from the config. A
@@ -227,12 +230,23 @@ class GELSTMAdapter(LongitudinalAdapter):
             self.cohorts_csv,
             adjacency_k=self.adjacency_k,
             file_variant=self.file_variant,
+            min_visits=self.min_visits,
+            max_visits=self.max_visits,
         )
         items = [ds[i] for i in range(len(ds))]
         return Bundle(ds.get_labels(), ds.get_subject_ids(), items)
 
     # ── training ────────────────────────────────────────────────────────────
-    def train_fold(self, bundle_tr, bundle_va, cfg, *, rng, device) -> Dict[str, Any]:
+    def train_fold(
+        self,
+        bundle_tr,
+        bundle_va,
+        cfg,
+        *,
+        rng,
+        device,
+        epoch_log_fn: Optional[Callable[[Dict[str, Any]], None]] = None,
+    ) -> Dict[str, Any]:
         tr_items, va_items = bundle_tr.items, bundle_va.items
         tr_labels = bundle_tr.labels
 
@@ -267,10 +281,10 @@ class GELSTMAdapter(LongitudinalAdapter):
         train_cfg = self._eval_cfg(dim_filter, encoder_grad=self.encoder_arm.trains_encoder)
 
         best_auc, best_state, no_improve = 0.0, None, 0
-        for _epoch in range(self.epochs):
+        for epoch in range(self.epochs):
             tr_batches = make_batches(tr_items, self.batch_size, shuffle=True, rng=rng)
             va_batches = make_batches(va_items, self.batch_size, shuffle=False)
-            train_epoch(
+            train_loss = train_epoch(
                 model,
                 tr_batches,
                 optimizer,
@@ -281,6 +295,15 @@ class GELSTMAdapter(LongitudinalAdapter):
             )
             va = evaluate(model, va_batches, device, eval_cfg=eval_cfg)
             scheduler.step(va["auc"])
+            if epoch_log_fn is not None:
+                epoch_log_fn(
+                    {
+                        "epoch": epoch,
+                        "train_loss": train_loss,
+                        "val_auc": va["auc"],
+                        "val_f1": va["f1"],
+                    }
+                )
             if va["auc"] > best_auc:
                 best_auc, best_state, no_improve = va["auc"], copy.deepcopy(model.state_dict()), 0
             else:
@@ -387,6 +410,8 @@ class GELSTMAdapter(LongitudinalAdapter):
             "classifier_norm": self.classifier_norm,
             "use_time_delta": self.use_time_delta,
             "graph_pool": self.graph_pool,
+            "min_visits": self.min_visits,
+            "max_visits": self.max_visits,
             "encoder_init": self.encoder_init,
             "freeze_encoder": self.freeze_encoder,
             "standardize_features": self.standardize_features,

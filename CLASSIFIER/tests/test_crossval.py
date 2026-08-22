@@ -22,7 +22,7 @@ def _fold_stub(auc_by_call):
     """Return a train_fold that yields preset AUCs in call order."""
     state = {"calls": 0}
 
-    def train_fold(bundle_tr, bundle_va, cfg, *, rng, device):
+    def train_fold(bundle_tr, bundle_va, cfg, *, rng, device, epoch_log_fn=None):
         i = state["calls"]
         state["calls"] += 1
         auc = auc_by_call[i]
@@ -75,6 +75,57 @@ def test_run_kfold_cv_log_fn_called_per_fold():
     )
     assert len(logged) == 5
     assert all("val_auc" in d and "fold" in d for d in logged)
+
+
+def test_run_kfold_cv_passes_epoch_log_fn_stamped_with_fold():
+    """``train_fold`` receives an ``epoch_log_fn`` that tags each dict with the
+    current 1-based fold number, so per-epoch curves stay distinguishable from
+    the once-per-fold summary logged by ``log_fn`` itself."""
+    bundle = _make_bundle(40)
+    logged = []
+
+    def train_fold(bundle_tr, bundle_va, cfg, *, rng, device, epoch_log_fn=None):
+        assert epoch_log_fn is not None
+        for epoch in range(3):
+            epoch_log_fn({"epoch": epoch, "train_loss": 0.1 * epoch, "val_auc": 0.5})
+        return {
+            "state_dict": {},
+            "val_metrics": {"auc": 0.5, "sensitivity": 0.5, "specificity": 0.5, "f1": 0.5},
+            "best_threshold": 0.5,
+            "oof_probs": np.full(len(bundle_va), 0.5),
+            "oof_targets": np.array(bundle_va.labels),
+            "oof_sids": list(bundle_va.groups),
+        }
+
+    run_kfold_cv(
+        bundle, train_fold, cfg={}, n_folds=5, rng=None, device="cpu", log_fn=logged.append
+    )
+    # 3 epoch-level logs per fold + 1 fold-summary log per fold, across 5 folds.
+    assert len(logged) == 5 * (3 + 1)
+    epoch_logs = [d for d in logged if "epoch" in d]
+    assert len(epoch_logs) == 15
+    assert all("fold" in d and "train_loss" in d for d in epoch_logs)
+    assert {d["fold"] for d in epoch_logs} == {1, 2, 3, 4, 5}
+
+
+def test_run_kfold_cv_epoch_log_fn_is_none_without_log_fn():
+    """No ``log_fn`` -> ``epoch_log_fn`` is ``None``, not a callable that no-ops."""
+    bundle = _make_bundle(40)
+    seen = {"epoch_log_fn": "unset"}
+
+    def train_fold(bundle_tr, bundle_va, cfg, *, rng, device, epoch_log_fn=None):
+        seen["epoch_log_fn"] = epoch_log_fn
+        return {
+            "state_dict": {},
+            "val_metrics": {"auc": 0.5, "sensitivity": 0.5, "specificity": 0.5, "f1": 0.5},
+            "best_threshold": 0.5,
+            "oof_probs": np.full(len(bundle_va), 0.5),
+            "oof_targets": np.array(bundle_va.labels),
+            "oof_sids": list(bundle_va.groups),
+        }
+
+    run_kfold_cv(bundle, train_fold, cfg={}, n_folds=5, rng=None, device="cpu")
+    assert seen["epoch_log_fn"] is None
 
 
 def test_best_f1_threshold_computed_from_oof():
