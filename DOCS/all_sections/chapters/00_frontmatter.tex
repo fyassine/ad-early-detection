@@ -1,0 +1,85 @@
+\chapter*{Front Matter}
+\addcontentsline{toc}{chapter}{Front Matter}
+
+\section*{Statutory Declaration}
+\draftnote{Erkl\"arung \"uber die eigenst\"andige Erbringung der Arbeit --- insert TUM's
+  required wording verbatim once the official template is in place.}
+
+\section*{Abstract}
+\draftnote{English abstract, $\sim$250 words. Write it \emph{last}, after
+  Chapter~\ref{ch:results} is filled, and make it match the evidence rather than the
+  original project plan. The four elements it must contain, in this order:
+  (i) the problem --- predicting MCI-to-AD conversion from longitudinal resting-state fMRI
+  under severe sample constraint;
+  (ii) the method --- staged graph pretraining plus a $\Delta t$-conditioned recurrent
+  trajectory classifier, with a four-arm pre-registered encoder ablation;
+  (iii) the reproducibility finding --- a published MICCAI baseline is not reproducible at
+  a fixed seed, with within-seed variance exceeding between-seed variance across 19 runs,
+  while this pipeline re-runs byte-identically;
+  (iv) the negative architectural finding --- removing the graph encoder does not degrade
+  performance, extending a published large-$N$ cross-sectional result into the
+  longitudinal small-$N$ regime.
+  Do not lead with an accuracy figure; at $N_{\mathrm{test}} = 34$ it is the least
+  informative number in the thesis.}
+
+\section*{Kurzfassung}
+\draftnote{German translation of the abstract above. Write after the English version is
+  final so the two cannot diverge.}
+
+\section*{Acknowledgements}
+\draftnote{Supervisor, lab, DELCODE consortium, and funding acknowledgement. ADNI and
+  OASIS-3 both require specific data-use acknowledgement wording --- copy it verbatim from
+  their respective data-use agreements rather than paraphrasing.}
+
+\listoffigures
+\listoftables
+
+\section*{Reading This Draft}
+
+Four kinds of annotation appear throughout, boxed and numbered, marking the structure of the
+argument rather than its content: \textbf{RESEARCH GAP} (an open problem in the field),
+\textbf{GREY AREA} (evidence genuinely contested), \textbf{OUR EDGE} (where this work is
+defensibly ahead of published practice), and \textbf{EXPOSURE} (where this work is
+vulnerable). Appendix~\ref{app:register} collects all of them into a single register with
+page references. Readers short of time may find that register the fastest route to the
+substance of the thesis.
+
+\draftnote{These annotations are a drafting aid for supervision. Decide before submission
+  whether they remain in the final document --- keeping the EXPOSURE items visible is
+  defensible and unusual; removing them is conventional. They are controlled from
+  \texttt{main.tex} and can be made invisible without touching the chapters.}
+
+\section*{List of Acronyms \& Abbreviations}
+\begin{description}[leftmargin=3.5cm,style=nextline]
+  \item[AD] Alzheimer's Disease
+  \item[ADNI] Alzheimer's Disease Neuroimaging Initiative
+  \item[AUC] Area Under the Receiver Operating Characteristic Curve
+  \item[BOLD] Blood-Oxygen-Level-Dependent
+  \item[BTGT] Brain-TokenGT
+  \item[C-index] Concordance Index
+  \item[CSF] Cerebrospinal Fluid
+  \item[CV] Cross-Validation
+  \item[DELCODE] DZNE Longitudinal Cognitive Impairment and Dementia Study
+  \item[DMN] Default Mode Network
+  \item[FC] Functional Connectivity
+  \item[FD] Framewise Displacement
+  \item[FDR] False Discovery Rate
+  \item[GAAE] Graph Attention Autoencoder
+  \item[GAE / VGAE] Graph Autoencoder / Variational Graph Autoencoder
+  \item[GAT / GATv2] Graph Attention Network (version 2)
+  \item[GCN] Graph Convolutional Network
+  \item[GEC] Graph Encoder Classifier
+  \item[GE-LSTM / GE-GRU] Graph-Embedding LSTM / GRU trajectory classifier
+  \item[GEP] Graph Embedding Perceptron
+  \item[GNN] Graph Neural Network
+  \item[GRCU] Graph Convolutional Recurrent Unit (EvolveGCN-H)
+  \item[JEPA] Joint-Embedding Predictive Architecture
+  \item[MCI] Mild Cognitive Impairment
+  \item[OASIS-3] Open Access Series of Imaging Studies, release 3
+  \item[PET] Positron Emission Tomography
+  \item[ROI] Region of Interest
+  \item[rs-fMRI] Resting-State Functional Magnetic Resonance Imaging
+  \item[SCD] Subjective Cognitive Decline
+  \item[SD] Standard Deviation
+  \item[$\Delta t$] Inter-visit time interval
+\end{description}

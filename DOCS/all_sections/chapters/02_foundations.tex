@@ -1,0 +1,414 @@
+\chapter{Foundations \& Related Work}
+\label{ch:foundations}
+
+This chapter has two jobs. Sections~\ref{sec:fc-parcellation}--\ref{sec:survival}
+establish the technical vocabulary the rest of the thesis uses. Section~\ref{sec:gaps}
+does the harder and more important work: it states, as precisely as the current
+literature allows, \emph{what is actually unsettled} in learning from brain functional
+connectomes --- and where the experiments in this thesis land relative to those open
+questions. That section is deliberately the longest in the chapter, because the central
+empirical results of this work (Chapters~\ref{ch:sota-repair} and~\ref{ch:results}) are
+only legible as contributions once the reader knows which of the field's assumptions
+they contradict.
+
+%==============================================================================
+\section{Brain Connectivity \& Parcellation Schemes}
+\label{sec:fc-parcellation}
+
+Resting-state functional MRI measures the blood-oxygen-level-dependent (BOLD) signal, a
+haemodynamic proxy for neural activity, while the subject performs no task. The standard
+reduction from a 4-D BOLD volume to an analysable object proceeds in two steps. First, a
+\emph{parcellation} partitions the cortex (and optionally subcortex) into $R$ regions of
+interest (ROIs), collapsing $\sim 10^5$ voxels into $R$ representative time series. Second,
+a similarity measure applied pairwise across those $R$ time series yields an $R \times R$
+\emph{functional connectivity} (FC) matrix. Pearson correlation followed by the Fisher
+$z$-transform is the near-universal default, and is what this work uses.
+
+The choice of $R$ and of parcellation atlas is not a neutral preprocessing detail. The
+Schaefer atlas family provides gradient-weighted, resting-state-derived parcellations at
+multiple granularities (100, 200, 400, \ldots\ parcels), each parcel additionally assigned
+to one of the canonical Yeo functional networks --- default mode (DMN), limbic, dorsal
+attention, salience, and so on. Anatomically defined alternatives such as Harvard--Oxford
+and AAL remain common in the clinical literature. This thesis uses \textbf{Schaefer-200}
+throughout, which fixes $R = 200$ and therefore fixes the dimensionality of every
+downstream representation: each subject-visit is a $200 \times 200$ symmetric matrix, and
+each ROI's feature vector is its own row of that matrix --- its correlation profile
+against all other regions.
+
+That last identification matters more than it first appears, and Section~\ref{sec:gaps}
+returns to it: in the graph formulation used here and in most of the literature, the node
+features \emph{are} the connectivity data. The graph's edges are then derived from the very
+same matrix. Node features and topology are therefore not two independent information
+sources; they are two views of one object.
+
+The DMN is of particular interest in Alzheimer's disease. It is the network whose
+posterior hubs (posterior cingulate, precuneus) overlap most closely with the earliest
+sites of amyloid deposition, and DMN dysconnectivity is among the most replicated
+functional findings across the AD continuum. This motivates the region-restricted
+variants of the pipeline discussed in Chapter~\ref{ch:conclusion} as future work.
+
+%==============================================================================
+\section{Graph Representation Learning in Neuroimaging}
+\label{sec:gnn}
+
+Treating an FC matrix as a graph $G = (V, E)$ with $|V| = R$ nodes invites the machinery
+of graph neural networks (GNNs). The dominant paradigm is \emph{message passing}: each
+node's representation is iteratively updated by aggregating transformed representations of
+its neighbours,
+\[
+  h_v^{(\ell+1)} \;=\; \phi\!\left(h_v^{(\ell)},\ \bigoplus_{u \in \mathcal{N}(v)}
+    \psi\!\left(h_v^{(\ell)}, h_u^{(\ell)}, e_{uv}\right)\right),
+\]
+where $\bigoplus$ is a permutation-invariant aggregator. Graph convolutional networks
+(GCN) instantiate this with a degree-normalised mean; graph attention networks (GAT, and
+its corrected successor GATv2) instead learn the aggregation weights, so that a node can
+attend more strongly to some neighbours than others. GATv2 with FiLM-style conditioning is
+the encoder architecture used in this thesis.
+
+Because labelled clinical cohorts are small, a second strand of work borrows the
+self-supervised pretraining recipe from language and vision: train an encoder on a
+\emph{pretext} task that needs no labels, then reuse its representations downstream. For
+graphs, the canonical pretext task is reconstruction. A graph autoencoder (GAE) encodes
+each node to a latent $z_v$ and is trained so that a decoder can recover the adjacency
+structure; the variational form (VGAE) additionally regularises the latent distribution
+toward a prior via a Kullback--Leibler term. The premise --- that an encoder which can
+rebuild a connectome must have learned something transferable about connectomes --- is
+intuitive and near-universally assumed. Section~\ref{sec:gaps} explains why it is also
+one of the field's least tested assumptions, and Chapter~\ref{ch:results} tests it
+directly.
+
+Benchmarking efforts such as BrainGB have attempted to standardise comparison across
+brain-GNN architectures. Their existence is itself informative: the field reached a state
+where dozens of architectures reported wins on incomparable pipelines before anyone
+established what a common evaluation would even look like.
+
+%==============================================================================
+\section{Longitudinal \& Spatiotemporal Modelling}
+\label{sec:longitudinal}
+
+A single connectome is a snapshot. Disease is a trajectory. Modelling the AD continuum
+therefore requires consuming a \emph{sequence} of per-visit connectomes, and the
+literature offers two broad families.
+
+\paragraph{Recurrent approaches.} A recurrent network over per-visit embeddings is the
+parameter-lean option. The complication in clinical data is that visits are not evenly
+spaced: a subject may be scanned at months $0$, $14$, and $39$, while another is scanned
+at $0$, $12$, and $24$. A vanilla LSTM sees only ordinal positions $1, 2, 3$ and is blind
+to that difference. Time-aware variants address this explicitly --- T-LSTM decomposes the
+cell memory into short- and long-term components and applies an elapsed-time decay to the
+short-term part, while ATTAIN combines time-awareness with attention over prior visits.
+This thesis takes the simpler and more transparent route of conditioning the gate updates
+on the inter-visit interval $\Delta t$ directly (Section~\ref{sec:gelstm-method}); the
+design intent is identical.
+
+\paragraph{Spatiotemporal graph transformers.} The higher-capacity option applies
+self-attention across both space (ROIs) and time (visits). Brain-TokenGT, the published
+baseline audited in Chapter~\ref{ch:sota-repair}, tokenises node and spatio-temporal edge
+embeddings and feeds them to a transformer encoder augmented with trainable type
+identifiers and non-trainable node identifiers. Its temporal component derives from
+EvolveGCN-H, in which a gated recurrent unit evolves the \emph{weight matrix} of a graph
+convolution rather than a hidden state --- an elegant idea whose optimisation behaviour on
+small cohorts turns out to be the subject of Chapter~\ref{ch:sota-repair}.
+
+\paragraph{Foundation models.} The current frontier scales pretraining rather than
+architecture. Brain-JEPA applies a joint-embedding predictive architecture to fMRI with
+brain-gradient positional encoding and spatiotemporal masking, pretrained on UK Biobank
+and reporting state-of-the-art transfer across demographic, cognitive, and diagnostic
+tasks; brain-graph foundation models pursue the same goal across atlases and disorders.
+These models are trained on $10^4$--$10^5$ subjects. They are the correct point of
+comparison for what large-scale pretraining buys, and the wrong point of comparison for
+what is achievable on a single-site cohort of $N < 150$ --- a distinction
+Section~\ref{sec:gaps} argues the field routinely blurs.
+
+%==============================================================================
+\section{Time-to-Event \& Survival Analysis in Clinical Settings}
+\label{sec:survival}
+
+Binary conversion prediction --- \emph{will this MCI subject convert by end of
+follow-up?} --- discards information a clinician needs, namely \emph{when}. Survival
+analysis models the hazard directly and handles right-censoring principledly: a subject
+who has not converted by their last visit is not a negative example, they are an
+observation censored at that time. The classical toolkit spans the semi-parametric Cox
+proportional hazards model, non-parametric Kaplan--Meier estimation, random survival
+forests, and neural extensions such as DeepSurv and DeepHit.
+
+This thesis treats survival as scoped future work rather than a delivered result; the
+reasons and the current state of the PROGNOSER component are stated honestly in
+Section~\ref{sec:prognoser-scope}.
+
+%==============================================================================
+\section{What Is Actually Unsettled: Grey Areas and Research Gaps}
+\label{sec:gaps}
+
+The related-work sections above present the field as it presents itself. This section
+presents it as the evidence supports. Eight questions are genuinely open; this thesis
+takes a position on each, and the position is stated here so that the results chapters can
+be read as answers rather than as isolated numbers.
+
+%------------------------------------------------------------------------------
+\subsection{Does graph topology carry signal beyond the connectivity matrix itself?}
+\label{sec:gap-topology}
+
+The justification for applying GNNs to connectomes is that brain networks have meaningful
+topology and that message passing exploits it. The evidence for the second half of that
+claim is weak. Lara-Rangel and Heinbaugh evaluated graph transformers on the NeuroGraph
+benchmark and found not only that transformers offered no advantage over conventional
+GNNs, but --- far more damagingly --- that \emph{both model families retained their
+accuracy when every edge was removed}. If predictions survive the deletion of the entire
+graph structure, the graph structure was not what the model was using.
+
+This work's pipeline is exposed to the same critique in a specific, checkable way. Edges
+are constructed by $k$-nearest-neighbour sparsification with $k = 8$ on $|\mathrm{FC}|$,
+and the resulting \texttt{edge\_attr} is a \emph{binary} 0/1 mask: once a correlation has
+decided whether an edge exists, its magnitude is discarded. The 200-dimensional node
+feature vector, meanwhile, retains the full continuous correlation profile. The graph is
+thus a lossy, binarised projection of information the node features already carry in full.
+
+\grey{Is connectome topology informative, or a lossy re-encoding of the node features?}{%
+Node features and edges in the standard FC-graph formulation are two views of one matrix,
+not two information sources. Under $k$NN-8 binarisation the edge view is strictly poorer
+than the node view. Whether message passing over that view can add anything is an open
+question the field has largely assumed away; the encoder ablation in
+Chapter~\ref{ch:results} is a direct test on this cohort.}
+
+%------------------------------------------------------------------------------
+\subsection{Does message aggregation help at all?}
+\label{sec:gap-aggregation}
+
+The strongest recent evidence says no. Re-examining graph deep learning against classical
+machine learning across four large-scale neuroimaging studies, the authors of
+\emph{Rethinking Functional Brain Connectome Analysis} report that the message aggregation
+mechanism ``does not help with predictive performance as typically assumed, but rather
+consistently degrades it,'' and propose a hybrid linear/graph-attention model in response.
+Their closing recommendation --- caution in adopting complex models, and rigorous designs
+to establish tangible gains --- is the methodological stance this thesis adopts.
+
+That study is, however, \textbf{cross-sectional and large-$N$}. It says nothing about the
+regime that defines this work: longitudinal sequences, $N < 150$, irregular follow-up. The
+gap is real and this thesis occupies it.
+
+\gap{The message-aggregation critique has never been tested in the longitudinal, small-$N$
+clinical regime.}{%
+The published negative result covers four large cross-sectional studies. Whether it
+survives when the task is trajectory-based, the cohort is one clinical site, and $N < 150$
+is unknown. Chapter~\ref{ch:results}'s four-arm encoder ablation is designed to answer
+exactly this, and the ADNI replication in Section~\ref{sec:external-validation} tests
+whether the answer is cohort-specific.}
+
+%------------------------------------------------------------------------------
+\subsection{What counts as a fair floor at $N < 150$?}
+\label{sec:gap-floors}
+
+Reported accuracies for MCI-to-AD conversion prediction from rs-fMRI span roughly
+0.85--0.97 in the literature, with several studies claiming combined-modality accuracies
+of 97\%. Those numbers are not comparable to each other and frequently not credible.
+Connectome-based studies are known to be inflated by leakage through feature selection
+performed outside the cross-validation loop, covariate correction fitted on the full
+sample, and --- most severely --- non-independence between train and test subjects. Slice-
+or scan-level cross-validation, in which multiple scans from the same subject land on both
+sides of the split, has been shown to inflate accuracy by 30--55 percentage points.
+
+The deeper problem is that a headline AUC is uninterpretable without a floor. A model
+using only age, sex, and visit timing frequently performs respectably on conversion tasks,
+because those variables genuinely carry prognostic information. A paper that reports 0.90
+without reporting what age and sex alone achieve has not established that its imaging
+pipeline contributes anything.
+
+\edge{Every results table in this thesis is anchored against explicit floors.}{%
+Two reference floors are computed on the identical splits and reported alongside every
+model: a metadata-only baseline (age, sex, visit time --- experiment
+\texttt{sanity-metadata-baseline}) and a raw-FC baseline that bypasses the graph encoder
+entirely. An arm that does not clear the metadata floor is not evidence about encoders; it
+is evidence about the cohort. This is standard practice in principle and rare in the
+published brain-GNN literature in fact.}
+
+%------------------------------------------------------------------------------
+\subsection{Nobody reports same-seed replicate variance}
+\label{sec:gap-determinism}
+
+Deep learning training is non-deterministic at two levels. Software randomness (PRNG seeds,
+data-loader shuffling, dropout masks) is what seeding addresses and what the field reports.
+\emph{Hardware} non-determinism --- cuDNN algorithm selection and, decisively,
+floating-point reduction order in GPU atomics --- is not removed by seeding, and is the
+larger term: analyses of ResNet training attribute roughly 80\% of accuracy standard
+deviation to non-deterministic sources rather than to seed choice.
+
+PyTorch exposes the remedy: \texttt{torch.use\_deterministic\_algorithms(True)} together
+with the \texttt{CUBLAS\_WORKSPACE\_CONFIG} environment variable, set before the CUDA
+context is created. Scatter-type backward operations --- which includes the
+\texttt{TopKPooling} and index-gather operations at the heart of several brain-graph
+architectures --- are precisely the operations that remain non-deterministic until those
+flags are set.
+
+The consequence for the literature is stark and, as far as this review found,
+unaddressed. A paper reporting ``mean AUC $\pm$ SD over 4 seeds'' has measured
+seed-to-seed variance \emph{plus} run-to-run variance, and has attributed the whole of it
+to seeds. If the run-to-run term dominates, the reported error bar is not an error bar for
+the quantity it names, and any significance test built on it is invalid. Verifying this
+requires re-running a \emph{fixed} seed several times --- an experiment that costs nothing
+conceptually and that no brain-GNN paper surveyed for this thesis reports.
+
+\gap{Same-seed replicate variance is not reported anywhere in the brain-graph
+literature.}{%
+Multi-seed spread is universally reported; within-seed spread essentially never is.
+Without the latter, the former cannot be interpreted, because the two are confounded.
+Chapter~\ref{ch:sota-repair} performs this decomposition for a published MICCAI baseline
+across 19 runs and finds within-seed variance \emph{exceeds} between-seed variance ---
+which invalidates the error bars, not the direction, of the comparison built on it.}
+
+\edge{The pipeline developed here is bit-reproducible; the audited baseline is not.}{%
+The \texttt{none}-arm GELSTM configuration re-runs byte-identically at a fixed seed, so
+the non-determinism documented in Chapter~\ref{ch:sota-repair} is a property of the
+audited baseline's operations rather than a shared property of the harness. That contrast
+is a stronger and more defensible finding than the accuracy margin it sits beside.}
+
+%------------------------------------------------------------------------------
+\subsection{Longitudinal evaluation protocols are not standardised --- and the choice
+  changes the conclusion}
+\label{sec:gap-protocol}
+
+``Early detection'' results are typically presented as discriminative performance versus
+the number of visits available, $N = 1, 2, 3, \ldots$. There are two ways to build that
+curve and they disagree.
+
+The \emph{variable-cohort} construction keeps, at each $N$, all subjects with at least $N$
+visits, truncated to their first $N$. The cohort therefore shrinks as $N$ grows, and each
+point on the curve is computed on a different, self-selected population. The
+\emph{fixed-cohort} construction restricts to the subjects who have the maximum $N$
+throughout, so every point describes the same people with progressively more information.
+
+The difference is not academic. In this thesis's own diagnostics, the static graph
+classifier appears to \emph{lose} accuracy from $N = 3$ to $N = 4$ under the
+variable-cohort construction ($0.950 \rightarrow 0.914$), and rises monotonically under the
+fixed-cohort construction ($0.886 \rightarrow 0.914$). The apparent degradation was the
+changing population, not a fourth visit hurting the model. A paper reporting only the
+variable-cohort curve would have drawn --- and defended --- a false conclusion.
+
+\gap{No convention exists for constructing AUC-versus-visit-count curves, and the two
+common constructions can yield opposite conclusions on identical runs.}{%
+This thesis reports both constructions side by side and treats the fixed-cohort version as
+the claim-bearing one, with the variable-cohort version shown only to expose the
+composition shift. The per-$N$ converter/non-converter counts are printed beside every
+curve so the shift is visible rather than inferred.}
+
+%------------------------------------------------------------------------------
+\subsection{Follow-up duration is a confound, and it is almost never checked}
+\label{sec:gap-attrition}
+
+In any real longitudinal cohort, how long a subject is followed is not independent of
+their clinical trajectory. In the DELCODE cohort used here, converters are followed
+\emph{longer} than stable-MCI subjects: mean 3.43 versus 2.74 scans, Mann--Whitney
+$U$ test $p = 0.002$. Sequence length is therefore correlated with the label, and a
+longitudinal model has an available shortcut that has nothing to do with brain function.
+
+Detecting this requires care, because the naive check fails. The between-subject
+correlation between predicted probability and visit count is approximately zero in every
+model examined here --- which looks reassuring and is not. It is a Simpson's paradox: the
+marginal trend (converters followed longer) and the within-non-converter trend cancel.
+
+The decisive test is the \emph{within-subject} slope: as one subject's own visits
+accumulate, does the model's predicted probability move? A length shortcut would be flat
+within-subject. Instead, converters drift upward and 79--86\% of non-converters drift
+downward, which is the signature of evidence accumulation rather than a count cue.
+
+\edge{The follow-up-duration confound is measured, decomposed, and refuted, not assumed
+away.}{%
+The within-subject slope analysis distinguishes evidence accumulation from a
+sequence-length shortcut, and resolves a Simpson's paradox that makes the naive
+between-subject check misleading. Informative censoring of this kind is near-universally
+unreported in conversion-prediction papers despite being structurally present in every
+clinical cohort.}
+
+%------------------------------------------------------------------------------
+\subsection{Is reconstruction the right pretext task for a connectome?}
+\label{sec:gap-pretext}
+
+Self-supervised pretraining works when the pretext task requires the representation to
+encode what the downstream task needs. Reconstruction requires the latent to retain
+whatever is necessary to rebuild edges. Conversion prediction requires it to retain
+whatever distinguishes a converter from a stable subject. These are different
+requirements, and nothing guarantees the first implies the second. Between-subject
+variance that is diagnostically informative but reconstruction-irrelevant has no reason to
+survive a bottleneck optimised for reconstruction.
+
+The alternative objectives now dominant at scale --- contrastive and joint-embedding
+predictive objectives such as those in Brain-JEPA --- are motivated in part by exactly
+this concern: predicting in latent space rather than reconstructing in input space avoids
+spending capacity on high-variance, low-information detail. Whether that reasoning
+transfers to $N < 150$ single-site pretraining is untested.
+
+\grey{Whether reconstruction pretraining transfers to clinical discrimination is assumed,
+not demonstrated.}{%
+The reconstruction objective is inherited across the brain-graph literature largely
+unexamined. This thesis tests it with a four-arm ablation that separates the value of the
+pretraining, the value of the architecture at random initialisation, and the value of
+having an encoder at all --- with the interpretation table pre-registered before any
+numbers existed, so the conclusion cannot be fitted to the result.}
+
+%------------------------------------------------------------------------------
+\subsection{Cross-cohort visit-time semantics: the silent-drop failure mode}
+\label{sec:gap-cohorts}
+
+External validation is the accepted remedy for single-cohort overfitting, and it introduces
+a data-representation problem that is easy to get wrong silently. DELCODE encodes visits as
+\emph{nominal protocol months} drawn from a small discrete set ($0, 12, 24, 36, 48, 60$) ---
+the scheduled visit label. ADNI and OASIS-3 encode \emph{actual elapsed days from baseline}
+(\texttt{ses-d0381}) --- continuous and irregular.
+
+These are different quantities, and conflating them fails in both directions. Collapsing
+elapsed days onto the nearest protocol month ($381/30.44 \approx 13$) discards precisely
+the irregularity that a $\Delta t$-conditioned model exists to exploit; keeping days
+continuous breaks any allow-list filter built on protocol-month set membership. Worse, the
+naive failure is silent: a month parser written for DELCODE filenames returns
+\texttt{None} on every ADNI and OASIS-3 session, each subject lands with zero visits, and
+the cohort disappears without raising anything. The result is a clean, wrong, empty
+evaluation.
+
+\gap{Harmonising visit-time semantics across cohorts is treated as preprocessing
+bookkeeping, but it is the canonical train-uniform / test-irregular fairness failure.}{%
+Training on regularly spaced protocol months and evaluating on irregular elapsed times is
+a distribution shift in the model's own input, not a nuisance. This thesis separates the
+three concepts explicitly --- \emph{visit index} for ordering, \emph{protocol month} for
+leakage filtering, \emph{elapsed months} for model input --- with one function per concept
+dispatching on cohort, and never guesses a protocol month it cannot confidently assign.}
+
+%------------------------------------------------------------------------------
+\subsection{Summary of positions}
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \begin{tabular}{@{}p{0.29\linewidth}p{0.31\linewidth}p{0.31\linewidth}@{}}
+    \toprule
+    \textbf{Open question} & \textbf{Field's default assumption} & \textbf{Where this thesis lands} \\
+    \midrule
+    Topology beyond node features (\S\ref{sec:gap-topology})
+      & Graph structure is informative
+      & Tested directly; $k$NN-8 binarisation is lossy by construction \\
+    Message aggregation (\S\ref{sec:gap-aggregation})
+      & Aggregation helps
+      & Published large-$N$ evidence says it degrades; tested here longitudinally \\
+    Evaluation floors (\S\ref{sec:gap-floors})
+      & Headline AUC suffices
+      & Metadata and raw-FC floors in every table \\
+    Same-seed variance (\S\ref{sec:gap-determinism})
+      & Multi-seed SD is the error bar
+      & Decomposed over 19 runs; within-seed dominates \\
+    Visit-horizon protocol (\S\ref{sec:gap-protocol})
+      & Either construction is fine
+      & Both reported; fixed-cohort is claim-bearing \\
+    Follow-up duration (\S\ref{sec:gap-attrition})
+      & Not checked
+      & Within-subject slopes; Simpson's paradox resolved \\
+    Pretext objective (\S\ref{sec:gap-pretext})
+      & Reconstruction transfers
+      & Pre-registered four-arm ablation \\
+    Cross-cohort visit time (\S\ref{sec:gap-cohorts})
+      & Preprocessing detail
+      & Three separated concepts, cohort-dispatched \\
+    \bottomrule
+  \end{tabular}
+  \caption{The eight open questions of Section~\ref{sec:gaps}, the assumption the
+    literature usually makes about each, and the position this thesis takes.}
+  \label{tab:gap-summary}
+\end{table}

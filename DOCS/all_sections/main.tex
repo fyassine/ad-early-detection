@@ -1,0 +1,87 @@
+% Working skeleton for the Master's thesis draft outline.
+% NOT the official TUM CIT template/Deckblatt — swap that in once the
+% ShareLaTeX repo access is sorted out separately (see DOCS/thesis-plan.md
+% for unrelated project-pivot notes; this file tracks the current ToC).
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+\sloppy
+\emergencystretch=3em
+
+% Inline draft/caveat callout — no external package dependency (keeps
+% compilation self-contained under tectonic, no biber/pandoc needed).
+\newcommand{\draftnote}[1]{%
+  \par\noindent\textbf{Draft note:} \textit{#1}\par\vspace{0.5\baselineskip}%
+}
+
+% ── Argument-structure annotations ───────────────────────────────────────────
+% Four callout kinds, each taking {short register label}{body}. Every one is
+% also written to \jobname.ann, which Appendix E reads back as the Reviewer
+% Risk Register — so the register is assembled by the compiler and cannot drift
+% out of sync with the prose the way a hand-maintained list would.
+%
+% \@starttoc/\addcontentsline are the stock LaTeX list-of machinery (the same
+% pair behind \listoffigures); using them keeps this dependency-free rather
+% than pulling in tcolorbox, which tectonic would then have to fetch.
+\newcounter{annotation}
+\makeatletter
+\newcommand{\listofannotations}{\@starttoc{ann}}
+\newcommand{\anno@box}[3]{%
+  \refstepcounter{annotation}%
+  \addcontentsline{ann}{figure}{\protect\numberline{\theannotation}\textbf{#1} --- #2}%
+  \par\vspace{0.6\baselineskip}%
+  \noindent\fbox{%
+    \parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{%
+      \textbf{#1 \theannotation\ · #2}\par\vspace{0.25\baselineskip}#3%
+    }%
+  }%
+  \par\vspace{0.6\baselineskip}%
+}
+% These four must be defined while '@' is still a letter, since their bodies
+% reference \anno@box.
+% Open problem in the field — nobody has settled this yet.
+\newcommand{\gap}[2]{\anno@box{RESEARCH GAP}{#1}{#2}}
+% Contested / unsettled — competent people currently disagree.
+\newcommand{\grey}[2]{\anno@box{GREY AREA}{#1}{#2}}
+% Where this thesis is defensibly ahead of the published state of the art.
+\newcommand{\edge}[2]{\anno@box{OUR EDGE}{#1}{#2}}
+% Where this thesis is exposed — what a hostile reviewer attacks first.
+\newcommand{\risk}[2]{\anno@box{EXPOSURE}{#1}{#2}}
+\makeatother
+
+\title{Longitudinal Graph Representation Learning\\
+  for Early Detection of Alzheimer's Disease\\[0.4em]
+  \large Master's Thesis --- Draft Outline}
+\author{Fraj Yassine Lakhal}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\input{chapters/00_frontmatter}
+\input{chapters/01_introduction}
+\input{chapters/02_foundations}
+\input{chapters/03_data}
+\input{chapters/04_methodology}
+\input{chapters/05_baseline_sota_repair}
+\input{chapters/06_results_ablations}
+\input{chapters/07_software_dashboard}
+\input{chapters/08_discussion}
+\input{chapters/09_conclusion}
+\input{chapters/appendices}
+
+\input{chapters/references}
+
+\end{document}

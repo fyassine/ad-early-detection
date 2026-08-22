@@ -121,39 +121,81 @@ must print `[encoder_init=…] GAAE checkpoint NOT loaded`.
 3. Read metrics from `outputs/RESULTS.csv` (`cv.val_auc_mean` ± `cv.val_auc_std`, and the
    `metric.test_*` columns). The test threshold is the OOF-derived one — never re-tune on test.
 
-## Results (initial — single seed, 2026-08-17)
+## Results (4 seeds, updated 2026-08-22)
 
-Report CV mean ± std across the 5 folds and the single held-out test number.
+Recomputed directly from `CLASSIFIER/outputs/**/run_summary.json` rather than transcribed.
+Test AUC is the mean over per-seed means (sample SD, `ddof=1`, over the 4 seeds); CV AUC
+pools every completed run.
 
-| Arm | Test AUC | Test F1 | Test sens | Test spec | CV AUC (mean ± std) | Trainable params | Run dir |
-|---|---|---|---|---|---|---|---|
-| `pretrained_frozen` | 0.7821 | 0.6207 | 0.6429 | 0.7000 | 0.9084 ± 0.0264 | 520,905 / 965,897 | `outputs/recon-ablation-gelstm-pretrained-frozen/runs/azure-flame-1-20b595788-2026-08-17_19-00-12/` |
-| `pretrained_finetuned` | 0.7821 | 0.6250 | 0.7143 | 0.6000 | 0.8461 ± 0.0488 | 965,897 / 965,897 | `outputs/recon-ablation-gelstm-pretrained-finetuned/runs/olive-glade-1-20b595788-2026-08-17_19-03-43/` |
-| `random` | 0.5714 | 0.5833 | 1.0000 | 0.0000 | 0.7003 ± 0.0970 | 965,897 / 965,897 | `outputs/recon-ablation-gelstm-random/runs/balmy-mountain-1-20b595788-2026-08-17_19-10-31/` |
-| `none` | 0.7607 | 0.7222 | 0.9286 | 0.5500 | 0.9010 ± 0.0811 | 31,169 / 31,169 | `outputs/recon-ablation-gelstm-none/runs/risen-sky-2-20b595788-2026-08-17_18-57-53/` |
+| Arm | Seeds | Runs | Test AUC | Test F1 | CV AUC | Trainable params |
+|---|---|---|---|---|---|---|
+| `none` | 4 | 5 | **0.8313 ± 0.0529** | **0.7028** | 0.8932 ± 0.0073 | 31,169 |
+| `pretrained_frozen` | 4 | 4 | 0.7812 ± 0.0122 | 0.6048 | **0.9211 ± 0.0087** | 520,905 |
+| `random` | 4 | 4 | 0.7312 ± 0.1113 | 0.6080 | 0.7676 ± 0.0514 | 965,897 |
+| `pretrained_finetuned` | 4 | 4 | 0.7107 ± 0.1946 | 0.5842 | 0.8507 ± 0.0195 | 965,897 |
 
-Sanity checks (per "Before comparing" above) all passed: all four runs share git commit
-`20b5957`; `resolved_config.json` differs only in `encoder_init` across arms; `random` and
-`none` both print `[encoder_init=…] GAAE checkpoint NOT loaded` in `run.log`.
+Per-seed test AUC:
 
-### Initial read (single seed — not yet a conclusion)
+| Arm | 42 | 43 | 44 | 45 |
+|---|---|---|---|---|
+| `none` | 0.7607, 0.7607 | 0.8643 | 0.8214 | 0.8786 |
+| `pretrained_frozen` | 0.7821 | 0.7643 | 0.7929 | 0.7857 |
+| `random` | 0.5714 | 0.8250 | 0.7464 | 0.7821 |
+| `pretrained_finetuned` | 0.7821 | **0.4214** | 0.7964 | 0.8429 |
 
-`none` (no encoder, raw pooled features) matches or beats both pretrained arms on every
-test metric while using ~17x fewer trainable parameters, and its CV AUC (0.901±0.081)
-overlaps `pretrained_frozen`'s (0.908±0.026) well inside fold-to-fold noise — closest to
-the pre-registered row *"`none` ≈ every other arm: the graph encoder itself is not earning
-its place."* `random` is the outlier: CV AUC 0.700±0.097 (largest spread of the four) and
-test spec = 0.000 (predicted every test subject as converter) — this looks like an
-optimization collapse from training the encoder end-to-end from a random init on ~130
-training subjects, not clean evidence about pretraining value on its own. Per the doc's own
-caveats, this single-seed comparison — especially the unstable `random` arm — needs ≥3
-seeds before any row of the pre-registered interpretation table above is treated as a
-finding.
+### Reference floors (both required by the doc's own caveats)
 
-Reference floors already in the registry, worth putting in the same table:
-`sanity-metadata-baseline` (age/sex/visit-time only) and the visit-count confound
-diagnostics in `CLASSIFIER/common/VISIT_COUNT_CONFOUND.md`. An arm that does not beat the
-metadata floor is not evidence about encoders at all.
+| Floor | CV AUC | Test AUC |
+|---|---|---|
+| `sanity-metadata-baseline` (age, sex, visit timing; GradientBoosting) | 0.6157 ± 0.0653 | 0.4929 |
+
+Every arm clears the metadata floor on CV AUC, so all four are saying something about
+imaging rather than about demographics. Note the metadata floor's *test* AUC is at chance
+(0.4929) while its CV AUC is 0.6157 — with 34 test subjects that gap is within noise, and it
+is a good reminder of how little a single test point estimate carries here.
+
+### Reproducibility note (new)
+
+`recon-ablation-gelstm-none` was run **twice at seed 42 and produced identical results**
+(test AUC 0.7607 both times). The `none` arm builds no encoder and therefore executes no
+scatter backward, which is exactly the operation class that makes BrainTokenGT
+non-reproducible (see `DOCS/draft_paper/SOTA_POSITIONING.md`). The other three arms have one
+run per seed, so **their within-seed variance is unmeasured** — and for
+`pretrained_finetuned` it is known to be non-zero: a re-run at seed 43 diverged from the
+original on folds 1 and 4. A repeat sweep is in progress; until it lands, treat that arm's
+±0.1946 as conflating seed and run noise.
+
+### Read against the pre-registered table
+
+The observed pattern matches **two** rows of the table below, not one:
+
+* **Row 2 — `none` ≈ every other arm.** `none` has the *highest* test AUC and F1 of the four
+  and a CV AUC (0.8932) within fold-to-fold noise of `pretrained_frozen` (0.9211), using
+  ~17× fewer trainable parameters. The graph encoder is not earning its place.
+* **Row 5 — `pretrained_finetuned` < `pretrained_frozen`.** Freezing beats fine-tuning, and
+  fine-tuning is far noisier (SD 0.1946 vs 0.0122). **But see the confound below before
+  treating this as a finding.**
+
+`random` is the worst arm on CV AUC (0.7676 ± 0.0514, the largest spread of the four), so
+pretraining *does* beat random initialisation when the encoder is trained end-to-end. Since
+`none` also beats `random`, this does not support a clean "pretraining transfers real
+structure" story (row 3): a model with *no* graph encoder outperforms a trained-from-scratch
+one.
+
+**Net read:** the reconstruction pretraining's measurable benefit is **optimisation
+stability relative to random initialisation, not peak performance** — and the graph encoder
+itself is not adding value over mean-pooled raw connectivity features at this cohort size.
+
+### ⚠️ The fine-tuning conclusion is withdrawn, not caveated
+
+`configs/gelstm_recon_ablation_delcode.json` sets a single `learning_rate: 0.001` and
+`adapters/gelstm.py` builds one optimizer param group. The unfrozen pretrained GATv2 encoder
+is therefore fine-tuned at the **same LR as the freshly initialised head** — the textbook way
+to destroy pretrained features, and precisely the treatment BrainTokenGT's own stabilisation
+applied to *its* newly unfrozen parameters (`give_lr_scale=0.1`) and this arm did not.
+
+**The arm measures naive fine-tuning, not fine-tuning.** Any statement about whether
+fine-tuning helps needs an `encoder_lr_scale` arm before it can be made.
 
 ## Pre-registered interpretation
 

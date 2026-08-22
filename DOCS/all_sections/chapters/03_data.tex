@@ -1,0 +1,282 @@
+\chapter{Data, Cohort Stratification \& Preprocessing}
+\label{ch:data}
+
+Three cohorts are used. DELCODE is the primary cohort on which all models are developed and
+compared. ADNI and OASIS-3 were processed through an identical pipeline to serve as external
+validation. This chapter documents each, the preprocessing that produced the functional
+connectivity matrices, the leakage-prevention protocol, and one property of the DELCODE
+follow-up schedule (Section~\ref{sec:delta-t-finding}) that turns out to constrain what can
+be demonstrated on this cohort at all.
+
+%==============================================================================
+\section{The DELCODE Cohort}
+\label{sec:delcode}
+
+DELCODE (DZNE Longitudinal Cognitive Impairment and Dementia Study) is a multi-site German
+observational cohort spanning the AD continuum. Diagnostic status is recorded per visit in
+the \texttt{prmdiag} field, and the analysis population for this thesis is the MCI subset
+with at least one usable resting-state scan.
+
+\paragraph{Label definition.} A subject is labelled \textbf{converter} if \emph{any} visit
+carries a post-conversion diagnosis, and \textbf{stable MCI} otherwise. This is a
+subject-level label applied to a whole trajectory, which has two consequences that must be
+handled rather than assumed away. First, the visits at which a converter is already demented
+are not legitimate model inputs for a task defined as \emph{predicting} conversion; they are
+excluded by the \texttt{allowed\_months} mechanism described in
+Section~\ref{sec:leakage}. Second, the label is defined relative to end of follow-up, so it
+is a censored observation dressed as a binary outcome --- a subject labelled stable may
+simply not have converted \emph{yet}. This is the principal reason the task, as posed, is
+not the clinically ideal one (Section~\ref{sec:prognoser-scope}).
+
+\paragraph{Cohort composition.} Splits are formed once, at subject level, and reused
+unchanged by every model in this thesis, so any two arms are always compared on the
+same people.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \begin{tabular}{@{}lrrrrr@{}}
+    \toprule
+    \textbf{Split} & \textbf{Subjects} & \textbf{Conv.} & \textbf{Stable MCI}
+      & \textbf{Mean scans} & \textbf{Max scans} \\
+    \midrule
+    Train      & 99  & 40 & 59 & 2.7 & 6 \\
+    Validation & 34  & 14 & 20 & 2.5 & 6 \\
+    Test       & 34  & 14 & 20 & 2.4 & 5 \\
+    \midrule
+    \textbf{Total} & \textbf{167} & \textbf{68} & \textbf{99} & 2.6 & 6 \\
+    \bottomrule
+  \end{tabular}
+  \caption{DELCODE longitudinal MCI cohort as used throughout this thesis. Train and
+    validation together form the 133-subject cross-validation pool; the 34-subject test
+    split is held out and touched only for final evaluation.}
+  \label{tab:delcode-cohort}
+\end{table}
+
+\risk{The held-out test set contains 34 subjects, 14 of them converters.}{%
+At this size, a single subject changing side of the decision boundary moves test AUC by
+roughly $0.03$--$0.04$. No difference smaller than that is measurable here, regardless of
+how many decimal places a table reports, and confidence intervals on test metrics are
+correspondingly wide. This is the fundamental limit on every claim in
+Chapter~\ref{ch:results} and is the reason cross-validation distributions, not test point
+estimates, carry the argument.}
+
+\paragraph{The matched comparison window.} The head-to-head comparison against
+Brain-TokenGT (Chapter~\ref{ch:sota-repair}) requires $2 \le T \le 3$ visits, which reduces
+the cohort to $N_{\text{CV}} = 95$ (37 converters, 58 stable MCI) and $N_{\text{test}} = 25$
+(11 converters, 14 stable MCI). Both models are restricted to this identical window, with
+subject-identifier and fold-membership parity verified programmatically rather than inferred
+from a shared random seed.
+
+%==============================================================================
+\section{The Regularity of DELCODE Follow-Up --- and Why It Matters}
+\label{sec:delta-t-finding}
+
+A time-aware longitudinal model exists to exploit irregular follow-up: to distinguish a
+six-month gap from a twenty-four-month one. That premise is worth checking against the data
+before claiming any benefit from it, and on DELCODE it does not hold.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \begin{tabular}{@{}rrr@{}}
+    \toprule
+    \textbf{Interval} & \textbf{Count} & \textbf{Share} \\
+    \midrule
+    12 months & 242 & 90.0\,\% \\
+    24 months &  19 &  7.1\,\% \\
+    36 months &   7 &  2.6\,\% \\
+    48 months &   1 &  0.4\,\% \\
+    \midrule
+    \textbf{Total} & \textbf{269} & mean 13.61, SD 5.24 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Distribution of all inter-visit intervals across the 167 DELCODE subjects.
+    Nine intervals in ten are identical.}
+  \label{tab:delcode-intervals}
+\end{table}
+
+DELCODE is a protocol-driven study: visits are \emph{scheduled} at nominal months
+$0, 12, 24, 36, 48, 60$, and subjects overwhelmingly attend on schedule. The inter-visit
+interval is therefore very nearly a constant, and a model conditioned on it receives a
+feature with almost no variance.
+
+The consequence is directly measurable. Ablating the $\Delta t$ input at evaluation ---
+zeroing the channel so the input shape is preserved and only the signal is removed ---
+changes held-out test AUC by \textbf{exactly zero} ($0.9071$ with $\Delta t$, $0.9071$
+without, identical sensitivity and specificity to four decimal places). The $\Delta t$
+conditioning is architecturally present and empirically inert on this cohort. By contrast,
+destroying the visit \emph{order} while preserving the $\Delta t$ distribution costs
+$0.9071 \rightarrow 0.8486 \pm 0.0258$: the recurrence does use sequence order, just not
+sequence timing.
+
+\risk{The time-awareness of the model cannot be demonstrated on DELCODE, because DELCODE
+has almost no time variation to be aware of.}{%
+This is not a null result about the mechanism; it is a null result about the cohort. A
+feature that is constant cannot contribute, and no architecture can extract information
+from a variable with no variance. Any claim that $\Delta t$ conditioning helps must be
+supported on a cohort where follow-up is genuinely irregular --- which is precisely what
+ADNI and OASIS-3 provide (Section~\ref{sec:external-cohorts}), and which reframes external
+validation from a robustness check into the only place this contribution can be tested at
+all.}
+
+\gap{Time-aware sequence models are routinely proposed and evaluated on protocol-driven
+cohorts whose follow-up is regular by design.}{%
+The literature on time-aware recurrence for disease progression (T-LSTM, ATTAIN, and
+descendants) motivates the mechanism with clinical irregularity, but evaluation cohorts are
+frequently scheduled studies in which that irregularity is largely absent. Reporting the
+distribution of inter-visit intervals should be a standard prerequisite for claiming a
+time-awareness benefit, and it is not.}
+
+%==============================================================================
+\section{External Validation Cohorts}
+\label{sec:external-cohorts}
+
+ADNI and OASIS-3 were carried through the same preprocessing pipeline as DELCODE so that
+external validation tests the model rather than a pipeline difference.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \begin{tabular}{@{}lrrr@{}}
+    \toprule
+     & \textbf{DELCODE} & \textbf{ADNI} & \textbf{OASIS-3} \\
+    \midrule
+    Subjects in final manifest      & 167 & 237 & 128 \\
+    Sessions in final manifest      & 434 & 567 & 234 \\
+    Converter sessions              & --- & 164 & 119 \\
+    Stable-MCI sessions             & --- & 403 & 106 \\
+    Subjects with $\ge 2$ sessions  & 133 & 162 &  60 \\
+    \quad of which converters       &  --- &  51 &  31 \\
+    Visit-time encoding             & protocol month & elapsed days & elapsed days \\
+    \bottomrule
+  \end{tabular}
+  \caption{The three cohorts after identical preprocessing and motion QC. ADNI's
+    longitudinal subset is the larger of the two external cohorts and is the primary
+    external validation target; OASIS-3 is retained as a second replication.}
+  \label{tab:cohorts}
+\end{table}
+
+\edge{Both external cohorts encode \emph{actual elapsed days} rather than scheduled visit
+labels.}{%
+Where DELCODE records \texttt{\_M12\_}, ADNI and OASIS-3 record \texttt{ses-d0381}. Their
+follow-up is genuinely irregular, which makes them the only cohorts in this project on
+which the $\Delta t$ mechanism of Section~\ref{sec:delta-t-finding} can be shown to
+contribute anything. Combined with a five-fold larger longitudinal converter count than
+DELCODE offers, this is the single highest-value asset the project holds.}
+
+\risk{Naively reusing the DELCODE visit parser on these cohorts fails silently.}{%
+A month parser written against \texttt{\_M\textit{N}\_} filename tokens returns
+\texttt{None} for every ADNI and OASIS-3 session; the loader then skips those visits, each
+subject lands with zero visits, and the cohort disappears without raising. The result is a
+clean, well-formatted, entirely empty evaluation. The cohort-aware parsing described in
+Section~\ref{sec:visit-semantics} exists specifically to make this failure loud instead of
+silent.}
+
+%==============================================================================
+\section{fMRI Preprocessing \& Confound Management}
+\label{sec:preprocessing}
+
+All three cohorts pass through the same sequence: BIDS organisation, fMRIPrep, denoising,
+motion-QC gating, atlas extraction, and connectivity estimation.
+
+\begin{enumerate}
+  \item \textbf{BIDS conversion.} DICOM archives (ADNI) and raw NIfTI pools (OASIS-3) are
+    converted to BIDS. Multi-run acquisitions are concatenated --- 6 series merged in ADNI,
+    and 587 raw runs consolidated into 284 single-session 4-D volumes in OASIS-3, where
+    short scout runs and repeated rest runs are common.
+  \item \textbf{fMRIPrep.} Standard motion correction, susceptibility distortion
+    correction, coregistration to the subject's T1w anatomical, and normalisation. A T1w
+    scan is required, which is itself an attrition gate.
+  \item \textbf{Denoising.} ICA-AROMA plus two physiological regressors and one global
+    signal regressor (\texttt{ICAAROMA2Phys1GS}), followed by bandpass filtering.
+  \item \textbf{Motion QC gate.} Sessions with mean framewise displacement above
+    $0.5$\,mm are excluded. This is applied identically across cohorts.
+  \item \textbf{Atlas extraction and connectivity.} Schaefer-200 parcel time series are
+    extracted, and pairwise Pearson correlation followed by the Fisher $z$-transform yields
+    the $200 \times 200$ matrix per session.
+  \item \textbf{Age-effect regression.} Linear-model regression of age effects, so that
+    normal ageing is not learned as disease.
+\end{enumerate}
+
+\paragraph{Attrition is fully accounted.} Of the 414 subjects completing fMRIPrep and
+denoising across the two external cohorts, 396 reach the final flat product. Every one of
+the 18 missing subjects has a documented, per-subject cause: 16 (12 OASIS-3, 4 ADNI) had
+\emph{all} sessions fail the motion gate, and 2 OASIS-3 subjects
+(\texttt{sub-OAS30797}, \texttt{sub-OAS31416}) lack an fMRIPrep confounds file, so QC could
+not be evaluated at all. At the session level the motion gate removes 40 of 714 ADNI
+sessions (5.6\%) and 36 of 270 OASIS-3 sessions (13.3\%); excluded scans average
+$>0.67$\,mm mean FD with over half of their frames exceeding $0.5$\,mm displacement.
+
+\edge{Counting artifacts of the filesystem is not the same as counting data --- a lesson
+learned twice.}{%
+Two separate pipeline-monitoring bugs in this project inflated apparent completion by
+counting \emph{directory existence} rather than expected file content. In the more severe
+instance, 46 OASIS-3 subjects had an fMRIPrep output directory and \emph{zero} postprocessed
+volumes, so a progress monitor reported 90\% settled while 36\% of what it counted was
+empty. All 46 proved recoverable, and their recovery moved the OASIS-3 longitudinal cohort
+from 40 to 60 subjects (19 to 31 converters). Every count reported in this thesis is
+therefore defined as \emph{files matching the expected content pattern}, never as a
+directory count.}
+
+%==============================================================================
+\section{Cross-Cohort Visit Semantics}
+\label{sec:visit-semantics}
+
+Section~\ref{sec:gap-cohorts} identified the conflation of three distinct quantities as a
+silent failure mode. They are kept separate throughout, with one function per concept
+dispatching on cohort:
+
+\begin{description}[leftmargin=3.2cm,style=nextline]
+  \item[\texttt{visit\_index}] Zero-based rank of the session within the subject's
+    trajectory. Used for ordering and window selection. Always available.
+  \item[\texttt{protocol\_month}] The nominal scheduled-visit label. Used \emph{only} by the
+    \texttt{allowed\_months} leakage filter. Returns \texttt{None} when a session cannot be
+    confidently mapped onto a scheduled visit --- for example an ADNI unscheduled visit code
+    --- and is never guessed.
+  \item[\texttt{delta\_t\_months}] Cumulative elapsed months since baseline, as a float.
+    This is the model input. Strictly increasing per subject by construction, so a single
+    inter-visit-difference code path serves all three cohorts.
+\end{description}
+
+For DELCODE, \texttt{delta\_t\_months} equals the nominal protocol month exactly, so the
+cohort-aware refactor is required to reproduce existing DELCODE results byte-for-byte. That
+equality is used as an acceptance gate rather than as an expectation.
+
+%==============================================================================
+\section{Methodological Rigour \& Data Leakage Prevention}
+\label{sec:leakage}
+
+Section~\ref{sec:gap-floors} noted that connectome studies are systematically inflated by
+leakage, with scan-level cross-validation alone documented to add 30--55 accuracy points.
+Four mechanisms guard against it here.
+
+\paragraph{Patient-level splitting.} Splits are formed over \emph{subjects}, never over
+scans. A subject's every visit lies wholly within one split. Cross-validation uses stratified
+grouped folds with the subject identifier as the group, so the same guarantee holds
+fold-to-fold.
+
+\paragraph{An isolated test manifest.} The 34-subject test split is written once and read
+only at final evaluation. It participates in no model selection, no threshold selection, and
+no early stopping.
+
+\paragraph{Post-conversion visit exclusion.} For converter subjects, visits already
+relabelled as dementia are removed from the \texttt{allowed\_months} list. Without this, the
+classifier would be shown scans of established dementia and asked to predict conversion ---
+a leak of the label into the input.
+
+\paragraph{Thresholds derived from validation only.} Decision thresholds come from
+out-of-fold validation predictions, never from test metrics. This is enforced in code rather
+than by convention: the evaluation entry point raises rather than defaulting when no explicit
+threshold is supplied (Section~\ref{sec:thresholds}).
+
+\paragraph{An executable audit.} Split hygiene is not asserted in prose. A
+\texttt{run\_full\_audit} call at the head of every training notebook hard-fails if any
+subject identifier appears in more than one split, and a dedicated experiment
+(\texttt{sanity-split-hygiene}) exists solely to run that check. Appendix~B reproduces the
+resulting logs as evidence rather than summarising them.
+
+\edge{Leakage prevention here is executable and fails loudly, rather than being described.}{%
+The distinction matters because leakage is not usually introduced deliberately; it is
+introduced by a refactor that nobody re-audited. A check that runs on every training job and
+aborts the run is the only form of this guarantee that survives six months of development.}

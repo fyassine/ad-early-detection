@@ -1,0 +1,213 @@
+% Plain thebibliography so the draft compiles standalone under tectonic with no
+% biber/bibtex binary available. Swap for \printbibliography + references.bib once
+% the official template's bibliography backend is known.
+\begin{thebibliography}{99}
+\addcontentsline{toc}{chapter}{References}
+
+% ── Baseline audited in Chapter 5 ───────────────────────────────────────────
+\bibitem{dong2023btgt}
+Z.~Dong, Y.~Wu, Y.~Xiao, J.~S.~X. Chong, Y.~Jin, and J.~H. Zhou.
+\newblock Beyond the Snapshot: Brain Tokenized Graph Transformer for Longitudinal Brain
+  Functional Connectome Embedding.
+\newblock In \emph{MICCAI}, 2023. arXiv:2307.00858.
+
+\bibitem{pareja2020evolvegcn}
+A.~Pareja et al.
+\newblock EvolveGCN: Evolving Graph Convolutional Networks for Dynamic Graphs.
+\newblock In \emph{AAAI}, 2020.
+
+% ── The negative-result literature this thesis extends ──────────────────────
+\bibitem{rethinking2026}
+\emph{Rethinking Functional Brain Connectome Analysis: Do Graph Deep Learning Models Help?}
+\newblock \emph{npj Artificial Intelligence}, 2026. arXiv:2501.17207.
+
+\bibitem{lararangel2025limits}
+J.~Lara-Rangel and C.~Heinbaugh.
+\newblock On the Limits of Applying Graph Transformers for Brain Connectome Classification.
+\newblock arXiv:2503.15902, 2025.
+
+\bibitem{cui2022braingb}
+H.~Cui et al.
+\newblock BrainGB: A Benchmark for Brain Network Analysis with Graph Neural Networks.
+\newblock \emph{IEEE Transactions on Medical Imaging}, 2023. arXiv:2204.07054.
+
+% ── Leakage and evaluation validity ─────────────────────────────────────────
+\bibitem{rosenblatt2024leakage}
+M.~Rosenblatt et al.
+\newblock The effects of data leakage on connectome-based machine learning models.
+\newblock \emph{Nature Communications}, 2024.
+
+\bibitem{shim2021leakage}
+M.~Shim, C.-H. Im, and S.-H. Lee.
+\newblock Inflated prediction accuracy of neuropsychiatric biomarkers caused by data leakage
+  in feature selection.
+\newblock \emph{Scientific Reports}, 11:7980, 2021.
+
+\bibitem{yagis2021slice}
+E.~Yagis et al.
+\newblock Effect of data leakage in brain MRI classification using 2D convolutional neural
+  networks.
+\newblock \emph{Scientific Reports}, 11:22544, 2021.
+
+% ── Reproducibility and non-determinism ─────────────────────────────────────
+\bibitem{summers2021nondeterminism}
+C.~Summers and M.~J. Dinneen.
+\newblock Nondeterminism and Instability in Neural Network Optimization.
+\newblock In \emph{ICML}, 2021. See also arXiv:2001.11396 on non-determinism in TensorFlow
+  ResNets.
+
+\bibitem{bouthillier2021accounting}
+X.~Bouthillier et al.
+\newblock Accounting for Variance in Machine Learning Benchmarks.
+\newblock In \emph{MLSys}, 2021.
+
+\bibitem{renard2020variability}
+F.~Renard et al.
+\newblock Variability and reproducibility in deep learning for medical image segmentation.
+\newblock \emph{Scientific Reports}, 10:13724, 2020.
+
+% ── Graph representation learning ───────────────────────────────────────────
+\bibitem{kipf2016gcn}
+T.~N. Kipf and M.~Welling.
+\newblock Semi-Supervised Classification with Graph Convolutional Networks.
+\newblock In \emph{ICLR}, 2017.
+
+\bibitem{kipf2016vgae}
+T.~N. Kipf and M.~Welling.
+\newblock Variational Graph Auto-Encoders.
+\newblock \emph{NeurIPS Bayesian Deep Learning Workshop}, 2016.
+
+\bibitem{velickovic2018gat}
+P.~Veli\v{c}kovi\'{c} et al.
+\newblock Graph Attention Networks.
+\newblock In \emph{ICLR}, 2018.
+
+\bibitem{brody2022gatv2}
+S.~Brody, U.~Alon, and E.~Yahav.
+\newblock How Attentive are Graph Attention Networks?
+\newblock In \emph{ICLR}, 2022.
+
+\bibitem{perez2018film}
+E.~Perez et al.
+\newblock FiLM: Visual Reasoning with a General Conditioning Layer.
+\newblock In \emph{AAAI}, 2018.
+
+% ── Foundation models for brain dynamics ────────────────────────────────────
+\bibitem{dong2024brainjepa}
+Z.~Dong et al.
+\newblock Brain-JEPA: Brain Dynamics Foundation Model with Gradient Positioning and
+  Spatiotemporal Masking.
+\newblock In \emph{NeurIPS} (Spotlight), 2024. arXiv:2409.19407.
+
+\bibitem{ortega2024brainlm}
+J.~Ortega Caro et al.
+\newblock BrainLM: A foundation model for brain activity recordings.
+\newblock In \emph{ICLR}, 2024.
+
+\bibitem{brainfm2025}
+\emph{A Brain Graph Foundation Model: Pre-Training and Prompt-Tuning across Broad Atlases
+  and Disorders}.
+\newblock arXiv:2506.02044, 2025.
+
+% ── Time-aware sequence modelling ───────────────────────────────────────────
+\bibitem{baytas2017tlstm}
+I.~M. Baytas et al.
+\newblock Patient Subtyping via Time-Aware LSTM Networks.
+\newblock In \emph{KDD}, 2017.
+
+\bibitem{zhang2019attain}
+Y.~Zhang et al.
+\newblock ATTAIN: Attention-based Time-Aware LSTM Networks for Disease Progression
+  Modeling.
+\newblock In \emph{IJCAI}, 2019.
+
+% ── Parcellation and networks ───────────────────────────────────────────────
+\bibitem{schaefer2018}
+A.~Schaefer et al.
+\newblock Local-Global Parcellation of the Human Cerebral Cortex from Intrinsic Functional
+  Connectivity MRI.
+\newblock \emph{Cerebral Cortex}, 28(9):3095--3114, 2018.
+
+\bibitem{yeo2011}
+B.~T.~T. Yeo et al.
+\newblock The organization of the human cerebral cortex estimated by intrinsic functional
+  connectivity.
+\newblock \emph{Journal of Neurophysiology}, 106(3):1125--1165, 2011.
+
+% ── Preprocessing ───────────────────────────────────────────────────────────
+\bibitem{esteban2019fmriprep}
+O.~Esteban et al.
+\newblock fMRIPrep: a robust preprocessing pipeline for functional MRI.
+\newblock \emph{Nature Methods}, 16:111--116, 2019.
+
+\bibitem{pruim2015aroma}
+R.~H.~R. Pruim et al.
+\newblock ICA-AROMA: A robust ICA-based strategy for removing motion artifacts from fMRI
+  data.
+\newblock \emph{NeuroImage}, 112:267--277, 2015.
+
+\bibitem{power2012motion}
+J.~D. Power et al.
+\newblock Spurious but systematic correlations in functional connectivity MRI networks
+  arise from subject motion.
+\newblock \emph{NeuroImage}, 59(3):2142--2154, 2012.
+
+% ── Cohorts ─────────────────────────────────────────────────────────────────
+\bibitem{jessen2018delcode}
+F.~Jessen et al.
+\newblock Design and first baseline data of the DZNE multicenter observational study on
+  predementia Alzheimer's disease (DELCODE).
+\newblock \emph{Alzheimer's Research \& Therapy}, 10:15, 2018.
+
+\bibitem{petersen2010adni}
+R.~C. Petersen et al.
+\newblock Alzheimer's Disease Neuroimaging Initiative (ADNI): Clinical characterization.
+\newblock \emph{Neurology}, 74(3):201--209, 2010.
+
+\bibitem{lamontagne2019oasis3}
+P.~J. LaMontagne et al.
+\newblock OASIS-3: Longitudinal Neuroimaging, Clinical, and Cognitive Dataset for Normal
+  Aging and Alzheimer Disease.
+\newblock \emph{medRxiv}, 2019.
+
+% ── Clinical context ────────────────────────────────────────────────────────
+\bibitem{vandyck2023lecanemab}
+C.~H. van Dyck et al.
+\newblock Lecanemab in Early Alzheimer's Disease.
+\newblock \emph{New England Journal of Medicine}, 388:9--21, 2023.
+
+\bibitem{sims2023donanemab}
+J.~R. Sims et al.
+\newblock Donanemab in Early Symptomatic Alzheimer Disease: The TRAILBLAZER-ALZ 2
+  Randomized Clinical Trial.
+\newblock \emph{JAMA}, 330(6):512--527, 2023.
+
+\bibitem{jack2018nia}
+C.~R. Jack Jr.\ et al.
+\newblock NIA-AA Research Framework: Toward a biological definition of Alzheimer's disease.
+\newblock \emph{Alzheimer's \& Dementia}, 14(4):535--562, 2018.
+
+\bibitem{greicius2004dmn}
+M.~D. Greicius et al.
+\newblock Default-mode network activity distinguishes Alzheimer's disease from healthy
+  aging.
+\newblock \emph{PNAS}, 101(13):4637--4642, 2004.
+
+% ── Survival and attribution ────────────────────────────────────────────────
+\bibitem{katzman2018deepsurv}
+J.~L. Katzman et al.
+\newblock DeepSurv: personalized treatment recommender system using a Cox proportional
+  hazards deep neural network.
+\newblock \emph{BMC Medical Research Methodology}, 18:24, 2018.
+
+\bibitem{sundararajan2017ig}
+M.~Sundararajan, A.~Taly, and Q.~Yan.
+\newblock Axiomatic Attribution for Deep Networks.
+\newblock In \emph{ICML}, 2017.
+
+\draftnote{Verify every entry against the publisher record before submission --- author
+  lists, volume/page numbers and years above are drafted from the literature survey and
+  have not all been checked against the canonical citation. Entries without a named first
+  author are placeholders pending that check.}
+
+\end{thebibliography}

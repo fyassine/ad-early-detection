@@ -140,3 +140,7 @@ logs/
 **/subcortex/**/*.xlsx
 **/subcortex/**/*.pdf
 **/subcortex/**/license.txt
+
+# LaTeX build output (regenerate via DOCS/all_sections/compile.sh)
+DOCS/all_sections/main.pdf
+DOCS/draft_paper/paper.pdf
