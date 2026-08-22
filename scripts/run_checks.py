@@ -244,7 +244,6 @@ def main() -> int:
         ratchet_results=ratchet_results,
         regressions=regressions,
         pip_audit_skipped=pip_audit_skipped,
-        baseline_exists=baseline_exists,
         labels=labels,
     )
 
@@ -268,18 +267,19 @@ def main() -> int:
 # ---------------------------------------------------------------------------
 
 
-def _icon(ok: bool | None) -> str:
-    """Return a short status token."""
-    if ok is None:
-        return "SKIP"
-    return "PASS ✓" if ok else "FAIL ✗"
+def _icon(ok: bool) -> str:
+    return "PASS" if ok else "FAIL"
 
 
-def _print_tool_block(title: str, status_line: str, recommendation: str) -> None:
-    print(f"\n  {'─' * 60}")
-    print(f"  {title}")
-    print(f"    Status      : {status_line}")
-    print(f"    Recommended : {recommendation}")
+REMEDIATIONS = {
+    "ruff_check": "Run `ruff check --fix .` then review remaining errors manually.",
+    "pytest": "Re-run `pytest -x` to stop at the first failure and see the traceback.",
+    "ruff_format": "Run `ruff format .` to auto-format the flagged file(s).",
+    "ruff_complexity": "Break the flagged function(s) into smaller helpers (McCabe <= 10).",
+    "mypy": "Fix or annotate the flagged line(s); use `# type: ignore[<code>]` as a last resort.",
+    "bandit": "Review each finding — do not just suppress with `# nosec`; fix the underlying issue.",
+    "pip_audit": "Run `pip-audit --fix` or bump the affected package(s) to a patched version.",
+}
 
 
 def _print_final_report(
@@ -289,152 +289,32 @@ def _print_final_report(
     ratchet_results: dict[str, set[str]],
     regressions: dict[str, list[str]],
     pip_audit_skipped: bool,
-    baseline_exists: bool,
     labels: dict[str, str],
 ) -> None:
-    print(f"\n\n{'═' * 72}")
-    print("  FINAL REPORT")
-    print(f"{'═' * 72}")
+    print(f"\n{'─' * 60}")
+    print("  SUMMARY")
+    print(f"{'─' * 60}")
 
-    # ── ruff check (blocking) ──────────────────────────────────────────────
-    if lint_ok:
-        rec = "Nothing to do — no lint errors."
-    else:
-        rec = (
-            "Run `ruff check --fix .` to auto-fix safe issues, then review "
-            "remaining errors manually. Focus on the files listed above."
-        )
-    _print_tool_block(
-        "[BLOCKING] ruff check .",
-        _icon(lint_ok),
-        rec,
-    )
+    print(f"  [BLOCKING] ruff check .   {_icon(lint_ok)}")
+    if not lint_ok:
+        print(f"    -> {REMEDIATIONS['ruff_check']}")
+    print(f"  [BLOCKING] pytest         {_icon(test_ok)}")
+    if not test_ok:
+        print(f"    -> {REMEDIATIONS['pytest']}")
 
-    # ── pytest (blocking) ──────────────────────────────────────────────────
-    if test_ok:
-        rec = "All tests pass — nothing to do."
-    else:
-        rec = (
-            "Re-run `pytest -x` to stop at the first failure and see the full "
-            "traceback. Fix the failing test(s) before merging."
-        )
-    _print_tool_block(
-        "[BLOCKING] pytest",
-        _icon(test_ok),
-        rec,
-    )
-
-    # ── ruff format (ratcheted) ────────────────────────────────────────────
-    fmt_findings = ratchet_results["ruff_format"]
-    fmt_new = regressions.get("ruff_format", [])
-    if fmt_new:
-        status = f"{_icon(False)} — {len(fmt_new)} new unformatted file(s)"
-        rec = (
-            "Run `ruff format .` to auto-format everything in one shot. "
-            "Consider adding a pre-commit hook so this never regresses again."
-        )
-    elif fmt_findings:
-        status = f"{_icon(True)} — {len(fmt_findings)} pre-existing (no new)"
-        rec = (
-            "No regression, but there are pre-existing format issues. "
-            "Run `ruff format .` when you have a chance to clean them up."
-        )
-    else:
-        status = _icon(True)
-        rec = "All files are correctly formatted."
-    _print_tool_block("[ratchet] ruff format --check .", status, rec)
-
-    # ── ruff complexity (ratcheted) ────────────────────────────────────────
-    cplx_findings = ratchet_results["ruff_complexity"]
-    cplx_new = regressions.get("ruff_complexity", [])
-    if cplx_new:
-        status = f"{_icon(False)} — {len(cplx_new)} new high-complexity function(s)"
-        rec = (
-            "Break the flagged functions into smaller helpers. Aim for a "
-            "McCabe complexity ≤ 10. The offending locations are listed above."
-        )
-    elif cplx_findings:
-        status = f"{_icon(True)} — {len(cplx_findings)} pre-existing (no new)"
-        rec = (
-            "No regression. Gradually refactor pre-existing complex functions "
-            "when touching those files."
-        )
-    else:
-        status = _icon(True)
-        rec = "No high-complexity functions detected."
-    _print_tool_block("[ratchet] ruff check --select C90 .", status, rec)
-
-    # ── mypy (ratcheted) ───────────────────────────────────────────────────
-    mypy_findings = ratchet_results["mypy"]
-    mypy_new = regressions.get("mypy", [])
-    if mypy_new:
-        status = f"{_icon(False)} — {len(mypy_new)} new type error(s)"
-        rec = (
-            "Add or fix type annotations in the flagged files. Run "
-            "`mypy <file>` on individual modules for a focused view. "
-            "Use `# type: ignore[<code>]` only as a last resort."
-        )
-    elif mypy_findings:
-        status = f"{_icon(True)} — {len(mypy_findings)} pre-existing (no new)"
-        rec = (
-            "No regression. Chip away at pre-existing errors gradually; "
-            "prioritise any that are in hot-path or public-API modules."
-        )
-    else:
-        status = _icon(True)
-        rec = "Type checking clean — no errors."
-    _print_tool_block("[ratchet] mypy", status, rec)
-
-    # ── bandit (ratcheted) ─────────────────────────────────────────────────
-    bandit_findings = ratchet_results["bandit"]
-    bandit_new = regressions.get("bandit", [])
-    if bandit_new:
-        status = f"{_icon(False)} — {len(bandit_new)} new security finding(s)"
-        rec = (
-            "Review each finding carefully — do NOT just suppress with "
-            "`# nosec`. Fix the underlying issue (e.g. use `secrets` instead "
-            "of `random`, avoid shell=True, etc.)."
-        )
-    elif bandit_findings:
-        status = f"{_icon(True)} — {len(bandit_findings)} pre-existing (no new)"
-        rec = (
-            "No new security issues. Review pre-existing findings and "
-            "remediate the highest-severity ones when capacity allows."
-        )
-    else:
-        status = _icon(True)
-        rec = "No security issues detected."
-    _print_tool_block("[ratchet] bandit", status, rec)
-
-    # ── pip-audit (ratcheted) ──────────────────────────────────────────────
-    if pip_audit_skipped:
-        status = "SKIP — no network access"
-        rec = (
-            "Run `pip-audit` manually when connected to the internet to check "
-            "for known vulnerabilities in your dependencies."
-        )
-    else:
-        audit_findings = ratchet_results["pip_audit"]
-        audit_new = regressions.get("pip_audit", [])
-        if audit_new:
-            status = f"{_icon(False)} — {len(audit_new)} new vulnerable package(s)"
-            rec = (
-                "Run `pip-audit --fix` to attempt automatic upgrades, or "
-                "manually bump the affected packages to a patched version and "
-                "update your requirements file."
-            )
-        elif audit_findings:
-            status = f"{_icon(True)} — {len(audit_findings)} pre-existing (no new)"
-            rec = (
-                "No new vulnerabilities. Schedule time to upgrade the "
-                "pre-existing vulnerable packages before they become blocking."
-            )
+    for name in RATCHETED_CHECKS:
+        if name == "pip_audit" and pip_audit_skipped:
+            print(f"  [ratchet]  {labels[name]:<24} SKIP (no network)")
+            continue
+        findings = ratchet_results[name]
+        new = regressions.get(name, [])
+        if new:
+            print(f"  [ratchet]  {labels[name]:<24} FAIL — {len(new)} new")
+            print(f"    -> {REMEDIATIONS[name]}")
         else:
-            status = _icon(True)
-            rec = "All dependencies are free of known vulnerabilities."
-    _print_tool_block("[ratchet] pip-audit", status, rec)
+            print(f"  [ratchet]  {labels[name]:<24} PASS — {len(findings)} pre-existing")
 
-    print(f"\n{'═' * 72}\n")
+    print(f"{'─' * 60}\n")
 
 
 if __name__ == "__main__":

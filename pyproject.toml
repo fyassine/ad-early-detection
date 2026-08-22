@@ -31,23 +31,6 @@ ignore = [
 "**/__init__.py" = ["F401"]  # re-exports
 "**/tests/**" = ["F811", "F401"]
 
-[tool.black]
-target-version = ["py310"]
-line-length = 100
-extend-exclude = '''
-(
-    /(
-        __CLASSIFIER__
-      | ABI/dci_scripts
-      | DCI
-      | \.venv
-      | DATA/DELCODE
-      | BRAINTOKENGT/outputs
-    )/
-  | ABI/comp_corr_v1\.py
-)
-'''
-
 [tool.mypy]
 # Non-blocking in CI (see .github/workflows/test.yml) — codebase is not fully
 # annotated yet. ignore_missing_imports covers untyped third-party deps
@@ -70,7 +53,10 @@ exclude = '''(?x)(
 )'''
 
 [tool.pytest.ini_options]
-addopts = "--cov=CLASSIFIER --cov=PROGNOSER --cov=ABI --cov-report=term-missing"
+# Coverage is not enforced (no --cov-fail-under) — it's informational only, so it's
+# passed explicitly by the one place that wants the report (CI's `test` job in
+# .github/workflows/test.yml) rather than baked in here. Keeping it out of addopts
+# means local/agent `pytest` runs (including scripts/run_checks.py) stay fast and quiet.
 
 [tool.coverage.run]
 omit = [

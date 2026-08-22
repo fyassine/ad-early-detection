@@ -41,7 +41,7 @@ from __future__ import annotations
 import copy
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 import torch
@@ -250,7 +250,16 @@ class BrainTokenGTAdapter(LongitudinalAdapter):
             lr=self.learning_rate,
         )
 
-    def train_fold(self, bundle_tr, bundle_va, cfg, *, rng, device) -> Dict[str, Any]:
+    def train_fold(
+        self,
+        bundle_tr,
+        bundle_va,
+        cfg,
+        *,
+        rng,
+        device,
+        epoch_log_fn: Optional[Callable[[Dict[str, Any]], None]] = None,
+    ) -> Dict[str, Any]:
         tr_items, va_items = list(bundle_tr.items), list(bundle_va.items)
         model = self._build_model()
 
@@ -270,13 +279,14 @@ class BrainTokenGTAdapter(LongitudinalAdapter):
         best_auc, best_state, no_improve = 0.0, copy.deepcopy(model.state_dict()), 0
         order = np.arange(len(tr_items))
 
-        for _epoch in range(self.epochs):
+        for epoch in range(self.epochs):
             model.train()
             # Subject-level shuffling through the injected Generator only
             # (.claude/rules/seeding.md) — never global numpy state.
             if rng is not None:
                 rng.shuffle(order)
 
+            total_loss, n_batches = 0.0, 0
             for start in range(0, len(order), self.batch_size):
                 chunk = order[start : start + self.batch_size]
                 optimizer.zero_grad()
@@ -291,13 +301,25 @@ class BrainTokenGTAdapter(LongitudinalAdapter):
                     loss_sum = loss if loss_sum is None else loss_sum + loss
                 if loss_sum is None:
                     continue
-                (loss_sum / len(chunk)).backward()
+                batch_loss = loss_sum / len(chunk)
+                batch_loss.backward()
                 if self.grad_clip:
                     torch.nn.utils.clip_grad_norm_(params, float(self.grad_clip))
                 optimizer.step()
+                total_loss += float(batch_loss.item())
+                n_batches += 1
 
             va = self._evaluate(model, va_items, None)
             scheduler.step(va["auc"])
+            if epoch_log_fn is not None:
+                epoch_log_fn(
+                    {
+                        "epoch": epoch,
+                        "train_loss": total_loss / max(n_batches, 1),
+                        "val_auc": va["auc"],
+                        "val_f1": va["f1"],
+                    }
+                )
             if va["auc"] > best_auc:
                 best_auc = va["auc"]
                 best_state = copy.deepcopy(model.state_dict())

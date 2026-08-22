@@ -206,9 +206,12 @@ def test_collect_results_flattens_flat_metrics(tmp_path):
 
 
 def test_read_statuses_sorted_recent_first(tmp_path):
-    for ts, started in [("a", "2026-06-24_09-00-00"), ("b", "2026-06-24_11-00-00")]:
+    for ts, started, dur in [("a", "2026-06-24_09-00-00", 25.0), ("b", "2026-06-24_11-00-00", 30.2)]:
         d = tmp_path / "exp" / "runs" / ts
         d.mkdir(parents=True)
-        (d / "status.json").write_text(json.dumps({"state": "done", "started_at": started}))
+        (d / "status.json").write_text(
+            json.dumps({"state": "done", "started_at": started, "duration_seconds": dur})
+        )
     statuses = read_statuses(tmp_path)
     assert [s["started_at"] for s in statuses] == ["2026-06-24_11-00-00", "2026-06-24_09-00-00"]
+    assert [s["duration_seconds"] for s in statuses] == [30.2, 25.0]
