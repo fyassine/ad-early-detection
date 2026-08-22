@@ -1,0 +1,14 @@
+{
+  "experiment_id": "sanity-metadata-baseline",
+  "run_name": "golden-feather-2-5e33e2170-2026-08-22_13-54-30",
+  "state": "done",
+  "pid": 1186852,
+  "host": "frieda",
+  "started_at": "2026-08-22T13:54:34",
+  "git_commit": "5e33e2170",
+  "git_dirty": false,
+  "notebook": "notebooks/SANITY/SANITY_BASELINE_METADATA_TIME.ipynb",
+  "finished_at": "2026-08-22T13:54:45",
+  "exit_code": 0,
+  "duration_seconds": 9.6
+}

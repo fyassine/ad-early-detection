@@ -1,7 +1,7 @@
 {
   "experiment_id": "vgae-gat-static",
   "run_name": "proud-feather-6-657326b0b-2026-06-24_03-08-25",
-  "state": "running",
+  "state": "interrupted",
   "pid": 1649408,
   "started_at": "2026-06-24T03:08:25",
   "git_commit": "657326b0b",

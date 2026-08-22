@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gegru-trajectory-whole-brain",
+  "run_name": "quiet-pebble-5-74659c77b-2026-08-21_11-47-29",
+  "state": "done",
+  "pid": 3346295,
+  "started_at": "2026-08-21T11:47:43",
+  "git_commit": "74659c77b",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-21T12:08:50",
+  "exit_code": 0,
+  "duration_seconds": 1263.1
+}

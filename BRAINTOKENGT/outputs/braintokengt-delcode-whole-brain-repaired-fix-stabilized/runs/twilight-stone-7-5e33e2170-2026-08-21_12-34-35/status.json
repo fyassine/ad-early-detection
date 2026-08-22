@@ -1,0 +1,13 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-repaired-fix-stabilized",
+  "run_name": "twilight-stone-7-5e33e2170-2026-08-21_12-34-35",
+  "state": "done",
+  "pid": 3385727,
+  "started_at": "2026-08-21T12:34:37",
+  "git_commit": "5e33e2170",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb",
+  "finished_at": "2026-08-21T12:45:55",
+  "exit_code": 0,
+  "duration_seconds": 674.4
+}

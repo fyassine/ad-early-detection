@@ -1,0 +1,13 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-repaired-fix-stabilized-seed43",
+  "run_name": "ruby-cloud-1-5e33e2170-2026-08-21_19-02-53",
+  "state": "done",
+  "pid": 3534819,
+  "started_at": "2026-08-21T19:03:05",
+  "git_commit": "5e33e2170",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb",
+  "finished_at": "2026-08-21T19:16:08",
+  "exit_code": 0,
+  "duration_seconds": 777.9
+}

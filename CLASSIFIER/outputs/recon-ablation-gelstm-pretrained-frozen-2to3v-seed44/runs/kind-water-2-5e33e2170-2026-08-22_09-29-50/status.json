@@ -1,0 +1,13 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-frozen-2to3v-seed44",
+  "run_name": "kind-water-2-5e33e2170-2026-08-22_09-29-50",
+  "state": "done",
+  "pid": 3956131,
+  "started_at": "2026-08-22T09:29:55",
+  "git_commit": "5e33e2170",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T09:44:41",
+  "exit_code": 0,
+  "duration_seconds": 883.6
+}

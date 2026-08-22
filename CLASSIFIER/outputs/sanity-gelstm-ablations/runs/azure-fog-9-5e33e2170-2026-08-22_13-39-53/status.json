@@ -1,0 +1,15 @@
+{
+  "experiment_id": "sanity-gelstm-ablations",
+  "run_name": "azure-fog-9-5e33e2170-2026-08-22_13-39-53",
+  "state": "done",
+  "pid": 1185490,
+  "host": "frieda",
+  "started_at": "2026-08-22T13:39:59",
+  "git_commit": "5e33e2170",
+  "git_dirty": false,
+  "notebook": "notebooks/SANITY/SANITY_LONGITUDINAL_GELSTM.ipynb",
+  "duration_seconds": 33.9,
+  "finished_at": "2026-08-22T13:40:34",
+  "error": "Process PID 1185490 terminated abruptly (OOM kill or SIGKILL)",
+  "exit_code": 0
+}

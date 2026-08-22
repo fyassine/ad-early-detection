@@ -1,0 +1,17 @@
+{
+  "arch": {
+    "in_features": 200,
+    "gaae_hidden": 128,
+    "gaae_latent": 64,
+    "gaae_heads": 2,
+    "gaae_cond_dim": 2,
+    "gaae_dropout": 0.3,
+    "lstm_hidden": 32,
+    "lstm_layers": 1,
+    "lstm_dropout": 0.3,
+    "use_time_delta": true,
+    "classifier_hidden": 32,
+    "rnn_type": "lstm"
+  },
+  "norm": {}
+}

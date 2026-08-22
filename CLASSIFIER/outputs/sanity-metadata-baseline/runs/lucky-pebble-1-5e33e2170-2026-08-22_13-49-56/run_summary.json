@@ -1,0 +1,15 @@
+{
+  "experiment_id": "sanity-metadata-baseline",
+  "run_name": "lucky-pebble-1-5e33e2170-2026-08-22_13-49-56",
+  "state": "failed",
+  "status": "failed",
+  "error": "ModuleNotFoundError: No module named 'SHARED'",
+  "duration_seconds": 8.8,
+  "started_at": "2026-08-22T13:50:01",
+  "finished_at": "2026-08-22T13:50:11",
+  "git": {
+    "short_commit": "5e33e2170",
+    "dirty": false
+  },
+  "metrics": {}
+}

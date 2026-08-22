@@ -1,0 +1,13 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-repaired-fix-stabilized-seed45",
+  "run_name": "crimson-galaxy-4-5e33e2170-2026-08-22_12-54-20",
+  "state": "done",
+  "pid": 4045305,
+  "started_at": "2026-08-22T12:54:22",
+  "git_commit": "5e33e2170",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb",
+  "finished_at": "2026-08-22T13:05:30",
+  "exit_code": 0,
+  "duration_seconds": 667.2
+}

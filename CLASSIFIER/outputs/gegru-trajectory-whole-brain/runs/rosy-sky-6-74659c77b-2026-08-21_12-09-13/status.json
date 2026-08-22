@@ -1,0 +1,10 @@
+{
+  "experiment_id": "gegru-trajectory-whole-brain",
+  "run_name": "rosy-sky-6-74659c77b-2026-08-21_12-09-13",
+  "state": "interrupted",
+  "pid": 3364653,
+  "started_at": "2026-08-21T12:09:16",
+  "git_commit": "74659c77b",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb"
+}

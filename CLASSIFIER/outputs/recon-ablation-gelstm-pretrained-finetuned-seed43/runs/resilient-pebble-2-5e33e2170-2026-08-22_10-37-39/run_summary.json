@@ -1,0 +1,15 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-finetuned-seed43",
+  "run_name": "resilient-pebble-2-5e33e2170-2026-08-22_10-37-39",
+  "state": "killed",
+  "status": "killed",
+  "error": "Process PID 3991867 terminated abruptly (OOM kill or SIGKILL)",
+  "started_at": "2026-08-22T10:37:42",
+  "finished_at": "2026-08-22T10:53:26",
+  "duration_seconds": 944.1,
+  "git": {
+    "short_commit": "5e33e2170",
+    "dirty": true
+  },
+  "metrics": {}
+}

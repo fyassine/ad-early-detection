@@ -1,0 +1,13 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-frozen-2to3v-seed45",
+  "run_name": "sunny-light-1-5e33e2170-2026-08-22_09-44-52",
+  "state": "done",
+  "pid": 3963804,
+  "started_at": "2026-08-22T09:44:56",
+  "git_commit": "5e33e2170",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T10:01:45",
+  "exit_code": 0,
+  "duration_seconds": 1008.7
+}

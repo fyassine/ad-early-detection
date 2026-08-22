@@ -1,0 +1,13 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-repaired-fix-stabilized",
+  "run_name": "crimson-morning-8-5e33e2170-2026-08-21_18-47-20",
+  "state": "done",
+  "pid": 3509148,
+  "started_at": "2026-08-21T18:47:30",
+  "git_commit": "5e33e2170",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb",
+  "finished_at": "2026-08-21T19:02:14",
+  "exit_code": 0,
+  "duration_seconds": 881.4
+}

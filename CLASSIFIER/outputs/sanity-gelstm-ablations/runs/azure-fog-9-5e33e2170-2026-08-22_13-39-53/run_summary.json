@@ -1,0 +1,15 @@
+{
+  "experiment_id": "sanity-gelstm-ablations",
+  "run_name": "azure-fog-9-5e33e2170-2026-08-22_13-39-53",
+  "state": "killed",
+  "status": "killed",
+  "error": "Process PID 1185490 terminated abruptly (OOM kill or SIGKILL)",
+  "started_at": "2026-08-22T13:39:59",
+  "finished_at": "2026-08-22T13:40:23",
+  "duration_seconds": 33.9,
+  "git": {
+    "short_commit": "5e33e2170",
+    "dirty": false
+  },
+  "metrics": {}
+}

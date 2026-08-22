@@ -1,0 +1,15 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-seed44",
+  "run_name": "wise-sun-1-5e33e2170-2026-08-22_13-25-56",
+  "state": "failed",
+  "status": "failed",
+  "error": "SystemExit: 143",
+  "started_at": "2026-08-22T13:26:07",
+  "finished_at": "2026-08-22T13:28:46",
+  "duration_seconds": 159.6,
+  "git": {
+    "short_commit": "5e33e2170",
+    "dirty": false
+  },
+  "metrics": {}
+}

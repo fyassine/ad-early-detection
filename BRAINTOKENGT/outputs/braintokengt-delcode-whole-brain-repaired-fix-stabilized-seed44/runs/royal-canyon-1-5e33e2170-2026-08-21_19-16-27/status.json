@@ -1,0 +1,13 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-repaired-fix-stabilized-seed44",
+  "run_name": "royal-canyon-1-5e33e2170-2026-08-21_19-16-27",
+  "state": "done",
+  "pid": 3550546,
+  "started_at": "2026-08-21T19:16:37",
+  "git_commit": "5e33e2170",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb",
+  "finished_at": "2026-08-21T19:28:33",
+  "exit_code": 0,
+  "duration_seconds": 715.9
+}

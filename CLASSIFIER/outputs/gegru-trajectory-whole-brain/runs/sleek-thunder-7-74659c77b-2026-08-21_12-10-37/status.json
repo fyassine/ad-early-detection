@@ -1,0 +1,13 @@
+{
+  "experiment_id": "gegru-trajectory-whole-brain",
+  "run_name": "sleek-thunder-7-74659c77b-2026-08-21_12-10-37",
+  "state": "done",
+  "pid": 3366151,
+  "started_at": "2026-08-21T12:10:42",
+  "git_commit": "74659c77b",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-21T12:37:53",
+  "exit_code": 0,
+  "duration_seconds": 1631.0
+}

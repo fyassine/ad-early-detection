@@ -1,0 +1,13 @@
+{
+  "experiment_id": "braintokengt-delcode-whole-brain-repaired-fix-stabilized-seed43",
+  "run_name": "winter-zenith-3-5e33e2170-2026-08-22_11-28-58",
+  "state": "done",
+  "pid": 4010172,
+  "started_at": "2026-08-22T11:29:02",
+  "git_commit": "5e33e2170",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_BRAINTOKENGT_DELCODE.ipynb",
+  "finished_at": "2026-08-22T11:38:43",
+  "exit_code": 0,
+  "duration_seconds": 581.3
+}
