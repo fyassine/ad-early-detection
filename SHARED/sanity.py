@@ -33,10 +33,15 @@ import pandas as pd
 # ── 1. Split overlap ──────────────────────────────────────────────────────────
 
 
-def _load_subject_ids(csv_path: str, id_col: str) -> set:
+def _load_subject_ids(csv_path: str, id_col: str = "Pseudonym") -> set:
     df = pd.read_csv(csv_path)
     if id_col not in df.columns:
-        raise KeyError(f"{csv_path}: missing column {id_col!r}; has {list(df.columns)}")
+        if "subject_id" in df.columns:
+            id_col = "subject_id"
+        elif "Pseudonym" in df.columns:
+            id_col = "Pseudonym"
+        else:
+            raise KeyError(f"{csv_path}: missing column {id_col!r}; has {list(df.columns)}")
     return set(df[id_col].astype(str).unique())
 
 

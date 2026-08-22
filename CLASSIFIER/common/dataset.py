@@ -47,12 +47,13 @@ class ClassificationDataset(InMemoryDataset):
             if not os.path.exists(self.filter_csv_path):
                 raise FileNotFoundError(f"Filter CSV not found at {self.filter_csv_path}")
             filter_df = pd.read_csv(self.filter_csv_path, sep=self.separator)
-            if "Pseudonym" not in filter_df.columns:
+            id_col = "subject_id" if "subject_id" in filter_df.columns else "Pseudonym"
+            if id_col not in filter_df.columns:
                 raise ValueError(
-                    f"Filter CSV must contain 'Pseudonym' column. Found: {list(filter_df.columns)}"
+                    f"Filter CSV must contain 'Pseudonym' or 'subject_id' column. Found: {list(filter_df.columns)}"
                 )
-            self.allowed_ids.update(filter_df["Pseudonym"].astype(str))
-            self.allowed_months_per_pid = allowed_months_map(filter_df)
+            self.allowed_ids.update(filter_df[id_col].astype(str))
+            self.allowed_months_per_pid = allowed_months_map(filter_df, id_col=id_col)
 
         if patient_info_path:
             self.patient_info = pd.read_csv(patient_info_path, sep=self.separator)

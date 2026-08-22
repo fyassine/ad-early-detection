@@ -108,6 +108,7 @@ class BrainTokenGTAdapter(LongitudinalAdapter):
         self.adjacency_metric = c.get("adjacency_metric", "raw")
         self.min_visits = c.get("min_visits", 2)
         self.max_visits = c.get("max_visits", 3)
+        self.cohort = str(c.get("cohort", "delcode")).lower()
 
         # ── optimisation ────────────────────────────────────────────────────
         self.optimizer_name = c.get("optimizer", "Adam")
@@ -161,6 +162,7 @@ class BrainTokenGTAdapter(LongitudinalAdapter):
             self.cohorts_csv,
             adjacency_k=self.adjacency_k,
             file_variant=self.file_variant,
+            cohort=self.cohort,
         )
         items = [ds[i] for i in range(len(ds))]
 

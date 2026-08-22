@@ -99,11 +99,15 @@ def allowed_months_map(
     id_col: str = "Pseudonym",
     column: str = "allowed_months",
 ) -> dict[str, set[int] | None] | None:
-    """Build ``{pseudonym -> set[int] | None}`` from a split DataFrame.
+    """Build ``{pseudonym/subject_id -> set[int] | None}`` from a split DataFrame.
 
-    Returns ``None`` when the ``allowed_months`` column is absent so callers can
+    Returns ``None`` when the ``allowed_months`` (or ``allowed_days``) column is absent so callers can
     treat a legacy CSV as "no month filtering" without changing behaviour.
     """
+    if id_col not in filter_df.columns and "subject_id" in filter_df.columns:
+        id_col = "subject_id"
+    if column not in filter_df.columns and "allowed_days" in filter_df.columns:
+        column = "allowed_days"
     if column not in filter_df.columns:
         return None
     return {
@@ -112,17 +116,28 @@ def allowed_months_map(
     }
 
 
-def month_allowed(filename: str, allowed: set[int] | None) -> bool:
-    """True if the file's visit month is permitted for its subject.
+def month_allowed(
+    filename: str, allowed: set[int] | None, cohort: Cohort = "delcode"
+) -> bool:
+    """True if the file's visit month/day is permitted for its subject.
 
-    ``allowed=None`` means the subject has no month restriction (kept). When a
-    restriction is present, a file is kept only if its parsed month is in the
-    allow-list — a file with no parseable month is dropped, since it cannot be
-    positively verified as pre-conversion.
+    ``allowed=None`` means the subject has no restriction (kept). When a
+    restriction is present, a file is kept only if its parsed month (or elapsed
+    day for ADNI/OASIS-3) is in the allow-list — a file with no parseable
+    visit value is dropped, since it cannot be positively verified as
+    pre-conversion.
     """
     if allowed is None:
         return True
-    return parse_month(filename) in allowed
+    if cohort == "delcode":
+        m = parse_month(filename)
+        if m is not None:
+            return m in allowed
+    d = parse_day(filename)
+    if d is not None:
+        return d in allowed
+    m = parse_month(filename)
+    return m in allowed if m is not None else False
 
 
 # ---------------------------------------------------------------------------

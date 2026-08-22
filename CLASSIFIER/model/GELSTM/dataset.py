@@ -38,7 +38,13 @@ if str(_ROOT) not in sys.path:
 
 from model.GAAE.utils import knn_binary_adjacency_matrix_no_diag  # noqa: E402
 
-from CLASSIFIER.common.visits import parse_allowed_months, parse_month  # noqa: E402
+from CLASSIFIER.common.visits import (  # noqa: E402
+    Cohort,
+    parse_allowed_months,
+    parse_day,
+    parse_month,
+    visit_identity,
+)
 
 # Maximum visit interval for Δt normalisation (months); covers up to M108.
 MAX_INTERVAL_MONTHS: float = 108.0
@@ -50,14 +56,15 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
     ----------
     matrices_dir : str
         Directory containing per-visit .npz FC matrix files.
-        Filename pattern: sub-{Pseudonym}_ses-XX_{visit}_..._z_transformed.npz
+        Filename pattern: sub-{subject_id}_..._z_transformed.npz
     subject_df : pd.DataFrame
-        Must contain columns: Pseudonym, diagnosis, sex, age.
+        Must contain columns: Pseudonym/subject_id, diagnosis/label/converter_status, sex, age.
         Each row is one subject (not one visit).
-        Only rows with diagnosis in {'mci', 'converter'} are used.
-    cohorts_csv : str
-        Path to cohorts.csv; used to obtain per-subject visit months from the
-        'visit' column (e.g. 'M0', 'M12', 'M24').
+    cohorts_csv : str | None
+        Unused. Accepted only so existing call sites (adapters, checkpointed
+        notebooks) don't need to change their signature; visit allow-lists are
+        read from `allowed_days`/`allowed_months` columns already present in
+        `subject_df`, never from this file.
     adjacency_k : int
         k for kNN adjacency construction.
     file_variant : str
@@ -79,6 +86,9 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
         more likely converter" leakage. Default False. Independent of
         `min_visits`: a subject with exactly `min_visits` visits and
         `min_visits < max_visits` is kept unpadded unless this is also set.
+    cohort : str
+        'delcode' | 'adni' | 'oasis3'. Governs whether filenames encode
+        nominal protocol months (_M<n>_) or elapsed days from baseline (ses-d<n>).
     """
 
     _VARIANT_SUFFIX: Dict[str, str] = {
@@ -90,12 +100,13 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
         self,
         matrices_dir: str,
         subject_df: pd.DataFrame,
-        cohorts_csv: str,
+        cohorts_csv: Optional[str] = None,
         adjacency_k: int = 8,
         file_variant: str = "z_transformed",
         min_visits: Optional[int] = None,
         max_visits: Optional[int] = None,
         require_full_window: bool = False,
+        cohort: Cohort = "delcode",
     ):
         self.matrices_dir = matrices_dir
         self.adjacency_k = adjacency_k
@@ -103,35 +114,65 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
         self.min_visits = min_visits
         self.max_visits = max_visits
         self.require_full_window = require_full_window
+        self.cohort: Cohort = str(cohort).lower()  # type: ignore[assignment]
         self.suffix = self._VARIANT_SUFFIX.get(file_variant, self._VARIANT_SUFFIX["z_transformed"])
 
         if require_full_window and max_visits is None:
             raise ValueError("require_full_window=True requires max_visits to be set")
 
-        allowed = {"mci", "converter"}
-        sub_df = subject_df[subject_df["diagnosis"].isin(allowed)].copy()
-        sub_df["Pseudonym"] = sub_df["Pseudonym"].astype(str)
+        id_col = "subject_id" if "subject_id" in subject_df.columns else "Pseudonym"
+        if id_col not in subject_df.columns:
+            raise ValueError(
+                f"subject_df must contain 'subject_id' or 'Pseudonym'; got {list(subject_df.columns)}"
+            )
 
-        cohorts = pd.read_csv(cohorts_csv)
-        id_col = "Pseudonym"
-        cohorts[id_col] = cohorts[id_col].astype(str)
-        cohorts["visit_m"] = cohorts["visit"].str.replace("M", "", regex=False).astype(float)
+        sub_df = subject_df.copy()
+        if "diagnosis" in sub_df.columns:
+            allowed = {"mci", "converter"}
+            sub_df = sub_df[sub_df["diagnosis"].isin(allowed)].copy()
+        elif "label" in sub_df.columns:
+            allowed = {"mci", "stable", "converter"}
+            sub_df = sub_df[sub_df["label"].isin(allowed)].copy()
+        sub_df[id_col] = sub_df[id_col].astype(str)
 
         self.subjects: List[Dict] = []
         n_dropped_min_visits = 0
         n_dropped_full_window = 0
-        has_allowed_months = "allowed_months" in sub_df.columns
-        for _, row in sub_df.iterrows():
-            pid = str(row["Pseudonym"])
-            label = 1 if row["diagnosis"] == "converter" else 0
-            sex = 1 if str(row.get("sex", "f")).lower() == "m" else 0
-            age_raw = row.get("age", 50.0)
-            age = float(min(max(float(age_raw) / 100.0, 0.0), 1.0))
 
-            allowed_months = (
-                parse_allowed_months(row["allowed_months"]) if has_allowed_months else None
+        allow_col = None
+        for cand in ("allowed_days", "allowed_months"):
+            if cand in sub_df.columns:
+                allow_col = cand
+                break
+
+        for _, row in sub_df.iterrows():
+            pid = str(row[id_col])
+            if "converter_status" in row and pd.notna(row["converter_status"]):
+                label = int(row["converter_status"])
+            elif "label" in row and pd.notna(row["label"]):
+                label = 1 if str(row["label"]).lower() == "converter" else 0
+            elif "diagnosis" in row and pd.notna(row["diagnosis"]):
+                label = 1 if str(row["diagnosis"]).lower() == "converter" else 0
+            else:
+                raise ValueError(
+                    f"Subject {pid!r} has no usable label: 'converter_status', "
+                    "'label' and 'diagnosis' are all absent or NaN "
+                    f"(columns present: {list(row.index)}). Silently defaulting to "
+                    "non-converter would corrupt the CV split without a trace."
+                )
+
+            sex = 1 if str(row.get("sex", "f")).lower() in ("m", "1", "true") else 0
+            age_raw = row.get("age", 50.0)
+            try:
+                age_f = float(age_raw)
+            except (ValueError, TypeError):
+                age_f = 50.0
+            age = float(min(max(age_f / 100.0, 0.0), 1.0))
+
+            allowed_visits = (
+                parse_allowed_months(row[allow_col]) if allow_col is not None else None
             )
-            visit_files = self._find_visit_files(pid, allowed_months)
+            visit_files = self._find_visit_files(pid, allowed_visits)
             if not visit_files:
                 continue
 
@@ -149,31 +190,32 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
                     continue
                 visit_files = visit_files[:max_visits]
 
-            months = [m for m, _ in visit_files]
+            raw_vals = [v for v, _ in visit_files]
             fpaths = [f for _, f in visit_files]
 
+            _, cum_months = visit_identity(self.cohort, raw_vals)
             deltas = [0.0]
-            for i in range(1, len(months)):
-                deltas.append((months[i] - months[i - 1]) / MAX_INTERVAL_MONTHS)
+            for i in range(1, len(cum_months)):
+                deltas.append((cum_months[i] - cum_months[i - 1]) / MAX_INTERVAL_MONTHS)
 
             self.subjects.append(
                 {
                     "subject_id": pid,
                     "label": label,
-                    "visit_months": months,
+                    "visit_months": raw_vals,
                     "delta_t": deltas,
                     "file_paths": fpaths,
                     "sex": sex,
                     "age": age,
-                    "n_scans": len(months),
+                    "n_scans": len(raw_vals),
                 }
             )
 
         n_pos = sum(s["label"] for s in self.subjects)
         n_neg = len(self.subjects) - n_pos
         print(
-            f"LongitudinalSubjectDataset[v2]: {len(self.subjects)} subjects "
-            f"({n_pos} converter, {n_neg} stable MCI)"
+            f"LongitudinalSubjectDataset[v2][{self.cohort}]: {len(self.subjects)} subjects "
+            f"({n_pos} converter, {n_neg} stable/MCI)"
         )
         if min_visits is not None:
             print(f"  min_visits={min_visits}; dropped (too few visits)={n_dropped_min_visits}")
@@ -187,17 +229,18 @@ class LongitudinalSubjectDataset(torch.utils.data.Dataset):
             ns = [s["n_scans"] for s in self.subjects]
             print(f"  Scans per subject: min={min(ns)}  max={max(ns)}  mean={np.mean(ns):.1f}")
 
-    def _find_visit_files(self, pid: str, allowed_months: Optional[set] = None) -> List[tuple]:
+    def _find_visit_files(self, pid: str, allowed_visits: Optional[set] = None) -> List[tuple]:
         pattern = os.path.join(self.matrices_dir, f"sub-{pid}_*{self.suffix}")
         files = glob.glob(pattern)
         result = []
         for f in files:
-            month = parse_month(os.path.basename(f))
-            if month is None:
+            fname = os.path.basename(f)
+            val = parse_month(fname) if self.cohort == "delcode" else parse_day(fname)
+            if val is None:
                 continue
-            if allowed_months is not None and month not in allowed_months:
+            if allowed_visits is not None and val not in allowed_visits:
                 continue
-            result.append((month, f))
+            result.append((val, f))
         return sorted(result, key=lambda x: x[0])
 
     def _load_graph(self, filepath: str) -> Data:
