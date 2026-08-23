@@ -44,7 +44,7 @@ remote() {
     if [[ "$host" == "$(hostname | tr '[:upper:]' '[:lower:]')" ]]; then
         bash -c "$cmd"
     else
-        ssh -n -o BatchMode=yes "$host" "$cmd"
+        ssh -n -o BatchMode=yes "$host" "bash -c $(printf %q "$cmd")"
     fi
 }
 
@@ -129,12 +129,9 @@ fi
 STAMP=$(date +%Y-%m-%d_%H-%M-%S)
 while IFS=$'\t' read -r host id; do
     [[ -n "$host" && -n "$id" ]] || continue
-    LOGDIR="$REPO/$PKG/outputs/$id"
-    LOG="$LOGDIR/dispatch-$host-$STAMP.log"
-    CMD="mkdir -p '$LOGDIR' && cd '$REPO/$PKG' && setsid nohup '$PY' run_experiment.py --id '$id' ${EXTRA[*]:-} > '$LOG' 2>&1 < /dev/null & echo \$!"
-    PID=$(remote "$host" "$CMD")
-    echo "launched $id on $host (pid $PID)"
-    echo "  log: $LOG"
+    CMD="'$PY' '$REPO/scripts/launch_background.py' --pkg '$PKG' --id '$id' ${EXTRA[*]:-}"
+    OUT=$(remote "$host" "$CMD")
+    echo "  [$host] $OUT"
 done <<< "$ASSIGNMENT"
 
 echo
