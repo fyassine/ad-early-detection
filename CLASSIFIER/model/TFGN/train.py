@@ -99,9 +99,10 @@ def train_epoch(
         for item in batch:
             out = _forward_item(model, item, device)
             logits = out["logits"]
+            s_topo = out["s_topo"]
             gate_scores = out["gate_scores"]
-            mu = out["mu"]
             logvar = out["logvar"]
+            mu_raw = out["mu_raw"]
             recon_logits = out["recon_logits"]
 
             label_t = torch.tensor(
@@ -109,18 +110,21 @@ def train_epoch(
             )
             loss = criterion(logits, label_t)
 
-            # Gate sparsity + drift anchor losses
+            # Gate sparsity + node-level drift anchor losses
             if cfg.use_gate and gate_scores is not None:
                 loss = loss + cfg.lambda_sparse * gate_sparsity_kl(
                     gate_scores, cfg.gate_rho
                 )
-                # drift_anchor_mse: compare mean gate score to drift target
-                da_target = torch.tensor(
-                    item.drift_anchor, dtype=torch.float32, device=device
-                )
-                s_mean = gate_scores.mean()
+                da_target = item.drift_anchor.to(device)
                 loss = loss + cfg.lambda_drift * drift_anchor_mse(
-                    s_mean.unsqueeze(0), da_target.unsqueeze(0)
+                    gate_scores.squeeze(-1), da_target
+                )
+
+            # Centrality anchor regularizer on topological saliency s_topo
+            if cfg.lambda_cent > 0.0 and s_topo is not None:
+                cent = item.strength_centrality.to(device)
+                loss = loss + cfg.lambda_cent * centrality_anchor_mse(
+                    s_topo, cent
                 )
 
             # Reconstruction loss
@@ -142,19 +146,10 @@ def train_epoch(
                         recon_logits, (A_last + 1.0) / 2.0, 1.0
                     )
 
-            # KL loss (with warmup)
-            if mu is not None and logvar is not None:
+            # Variational KL loss (evaluated on mu_raw before FiLM conditioning)
+            if mu_raw is not None and logvar is not None:
                 loss = loss + beta_kl_eff * free_bits_kl(
-                    mu, logvar, cfg.free_bits
-                )
-
-            # Centrality anchor
-            if cfg.lambda_cent > 0.0 and gate_scores is not None:
-                cent = item.strength_centrality.to(device)
-                # gate_scores shape: (N, 1) — squeeze to (N,) for MSE
-                gs_squeezed = gate_scores.squeeze(-1)
-                loss = loss + cfg.lambda_cent * centrality_anchor_mse(
-                    gs_squeezed, cent
+                    mu_raw, logvar, cfg.free_bits
                 )
 
             batch_loss = batch_loss + loss

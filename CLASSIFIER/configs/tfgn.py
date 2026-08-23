@@ -1,5 +1,4 @@
-"""
-Dataclass configs for TFGN training and evaluation.
+"""Dataclass configs for TFGN training and evaluation.
 
 `TFGNTrainConfig` collects training-loop hyperparameters; `TFGNEvalConfig`
 groups the kwargs threaded through evaluation.
@@ -32,6 +31,7 @@ class TFGNTrainConfig:
     lstm_hidden: int = 64
     lstm_layers: int = 1
     lstm_dropout: float = 0.3
+    use_time_delta: bool = True
     gvae_hidden: int = 128
     gvae_latent: int = 64
     gvae_heads: int = 2
@@ -39,24 +39,26 @@ class TFGNTrainConfig:
     adjacency_k: int = 8
 
     # TFGN ladder knobs
-    node_lstm_init: str = "random"
+    node_lstm_init: str = "random"  # "random" | "pretrained_frozen" | "pretrained_finetuned"
+    node_lstm_ckpt_path: Optional[str] = None
     use_gate: bool = True
     lambda_sparse: float = 0.1
     lambda_drift: float = 0.01
     gate_rho: float = 0.15
-    recon_target: str = "delta_a_topk"
+    recon_target: str = "delta_a_topk"  # "none" | "delta_a_topk" | "delta_a_mse" | "a_last"
     lambda_recon: float = 1.0
     beta_kl: float = 1.0
     free_bits: float = 0.5
     beta_warmup_epochs: float = 5.0
     change_mask_kappa: float = 0.10
-    fusion: str = "concat_residual"
-    readout: str = "attention"
+    fusion: str = "concat_residual"  # "concat_residual" | "z_only"
+    readout: str = "attention"  # "mean" | "attention"
     dual_score: bool = True
     lambda_cent: float = 0.1
     tau: float = 0.05
     cohort_conditioning: str = "none"
-    encoder_init: Optional[str] = None
+    encoder_init: Optional[str] = None  # GVAE encoder arm: "pretrained_frozen" | "pretrained_finetuned" | "random" | "none"
+    gvae_ckpt_path: Optional[str] = None
 
 
 @dataclass
@@ -69,10 +71,4 @@ class TFGNEvalConfig:
     shuffle_rng: Optional[Any] = field(default=None, repr=False)
     threshold_mode: str = "youden"
     fixed_threshold: float = 0.5
-    # Let gradients flow through the graph encoder while embedding each visit.
-    # ``False`` (default) reproduces the historical behaviour: visits are encoded
-    # under ``torch.no_grad()`` + forced eval mode, so the encoder is a pure
-    # feature extractor no matter what ``requires_grad`` says. Set ``True`` only
-    # for the encoder-trainable ablation arms (see configs/encoder.py) — without
-    # it a randomly-initialised encoder would never actually train.
     encoder_grad: bool = False

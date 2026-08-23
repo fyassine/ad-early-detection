@@ -1,5 +1,7 @@
 """Loss functions for TFGN."""
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 
@@ -34,14 +36,16 @@ def drift_anchor_mse(s: torch.Tensor, d_tilde: torch.Tensor) -> torch.Tensor:
     """MSE between gate scores and drift anchor targets.
 
     Args:
-        s: gate scores (N,) or (B, N)
-        d_tilde: drift anchor targets, same shape
+        s: gate scores (N,) or (N, 1) or (B, N)
+        d_tilde: drift anchor targets, matching shape
 
     Returns:
         Scalar MSE.
     """
     if not isinstance(s, torch.Tensor) or not isinstance(d_tilde, torch.Tensor):
         raise ValueError("Inputs must be torch.Tensors")
+    if s.dim() > d_tilde.dim() and s.size(-1) == 1:
+        s = s.squeeze(-1)
     if s.shape != d_tilde.shape:
         raise ValueError(f"Shape mismatch: {s.shape} vs {d_tilde.shape}")
     return F.mse_loss(s, d_tilde)
@@ -51,7 +55,7 @@ def centrality_anchor_mse(s_topo: torch.Tensor, c: torch.Tensor) -> torch.Tensor
     """MSE between topological attention and centrality.
 
     Args:
-        s_topo: attention/saliency scores for topology (N,)
+        s_topo: attention/saliency scores for topology (N,) or (N, 1)
         c: z-scored strength centrality (N,)
 
     Returns:
@@ -59,6 +63,8 @@ def centrality_anchor_mse(s_topo: torch.Tensor, c: torch.Tensor) -> torch.Tensor
     """
     if not isinstance(s_topo, torch.Tensor) or not isinstance(c, torch.Tensor):
         raise ValueError("Inputs must be torch.Tensors")
+    if s_topo.dim() > c.dim() and s_topo.size(-1) == 1:
+        s_topo = s_topo.squeeze(-1)
     if s_topo.shape != c.shape:
         raise ValueError(f"Shape mismatch: {s_topo.shape} vs {c.shape}")
     return F.mse_loss(s_topo, c)

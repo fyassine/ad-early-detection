@@ -108,7 +108,8 @@ def build_multicohort_bundle(
         native_col = _NATIVE_ALLOW_COLUMN[cohort_key]
         sub_df = sub_df.drop(columns=[c for c in _ALLOW_COLUMNS if c in sub_df.columns and c != native_col])
         if native_col in sub_df.columns:
-            populated = sub_df[native_col].astype(str).str.len().gt(0)
+            clean_col = sub_df[native_col].fillna("").astype(str).str.strip()
+            populated = clean_col.str.len().gt(0) & ~clean_col.str.lower().isin({"nan", "none", "null"})
             if len(sub_df) > 0 and not populated.any():
                 raise ValueError(
                     f"cohort={cohort_key!r}: native allow-list column {native_col!r} is "

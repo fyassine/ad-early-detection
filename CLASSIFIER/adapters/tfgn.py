@@ -1,13 +1,13 @@
-"""
-adapters/tfgn.py — TFGNAdapter (Temporal-First Graph Network classifier).
+"""adapters/tfgn.py — TFGNAdapter (Temporal-First Graph Network classifier).
 
 Implements the six-hook adapter contract consumed by
 ``LONGITUDINAL_COMMON_DELCODE.ipynb``, modelled directly on
 ``adapters/gelstm.py``. Per-fold ``StandardScaler`` on temporal embeddings,
 ``log Δt`` statistics, and centrality z-scoring all ride inside the composite
 ``state`` so the winning fold's statistics survive into test / early-detection /
-trajectory hooks. ``extra_artifacts`` writes ``gate_scores.npy``,
-``dual_scores.npy``, and ``cohort_tags.npy``.
+trajectory hooks. ``patient_embeddings`` supports the mandatory cohort probe.
+``extra_artifacts`` writes ``gate_scores.npy``, ``dual_scores.npy``, and
+``cohort_tags.npy``.
 """
 
 from __future__ import annotations
@@ -26,7 +26,6 @@ from model.GELSTM.dataset import LongitudinalSubjectDataset
 from model.GELSTM.utils import compute_class_weights
 from model.TFGN.dataset import (
     TFGNItem,
-    compute_drift_anchors,
     prepare_tfgn_item,
 )
 from model.TFGN.models import TFGNClassifier
@@ -51,6 +50,7 @@ class TFGNAdapter(LongitudinalAdapter):
         self.lstm_hidden = c.get("lstm_hidden", 64)
         self.lstm_layers = c.get("lstm_layers", 1)
         self.lstm_dropout = c.get("lstm_dropout", 0.3)
+        self.use_time_delta = c.get("use_time_delta", True)
         self.gvae_hidden = c.get("gvae_hidden", 128)
         self.gvae_latent = c.get("gvae_latent", 64)
         self.gvae_heads = c.get("gvae_heads", 2)
@@ -58,6 +58,8 @@ class TFGNAdapter(LongitudinalAdapter):
         self.cohort = str(c.get("cohort", "delcode")).lower()
 
         # TFGN ladder knobs
+        self.node_lstm_init = str(c.get("node_lstm_init", "random")).lower()
+        self.node_lstm_ckpt_path = c.get("node_lstm_ckpt_path")
         self.use_gate = c.get("use_gate", True)
         self.lambda_sparse = c.get("lambda_sparse", 0.1)
         self.lambda_drift = c.get("lambda_drift", 0.01)
@@ -80,6 +82,7 @@ class TFGNAdapter(LongitudinalAdapter):
             c.get("encoder_init"), c.get("freeze_encoder")
         )
         self.encoder_arm_info = encoder_arm(self.encoder_init)
+        self.gvae_ckpt_path = c.get("gvae_ckpt_path") or self.gaae_ckpt_path
 
         # Training params
         self.learning_rate = c.get("learning_rate", 1e-3)
@@ -100,11 +103,12 @@ class TFGNAdapter(LongitudinalAdapter):
 
     # ── arch ────────────────────────────────────────────────────────────────
     def _build_model(self) -> TFGNClassifier:
-        return TFGNClassifier(
+        m = TFGNClassifier(
             n_rois=self.n_rois,
             lstm_hidden=self.lstm_hidden,
             lstm_layers=self.lstm_layers,
             lstm_dropout=self.lstm_dropout,
+            use_time_delta=self.use_time_delta,
             gvae_hidden=self.gvae_hidden,
             gvae_latent=self.gvae_latent,
             gvae_heads=self.gvae_heads,
@@ -116,14 +120,29 @@ class TFGNAdapter(LongitudinalAdapter):
             dual_score=self.dual_score,
         ).to(self.device)
 
+        # Handle node_lstm_init arm
+        if self.node_lstm_init in ("pretrained_frozen", "pretrained_finetuned") and self.node_lstm_ckpt_path:
+            m.load_node_lstm_weights(self.node_lstm_ckpt_path, device=self.device)
+            if self.node_lstm_init == "pretrained_frozen":
+                m.freeze_node_lstm()
+
+        # Handle GVAE encoder_init arm
+        if self.encoder_arm_info.loads_pretrained and self.gvae_ckpt_path and m.gvae is not None:
+            m.load_gvae_weights(self.gvae_ckpt_path, device=self.device)
+            if not self.encoder_arm_info.trains_encoder:
+                m.freeze_gvae()
+
+        return m
+
     def build_model(self) -> TFGNClassifier:
         m = self._build_model()
         trainable = sum(p.numel() for p in m.get_trainable_params())
         total = sum(p.numel() for p in m.parameters())
         print(
             f"TFGN model built: trainable={trainable:,}  total={total:,}  "
-            f"use_gate={self.use_gate}  recon_target={self.recon_target}  "
-            f"fusion={self.fusion}  readout={self.readout}"
+            f"node_lstm_init={self.node_lstm_init}  use_gate={self.use_gate}  "
+            f"recon_target={self.recon_target}  fusion={self.fusion}  "
+            f"readout={self.readout}"
         )
         return m
 
@@ -152,29 +171,17 @@ class TFGNAdapter(LongitudinalAdapter):
         items = [ds[i] for i in range(len(ds))]
         return Bundle(ds.get_labels(), ds.get_subject_ids(), items)
 
-    def _prepare_tfgn_items(
-        self, raw_items: List[Dict], *, drift_anchors: Optional[List[float]] = None
-    ) -> List[TFGNItem]:
-        """Convert raw LongitudinalSubjectDataset items to TFGNItems."""
-        if drift_anchors is None:
-            # Compute drift anchors over the full set
-            X_list = [
-                torch.stack([g.x for g in it["graphs"]], dim=0) for it in raw_items
-            ]
-            drift_anchors = compute_drift_anchors(
-                X_list, gate_rho=self.gate_rho, tau_d=self.tau
-            )
-
+    def _prepare_tfgn_items(self, raw_items: List[Dict]) -> List[TFGNItem]:
+        """Convert raw LongitudinalSubjectDataset items to TFGNItems (fails loud on invalid data)."""
         tfgn_items = []
-        for it, da in zip(raw_items, drift_anchors, strict=False):
-            try:
-                tfgn_item = prepare_tfgn_item(
-                    it, kappa=self.change_mask_kappa, drift_anchor=da
-                )
-                tfgn_items.append(tfgn_item)
-            except ValueError as e:
-                # Change-mask density guard — skip subject with warning
-                print(f"  [TFGN] Skipping {it['subject_id']}: {e}")
+        for it in raw_items:
+            tfgn_item = prepare_tfgn_item(
+                it,
+                kappa=self.change_mask_kappa,
+                gate_rho=self.gate_rho,
+                tau_d=self.tau,
+            )
+            tfgn_items.append(tfgn_item)
         return tfgn_items
 
     # ── training ────────────────────────────────────────────────────────────
@@ -190,20 +197,8 @@ class TFGNAdapter(LongitudinalAdapter):
     ) -> Dict[str, Any]:
         tr_items_raw, va_items_raw = bundle_tr.items, bundle_va.items
 
-        # Compute drift anchors on training set (ranking requires all subjects)
-        tr_X_list = [
-            torch.stack([g.x for g in it["graphs"]], dim=0)
-            for it in tr_items_raw
-        ]
-        tr_drift_anchors = compute_drift_anchors(
-            tr_X_list, gate_rho=self.gate_rho, tau_d=self.tau
-        )
-
-        # Convert to TFGNItems
-        tr_items = self._prepare_tfgn_items(
-            tr_items_raw, drift_anchors=tr_drift_anchors
-        )
-        # Val items get default drift anchors (can't use train ranking for val)
+        # Convert to TFGNItems (each subject self-contained with per-node drift anchor)
+        tr_items = self._prepare_tfgn_items(tr_items_raw)
         va_items = self._prepare_tfgn_items(va_items_raw)
 
         # Fit log_dt StandardScaler on training items
@@ -351,6 +346,29 @@ class TFGNAdapter(LongitudinalAdapter):
                 it.strength_centrality - cent_mean
             ) / cent_std
 
+    def patient_embeddings(self, state: Dict[str, Any], bundle: Bundle, *, device: Any) -> np.ndarray:
+        """Encode each subject into a pooled patient embedding vector for the cohort probe."""
+        model = self._model_for_state(state)
+        tfgn_items = self._prepare_tfgn_items(bundle.items)
+        self._apply_state_normalization(tfgn_items, state)
+        embs = []
+        model.eval()
+        with torch.no_grad():
+            for it in tfgn_items:
+                cond = torch.tensor(
+                    [[it.age, float(it.sex)]], dtype=torch.float32, device=device
+                )
+                A0_ea = it.A0_edge_attr.to(device) if it.A0_edge_attr is not None else None
+                emb = model.encode_patient(
+                    it.X.to(device),
+                    it.log_dt.to(device),
+                    it.A0_edge_index.to(device),
+                    A0_ea,
+                    cond,
+                )
+                embs.append(emb.cpu().numpy().ravel())
+        return np.stack(embs, axis=0)
+
     def eval_split(
         self, state, bundle, threshold, *, device
     ) -> Dict[str, Any]:
@@ -361,7 +379,40 @@ class TFGNAdapter(LongitudinalAdapter):
         eval_cfg = TFGNEvalConfig(
             threshold_mode="fixed", fixed_threshold=threshold
         )
-        return evaluate(model, batches, device, eval_cfg=eval_cfg)
+        res = evaluate(model, batches, device, eval_cfg=eval_cfg)
+
+        # Collect gate scores, dual scores, and cohort tags for extra_artifacts
+        gate_scores_list = []
+        dual_scores_list = []
+        cohort_tags_list = []
+        model.eval()
+        with torch.no_grad():
+            for it in tfgn_items:
+                cond = torch.tensor(
+                    [[it.age, float(it.sex)]], dtype=torch.float32, device=device
+                )
+                A0_ea = it.A0_edge_attr.to(device) if it.A0_edge_attr is not None else None
+                out = model(
+                    it.X.to(device),
+                    it.log_dt.to(device),
+                    it.A0_edge_index.to(device),
+                    A0_ea,
+                    cond,
+                )
+                if out["gate_scores"] is not None:
+                    gate_scores_list.append(out["gate_scores"].cpu().numpy().ravel())
+                if out["s_topo"] is not None:
+                    dual_scores_list.append(out["s_topo"].cpu().numpy().ravel())
+                cohort_tags_list.append(it.cohort)
+
+        if gate_scores_list:
+            state["gate_scores"] = np.stack(gate_scores_list, axis=0)
+        if dual_scores_list:
+            state["dual_scores"] = np.stack(dual_scores_list, axis=0)
+        if cohort_tags_list:
+            state["cohort_tags"] = np.array(cohort_tags_list)
+
+        return res
 
     def truncate_to_n_visits(self, bundle, n) -> Bundle:
         items = [
@@ -393,37 +444,34 @@ class TFGNAdapter(LongitudinalAdapter):
                     "visit_months": item["visit_months"][:t],
                     "n_scans": t,
                 }
-                try:
-                    tfgn_item = prepare_tfgn_item(
-                        sub,
-                        kappa=self.change_mask_kappa,
-                        drift_anchor=0.5,
+                tfgn_item = prepare_tfgn_item(
+                    sub,
+                    kappa=self.change_mask_kappa,
+                    gate_rho=self.gate_rho,
+                    tau_d=self.tau,
+                )
+                self._apply_state_normalization([tfgn_item], state)
+                tfgn_item.X = tfgn_item.X.to(device)
+                tfgn_item.log_dt = tfgn_item.log_dt.to(device)
+                tfgn_item.A0_edge_index = tfgn_item.A0_edge_index.to(device)
+                if tfgn_item.A0_edge_attr is not None:
+                    tfgn_item.A0_edge_attr = tfgn_item.A0_edge_attr.to(
+                        device
                     )
-                    self._apply_state_normalization([tfgn_item], state)
-                    tfgn_item.X = tfgn_item.X.to(device)
-                    tfgn_item.log_dt = tfgn_item.log_dt.to(device)
-                    tfgn_item.A0_edge_index = tfgn_item.A0_edge_index.to(device)
-                    if tfgn_item.A0_edge_attr is not None:
-                        tfgn_item.A0_edge_attr = tfgn_item.A0_edge_attr.to(
-                            device
-                        )
-                    cond = torch.tensor(
-                        [[tfgn_item.age, float(tfgn_item.sex)]],
-                        dtype=torch.float32,
-                        device=device,
-                    )
-                    result = model(
-                        tfgn_item.X,
-                        tfgn_item.log_dt,
-                        tfgn_item.A0_edge_index,
-                        tfgn_item.A0_edge_attr,
-                        cond,
-                    )
-                    prob = torch.sigmoid(result["logits"]).item()
-                    out.append((item["visit_months"][t - 1], prob))
-                except ValueError:
-                    # Change-mask guard may fire on short sequences
-                    continue
+                cond = torch.tensor(
+                    [[tfgn_item.age, float(tfgn_item.sex)]],
+                    dtype=torch.float32,
+                    device=device,
+                )
+                result = model(
+                    tfgn_item.X,
+                    tfgn_item.log_dt,
+                    tfgn_item.A0_edge_index,
+                    tfgn_item.A0_edge_attr,
+                    cond,
+                )
+                prob = torch.sigmoid(result["logits"]).item()
+                out.append((item["visit_months"][t - 1], prob))
         return out
 
     # ── descriptors / persistence ───────────────────────────────────────────
@@ -434,10 +482,12 @@ class TFGNAdapter(LongitudinalAdapter):
             "lstm_hidden": self.lstm_hidden,
             "lstm_layers": self.lstm_layers,
             "lstm_dropout": self.lstm_dropout,
+            "use_time_delta": self.use_time_delta,
             "gvae_hidden": self.gvae_hidden,
             "gvae_latent": self.gvae_latent,
             "gvae_heads": self.gvae_heads,
             "gvae_dropout": self.gvae_dropout,
+            "node_lstm_init": self.node_lstm_init,
             "use_gate": self.use_gate,
             "recon_target": self.recon_target,
             "fusion": self.fusion,
@@ -475,9 +525,6 @@ class TFGNAdapter(LongitudinalAdapter):
 
     def extra_artifacts(self, run_dir, state) -> None:
         run_dir = Path(run_dir)
-        # Gate scores and dual scores would be populated during eval;
-        # for now, mark as empty arrays (filled by the notebook's eval pass)
-        # The adapter writes them if present in the state
         if "gate_scores" in state:
             np.save(run_dir / "gate_scores.npy", np.asarray(state["gate_scores"]))
         if "dual_scores" in state:
@@ -492,7 +539,6 @@ class TFGNAdapter(LongitudinalAdapter):
         run_dir = Path(run_dir)
         ckpt = load_run_checkpoint(run_dir, device=self.device)
         model_state = model_state_from_checkpoint(ckpt)
-        # Scaler stats from checkpoint metadata
         state = {"model_state": model_state}
         if isinstance(ckpt, dict):
             for key in (

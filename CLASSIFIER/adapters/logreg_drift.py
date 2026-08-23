@@ -47,7 +47,7 @@ class LogRegDriftAdapter(LongitudinalAdapter):
             vec_diffs.append(vec_delta)
 
             n_visits = float(item["n_scans"])
-            total_months = float(item["visit_months"][-1])
+            total_months = float(np.sum(item["delta_t"]) * 108.0)
             age = float(item["age"])
             sex = float(item["sex"])
             metadata.append([n_visits, total_months, age, sex])
