@@ -1,0 +1,365 @@
+# External Validation on ADNI and OASIS-3 (Phases C and D).
+#
+# Context: DOCS/timeline/comparison-plan-v2.md §5.
+# ADNI (n=192 with >=2 sessions; 51 converters) is the primary external validation
+# cohort for the GELSTM vs BrainTokenGT head-to-head (Phase C).
+# OASIS-3 (n=60 with >=2 sessions; 31 converters) is the secondary robustness probe (Phase D).
+
+experiments:
+  # =========================================================================
+  # Phase C: ADNI Validation (seeds 42..45)
+  # =========================================================================
+  - id: ext-adni-gelstm-none-seed42
+    mode: longitudinal
+    model: GELSTM
+    dataset: ADNI_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: none
+      cohort: adni
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'ADNI external validation: GELSTM (raw FC / none encoder). Seed 42.'
+
+  - id: ext-adni-gelstm-none-seed43
+    mode: longitudinal
+    model: GELSTM
+    dataset: ADNI_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: none
+      cohort: adni
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'ADNI external validation: GELSTM (raw FC / none encoder). Seed 43.'
+
+  - id: ext-adni-gelstm-none-seed44
+    mode: longitudinal
+    model: GELSTM
+    dataset: ADNI_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: none
+      cohort: adni
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'ADNI external validation: GELSTM (raw FC / none encoder). Seed 44.'
+
+  - id: ext-adni-gelstm-none-seed45
+    mode: longitudinal
+    model: GELSTM
+    dataset: ADNI_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: none
+      cohort: adni
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'ADNI external validation: GELSTM (raw FC / none encoder). Seed 45.'
+
+  - id: ext-adni-gelstm-pretrained-frozen-seed42
+    mode: longitudinal
+    model: GELSTM
+    dataset: ADNI_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      cohort: adni
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'ADNI external validation: GELSTM (pretrained frozen GAAE). Seed 42.'
+
+  - id: ext-adni-gelstm-pretrained-frozen-seed43
+    mode: longitudinal
+    model: GELSTM
+    dataset: ADNI_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      cohort: adni
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'ADNI external validation: GELSTM (pretrained frozen GAAE). Seed 43.'
+
+  - id: ext-adni-gelstm-pretrained-frozen-seed44
+    mode: longitudinal
+    model: GELSTM
+    dataset: ADNI_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      cohort: adni
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'ADNI external validation: GELSTM (pretrained frozen GAAE). Seed 44.'
+
+  - id: ext-adni-gelstm-pretrained-frozen-seed45
+    mode: longitudinal
+    model: GELSTM
+    dataset: ADNI_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      cohort: adni
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'ADNI external validation: GELSTM (pretrained frozen GAAE). Seed 45.'
+
+  - id: ext-adni-braintokengt-stabilized-seed42
+    mode: longitudinal
+    model: BrainTokenGT
+    dataset: ADNI_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    hyperparams:
+      cohort: adni
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'ADNI external validation: BrainTokenGT (stabilized). Seed 42.'
+
+  - id: ext-adni-braintokengt-stabilized-seed43
+    mode: longitudinal
+    model: BrainTokenGT
+    dataset: ADNI_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    hyperparams:
+      cohort: adni
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'ADNI external validation: BrainTokenGT (stabilized). Seed 43.'
+
+  - id: ext-adni-braintokengt-stabilized-seed44
+    mode: longitudinal
+    model: BrainTokenGT
+    dataset: ADNI_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    hyperparams:
+      cohort: adni
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'ADNI external validation: BrainTokenGT (stabilized). Seed 44.'
+
+  - id: ext-adni-braintokengt-stabilized-seed45
+    mode: longitudinal
+    model: BrainTokenGT
+    dataset: ADNI_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    hyperparams:
+      cohort: adni
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'ADNI external validation: BrainTokenGT (stabilized). Seed 45.'
+
+  # =========================================================================
+  # Phase D: OASIS-3 Robustness Probe (seeds 42..45)
+  # =========================================================================
+  - id: ext-oasis3-gelstm-none-seed42
+    mode: longitudinal
+    model: GELSTM
+    dataset: OASIS3_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: none
+      cohort: oasis3
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'OASIS-3 robustness probe: GELSTM (raw FC / none encoder). Seed 42.'
+
+  - id: ext-oasis3-gelstm-none-seed43
+    mode: longitudinal
+    model: GELSTM
+    dataset: OASIS3_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: none
+      cohort: oasis3
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'OASIS-3 robustness probe: GELSTM (raw FC / none encoder). Seed 43.'
+
+  - id: ext-oasis3-gelstm-none-seed44
+    mode: longitudinal
+    model: GELSTM
+    dataset: OASIS3_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: none
+      cohort: oasis3
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'OASIS-3 robustness probe: GELSTM (raw FC / none encoder). Seed 44.'
+
+  - id: ext-oasis3-gelstm-none-seed45
+    mode: longitudinal
+    model: GELSTM
+    dataset: OASIS3_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: none
+      cohort: oasis3
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'OASIS-3 robustness probe: GELSTM (raw FC / none encoder). Seed 45.'
+
+  - id: ext-oasis3-gelstm-pretrained-frozen-seed42
+    mode: longitudinal
+    model: GELSTM
+    dataset: OASIS3_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      cohort: oasis3
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'OASIS-3 robustness probe: GELSTM (pretrained frozen GAAE). Seed 42.'
+
+  - id: ext-oasis3-gelstm-pretrained-frozen-seed43
+    mode: longitudinal
+    model: GELSTM
+    dataset: OASIS3_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      cohort: oasis3
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'OASIS-3 robustness probe: GELSTM (pretrained frozen GAAE). Seed 43.'
+
+  - id: ext-oasis3-gelstm-pretrained-frozen-seed44
+    mode: longitudinal
+    model: GELSTM
+    dataset: OASIS3_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      cohort: oasis3
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'OASIS-3 robustness probe: GELSTM (pretrained frozen GAAE). Seed 44.'
+
+  - id: ext-oasis3-gelstm-pretrained-frozen-seed45
+    mode: longitudinal
+    model: GELSTM
+    dataset: OASIS3_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      cohort: oasis3
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'OASIS-3 robustness probe: GELSTM (pretrained frozen GAAE). Seed 45.'
+
+  - id: ext-oasis3-braintokengt-stabilized-seed42
+    mode: longitudinal
+    model: BrainTokenGT
+    dataset: OASIS3_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    hyperparams:
+      cohort: oasis3
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'OASIS-3 robustness probe: BrainTokenGT (stabilized). Seed 42.'
+
+  - id: ext-oasis3-braintokengt-stabilized-seed43
+    mode: longitudinal
+    model: BrainTokenGT
+    dataset: OASIS3_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    hyperparams:
+      cohort: oasis3
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'OASIS-3 robustness probe: BrainTokenGT (stabilized). Seed 43.'
+
+  - id: ext-oasis3-braintokengt-stabilized-seed44
+    mode: longitudinal
+    model: BrainTokenGT
+    dataset: OASIS3_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    hyperparams:
+      cohort: oasis3
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'OASIS-3 robustness probe: BrainTokenGT (stabilized). Seed 44.'
+
+  - id: ext-oasis3-braintokengt-stabilized-seed45
+    mode: longitudinal
+    model: BrainTokenGT
+    dataset: OASIS3_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    hyperparams:
+      cohort: oasis3
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: 'OASIS-3 robustness probe: BrainTokenGT (stabilized). Seed 45.'

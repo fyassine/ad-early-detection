@@ -1,0 +1,14 @@
+{
+  "experiment_id": "ext-adni-gelstm-none-seed42",
+  "run_name": "twilight-dawn-6-4b9f6d895-2026-08-22_17-51-52",
+  "state": "done",
+  "pid": 4151419,
+  "host": "fritz",
+  "started_at": "2026-08-22T17:51:55",
+  "git_commit": "4b9f6d895",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T17:58:45",
+  "exit_code": 0,
+  "duration_seconds": 408.8
+}

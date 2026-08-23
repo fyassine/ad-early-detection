@@ -1,0 +1,14 @@
+{
+  "experiment_id": "ext-adni-gelstm-none-seed45",
+  "run_name": "curious-breeze-1-4b9f6d895-2026-08-22_18-00-55",
+  "state": "done",
+  "pid": 4153835,
+  "host": "fritz",
+  "started_at": "2026-08-22T18:00:58",
+  "git_commit": "4b9f6d895",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T18:11:58",
+  "exit_code": 0,
+  "duration_seconds": 658.9
+}

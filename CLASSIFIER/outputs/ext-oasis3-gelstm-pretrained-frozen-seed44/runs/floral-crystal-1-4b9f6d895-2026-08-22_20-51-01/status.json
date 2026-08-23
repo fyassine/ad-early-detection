@@ -1,0 +1,14 @@
+{
+  "experiment_id": "ext-oasis3-gelstm-pretrained-frozen-seed44",
+  "run_name": "floral-crystal-1-4b9f6d895-2026-08-22_20-51-01",
+  "state": "done",
+  "pid": 1209641,
+  "host": "frieda",
+  "started_at": "2026-08-22T20:51:09",
+  "git_commit": "4b9f6d895",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T20:55:02",
+  "exit_code": 0,
+  "duration_seconds": 232.0
+}

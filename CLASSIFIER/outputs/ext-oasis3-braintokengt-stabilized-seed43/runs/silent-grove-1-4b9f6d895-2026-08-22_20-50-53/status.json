@@ -1,0 +1,14 @@
+{
+  "experiment_id": "ext-oasis3-braintokengt-stabilized-seed43",
+  "run_name": "silent-grove-1-4b9f6d895-2026-08-22_20-50-53",
+  "state": "done",
+  "pid": 4167040,
+  "host": "fritz",
+  "started_at": "2026-08-22T20:50:56",
+  "git_commit": "4b9f6d895",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T20:57:50",
+  "exit_code": 0,
+  "duration_seconds": 412.7
+}

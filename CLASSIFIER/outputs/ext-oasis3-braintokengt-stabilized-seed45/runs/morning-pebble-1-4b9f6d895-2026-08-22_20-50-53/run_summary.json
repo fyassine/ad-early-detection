@@ -1,0 +1,190 @@
+{
+  "run_name": "morning-pebble-1-4b9f6d895-2026-08-22_20-50-53",
+  "data_info": {
+    "data_root": "/mnt/e/fyassine/ad-early-detection/DATA/OASIS3/__fc_wholebrain_sch200_flat__/matrices",
+    "dataset_dir": "__fc_wholebrain_sch200_flat__",
+    "modality": "fc",
+    "region": "wholebrain",
+    "atlas": "sch200",
+    "variant": "flat"
+  },
+  "dataset_info": {
+    "data_root": "/mnt/e/fyassine/ad-early-detection/DATA/OASIS3/__fc_wholebrain_sch200_flat__/matrices",
+    "dataset_dir": "__fc_wholebrain_sch200_flat__",
+    "modality": "fc",
+    "region": "wholebrain",
+    "atlas": "sch200",
+    "variant": "flat",
+    "train_csv": "/mnt/e/fyassine/ad-early-detection/DATA/OASIS3/__metadata__/SPLITS/downstream/train.csv",
+    "val_csv": "/mnt/e/fyassine/ad-early-detection/DATA/OASIS3/__metadata__/SPLITS/downstream/val.csv",
+    "test_csv": "/mnt/e/fyassine/ad-early-detection/DATA/OASIS3/__metadata__/SPLITS/downstream/test.csv",
+    "n_folds": 5
+  },
+  "model_config": {
+    "model_type": "BrainTokenGT",
+    "paper": "Dong et al., MICCAI 2023 (arXiv:2307.00858)",
+    "upstream_ref": "Brain-TokenGT/ (pristine checkout)",
+    "pretrained_encoder": null,
+    "in_features": 200,
+    "num_nodes": 200,
+    "output_sizes": [
+      32,
+      32
+    ],
+    "nhead": 2,
+    "num_layers": 2,
+    "static_edge_topk": 180,
+    "edge_density": 0.15012345679012346,
+    "adjacency_metric": "raw",
+    "min_visits": 2,
+    "max_visits": 3,
+    "edge_weight_mode": "weighted",
+    "readout": "graph_token",
+    "force_single_head": false,
+    "train_give": true,
+    "give_weight_decay": 0.001,
+    "give_lr_scale": 0.1,
+    "upstream_faithful": false
+  },
+  "training_config": {
+    "_comment": "Brain-TokenGT REPAIRED + fix-stabilized: same fidelity flags as braintokengt_repaired_delcode.json, but the newly-unfrozen GIVE/GRCU parameters (train_give=true) get their own optimizer param group -- give_weight_decay regularizes the recurrent weight-matrix GRU, give_lr_scale slows its evolution -- to address the run-to-run numerical divergence documented in outputs/braintokengt-delcode-whole-brain-repaired (two failed runs, IndexError in TopK from non-finite scores; isolated replay showed it is GPU floating-point-order sensitive, not data-dependent).",
+    "in_features": 200,
+    "num_nodes": 200,
+    "output_sizes": [
+      32,
+      32
+    ],
+    "nhead": 2,
+    "num_layers": 2,
+    "static_edge_topk": 180,
+    "edge_weight_mode": "weighted",
+    "readout": "graph_token",
+    "force_single_head": false,
+    "train_give": true,
+    "give_weight_decay": 0.001,
+    "give_lr_scale": 0.1,
+    "edge_density": 0.15012345679012346,
+    "adjacency_metric": "raw",
+    "min_visits": 2,
+    "max_visits": 3,
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0,
+    "epochs": 50,
+    "early_stopping_patience": 15,
+    "batch_size": 8,
+    "use_class_cost_weights": true,
+    "grad_clip": 1.0,
+    "n_folds": 5,
+    "cohort": "oasis3"
+  },
+  "gaae_checkpoint": "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth",
+  "gaae_run_name": "ethereal-planet-16_2026-06-10_12-31-05",
+  "n_folds": 5,
+  "best_fold": 4,
+  "best_val_auc": 0.9,
+  "active_threshold": 0.04300461336970329,
+  "threshold_method": "oof_f1",
+  "cv_results": {
+    "fold": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "val_auc": [
+      0.8,
+      0.6800000000000002,
+      0.75,
+      0.9,
+      0.6
+    ],
+    "val_sensitivity": [
+      1.0,
+      0.8,
+      1.0,
+      1.0,
+      0.5
+    ],
+    "val_specificity": [
+      0.4,
+      0.8,
+      0.75,
+      0.75,
+      1.0
+    ],
+    "val_f1": [
+      0.7692307692307693,
+      0.8,
+      0.9090909090909091,
+      0.9090909090909091,
+      0.6666666666666666
+    ],
+    "best_threshold": [
+      0.39520272612571716,
+      0.4872739315032959,
+      0.4747568666934967,
+      0.04300461336970329,
+      0.2549366354942322
+    ]
+  },
+  "env": {
+    "python": "3.10.12",
+    "torch": "2.10.0+cu128",
+    "torch_geometric": "2.7.0",
+    "numpy": "1.26.4",
+    "sklearn": "1.7.2"
+  },
+  "git": {
+    "commit": "4b9f6d8956eeea29d8abbb91168419c4eb91dd6a",
+    "short_commit": "4b9f6d895",
+    "branch": "ablation/reconstruction-value",
+    "dirty": true
+  },
+  "metrics": {
+    "test_auc": 0.5238095238095237,
+    "test_f1": 0.5333333333333333,
+    "test_sensitivity": 0.5714285714285714,
+    "test_specificity": 0.3333333333333333,
+    "threshold": 0.04300461336970329,
+    "threshold_method": "oof_f1"
+  },
+  "test_auc": 0.5238095238095237,
+  "test_sensitivity": 0.5714285714285714,
+  "test_specificity": 0.3333333333333333,
+  "test_f1": 0.5333333333333333,
+  "test_probabilities": [
+    0.0422816164791584,
+    0.04224741831421852,
+    0.8946202397346497,
+    0.892475962638855,
+    0.04220028594136238,
+    0.6571279764175415,
+    0.8948033452033997,
+    0.8944872617721558,
+    0.04512213170528412,
+    0.042117200791835785,
+    0.042386095970869064,
+    0.04386848956346512,
+    0.894778847694397
+  ],
+  "test_labels": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "duration_seconds": 391.9,
+  "state": "done",
+  "status": "done"
+}

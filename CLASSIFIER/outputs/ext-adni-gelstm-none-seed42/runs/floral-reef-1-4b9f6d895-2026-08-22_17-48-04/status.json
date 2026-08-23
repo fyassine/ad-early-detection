@@ -1,0 +1,16 @@
+{
+  "experiment_id": "ext-adni-gelstm-none-seed42",
+  "run_name": "floral-reef-1-4b9f6d895-2026-08-22_17-48-04",
+  "state": "failed",
+  "pid": 1197652,
+  "host": "frieda",
+  "started_at": "2026-08-22T17:48:08",
+  "git_commit": "4b9f6d895",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T17:48:22",
+  "duration_seconds": 13.7,
+  "error": "ValueError: GAAE_CHECKPOINT_PATH is required under the experiment runner. Set 'checkpoint_path:' on this entry in the experiments/ directory.",
+  "notebook_traceback": "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m\n\u001b[0;31mValueError\u001b[0m                                Traceback (most recent call last)\nCell \u001b[0;32mIn[9], line 4\u001b[0m\n\u001b[1;32m      1\u001b[0m \u001b[38;5;66;03m# Shared helper: resolves GAAE_CHECKPOINT_PATH headlessly under the runner, or\u001b[39;00m\n\u001b[1;32m      2\u001b[0m \u001b[38;5;66;03m# prompts for an index interactively.\u001b[39;00m\n\u001b[1;32m      3\u001b[0m \u001b[38;5;28;01mif\u001b[39;00m GAAE_CHECKPOINT_PATH \u001b[38;5;129;01mis\u001b[39;00m \u001b[38;5;28;01mNone\u001b[39;00m \u001b[38;5;129;01mand\u001b[39;00m RUN_DIR \u001b[38;5;129;01mis\u001b[39;00m \u001b[38;5;129;01mnot\u001b[39;00m \u001b[38;5;28;01mNone\u001b[39;00m:\n\u001b[0;32m----> 4\u001b[0m     \u001b[38;5;28;01mraise\u001b[39;00m \u001b[38;5;167;01mValueError\u001b[39;00m(\n\u001b[1;32m      5\u001b[0m         \u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mGAAE_CHECKPOINT_PATH is required under the experiment runner. \u001b[39m\u001b[38;5;124m\"\u001b[39m\n\u001b[1;32m      6\u001b[0m         \u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mSet \u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mcheckpoint_path:\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124m on this entry in the experiments/ directory.\u001b[39m\u001b[38;5;124m\"\u001b[39m\n\u001b[1;32m      7\u001b[0m     )\n\u001b[1;32m      8\u001b[0m GAAE_RUN_NAME, GAAE_CKPT_PATH, GAAE_RUN_DIR \u001b[38;5;241m=\u001b[39m select_gaae_checkpoint(\n\u001b[1;32m      9\u001b[0m     CHECKPOINT_SEARCH_DIRS, checkpoint_path\u001b[38;5;241m=\u001b[39mGAAE_CHECKPOINT_PATH,\n\u001b[1;32m     10\u001b[0m )\n\u001b[1;32m     11\u001b[0m GAAE_CKPT_PATH \u001b[38;5;241m=\u001b[39m \u001b[38;5;28mstr\u001b[39m(GAAE_CKPT_PATH)\n\n\u001b[0;31mValueError\u001b[0m: GAAE_CHECKPOINT_PATH is required under the experiment runner. Set 'checkpoint_path:' on this entry in the experiments/ directory.",
+  "cell": "In [9]"
+}
