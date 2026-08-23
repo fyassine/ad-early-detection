@@ -16,7 +16,15 @@ import numpy as np
 import torch
 
 
-def set_seed(seed: int = 42) -> None:
+def set_seed(seed: int = 42, *, strict: bool = False) -> None:
+    """Process-wide seeding. ``strict=True`` additionally forces bit-for-bit
+    determinism (``torch.use_deterministic_algorithms``), for models whose ops
+    (e.g. GATv2 scatter-backward, sparsemax) are nondeterministic on GPU by
+    default even with cudnn.deterministic=True. Off by default — it can raise
+    on ops without a deterministic kernel and is slower, so opt in only where a
+    seed-level noise floor genuinely needs to be trusted (see
+    DOCS/temporal-first-ablation.md).
+    """
     random.seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)
@@ -24,6 +32,9 @@ def set_seed(seed: int = 42) -> None:
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    if strict:
+        os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+        torch.use_deterministic_algorithms(True)
 
 
 def make_rng(seed: int) -> np.random.Generator:
