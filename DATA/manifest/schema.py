@@ -1,7 +1,7 @@
 """Cohort-manifest schema and build-time assertions.
 
 Schema and assertion list per
-DOCS/meetings/ninth-meeting/comparison-plan-v2.md §3 (Phase A.0). Every
+DOCS/timeline/MASTER_PLAN.md §3 (Phase A.0). Every
 assertion here fails loudly (raises) rather than silently dropping rows —
 that is the entire point of A.0: two "progress counter globs a directory,
 counts a strays" bugs have already shipped (the ``.html`` glob and the
@@ -117,7 +117,7 @@ def assert_counts_match(
             f"{cohort}: manifest counts drifted from the §7-reproduced totals. "
             f"Expected subjects={expected_subjects}, sessions={expected_sessions}; "
             f"got subjects={actual_subjects}, sessions={actual_sessions}. "
-            "Re-run DOCS/meetings/ninth-meeting/comparison-plan-v2.md §7's count "
+            "Re-run DOCS/timeline/MASTER_PLAN.md §3's count "
             "block and update the expected counts if this drift is real (e.g. a "
             "postprocessing pass landed), rather than assuming the manifest is wrong."
         )

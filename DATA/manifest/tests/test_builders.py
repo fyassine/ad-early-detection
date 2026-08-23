@@ -4,8 +4,8 @@ on-disk flat directories and metadata CSVs. Auto-skips per-cohort when its
 source data isn't present (mirrors
 DATA/DELCODE/src/splitting/tests/test_split_integrity.py's Section B pattern).
 
-These pin the §7-reproduced counts from
-DOCS/meetings/ninth-meeting/comparison-plan-v2.md so a drift back into the
+These pin the counts reproduced in
+DOCS/timeline/MASTER_PLAN.md §3 so a drift back into the
 "progress counter globs a directory, not content" bug class is caught here
 first, not three weeks later in a fourth incarnation of it.
 """
