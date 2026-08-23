@@ -1,0 +1,14 @@
+{
+  "experiment_id": "ext-adni-gelstm-none-seed44",
+  "run_name": "resilient-shape-1-4b9f6d895-2026-08-22_17-59-54",
+  "state": "done",
+  "pid": 1199617,
+  "host": "frieda",
+  "started_at": "2026-08-22T17:59:58",
+  "git_commit": "4b9f6d895",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T18:01:14",
+  "exit_code": 0,
+  "duration_seconds": 75.9
+}

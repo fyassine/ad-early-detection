@@ -1,0 +1,14 @@
+{
+  "experiment_id": "ext-adni-gelstm-none-seed43",
+  "run_name": "icy-atom-1-4b9f6d895-2026-08-22_17-59-34",
+  "state": "done",
+  "pid": 1199342,
+  "host": "frieda",
+  "started_at": "2026-08-22T17:59:38",
+  "git_commit": "4b9f6d895",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T18:01:06",
+  "exit_code": 0,
+  "duration_seconds": 86.9
+}

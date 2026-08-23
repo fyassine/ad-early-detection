@@ -1,0 +1,15 @@
+{
+  "experiment_id": "ext-adni-gelstm-none-seed42",
+  "run_name": "lilac-canyon-3-4b9f6d895-2026-08-22_17-49-54",
+  "state": "failed",
+  "status": "failed",
+  "error": "AttributeError: 'tuple' object has no attribute 'items'",
+  "duration_seconds": 14.8,
+  "started_at": "2026-08-22T17:49:58",
+  "finished_at": "2026-08-22T17:50:14",
+  "git": {
+    "short_commit": "4b9f6d895",
+    "dirty": false
+  },
+  "metrics": {}
+}

@@ -1,0 +1,14 @@
+{
+  "experiment_id": "ext-oasis3-braintokengt-stabilized-seed42",
+  "run_name": "jolly-flower-1-4b9f6d895-2026-08-22_20-51-01",
+  "state": "failed",
+  "pid": 1209770,
+  "host": "frieda",
+  "started_at": "2026-08-22T20:51:09",
+  "git_commit": "4b9f6d895",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T20:51:14",
+  "duration_seconds": 3.7,
+  "error": "Traceback (most recent call last):\n  File \"/mnt/e/fyassine/ad-early-detection/CLASSIFIER/run_experiment.py\", line 222, in run_one\n    pm.execute_notebook(\n  File \"/mnt/e/fyassine/ad-early-detection/.venv/lib/python3.10/site-packages/papermill/execute.py\", line 116, in execute_notebook\n    nb = papermill_engines.execute_notebook_with_engine(\n  File \"/mnt/e/fyassine/ad-early-detection/.venv/lib/python3.10/site-packages/papermill/engines.py\", line 49, in execute_notebook_with_engine\n    return self.get_engine(engine_name).execute_notebook(nb, kernel_name, **kwargs)\nRuntimeError: Kernel died before replying to kernel_info\n"
+}

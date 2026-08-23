@@ -1,0 +1,15 @@
+{
+  "experiment_id": "ext-adni-gelstm-none-seed42",
+  "run_name": "wise-paper-5-4b9f6d895-2026-08-22_17-50-58",
+  "state": "failed",
+  "status": "failed",
+  "error": "KeyError: 'diagnosis'",
+  "duration_seconds": 10.4,
+  "started_at": "2026-08-22T17:51:01",
+  "finished_at": "2026-08-22T17:51:12",
+  "git": {
+    "short_commit": "4b9f6d895",
+    "dirty": true
+  },
+  "metrics": {}
+}

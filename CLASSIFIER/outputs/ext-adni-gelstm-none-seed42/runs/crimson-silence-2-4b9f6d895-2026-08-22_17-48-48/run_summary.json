@@ -1,0 +1,15 @@
+{
+  "experiment_id": "ext-adni-gelstm-none-seed42",
+  "run_name": "crimson-silence-2-4b9f6d895-2026-08-22_17-48-48",
+  "state": "failed",
+  "status": "failed",
+  "error": "ValueError: GAAE_CHECKPOINT_PATH is required under the experiment runner. Set 'checkpoint_path:' on this entry in the experiments/ directory.",
+  "duration_seconds": 14.7,
+  "started_at": "2026-08-22T17:48:51",
+  "finished_at": "2026-08-22T17:49:07",
+  "git": {
+    "short_commit": "4b9f6d895",
+    "dirty": true
+  },
+  "metrics": {}
+}
