@@ -1,0 +1,11 @@
+{
+  "experiment_id": "gaae-pretrain-pooled-adni-delcode",
+  "run_name": "still-storm-1-ae5df2902-2026-08-23_21-26-36",
+  "state": "running",
+  "pid": 1273837,
+  "host": "frieda",
+  "started_at": "2026-08-23T21:26:40",
+  "git_commit": "ae5df2902",
+  "git_dirty": false,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb"
+}

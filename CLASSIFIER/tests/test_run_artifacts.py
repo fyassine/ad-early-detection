@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from CLASSIFIER.common.run_artifacts import record_test_metrics, save_run
+from CLASSIFIER.common.run_artifacts import record_external_metrics, record_test_metrics, save_run
 from SHARED.seeding import make_rng
 
 
@@ -85,3 +85,62 @@ def test_record_test_metrics_patches_summary(tmp_path):
     assert summary["metrics"]["test_f1"] == 0.72
     assert summary["test_probabilities"] == [0.1, 0.9]
     assert summary["test_labels"] == [0, 1]
+
+
+def _fake_metrics(auc, f1, sens=0.7, spec=0.8):
+    return {
+        "auc": auc,
+        "sensitivity": sens,
+        "specificity": spec,
+        "f1": f1,
+        "probs": np.array([0.1, 0.9]),
+        "targets": np.array([0, 1]),
+    }
+
+
+def test_record_external_metrics_namespaces_by_cohort(tmp_path):
+    _run_name, run_dir = save_run(**_save_kwargs(tmp_path))
+    record_external_metrics(
+        run_dir, _fake_metrics(0.65, 0.6), threshold=0.42, threshold_method="oof_f1", cohort="oasis3"
+    )
+
+    summary = json.loads((run_dir / "run_summary.json").read_text())
+    assert summary["ext_oasis3_auc"] == 0.65
+    assert summary["metrics"]["ext_oasis3_auc"] == 0.65
+    assert summary["metrics"]["ext_oasis3_f1"] == 0.6
+
+
+def test_record_external_metrics_does_not_clobber_in_domain_test_metrics(tmp_path):
+    """record_test_metrics then record_external_metrics: both must survive.
+
+    patch_run_summary shallow-merges at the top level, so a naive
+    record_external_metrics implementation that writes a fresh `metrics` dict
+    would silently wipe out test_auc etc. — this pins the merge-not-overwrite
+    contract.
+    """
+    _run_name, run_dir = save_run(**_save_kwargs(tmp_path))
+    record_test_metrics(run_dir, _fake_metrics(0.77, 0.72), threshold=0.42, threshold_method="oof_f1")
+    record_external_metrics(
+        run_dir, _fake_metrics(0.65, 0.6), threshold=0.42, threshold_method="oof_f1", cohort="oasis3"
+    )
+
+    summary = json.loads((run_dir / "run_summary.json").read_text())
+    assert summary["test_auc"] == 0.77
+    assert summary["metrics"]["test_auc"] == 0.77
+    assert summary["metrics"]["test_f1"] == 0.72
+    assert summary["ext_oasis3_auc"] == 0.65
+    assert summary["metrics"]["ext_oasis3_auc"] == 0.65
+
+
+def test_record_external_metrics_supports_multiple_cohorts(tmp_path):
+    _run_name, run_dir = save_run(**_save_kwargs(tmp_path))
+    record_external_metrics(
+        run_dir, _fake_metrics(0.65, 0.6), threshold=0.42, threshold_method="oof_f1", cohort="oasis3"
+    )
+    record_external_metrics(
+        run_dir, _fake_metrics(0.55, 0.5), threshold=0.42, threshold_method="oof_f1", cohort="adni"
+    )
+
+    summary = json.loads((run_dir / "run_summary.json").read_text())
+    assert summary["metrics"]["ext_oasis3_auc"] == 0.65
+    assert summary["metrics"]["ext_adni_auc"] == 0.55

@@ -11,6 +11,22 @@ experiments:
     threshold_mode: best-f1
     notes: Per-scan GAAE-embedding with subject rollup.
 
+  # DOCS/flipped/PLAN.md Phase 2 (P1) — GAAE pretrained on the pooled ADNI+DELCODE
+  # unlabelled pretrain split (~3700 graphs; DATA/manifest/build_pooled_assets.py's
+  # symlink farm + pooled pretrain CSVs). OASIS-3 excluded so it stays fully external.
+  # Same architecture/config as gaae-static (ethereal-planet-16) so every downstream
+  # arm (S0b/S1c GELSTM encoder_init, TFGN GVAE encoder_init) is directly comparable.
+  - id: gaae-pretrain-pooled-adni-delcode
+    mode: static
+    model: GAAE
+    adapter: gaae
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb
+    config_path: configs/gaae_delcode_whole_brain.json
+    threshold_mode: best-f1
+    notes: Pooled ADNI+DELCODE GAAE pretrain (Phase 2 P1) — checkpoint feeds S0b/S1c.
+
   # VGAE encoders — pre-trained on adjacency reconstruction (masked BCE + β·KL) with
   # always-on FiLM age/sex conditioning of the latent (mirrors the GAAE), plus an
   # anti-collapse remedy: β-warmup, per-dim free-bits KL floor, and a node-feature
