@@ -1,0 +1,14 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-finetuned-seed44",
+  "run_name": "earnest-totem-3-4b9f6d895-2026-08-22_15-00-08",
+  "state": "done",
+  "pid": 4120890,
+  "host": "fritz",
+  "started_at": "2026-08-22T15:00:12",
+  "git_commit": "4b9f6d895",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T15:20:24",
+  "exit_code": 0,
+  "duration_seconds": 1212.1
+}

@@ -1,0 +1,14 @@
+{
+  "experiment_id": "recon-ablation-gelstm-none",
+  "run_name": "gentle-dawn-3-4b9f6d895-2026-08-22_22-15-47",
+  "state": "done",
+  "pid": 1215682,
+  "host": "frieda",
+  "started_at": "2026-08-22T22:15:51",
+  "git_commit": "4b9f6d895",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T22:17:00",
+  "exit_code": 0,
+  "duration_seconds": 68.9
+}

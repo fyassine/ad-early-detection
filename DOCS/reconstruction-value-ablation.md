@@ -132,16 +132,24 @@ pools every completed run.
 | `none` | 4 | 5 | **0.8313 ± 0.0529** | **0.7028** | 0.8932 ± 0.0073 | 31,169 |
 | `pretrained_frozen` | 4 | 4 | 0.7812 ± 0.0122 | 0.6048 | **0.9211 ± 0.0087** | 520,905 |
 | `random` | 4 | 4 | 0.7312 ± 0.1113 | 0.6080 | 0.7676 ± 0.0514 | 965,897 |
-| `pretrained_finetuned` | 4 | 4 | 0.7107 ± 0.1946 | 0.5842 | 0.8507 ± 0.0195 | 965,897 |
+| `pretrained_finetuned` | 4 | 8 | 0.6924 ± 0.2000 | 0.6368 | 0.8196 ± 0.0213 | 965,897 |
 
-Per-seed test AUC:
+`none`, `pretrained_frozen` and `random` are pooled at commit `a9e4cf2`/`20b5957` (one run per
+seed). `pretrained_finetuned` is pooled at a **different, single commit-state**,
+`4b9f6d895`/`b7e2560a8` (a verified no-op pair, see below) — its completed repeat sweep only
+exists there, and §5 Finding 2 showed this arm is commit-sensitive, so mixing commits for it
+would silently blend two different training conditions. Its 8 "Runs" are nested repeats
+(3 + 2 + 2 + 1 across seeds 42/43/44/45), collapsed to one mean per seed before the
+across-seed mean/SD is taken — never treated as 8 independent draws.
+
+Per-seed test AUC (repeats comma-separated, nested — not pooled as independent draws):
 
 | Arm | 42 | 43 | 44 | 45 |
 |---|---|---|---|---|
 | `none` | 0.7607, 0.7607 | 0.8643 | 0.8214 | 0.8786 |
 | `pretrained_frozen` | 0.7821 | 0.7643 | 0.7929 | 0.7857 |
 | `random` | 0.5714 | 0.8250 | 0.7464 | 0.7821 |
-| `pretrained_finetuned` | 0.7821 | **0.4214** | 0.7964 | 0.8429 |
+| `pretrained_finetuned` | 0.6464, 0.6464, 0.6679 | **0.4250, 0.4250** | 0.8393, 0.8357 | 0.8536 |
 
 ### Reference floors (both required by the doc's own caveats)
 
@@ -154,16 +162,26 @@ imaging rather than about demographics. Note the metadata floor's *test* AUC is 
 (0.4929) while its CV AUC is 0.6157 — with 34 test subjects that gap is within noise, and it
 is a good reminder of how little a single test point estimate carries here.
 
-### Reproducibility note (new)
+### Reproducibility note (updated)
 
 `recon-ablation-gelstm-none` was run **twice at seed 42 and produced identical results**
-(test AUC 0.7607 both times). The `none` arm builds no encoder and therefore executes no
+(test AUC 0.7607 both times, and a third and fourth repeat since land on the same value —
+see the per-seed breakdown). The `none` arm builds no encoder and therefore executes no
 scatter backward, which is exactly the operation class that makes BrainTokenGT
-non-reproducible (see `DOCS/draft_paper/SOTA_POSITIONING.md`). The other three arms have one
-run per seed, so **their within-seed variance is unmeasured** — and for
-`pretrained_finetuned` it is known to be non-zero: a re-run at seed 43 diverged from the
-original on folds 1 and 4. A repeat sweep is in progress; until it lands, treat that arm's
-±0.1946 as conflating seed and run noise.
+non-reproducible (see `DOCS/timeline/SECTION_05_STABILITY_AUDIT.md`, Finding 1).
+
+`pretrained_frozen` and `random` still have one run per seed, so **their within-seed
+variance remains unmeasured**. `pretrained_finetuned`'s repeat sweep has landed
+(`DOCS/timeline/SECTION_05_STABILITY_AUDIT.md`, Finding 2), and it settles the question in
+the opposite direction from `none`: **within-seed spread is small (≈0.004–0.021) while
+between-seed spread is large (0.2000)** — the mirror image of BrainTokenGT's profile. Seed
+43's collapse to 0.4250 replicates exactly (twice, at one commit) and reproduces across an
+earlier commit (0.4214) — a genuine, reproducible seed effect, not run-to-run noise.
+
+The arm is also **commit-sensitive**: seed 42 moves 0.7821 → 0.6464 and seed 44 moves
+0.7964 → 0.8393 between commits with no seed change, which is why the table above pins it
+to one commit-state (`4b9f6d895`, with seed 45's `b7e2560a8` verified a no-op pair by the
+D2 byte-equality re-gate) rather than pooling whatever happens to be on disk.
 
 ### Read against the pre-registered table
 
@@ -172,9 +190,11 @@ The observed pattern matches **two** rows of the table below, not one:
 * **Row 2 — `none` ≈ every other arm.** `none` has the *highest* test AUC and F1 of the four
   and a CV AUC (0.8932) within fold-to-fold noise of `pretrained_frozen` (0.9211), using
   ~17× fewer trainable parameters. The graph encoder is not earning its place.
-* **Row 5 — `pretrained_finetuned` < `pretrained_frozen`.** Freezing beats fine-tuning, and
-  fine-tuning is far noisier (SD 0.1946 vs 0.0122). **But see the confound below before
-  treating this as a finding.**
+* **Row 5 — `pretrained_finetuned` < `pretrained_frozen`.** Freezing beats fine-tuning at the
+  across-seed mean (0.6924 vs 0.7812), and fine-tuning is far noisier (SD 0.2000 vs 0.0122).
+  The completed repeat sweep confirms seed 43's collapse is a genuine seed effect, not
+  sampling noise. **See the LR confound below before generalising this to "fine-tuning
+  hurts" — the arm measures one specific, naive fine-tuning recipe.**
 
 `random` is the worst arm on CV AUC (0.7676 ± 0.0514, the largest spread of the four), so
 pretraining *does* beat random initialisation when the encoder is trained end-to-end. Since
@@ -186,16 +206,33 @@ one.
 stability relative to random initialisation, not peak performance** — and the graph encoder
 itself is not adding value over mean-pooled raw connectivity features at this cohort size.
 
-### ⚠️ The fine-tuning conclusion is withdrawn, not caveated
+### The honest claim: naive fine-tuning at a shared LR, not fine-tuning in general
+
+This conclusion is **reframed, not withdrawn** — the repeat sweep upgraded seed 43's
+collapse from "one noisy run" to a reproducible finding, which makes stating the mechanism
+precisely more important, not less.
 
 `configs/gelstm_recon_ablation_delcode.json` sets a single `learning_rate: 0.001` and
-`adapters/gelstm.py` builds one optimizer param group. The unfrozen pretrained GATv2 encoder
-is therefore fine-tuned at the **same LR as the freshly initialised head** — the textbook way
-to destroy pretrained features, and precisely the treatment BrainTokenGT's own stabilisation
-applied to *its* newly unfrozen parameters (`give_lr_scale=0.1`) and this arm did not.
+`adapters/gelstm.py:274` builds one optimizer param group over
+`model.get_trainable_params()`. The unfrozen pretrained GATv2 encoder is therefore trained at
+the **same LR as the freshly initialised head** — the textbook way to destroy pretrained
+features, and precisely the treatment BrainTokenGT's own stabilisation applied to *its*
+newly unfrozen parameters (`give_lr_scale=0.1`) and this arm does not. No `encoder_lr_scale`
+field exists anywhere.
 
-**The arm measures naive fine-tuning, not fine-tuning.** Any statement about whether
-fine-tuning helps needs an `encoder_lr_scale` arm before it can be made.
+That LR confound is the leading explanation, but it is one of three ranked, non-exclusive
+candidates — not a demonstrated cause:
+
+1. **Naive fine-tuning at a shared LR** — falsifiable: add `encoder_lr_scale`, re-run seed
+   43. Stays unrun, deferred past hand-off.
+2. **Capacity vs. sample size** — ≈966k trainable weights against N≈76 per fold once the
+   encoder unfreezes.
+3. **Pretext–downstream objective mismatch** — GAAE optimises FC reconstruction, the head
+   optimises binary conversion.
+
+**The honest sentence is "naive fine-tuning at a shared learning rate destabilizes
+optimization at some seeds,"** not "fine-tuning destabilizes optimization." Any statement
+about whether fine-tuning helps needs the `encoder_lr_scale` arm before it can be made.
 
 ## Pre-registered interpretation
 

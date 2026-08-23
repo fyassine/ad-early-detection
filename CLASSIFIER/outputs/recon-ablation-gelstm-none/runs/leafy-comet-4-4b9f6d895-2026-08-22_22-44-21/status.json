@@ -1,0 +1,14 @@
+{
+  "experiment_id": "recon-ablation-gelstm-none",
+  "run_name": "leafy-comet-4-4b9f6d895-2026-08-22_22-44-21",
+  "state": "done",
+  "pid": 1217452,
+  "host": "frieda",
+  "started_at": "2026-08-22T22:44:25",
+  "git_commit": "4b9f6d895",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T22:46:11",
+  "exit_code": 0,
+  "duration_seconds": 104.8
+}

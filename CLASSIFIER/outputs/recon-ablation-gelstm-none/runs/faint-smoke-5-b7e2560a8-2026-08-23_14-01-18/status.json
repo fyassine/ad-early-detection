@@ -1,0 +1,14 @@
+{
+  "experiment_id": "recon-ablation-gelstm-none",
+  "run_name": "faint-smoke-5-b7e2560a8-2026-08-23_14-01-18",
+  "state": "done",
+  "pid": 1255730,
+  "host": "frieda",
+  "started_at": "2026-08-23T14:01:22",
+  "git_commit": "b7e2560a8",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-23T14:02:32",
+  "exit_code": 0,
+  "duration_seconds": 68.8
+}
