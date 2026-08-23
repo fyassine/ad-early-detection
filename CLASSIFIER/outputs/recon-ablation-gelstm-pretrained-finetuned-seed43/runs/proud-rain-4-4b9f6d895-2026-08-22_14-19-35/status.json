@@ -1,0 +1,14 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-finetuned-seed43",
+  "run_name": "proud-rain-4-4b9f6d895-2026-08-22_14-19-35",
+  "state": "done",
+  "pid": 1188717,
+  "host": "frieda",
+  "started_at": "2026-08-22T14:19:39",
+  "git_commit": "4b9f6d895",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T14:28:59",
+  "exit_code": 0,
+  "duration_seconds": 559.4
+}

@@ -1,0 +1,14 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-finetuned",
+  "run_name": "quiet-leaf-4-4b9f6d895-2026-08-22_14-37-42",
+  "state": "done",
+  "pid": 4113101,
+  "host": "fritz",
+  "started_at": "2026-08-22T14:37:47",
+  "git_commit": "4b9f6d895",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T14:58:32",
+  "exit_code": 0,
+  "duration_seconds": 1244.9
+}

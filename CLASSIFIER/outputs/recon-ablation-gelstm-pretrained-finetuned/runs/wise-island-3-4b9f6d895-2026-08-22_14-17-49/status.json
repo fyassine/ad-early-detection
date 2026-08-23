@@ -1,0 +1,14 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-finetuned",
+  "run_name": "wise-island-3-4b9f6d895-2026-08-22_14-17-49",
+  "state": "done",
+  "pid": 4102959,
+  "host": "fritz",
+  "started_at": "2026-08-22T14:17:52",
+  "git_commit": "4b9f6d895",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T14:37:20",
+  "exit_code": 0,
+  "duration_seconds": 1167.5
+}

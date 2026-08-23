@@ -1,0 +1,18 @@
+{
+  "copied": [
+    "CLASSIFIER/model/GELSTM/models.py",
+    "CLASSIFIER/model/GELSTM/dataset.py",
+    "CLASSIFIER/model/GELSTM/train.py",
+    "CLASSIFIER/model/GELSTM/utils.py",
+    "CLASSIFIER/model/GAAE/models.py",
+    "CLASSIFIER/configs/encoder.py",
+    "CLASSIFIER/adapters/gelstm.py"
+  ],
+  "missing": [],
+  "git": {
+    "commit": "b7e2560a85f4590fe451cee7d79f31070f1a59ed",
+    "short_commit": "b7e2560a8",
+    "branch": "ablation/reconstruction-value",
+    "dirty": true
+  }
+}

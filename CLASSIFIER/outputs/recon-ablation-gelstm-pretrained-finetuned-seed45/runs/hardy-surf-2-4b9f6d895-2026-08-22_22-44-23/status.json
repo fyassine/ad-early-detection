@@ -1,0 +1,14 @@
+{
+  "experiment_id": "recon-ablation-gelstm-pretrained-finetuned-seed45",
+  "run_name": "hardy-surf-2-4b9f6d895-2026-08-22_22-44-23",
+  "state": "done",
+  "pid": 1217609,
+  "host": "frieda",
+  "started_at": "2026-08-22T22:44:26",
+  "git_commit": "4b9f6d895",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-22T22:58:11",
+  "exit_code": 0,
+  "duration_seconds": 824.1
+}
