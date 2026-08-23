@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 verify_matched_cohort_parity.py — B.1.1/B.1.2 gate for the GELSTM vs BrainTokenGT
-matched-cohort head-to-head (DOCS/meetings/ninth-meeting/comparison-plan-v2.md §B.1).
+matched-cohort head-to-head (DOCS/timeline/MASTER_PLAN.md §3, Phase B).
 
 Builds the CV-pool Bundle each adapter would see under the registered matched-cohort
 experiments (``recon-ablation-gelstm-pretrained-frozen-2to3v-seed42`` and
