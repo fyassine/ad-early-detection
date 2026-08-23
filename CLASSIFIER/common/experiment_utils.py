@@ -141,6 +141,12 @@ def build_config(exp: Dict[str, Any], classifier_root: str | Path) -> Dict[str, 
 
     config.update(exp.get("hyperparams") or {})
     config.update(exp.get("eval_config") or {})
+    # Registry seed always wins — layered last so a JSON config_path or a
+    # hyperparams block can never shadow it. RESOLVED_CONFIG["seed"] ends up
+    # in run_summary.json's training_config.seed purely as a provenance
+    # record; actual seeding runs off the papermill SEED parameter
+    # (build_parameter_dict, below), which was already correct.
+    config["seed"] = exp["seed"]
     return config
 
 
