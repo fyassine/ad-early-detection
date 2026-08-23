@@ -225,6 +225,21 @@ class GELSTMAdapter(LongitudinalAdapter):
 
     # ── data ────────────────────────────────────────────────────────────────
     def prepare_data(self, df) -> Bundle:
+        # A pooled ADNI+DELCODE frame carries its own 'cohort' column (see
+        # DATA/manifest/build_pooled_assets.py) and needs one dataset per
+        # cohort (different FC roots / visit-time conventions) — the single
+        # cohort=self.cohort path below can't express that. Single-cohort
+        # frames (no 'cohort' column) are unaffected.
+        if "cohort" in getattr(df, "columns", []):
+            from common.pooled_data import build_multicohort_bundle
+
+            return build_multicohort_bundle(
+                df,
+                adjacency_k=self.adjacency_k,
+                file_variant=self.file_variant,
+                min_visits=self.min_visits,
+                max_visits=self.max_visits,
+            )
         ds = LongitudinalSubjectDataset(
             self.data_root,
             df,
