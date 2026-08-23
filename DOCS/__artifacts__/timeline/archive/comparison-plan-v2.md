@@ -250,7 +250,7 @@ Build-time assertions that **fail loudly** rather than dropping rows:
 Cost: an afternoon. It is cheap insurance and it is also the provenance table
 the thesis needs anyway.
 
-### A.1 Cohort-aware visit parsing — **helpers done, 2026-08-21; not wired in yet**
+### A.1 Cohort-aware visit parsing — **helpers done 2026-08-21; wiring done 2026-08-22 (uncommitted)**
 
 The §2 three-field split (`visit_index` / `protocol_month` / `delta_t_months`)
 is implemented in `CLASSIFIER/common/visits.py` (`feat(classifier): add
@@ -258,16 +258,35 @@ ADNI/OASIS-3 cohort-aware visit identity`, commit `87cf03c`): `parse_day`,
 `parse_adni_protocol_month`, and `visit_identity()`, with regression tests in
 `CLASSIFIER/tests/test_visits.py`.
 
-**Not done yet:** the consuming dataset classes still import the old,
-cohort-blind functions — `CLASSIFIER/model/GELSTM/dataset.py:41` imports
-`parse_allowed_months, parse_month` (not `visit_identity`), and
-`CLASSIFIER/model/GEC/dataset.py:9` imports `allowed_months_map,
-month_allowed` (same vintage). So §1.4's bug — every ADNI/OASIS-3 scan
-silently discarded because `parse_month` returns `None` for `ses-d####`
-filenames — **still reproduces if you run ADNI through the model dataset
-classes today.** The new helpers exist and are unit-tested in isolation but
-haven't been wired into `GELSTM/dataset.py` / `GEC/dataset.py` yet. Treat that
-wiring as the remainder of A.1, not yet complete, before A.3/A.4 depend on it.
+**Update, 2026-08-22 — wired in.** `CLASSIFIER/model/GELSTM/dataset.py` now imports
+`Cohort`, `parse_day`, `visit_identity`; `common/visits.py::month_allowed` takes a `cohort`
+argument and falls back day→month; `allowed_months_map` accepts `subject_id`/`allowed_days`;
+a typed `cohort` field is threaded through `adapters/{gelstm,gec,gep}.py` and
+`BRAINTOKENGT/adapter.py`, defaulting to `"delcode"` and never inferred silently;
+`CLASSIFIER/tests/test_dataset_month_filter.py` gains 72 lines of coverage.
+
+**Update, 2026-08-23 — both follow-ups closed, committed as `b7e2560`.**
+
+- ~~The optional `cohorts_csv` load is wrapped in `except Exception: pass`.~~ **Removed.** The
+  loaded DataFrame was never read after that block regardless of success, so it was dead
+  code. A second, worse silent fallback was also found in the same function while fixing
+  this — the label-resolution chain (`converter_status` → `label` → `diagnosis`) ended in a
+  bare `else: label = 0`, silently mislabeling any subject with no usable label column
+  instead of raising. Also fixed; both are regression-tested
+  (`CLASSIFIER/tests/test_dataset_month_filter.py`).
+- ~~The A.2 byte-equality gate has not been re-run since this landed.~~ **Re-run three times,
+  passes every time**: once after the wiring alone, once after both defect fixes above, and
+  once more after a third fix (see below). `run_summary.json` bit-identical to the 19 Aug
+  baseline in all three (test AUC 0.7607142857142857, all 5 fold AUCs, threshold).
+- **A third defect found during this pass, also fixed:**
+  `CLASSIFIER/common/experiment_utils.py::build_config` never injected `exp["seed"]`, so
+  every `run_summary.json`'s `training_config.seed` field recorded the dataclass default
+  (42) regardless of which seed the run actually used. Confirmed no training code reads that
+  field — real seeding runs off the papermill `SEED` parameter, which was already correct —
+  so this was provenance-only and invalidates no result. Fixed by layering the registry seed
+  last in `build_config`, so no JSON config or hyperparams block can shadow it. The ~60
+  existing `run_summary.json` files with the wrong field were **not** back-edited; note the
+  affected date range (pre-23 Aug) in the thesis Appendix instead.
 
 ### A.2 DELCODE reproduction gate *(hard gate)* — **run 2026-08-21; 0.8321 target retired, not a regression**
 
@@ -379,6 +398,33 @@ split overlap. `fc_path` is now fully populated for both cohorts (A.3, done
 though, so the real run — `python -m DATA.manifest.build_cohort_splits
 --cohort {adni,oasis3}` — still needs to happen against the corrected 268/674
 ADNI manifest and hasn't been run yet.
+
+**Update, 2026-08-22 — the real run happened, and ADNI grew.** Splits are on disk at
+`DATA/{ADNI,OASIS3}/__metadata__/SPLITS/downstream/{train,val,test}.csv`, cohort-native
+columns (`subject_id`, `label`, `converter_status`, `sex`, `age`, `n_scans`, `allowed_days`),
+zero overlap:
+
+| Cohort | train | val | test | total | converters |
+|---|---|---|---|---|---|
+| **ADNI** | 115 (76/39) | 38 (25/13) | 39 (26/13) | **192** | **65 (33.9%)** |
+| **OASIS-3** | 35 (17/18) | 12 (6/6) | 13 (6/7) | **60** | **31 (51.7%)** |
+
+⚠️ **ADNI 192/65 supersedes the 162/51 quoted throughout §1.2, §5 and §6 of this document.**
+The dry-run count was against the stale 237-subject manifest; the corrected 268-subject
+manifest yields 30 more eligible subjects. OASIS-3's 60/31 is unchanged and confirmed.
+
+Interval structure, computed from `allowed_days` (this is deliverable D5 and the payoff of
+the whole §2 protocol-month-vs-elapsed-time decision):
+
+| Cohort | scans/subj | median interval | IQR | CV | modal month bucket |
+|---|---|---|---|---|---|
+| DELCODE | — | 12 mo | — | — | **90.0%** at 12 mo |
+| ADNI | 3.11 (2–10) | 371 d | 207–419 d | **0.647** | 21.9% at 12 mo |
+| OASIS-3 | 2.65 (2–6) | 1012 d | 708–1342 d | **0.574** | 8.1% at 36 mo |
+
+One thing to check before this table is published: OASIS-3's minimum interval is **3 days**,
+which smells like a residual of the same-day MB4/non-MB4 duplicate resolution (`3442c99`)
+rather than a real repeat visit.
 
 ### A.5 Transfer gate — with a positive control *(revised)*
 
@@ -568,16 +614,64 @@ ablate and its own temporal module status is the open question B.1.0 gates.
 
 ## 5. Phase C/D — external validation, re-scoped to the real numbers
 
-**Phase C — ADNI (n=162; 51 converters, 31.5%).** This is where the head-to-head
+> **Status, 2026-08-22 — Phases C and D have run.** All 24 experiments in
+> `CLASSIFIER/experiments/external_validation.yaml` completed the same day, three arms per
+> cohort (GELSTM `none`, GELSTM `pretrained_frozen`, BrainTokenGT stabilized) × seeds 42–45.
+> **Every arm is at chance on held-out test:**
+>
+> | Cohort | Arm | CV AUC | Test AUC | degenerate |
+> |---|---|---|---|---|
+> | ADNI | GELSTM `none` | 0.540 ± 0.030 | **0.496 ± 0.074** | 3/4 |
+> | ADNI | GELSTM `pretrained_frozen` | 0.579 ± 0.033 | **0.480 ± 0.129** | 2/4 |
+> | ADNI | BrainTokenGT stabilized | 0.705 ± 0.029 | **0.427 ± 0.053** | 0/4 |
+> | OASIS-3 | GELSTM `none` | 0.565 ± 0.043 | **0.530 ± 0.273** | 1/4 |
+> | OASIS-3 | GELSTM `pretrained_frozen` | 0.632 ± 0.072 | **0.565 ± 0.119** | 0/4 |
+> | OASIS-3 | BrainTokenGT stabilized | 0.770 ± 0.035 | **0.536 ± 0.177** | 1/4 |
+>
+> "Degenerate" = all-positive predictions (sens 1.00, spec 0.00).
+>
+> **§3's A.5 dual gate is what governs this, and it is only half-run.** The within-ADNI
+> positive control came back *at chance for GELSTM* (0.54) — the gate's "stop and debug" row —
+> while BrainTokenGT reached 0.705 on the identical splits, which argues against a uniform
+> pipeline fault. The zero-shot DELCODE→ADNI arm, the other half of the gate, was never
+> registered or run. **Neither the domain-shift reading nor the bug reading is licensed
+> yet.** ⚠️ **Triage order revised the same evening — see `NEXT_STEPS.md`.** Label-construct
+> equality and Δt normalisation are both **excluded** (perfect `converter_status`/`label`
+> agreement; longest ADNI interval 66.8 mo < the 108-mo normaliser), as are a visit-count
+> shortcut and any subject loss during loading. The leading candidate is now the **ADNI /
+> OASIS-3 FC matrices themselves**, extracted 22 Aug one day after a reorientation-affine fix
+> in that same path. Next action is a label-free positive control (sex decoded from FC, all
+> three cohorts) — then the metadata floor and the zero-shot arm, in that order.
+>
+> Also note the registry ran **three** arms, not the two arms + Tier-C baselines this section
+> specifies, and it ran OASIS-3 concurrently rather than after ADNI. Neither is wrong, but §5
+> below describes a plan that was not the one executed — read the table above first.
+
+**Phase C — ADNI (n=192; 65 converters, 33.9% — see A.4; the 162/51 below is stale).** This is where the head-to-head
 is decided. Full CV, seeds 42–45, all arms + BrainTokenGT + Tier-C baselines,
 per criterion 1. Three claims in increasing strength: zero-shot transfer with
 the frozen DELCODE threshold; within-ADNI CV; pooled leave-one-cohort-out.
 
-At n=162 vs the 34-subject DELCODE test split, this is roughly 5× the
-evaluation set — the reason the pivot is worth it. Note the CIs will still be
-wide; report them.
+> **The third claim was never defined here, and as of 23 Aug still has no registry entry.**
+> "Pooled leave-one-cohort-out" is the supervisor's multi-cohort arm — train on DELCODE +
+> ADNI, test on the held-out OASIS-3 split. Phase E's pooling is *unsupervised* (a GAAE
+> pretraining pool) and does not cover it. Spec, preconditions and reporting rules:
+> `NEXT_STEPS.md` §"Supervisor cross-cohort request" A.2. Below the 26 Aug freeze — the
+> zero-shot arm (A.5's unrun half) is its baseline and comes first.
 
-**Phase D — OASIS-3, demoted, revised 2026-08-21.** The 46-subject triage
+At n=192 vs the 34-subject DELCODE test split, the *cohort* is roughly 5× — but the
+**held-out test split is n=39 (13 converters)**, so the evaluation set is barely larger than
+DELCODE's and the CIs are correspondingly wide. That was under-stated when this section was
+written: the pivot buys cohort diversity, not evaluation power. Report CIs, and report them
+per cohort.
+
+**Phase D — OASIS-3, demoted, revised 2026-08-21; run anyway on 2026-08-22.** Its
+test split is **n=13 (7 converters)** — 42 label pairs, so AUC moves in steps of 0.024. A
+single OASIS-3 test AUC carries almost no information; only the seed distribution is
+readable, and barely. Report it as the underpowered probe this section already calls it,
+never pooled with ADNI. Original text follows.
+
+ The 46-subject triage
 predicted here has run and fully recovered (§1.3a): OASIS-3 is now **60
 subjects / 31 converters** with ≥2 sessions, not 40/19. That's a meaningfully
 better power position than the demotion below assumed, though still smaller in
@@ -630,11 +724,24 @@ v1 asked whether the paper claims *"our architecture beats BrainTokenGT"* or
 strength of three cohorts. **With the corrected numbers, "three cohorts" is not
 honestly available** — one of the three has 19 converters.
 
-Recommended framing:
+Recommended framing **(superseded 2026-08-22 — see the revision below)**:
 
 > Two-cohort validation (DELCODE + ADNI), with the model comparison decided on
 > ADNI (n=162) under a documented fairness protocol, and OASIS-3 reported as a
 > secondary robustness probe with explicit power caveats.
+
+**Revision, 2026-08-22.** The head-to-head cannot be "decided on ADNI" because no arm
+separates the classes there. What the runs actually support, pending the A.5 triage:
+
+> Three-cohort evaluation (DELCODE + ADNI + OASIS-3) under a documented fairness protocol,
+> in which the model comparison is decided on DELCODE and **neither model transfers**: on
+> both external cohorts every arm sits at chance on held-out test, while the audited baseline
+> reports within-cohort CV of 0.705–0.770 on those same splits. The within-versus-held-out
+> gap, not the ranking, is the result.
+
+This is a weaker performance claim and a stronger methodological one, and it is consistent
+with the direction `SOTA_POSITIONING.md` already recommends. It is also **not writable until
+the A.5 triage closes** — if the cause is a harmonization fault, there is no finding here.
 
 This is weaker than v1's pitch and stronger than anything DELCODE-only. It also
 does not depend on winning the head-to-head: under Chantal's criteria, a
@@ -776,9 +883,14 @@ corrected manifest for both cohorts — see §3, A.3.
 | then | A.2 DELCODE reproduction | ~~AUC 0.8321 exactly~~ → **0.7929, target retired** | **passed** — 0.8321 was leaky (pre-`0823ca6` leak fix); determinism re-run in progress (§3, A.2) |
 | then | A.3 ADNI **+ OASIS-3** FC extraction | manifest assertions pass | **done, 2026-08-22** — both cohorts, `fc_path` 100% populated (ADNI 268/674, OASIS-3 128/234); see §3 A.3 |
 | then | A.4 ADNI **+ OASIS-3** splits | fc_path eligibility gate | code done; real run not yet executed against the corrected 268/674 ADNI manifest — see §3 A.4 |
-| decision | A.5 dual gate (zero-shot × within-ADNI) | see §3 table | not started |
-| then | C — ADNI head-to-head | — | not started |
-| then | D/E/F | — | not started |
+| decision | A.5 dual gate (zero-shot × within-ADNI) | see §3 table | ⚠️ **half-run, 08-22** — within-ADNI control done and *at chance for GELSTM* (0.54) though BrainTokenGT reaches 0.705; zero-shot arm never registered. **This is now the critical path** |
+| done | A.4 real splits run | fc_path eligibility gate | **done 08-22** — ADNI **192/65**, OASIS-3 60/31, zero overlap; supersedes 162/51 |
+| done | C — ADNI head-to-head | — | **run 08-22**, 12 runs; all arms at chance on test (§5) |
+| done | D — OASIS-3 probe | — | **run 08-22**, 12 runs; test n=13, read the seed spread not the point estimate |
+| **now** | A.5 triage (labels → Δt norm → metadata floor → zero-shot) | closes before any external claim is written | **not started — blocks §6's revised framing** |
+| **now** | A.2 byte-equality re-gate after A.1 wiring | byte-identical `run_summary.json` | **not started — blocks every DELCODE number** |
+| then | E/F | — | not started |
+| after A.5 | **A.6 pooled multi-cohort training** (DELCODE + ADNI → OASIS-3 test) | zero-shot arm must exist first as its baseline | **not started, added 23 Aug** — below the 26 Aug freeze; spec in `NEXT_STEPS.md` §"Supervisor cross-cohort request" A.2 |
 
 Phase B is a few days and makes the DELCODE results defensible regardless of
 what Phase A finds. Phase A is the higher-risk, higher-payoff track. **A.2 has

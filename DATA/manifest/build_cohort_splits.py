@@ -1,6 +1,6 @@
 """Build DATA/{ADNI,OASIS3}/__metadata__/SPLITS/downstream/{train,val,test}.csv.
 
-A.4 (`DOCS/meetings/ninth-meeting/comparison-plan-v2.md` §3): subject-level,
+A.4 (`DOCS/timeline/MASTER_PLAN.md` §3): subject-level,
 stratified-by-label, 60/20/20 splits from the cohort manifest, mirroring
 DELCODE's protocol in
 `DATA/DELCODE/src/splitting/create_downstream_data_splits.py::_stratified_split`

@@ -35,7 +35,7 @@ concept dispatching on cohort:
   in ``GELSTM/dataset.py``) serves all three cohorts. For DELCODE this equals
   the nominal protocol month exactly, so its values reproduce byte-for-byte
   under the refactor (see the A.2 gate in
-  ``DOCS/meetings/ninth-meeting/comparison-plan-v2.md``).
+  ``DOCS/timeline/MASTER_PLAN.md`` §3).
 """
 
 from __future__ import annotations
@@ -142,7 +142,7 @@ def month_allowed(
 
 # ---------------------------------------------------------------------------
 # Cohort-aware visit identity (ADNI / OASIS-3 elapsed-days + the three-field
-# split from DOCS/meetings/ninth-meeting/comparison-plan-v2.md §2).
+# split from DOCS/timeline/MASTER_PLAN.md §3, Phase A.1).
 # ---------------------------------------------------------------------------
 
 

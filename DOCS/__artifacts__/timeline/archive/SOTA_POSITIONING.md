@@ -1,6 +1,6 @@
 # SOTA positioning, novelty threats, and publishability verdict
 
-**Written:** 2026-08-22 · **Thesis submission:** 2026-09-03
+**Written:** 2026-08-22 · **Revised:** 2026-08-22 (evening, after external validation landed) · **Thesis submission:** 2026-09-03
 **Scope:** where this work sits against the 2023–2026 literature, which claims survive
 peer review, and which venue could take them.
 
@@ -17,6 +17,17 @@ and both headline *p*-values are invalid by this project's own audit. As a paper
 framing *"a published baseline is irreproducible, and on small longitudinal cohorts the
 graph encoder does not earn its place"* it is **genuinely publishable**, because that
 combination has real precedent-supported novelty and a fitting venue deadline.
+
+**Revision, 22 Aug evening.** External validation ran on ADNI and OASIS-3 and **every arm
+lands at chance on held-out test** (ADNI: GELSTM 0.50/0.48, BrainTokenGT 0.43; OASIS-3:
+0.53/0.57/0.54). This does not kill the paper — it changes which sentence is the paper.
+"Our lean model generalizes" is gone. What replaces it is stronger for the venue actually
+targeted: *neither the published baseline nor a lean alternative transfers off the cohort it
+was tuned on, and the gap between within-cohort CV and held-out test is where the field's
+reported numbers live.* BrainTokenGT reaching within-ADNI CV 0.705 and test 0.427 on the same
+splits is that gap in a single line. **Caveat that governs everything below:** the
+pre-registered A.5 gate reads at-chance *within-cohort CV* as a possible pipeline fault, and
+that triage is not finished — nothing here can be written up until it is.
 
 ---
 
@@ -84,33 +95,50 @@ irregularity to exploit.
 | "Message aggregation doesn't help" | Published first by npj AI 2026 at 4-study scale | **Not novel.** Must be framed as replication. |
 | "Edges may be irrelevant" | Published by arXiv:2503.15902 | **Not novel.** Cite as prior art. |
 | **"Within-seed variance exceeds between-seed variance in a published brain-graph baseline"** | No brain-graph paper surveyed reports same-seed replicates at all | **Novel and defensible.** The strongest single contribution. |
-| **"The message-aggregation critique also holds longitudinally at N<150"** | npj AI 2026 is cross-sectional, large-N | **Novel as a regime extension.** Needs ADNI to be more than a single-cohort claim. |
+| **"The message-aggregation critique also holds longitudinally at N<150"** | npj AI 2026 is cross-sectional, large-N | **Novel as a regime extension — and now two-cohort-plus.** On ADNI `none` 0.496 ≈ `pretrained_frozen` 0.480; on OASIS-3 0.530 ≈ 0.565. The arms are indistinguishable in all three cohorts. Weaker than hoped (both are at chance externally, so the equality is partly uninformative), but the DELCODE version of the claim is unchanged and now has a replication attempt attached rather than a promise of one. |
+| **"Neither model transfers off its tuning cohort"** | New, 22 Aug | **Potentially the second-strongest contribution**, and a natural companion to the variance decomposition — same theme: reported numbers do not survive a change of conditions. **Blocked on the A.5 triage.** |
 | **"Reconstruction pretraining buys optimisation stability, not peak performance"** | Four-arm pre-registered separation of pretraining / architecture / encoder-existence | **Novel.** npj AI 2026 does not ablate self-supervised pretext. |
-| **"Δt-conditioning is untestable on protocol-driven cohorts"** | Quantified: 90% of DELCODE intervals are 12 months; ablation Δ AUC = 0.000 | **Novel and useful.** A cheap protocol recommendation for the whole subfield. |
+| **"Δt-conditioning is untestable on protocol-driven cohorts"** | Quantified across three cohorts: DELCODE 90% of intervals at 12 mo vs ADNI 21.9% (CV 0.647) and OASIS-3 8.1% (CV 0.574); DELCODE ablation Δ AUC = 0.000 | **Novel, useful, and now the safest claim in the thesis.** It is a property of the cohorts, not of the models, so it survives the at-chance external result untouched. The one thing missing is the Δt ablation *run on* ADNI — which is not worth running until the A.5 triage explains why ADNI is at chance. |
 | "Interpretability / biomarker maps" | Integrated Gradients over an encoder of unproven contribution | **Not a claim.** Descriptive only. |
 
 ---
 
 ## 4. What would make this a strong paper
 
-Ranked by marginal publishability per unit effort.
+Ranked by marginal publishability per unit effort. **Re-ranked 22 Aug evening** — item 1 has
+been executed and its outcome moved everything else.
 
-1. **ADNI external validation of `none` vs `pretrained_frozen`.** Converts a single-cohort
-   negative result into a cross-cohort one — precisely the move that made npj AI 2026
-   credible (they used four studies). Also the *only* place the Δt mechanism is testable.
-   **Blocker is one wiring change** (`GELSTM/dataset.py:41` still imports the DELCODE-only
-   `parse_month`), not a research problem. Highest value by a wide margin.
-2. **Report the BrainTokenGT variance decomposition as the headline finding**, with the
-   bit-reproducibility contrast beside it. Already done; costs only rewriting.
-3. **Weighted-edge ablation.** Removing kNN-8 binarisation separates "message passing
-   doesn't help" from "this graph construction destroys the information." Cheap, and it is
-   the first question a reviewer of the negative result will ask.
-4. **A learning-rate-scaled fine-tuning arm.** The current arm optimises a pretrained GATv2
-   and a fresh head at one shared LR — it measures naive fine-tuning. Cheap; removes an easy
-   objection.
-5. OASIS-3 as a third cohort. Only after ADNI.
-
----
+1. ~~**ADNI external validation of `none` vs `pretrained_frozen`.**~~ **Done, 22 Aug.**
+   Wiring landed, 24 runs across ADNI and OASIS-3 collected. Outcome: at chance in both
+   cohorts, with half the GELSTM runs degenerate (all-positive predictions). The
+   cross-cohort negative result exists — it is just not the cross-cohort result that was
+   anticipated.
+2. **Finish the A.5 triage. This is now the highest-value item by a wide margin**, because
+   it decides whether the headline of §6 is *"neither model transfers"* (a finding) or
+   *"our external pipeline had a bug"* (nothing). Four cheap checks, in order: label-construct
+   equality across `diagnosis`/`label` columns; Δt normalisation (`MAX_INTERVAL_MONTHS = 108`
+   against ADNI intervals to 2031 days); the metadata floor on ADNI/OASIS-3 for a reference
+   line; zero-shot DELCODE→ADNI, the missing half of the dual gate. Nothing in this list is a
+   research problem.
+3. **Report the BrainTokenGT variance decomposition as the headline finding**, with the
+   bit-reproducibility contrast beside it, and now with the CV-vs-test gap as its
+   second panel: BrainTokenGT scores within-ADNI CV **0.705** and ADNI test **0.427**.
+   Already collected; costs only rewriting.
+4. **The fine-tuned-arm result is now usable** (`STABILITY_AUDIT.md` Finding 2): at a fixed
+   commit the arm reproduces to ≈0.01 AUC while spanning 0.42–0.84 across seeds — the exact
+   inverse of BrainTokenGT's profile, and a much better contrast than the reproducibility
+   claim on its own. One run (seed 45 at HEAD) completes it.
+5. **A learning-rate-scaled fine-tuning arm.** Still not implemented —
+   `adapters/gelstm.py:274` builds a single Adam group at one LR. Cheap, removes an easy
+   objection, but it is now a *paper* item, not a thesis item: it cannot change any claim
+   before the 28 Aug hand-off and the claim can be narrowed in words instead.
+6. **Weighted-edge ablation.** Removing kNN-8 binarisation separates "message passing doesn't
+   help" from "this graph construction destroys the information." Still the first question a
+   reviewer of the negative result will ask, and the at-chance external result makes it more
+   interesting, not less.
+7. ~~OASIS-3 as a third cohort. Only after ADNI.~~ **Ran alongside ADNI.** Report as the
+   underpowered secondary probe it is: test n=13, AUC quantised to steps of 0.024. Never
+   pooled with ADNI, never called a co-equal third cohort.
 
 ## 5. Venue shortlist
 
@@ -122,9 +150,11 @@ Ranked by marginal publishability per unit effort.
 | *Imaging Neuroscience* / *Human Brain Mapping* | Rolling | Journal route; more room for the full protocol argument. Good if ADNI + OASIS-3 both land. |
 | TMLR / reproducibility venues | Rolling | Would take the variance-decomposition finding on its own, fastest. |
 
-**Recommended:** target **IPMI 2027** with the reproducibility + regime-extension framing,
-conditional on ADNI landing. Keep the fallback of a short reproducibility paper that needs
-no new experiments at all.
+**Recommended:** target **IPMI 2027** with the reproducibility + failure-to-transfer framing.
+The condition has changed: it is no longer "conditional on ADNI landing" (it landed) but
+**conditional on the A.5 triage explaining the at-chance result**. If the triage says
+"pipeline fault," fall back to the short reproducibility paper, which needs no new
+experiments at all and is unaffected by any of this.
 
 ---
 
@@ -142,12 +172,24 @@ Use this shape; it is defensible today.
 > evaluate a deliberately parameter-lean recurrent alternative under a pre-registered
 > ablation and find that removing the graph encoder entirely does not degrade performance —
 > extending to the longitudinal, small-N clinical regime a result previously established
-> only cross-sectionally at large N. We further show that Δt-conditioning cannot be
-> evidenced on protocol-driven cohorts, since 90% of inter-visit intervals in our primary
-> cohort are identical, and we replicate on ADNI.
+> only cross-sectionally at large N. Under external validation on two further cohorts,
+> **neither the baseline nor the lean alternative separates converters from non-converters**
+> (ADNI test AUC 0.43–0.50, OASIS-3 0.53–0.57), while within-cohort cross-validation for the
+> baseline reads 0.705 on the same splits — a within-versus-held-out gap of the same
+> magnitude as the improvements reported in this literature. We further show that
+> Δt-conditioning cannot be evidenced on protocol-driven cohorts, since 90% of inter-visit
+> intervals in our primary cohort are identical against 22% and 8% in two irregularly
+> sampled ones.
+
+**Conditional on the A.5 triage.** Until it clears, the external sentence must read *"we
+observe at-chance external performance whose cause we do not isolate"* — which is still worth
+writing, and is not the same sentence.
 
 **Never write:** "we achieve state-of-the-art performance."
+**Never write:** "our approach generalizes across cohorts." It does not, on this evidence.
 **Always write:** "our pipeline re-runs byte-identically; the published baseline spans 0.35 AUC at fixed seed."
+**Always write:** per-cohort tables with degeneracy counts. A mean that hides three
+all-positive-prediction runs out of four is the same failure this thesis audits in others.
 
 ---
 

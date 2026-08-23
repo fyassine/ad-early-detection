@@ -3,8 +3,8 @@
 Only ``check_parity`` (pure function over two ID lists) and
 ``_require_matched_window`` (a guard clause) are exercised here — the
 ``build_*_bundle`` functions require the real DELCODE data tree and are covered
-end-to-end by running the script itself (see B.1.1/B.1.2 in
-DOCS/meetings/ninth-meeting/comparison-plan-v2.md), not by this unit test.
+end-to-end by running the script itself (see Phase B.1.1/B.1.2 in
+DOCS/timeline/MASTER_PLAN.md §3), not by this unit test.
 """
 
 from __future__ import annotations

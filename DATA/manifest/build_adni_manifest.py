@@ -9,7 +9,7 @@ viscode with ``CLASSIFIER.common.visits.parse_adni_protocol_month`` — which
 returns ``None`` for ADNI's unscheduled ``'v'``-coded visits rather than
 guessing a month, per §2 of the comparison plan.
 
-Expected counts (DOCS/meetings/ninth-meeting/comparison-plan-v2.md §7,
+Expected counts (DOCS/timeline/MASTER_PLAN.md §3, Phase A.3,
 verified 2026-08-22): 268 subjects, 674 sessions in
 ``__fmri_wholebrain_sch200_flat__``. Was 237/567 as of 2026-08-20 — the
 2026-08-21 evening ``postprocess_local.sh --flatten-only --overwrite`` run
