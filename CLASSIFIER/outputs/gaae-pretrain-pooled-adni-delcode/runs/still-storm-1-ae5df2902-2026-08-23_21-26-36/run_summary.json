@@ -1,0 +1,15 @@
+{
+  "experiment_id": "gaae-pretrain-pooled-adni-delcode",
+  "run_name": "still-storm-1-ae5df2902-2026-08-23_21-26-36",
+  "state": "failed",
+  "status": "failed",
+  "error": "Traceback (most recent call last):\n  File \"/mnt/e/fyassine/ad-early-detection/CLASSIFIER/run_experiment.py\", line 222, in run_one\n    pm.execute_notebook(\n  File \"/mnt/e/fyassine/ad-early-detection/.venv/lib/python3.10/site-packages/papermill/execute.py\", line 116, in execute_notebook\n    nb = papermill_engines.execute_notebook_with_engine(\n  File \"/mnt/e/fyassine/ad-early-detection/.venv/lib/python3.10/site-packages/papermill/engines.py\", line 49, in execute_notebook_with_engine\n    return self.get_engine(engine_name).execute_notebook(nb, kernel_name, **kwargs)\nFileNotFoundError: output folder /mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/gaae-pretrain-pooled-adni-delcode/runs/still-storm-1-ae5df2902-2026-08-23_21-26-36 doesn't exist.\n",
+  "duration_seconds": 5697.6,
+  "started_at": "2026-08-23T21:26:40",
+  "finished_at": "2026-08-23T23:01:38",
+  "git": {
+    "short_commit": "ae5df2902",
+    "dirty": false
+  },
+  "metrics": {}
+}
