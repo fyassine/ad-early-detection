@@ -110,13 +110,14 @@ def test_invalid_threshold_mode_fails(tmp_path):
 
 
 def test_build_config_merge_order(tmp_path):
-    """dataclass defaults < JSON config < hyperparams."""
+    """dataclass defaults < JSON config < hyperparams < registry seed."""
     configs = tmp_path / "configs"
     configs.mkdir()
     (configs / "c.json").write_text(json.dumps({"epochs": 50, "lstm_hidden": 128}))
     exp = {
         "id": "x",
         "model": "GELSTM",
+        "seed": 43,
         "config_path": "configs/c.json",
         "hyperparams": {"epochs": 7},  # overrides JSON
     }
@@ -124,6 +125,27 @@ def test_build_config_merge_order(tmp_path):
     assert cfg["epochs"] == 7  # hyperparams wins
     assert cfg["lstm_hidden"] == 128  # from JSON
     assert cfg["lr"] == 1e-3  # untouched dataclass default
+    assert cfg["seed"] == 43  # registry seed, from exp["seed"]
+
+
+def test_build_config_registry_seed_shadows_config_and_hyperparams(tmp_path):
+    """A JSON config_path or a hyperparams block claiming a different seed must
+    not win — the registry's exp["seed"] is the single source of truth for
+    what ends up in run_summary.json's training_config.seed. Regression test
+    for the bug where every run on disk recorded seed=42 (the dataclass
+    default) regardless of the seed it actually trained with."""
+    configs = tmp_path / "configs"
+    configs.mkdir()
+    (configs / "c.json").write_text(json.dumps({"seed": 42}))
+    exp = {
+        "id": "x",
+        "model": "GELSTM",
+        "seed": 45,
+        "config_path": "configs/c.json",
+        "hyperparams": {"seed": 42},
+    }
+    cfg = eu.build_config(exp, tmp_path)
+    assert cfg["seed"] == 45
 
 
 def test_build_parameter_dict_keys(tmp_path):
