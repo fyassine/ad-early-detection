@@ -51,6 +51,8 @@ _REGISTRY: Dict[str, str] = {
     "gegru": "CLASSIFIER.adapters.gelstm:GELSTMAdapter",  # alias; rnn_type=gru via config
     "gec": "CLASSIFIER.adapters.gec:GECAdapter",
     "gep": "CLASSIFIER.adapters.gep:GEPAdapter",
+    "tfgn": "CLASSIFIER.adapters.tfgn:TFGNAdapter",
+    "logregdrift": "CLASSIFIER.adapters.logreg_drift:LogRegDriftAdapter",
     # Competitor baseline (Dong et al., MICCAI 2023). Lives outside this package
     # because it is not our model; registered here so comparison notebooks can
     # resolve it through the same get_adapter() path as our own models.
