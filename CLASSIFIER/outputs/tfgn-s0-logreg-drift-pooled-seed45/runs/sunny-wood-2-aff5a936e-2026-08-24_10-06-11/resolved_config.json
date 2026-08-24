@@ -1,0 +1,6 @@
+{
+  "encoder_init": "none",
+  "external_test_cohort": "oasis3",
+  "min_visits": 2,
+  "seed": 45
+}

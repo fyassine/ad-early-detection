@@ -1,0 +1,11 @@
+{
+  "experiment_id": "tfgn-s0-braintokengt-pooled-seed45",
+  "run_name": "laced-abyss-1-aff5a936e-2026-08-24_10-04-18",
+  "state": "running",
+  "pid": 259933,
+  "host": "fritz",
+  "started_at": "2026-08-24T10:04:25",
+  "git_commit": "aff5a936e",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb"
+}

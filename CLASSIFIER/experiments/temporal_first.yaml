@@ -1,0 +1,421 @@
+# Temporal-First Graph Network (TFGN) ablation ladder — pooled ADNI+DELCODE ->
+# external OASIS-3. Pre-registration: DOCS/temporal-first-ablation.md. Full plan:
+# DOCS/flipped/PLAN.md Phase 4 + the 2026-08-24 addendum ("Block 2/3").
+#
+# Every entry shares: dataset: POOLED_WHOLE_BRAIN, threshold_mode: best-f1,
+# notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb,
+# hyperparams.external_test_cohort: oasis3, hyperparams.min_visits: 2 (SENS
+# overrides to 3), seeds 42/43/44/45. TFGN arms (S1+) share
+# config_path: configs/tfgn_pooled.json, which encodes the S1 ("flip") baseline —
+# every later TFGN rung's hyperparams block is only the delta from that baseline,
+# same pattern as configs/gelstm_recon_ablation_delcode.json in ablation.yaml.
+#
+# Written in two passes per the ladder's own gating rule ("S1b's outcome sets
+# node_lstm_init for S1c-S5" - DOCS/temporal-first-ablation.md "The arms"):
+# this file currently holds Stage 0 (S0a-S0d) + S1 + S1b — the ungated portion
+# that can run without waiting on any prior rung's stopping-rule verdict. S1c
+# through SENS are appended only after S1b reports, per the pre-registration's
+# "never a silent edit" rule — do not pre-write their hyperparams blocks here.
+#
+# S0b/S0c's checkpoint_path points at the new pooled ADNI+DELCODE GAAE
+# (gaae-pretrain-pooled-adni-delcode, P1 of Phase 2) — filled in once that run
+# completes; do not point it at the DELCODE-only ethereal-planet-16 checkpoint,
+# that would silently break the "same encoder pretraining pool as the
+# classifier's own training pool" premise the whole ladder depends on.
+
+experiments:
+  # ── S0a: logreg-drift — linear floor on raw FC change ──────────────────────
+  - id: tfgn-s0-logreg-drift-pooled-seed42
+    mode: longitudinal
+    model: LogRegDrift
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: logregdrift
+    hyperparams:
+      encoder_init: none  # bypasses the notebook's GAAE-checkpoint gate; adapter never reads it
+      external_test_cohort: oasis3
+      min_visits: 2
+    threshold_mode: best-f1
+    notes: "S0a 1/4: logistic regression on PCA-compressed ΔA + metadata. Floor: is there signal in raw change at all?"
+
+  - id: tfgn-s0-logreg-drift-pooled-seed43
+    mode: longitudinal
+    model: LogRegDrift
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: logregdrift
+    hyperparams:
+      encoder_init: none
+      external_test_cohort: oasis3
+      min_visits: 2
+    threshold_mode: best-f1
+    notes: "S0a 2/4."
+
+  - id: tfgn-s0-logreg-drift-pooled-seed44
+    mode: longitudinal
+    model: LogRegDrift
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: logregdrift
+    hyperparams:
+      encoder_init: none
+      external_test_cohort: oasis3
+      min_visits: 2
+    threshold_mode: best-f1
+    notes: "S0a 3/4."
+
+  - id: tfgn-s0-logreg-drift-pooled-seed45
+    mode: longitudinal
+    model: LogRegDrift
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: logregdrift
+    hyperparams:
+      encoder_init: none
+      external_test_cohort: oasis3
+      min_visits: 2
+    threshold_mode: best-f1
+    notes: "S0a 4/4."
+
+  # ── S0b: gelstm-frozen — spatial-first WITH a self-supervised encoder ──────
+  # checkpoint_path: PENDING — fill with the gaae-pretrain-pooled-adni-delcode
+  # checkpoint (P1) once it finishes. Do not launch these four before then.
+  - id: tfgn-s0-gelstm-frozen-pooled-seed42
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      external_test_cohort: oasis3
+      min_visits: 2
+    checkpoint_path: PENDING_P1_CHECKPOINT
+    threshold_mode: best-f1
+    notes: "S0b 1/4: today's spatial-first GELSTM, pretrained-frozen pooled GAAE. Matched floor for S1c."
+
+  - id: tfgn-s0-gelstm-frozen-pooled-seed43
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      external_test_cohort: oasis3
+      min_visits: 2
+    checkpoint_path: PENDING_P1_CHECKPOINT
+    threshold_mode: best-f1
+    notes: "S0b 2/4."
+
+  - id: tfgn-s0-gelstm-frozen-pooled-seed44
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      external_test_cohort: oasis3
+      min_visits: 2
+    checkpoint_path: PENDING_P1_CHECKPOINT
+    threshold_mode: best-f1
+    notes: "S0b 3/4."
+
+  - id: tfgn-s0-gelstm-frozen-pooled-seed45
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      external_test_cohort: oasis3
+      min_visits: 2
+    checkpoint_path: PENDING_P1_CHECKPOINT
+    threshold_mode: best-f1
+    notes: "S0b 4/4."
+
+  # ── S0c: gelstm-random — spatial-first WITHOUT a pretrained encoder ────────
+  # Matched floor for S1 (neither encoder self-supervised). checkpoint_path is
+  # ignored by the model for encoder_init=random but still validated to exist
+  # by run_experiment.py / the notebook's GAAE-checkpoint gate (same convention
+  # as recon-ablation-gelstm-random in ablation.yaml) — same PENDING path as S0b.
+  - id: tfgn-s0-gelstm-random-pooled-seed42
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: random
+      external_test_cohort: oasis3
+      min_visits: 2
+    checkpoint_path: PENDING_P1_CHECKPOINT
+    threshold_mode: best-f1
+    notes: "S0c 1/4: spatial-first GELSTM, random-init encoder trained end-to-end. Matched floor for S1 (DOCS/temporal-first-ablation.md 'two clean contrasts')."
+
+  - id: tfgn-s0-gelstm-random-pooled-seed43
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: random
+      external_test_cohort: oasis3
+      min_visits: 2
+    checkpoint_path: PENDING_P1_CHECKPOINT
+    threshold_mode: best-f1
+    notes: "S0c 2/4."
+
+  - id: tfgn-s0-gelstm-random-pooled-seed44
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: random
+      external_test_cohort: oasis3
+      min_visits: 2
+    checkpoint_path: PENDING_P1_CHECKPOINT
+    threshold_mode: best-f1
+    notes: "S0c 3/4."
+
+  - id: tfgn-s0-gelstm-random-pooled-seed45
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: random
+      external_test_cohort: oasis3
+      min_visits: 2
+    checkpoint_path: PENDING_P1_CHECKPOINT
+    threshold_mode: best-f1
+    notes: "S0c 4/4."
+
+  # ── S0d: braintokengt — competitor baseline (reference only, see caveat) ──
+  # DOCS/temporal-first-ablation.md "BrainTokenGT caveat": not run-to-run
+  # reproducible on GPU (torch.use_deterministic_algorithms never engaged for
+  # its scatter/gather ops) and windowed to min_visits=2/max_visits=3 by its
+  # own config (architectural constraint, not this ladder's choice) — reported
+  # as a reference point, not a clean baseline like S0b/S0c.
+  - id: tfgn-s0-braintokengt-pooled-seed42
+    mode: longitudinal
+    model: BrainTokenGT
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    hyperparams:
+      external_test_cohort: oasis3
+      min_visits: 2
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "S0d 1/4: BrainTokenGT (stabilized) competitor baseline on the pooled cohort. Reference point, not a clean baseline — see caveat."
+
+  - id: tfgn-s0-braintokengt-pooled-seed43
+    mode: longitudinal
+    model: BrainTokenGT
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    hyperparams:
+      external_test_cohort: oasis3
+      min_visits: 2
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "S0d 2/4."
+
+  - id: tfgn-s0-braintokengt-pooled-seed44
+    mode: longitudinal
+    model: BrainTokenGT
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    hyperparams:
+      external_test_cohort: oasis3
+      min_visits: 2
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "S0d 3/4."
+
+  - id: tfgn-s0-braintokengt-pooled-seed45
+    mode: longitudinal
+    model: BrainTokenGT
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: braintokengt
+    config_path: configs/braintokengt_repaired_delcode_fix_stabilized.json
+    hyperparams:
+      external_test_cohort: oasis3
+      min_visits: 2
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
+    threshold_mode: best-f1
+    notes: "S0d 4/4."
+
+  # ── S1: flip — temporal-first, no self-supervision anywhere ───────────────
+  # Every knob here already equals configs/tfgn_pooled.json's baseline; the
+  # hyperparams block carries only the pooled-protocol fields every entry needs.
+  # Compare to S0c (neither encoder pretrained) — DOCS/temporal-first-ablation.md.
+  - id: tfgn-s1-flip-pooled-seed42
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      external_test_cohort: oasis3
+      min_visits: 2
+    threshold_mode: best-f1
+    notes: "S1 1/4: flip alone (node_lstm_init=random, gate off, recon_target=none, fusion=z_only, readout=mean). vs S0c isolates the flip itself."
+
+  - id: tfgn-s1-flip-pooled-seed43
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      external_test_cohort: oasis3
+      min_visits: 2
+    threshold_mode: best-f1
+    notes: "S1 2/4."
+
+  - id: tfgn-s1-flip-pooled-seed44
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      external_test_cohort: oasis3
+      min_visits: 2
+    threshold_mode: best-f1
+    notes: "S1 3/4."
+
+  - id: tfgn-s1-flip-pooled-seed45
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      external_test_cohort: oasis3
+      min_visits: 2
+    threshold_mode: best-f1
+    notes: "S1 4/4."
+
+  # ── S1b: ssl — does node-level forecasting pretraining help? ──────────────
+  # node_lstm_ckpt_path points at the P2 SSL checkpoint (tfgn-nodelstm-ssl-pooled,
+  # run morning-violet-1, verified: n_val_subjects=103 [62 adni/41 delcode],
+  # best_val_loss=0.0459, model_state_dict keys all 'lstm.*'). Only S1b's own
+  # winner (per the stopping rule) decides node_lstm_init for S1c-S5 — this
+  # entry itself is not gated on anything, it can run alongside S1.
+  - id: tfgn-s1b-ssl-pooled-seed42
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: pretrained_finetuned
+      node_lstm_ckpt_path: outputs/tfgn-nodelstm-ssl-pooled/runs/morning-violet-1-fa30969e6-2026-08-24_08-36-00/checkpoint_morning-violet-1-fa30969e6-2026-08-24_08-36-00.pth
+      external_test_cohort: oasis3
+      min_visits: 2
+    threshold_mode: best-f1
+    notes: "S1b 1/4: node-shared LSTM initialised from P2's self-supervised next-visit-FC-row forecasting checkpoint, finetuned. vs S1 = value of node-level SSL pretraining alone."
+
+  - id: tfgn-s1b-ssl-pooled-seed43
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: pretrained_finetuned
+      node_lstm_ckpt_path: outputs/tfgn-nodelstm-ssl-pooled/runs/morning-violet-1-fa30969e6-2026-08-24_08-36-00/checkpoint_morning-violet-1-fa30969e6-2026-08-24_08-36-00.pth
+      external_test_cohort: oasis3
+      min_visits: 2
+    threshold_mode: best-f1
+    notes: "S1b 2/4."
+
+  - id: tfgn-s1b-ssl-pooled-seed44
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: pretrained_finetuned
+      node_lstm_ckpt_path: outputs/tfgn-nodelstm-ssl-pooled/runs/morning-violet-1-fa30969e6-2026-08-24_08-36-00/checkpoint_morning-violet-1-fa30969e6-2026-08-24_08-36-00.pth
+      external_test_cohort: oasis3
+      min_visits: 2
+    threshold_mode: best-f1
+    notes: "S1b 3/4."
+
+  - id: tfgn-s1b-ssl-pooled-seed45
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: pretrained_finetuned
+      node_lstm_ckpt_path: outputs/tfgn-nodelstm-ssl-pooled/runs/morning-violet-1-fa30969e6-2026-08-24_08-36-00/checkpoint_morning-violet-1-fa30969e6-2026-08-24_08-36-00.pth
+      external_test_cohort: oasis3
+      min_visits: 2
+    threshold_mode: best-f1
+    notes: "S1b 4/4."
+
+# S1c ("recon", headline arm vs S0b), S2 ("gate"), S3 ("fusion"), S4
+# ("attnpool"), S5 ("dualscore"), and SENS ("minvisits3") are appended here —
+# never as a silent edit to the entries above — once S1b's four seeds report
+# against the stopping rule and fix node_lstm_init for the rest of the chain.
+# See DOCS/temporal-first-ablation.md and the addendum in
+# ~/.claude/plans/enchanted-brewing-crane.md.

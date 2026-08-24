@@ -1,0 +1,11 @@
+{
+  "experiment_id": "gaae-pretrain-pooled-adni-delcode",
+  "run_name": "dark-surf-2-fa30969e6-2026-08-24_08-23-22",
+  "state": "running",
+  "pid": 1306687,
+  "host": "frieda",
+  "started_at": "2026-08-24T08:23:27",
+  "git_commit": "fa30969e6",
+  "git_dirty": false,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb"
+}

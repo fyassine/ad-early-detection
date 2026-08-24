@@ -1,0 +1,11 @@
+{
+  "experiment_id": "tfgn-s1-flip-pooled-seed42",
+  "run_name": "silent-wildflower-2-aff5a936e-2026-08-24_10-01-58",
+  "state": "running",
+  "pid": 251775,
+  "host": "fritz",
+  "started_at": "2026-08-24T10:02:02",
+  "git_commit": "aff5a936e",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb"
+}

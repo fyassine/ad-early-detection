@@ -156,15 +156,30 @@ class BrainTokenGTAdapter(LongitudinalAdapter):
     # ── data ────────────────────────────────────────────────────────────────
     def prepare_data(self, df) -> Bundle:
         """Build the Bundle from the SAME dataset object the GELSTM adapter uses."""
-        ds = LongitudinalSubjectDataset(
-            self.data_root,
-            df,
-            self.cohorts_csv,
-            adjacency_k=self.adjacency_k,
-            file_variant=self.file_variant,
-            cohort=self.cohort,
-        )
-        items = [ds[i] for i in range(len(ds))]
+        if "cohort" in getattr(df, "columns", []):
+            # Pooled ADNI+DELCODE frame (temporal-first ladder S0d) — same dispatch
+            # as GELSTMAdapter / TFGNAdapter. min_visits/max_visits are applied
+            # below via the same post-hoc filter+window_item path as the
+            # single-cohort branch, not passed into build_multicohort_bundle, so
+            # the two branches windowed identically either way.
+            from CLASSIFIER.common.pooled_data import build_multicohort_bundle
+
+            bundle = build_multicohort_bundle(
+                df,
+                adjacency_k=self.adjacency_k,
+                file_variant=self.file_variant,
+            )
+            items = bundle.items
+        else:
+            ds = LongitudinalSubjectDataset(
+                self.data_root,
+                df,
+                self.cohorts_csv,
+                adjacency_k=self.adjacency_k,
+                file_variant=self.file_variant,
+                cohort=self.cohort,
+            )
+            items = [ds[i] for i in range(len(ds))]
 
         kept = [it for it in items if it["n_scans"] >= int(self.min_visits or 1)]
         n_dropped = len(items) - len(kept)

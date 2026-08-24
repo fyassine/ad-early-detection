@@ -1,0 +1,16 @@
+{
+  "experiment_id": "tfgn-s0-logreg-drift-pooled-seed42",
+  "run_name": "exalted-paper-1-aff5a936e-2026-08-24_10-03-36",
+  "state": "failed",
+  "pid": 257385,
+  "host": "fritz",
+  "started_at": "2026-08-24T10:03:40",
+  "git_commit": "aff5a936e",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T10:04:35",
+  "duration_seconds": 54.1,
+  "error": "NotImplementedError: ",
+  "notebook_traceback": "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m\n\u001b[0;31mNotImplementedError\u001b[0m                       Traceback (most recent call last)\nCell \u001b[0;32mIn[13], line 7\u001b[0m\n\u001b[1;32m      4\u001b[0m TEST_BUNDLE \u001b[38;5;241m=\u001b[39m prepare_data(test_df)\n\u001b[1;32m      5\u001b[0m \u001b[38;5;28mprint\u001b[39m(\u001b[38;5;124mf\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mCV subjects: \u001b[39m\u001b[38;5;132;01m{\u001b[39;00m\u001b[38;5;28mlen\u001b[39m(CV_BUNDLE)\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m  Test subjects: \u001b[39m\u001b[38;5;132;01m{\u001b[39;00m\u001b[38;5;28mlen\u001b[39m(TEST_BUNDLE)\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m'\u001b[39m)\n\u001b[0;32m----> 7\u001b[0m _ \u001b[38;5;241m=\u001b[39m \u001b[43mbuild_model\u001b[49m\u001b[43m(\u001b[49m\u001b[43m)\u001b[49m   \u001b[38;5;66;03m# smoke-test arch construction\u001b[39;00m\n\nFile \u001b[0;32m/mnt/e/fyassine/ad-early-detection/CLASSIFIER/adapters/__init__.py:219\u001b[0m, in \u001b[0;36mLongitudinalAdapter.build_model\u001b[0;34m(self)\u001b[0m\n\u001b[1;32m    218\u001b[0m \u001b[38;5;28;01mdef\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21mbuild_model\u001b[39m(\u001b[38;5;28mself\u001b[39m):  \u001b[38;5;66;03m# pragma: no cover - overridden\u001b[39;00m\n\u001b[0;32m--> 219\u001b[0m     \u001b[38;5;28;01mraise\u001b[39;00m \u001b[38;5;167;01mNotImplementedError\u001b[39;00m\n\n\u001b[0;31mNotImplementedError\u001b[0m: ",
+  "cell": "In [13]"
+}

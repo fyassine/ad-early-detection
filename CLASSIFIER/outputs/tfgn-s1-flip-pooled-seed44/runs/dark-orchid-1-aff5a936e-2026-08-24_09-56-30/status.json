@@ -1,0 +1,16 @@
+{
+  "experiment_id": "tfgn-s1-flip-pooled-seed44",
+  "run_name": "dark-orchid-1-aff5a936e-2026-08-24_09-56-30",
+  "state": "failed",
+  "pid": 241616,
+  "host": "fritz",
+  "started_at": "2026-08-24T09:56:34",
+  "git_commit": "aff5a936e",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T09:58:54",
+  "duration_seconds": 139.8,
+  "error": "SystemExit: 143",
+  "signal": "SIGTERM",
+  "exit_code": 143
+}

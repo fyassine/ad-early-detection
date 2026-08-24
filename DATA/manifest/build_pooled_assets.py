@@ -18,7 +18,10 @@ Four artefacts, each idempotent and re-runnable:
    ``GraphDatasetInMemoryFiltered`` (``CLASSIFIER/model/GAAE/dataset.py``)
    requires verbatim — its ``filter_csv_path``/``patient_info_path`` loader
    hardcodes the column name ``Pseudonym``, so this is the one pooled CSV that
-   does NOT use ``subject_id``.
+   does NOT use ``subject_id``. Also carries a populated ``cohort`` column
+   (``"delcode"`` / ``"adni"``) so consumers other than the GAAE loader (which
+   ignores unknown columns) don't need to re-derive cohort from the
+   subject-id prefix.
 3. ``DATA/POOLED_ADNI_DELCODE/SPLITS/downstream/{train,val,test}.csv`` —
    union of DELCODE's and ADNI's downstream splits, harmonised to
    ``subject_id,cohort,converter_status,sex,age,n_scans,allowed_days,
@@ -82,7 +85,7 @@ POOLED_DOWNSTREAM_COLUMNS = [
     "allowed_days",
     "allowed_months",
 ]
-POOLED_PRETRAIN_COLUMNS = ["Pseudonym", "diagnosis", "sex", "age", "n_scans"]
+POOLED_PRETRAIN_COLUMNS = ["Pseudonym", "diagnosis", "sex", "age", "n_scans", "cohort"]
 
 
 # ---------------------------------------------------------------------------
@@ -167,6 +170,8 @@ def build_adni_pretrain_splits(*, seed: int = 42) -> dict[str, pd.DataFrame]:
 
 def _delcode_pretrain_to_pooled(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
+    if "cohort" not in out.columns:
+        out["cohort"] = "delcode"
     for col in POOLED_PRETRAIN_COLUMNS:
         if col not in out.columns:
             raise ValueError(f"DELCODE pretrain split missing expected column {col!r}")
@@ -181,6 +186,7 @@ def _adni_pretrain_to_pooled(df: pd.DataFrame) -> pd.DataFrame:
             "sex": df["sex"],
             "age": df["age"],
             "n_scans": df["n_scans"],
+            "cohort": "adni",
         }
     )
     return out[POOLED_PRETRAIN_COLUMNS]

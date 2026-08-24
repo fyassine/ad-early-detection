@@ -108,6 +108,17 @@ enforced in `test_tfgn.py`: if the per-subject positive-edge fraction falls outs
 `[0.01, 0.5]` for any subject, construction raises rather than silently training on a
 degenerate mask — that is the trigger to fall back to `delta_a_mse`, not a runtime warning.
 
+**Addendum (fix A0.4, 2026-08-24).** `delta_a_mse`'s `ΔA/2 ∈ [−1,1]` target and `a_last`'s
+`(A^{(T)}+1)/2 ∈ [0,1]` target both assume `A` is raw Pearson `r ∈ [-1,1]`. The pooled
+pipeline's default `file_variant` is `z_transformed` (Fisher-z, unbounded), under which
+both targets fall outside their loss's valid range. `TFGNAdapter.__init__`
+(`CLASSIFIER/adapters/tfgn.py`) now raises `ValueError` if either target is selected
+against `file_variant="z_transformed"`. `delta_a_topk` (the ladder default) is scale-free
+— its change-mask is a per-subject quantile threshold, invariant to the FC transform — so
+this guard never fires on the pre-registered ladder path; it exists for the Block-B `a_last`
+contrast arm and the `delta_a_mse` fallback, both of which must pass `file_variant="raw"`
+explicitly if used.
+
 ## Anchoring quantities (Phase 3, S2/S5)
 
 **Topological anchor** (`s_i^{topo}` target). Eigenvector centrality is ill-defined on a

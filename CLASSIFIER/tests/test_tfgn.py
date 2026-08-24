@@ -3,7 +3,8 @@
 Covers shape contracts, gate bounds, sparsemax exact zeros, change-mask
 density guards, drift anchor calibration, centrality on signed input,
 recon_target='none' gradient zeroing, determinism under strict seeding,
-z_only gradient backpropagation to LSTM, log_dt wiring, and patient_embeddings hook.
+z_only gradient backpropagation to LSTM, log_dt wiring, GVAE input width,
+and patient_embeddings hook.
 """
 
 from __future__ import annotations
@@ -221,6 +222,51 @@ def test_recon_target_none_zeroes_grad(tfgn_kwargs, synthetic_inputs):
     assert out["mu"] is None
     assert out["mu_raw"] is None
     assert out["recon_logits"] is None
+
+
+def test_log_dt_changes_lstm_output(tfgn_kwargs, synthetic_inputs):
+    """log_dt is actually wired into NodeSharedLSTM's input, not silently dropped."""
+    X, log_dt, A0_edge_index, A0_edge_attr, cond_vec = synthetic_inputs
+    torch.manual_seed(0)
+    lstm = NodeSharedLSTM(
+        input_dim=tfgn_kwargs["n_rois"],
+        hidden_dim=tfgn_kwargs["lstm_hidden"],
+        num_layers=tfgn_kwargs["lstm_layers"],
+        dropout=tfgn_kwargs["lstm_dropout"],
+        use_time_delta=True,
+    )
+    lstm.eval()
+    with torch.no_grad():
+        out_a = lstm(X.unsqueeze(0), log_dt.unsqueeze(0))
+        out_b = lstm(X.unsqueeze(0), (log_dt + 5.0).unsqueeze(0))
+    assert not torch.equal(out_a, out_b), "Varying log_dt did not change NodeSharedLSTM's output"
+
+
+def test_gvae_receives_lstm_hidden_width(tfgn_kwargs, synthetic_inputs):
+    """GVAE must consume h_T (width lstm_hidden), not the raw node feature width."""
+    model = TFGNClassifier(**tfgn_kwargs)
+    assert model.gvae is not None
+    assert model.gvae.shared.in_channels == tfgn_kwargs["lstm_hidden"]
+
+
+def test_z_only_none_recon_still_backpropagates_to_lstm(tfgn_kwargs, synthetic_inputs):
+    """fusion='z_only' combined with recon_target='none' has no GVAE at all (h_fused=h_T
+    directly per models.py), so the classification gradient must still reach the LSTM."""
+    X, log_dt, A0_edge_index, A0_edge_attr, cond_vec = synthetic_inputs
+    kwargs = tfgn_kwargs.copy()
+    kwargs["fusion"] = "z_only"
+    kwargs["recon_target"] = "none"
+    model = TFGNClassifier(**kwargs)
+    assert model.gvae is None
+
+    out = model(X, log_dt, A0_edge_index, A0_edge_attr, cond_vec)
+    loss = out["logits"].sum()
+    loss.backward()
+
+    lstm_grad_norm = sum(p.grad.norm().item() for p in model.lstm.parameters() if p.grad is not None)
+    assert lstm_grad_norm > 0.0, (
+        "Classification gradient failed to reach LSTM under fusion='z_only', recon_target='none'"
+    )
 
 
 def test_z_only_backpropagates_to_lstm(tfgn_kwargs, synthetic_inputs):

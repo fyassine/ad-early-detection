@@ -1,0 +1,15 @@
+{
+  "experiment_id": "tfgn-s0-logreg-drift-pooled-seed44",
+  "run_name": "apricot-leaf-1-aff5a936e-2026-08-24_10-03-36",
+  "state": "failed",
+  "status": "failed",
+  "error": "NotImplementedError: ",
+  "duration_seconds": 55.1,
+  "started_at": "2026-08-24T10:03:40",
+  "finished_at": "2026-08-24T10:04:36",
+  "git": {
+    "short_commit": "aff5a936e",
+    "dirty": true
+  },
+  "metrics": {}
+}

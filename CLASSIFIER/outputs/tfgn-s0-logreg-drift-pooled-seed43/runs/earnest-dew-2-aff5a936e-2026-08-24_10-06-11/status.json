@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s0-logreg-drift-pooled-seed43",
+  "run_name": "earnest-dew-2-aff5a936e-2026-08-24_10-06-11",
+  "state": "done",
+  "pid": 263156,
+  "host": "fritz",
+  "started_at": "2026-08-24T10:06:16",
+  "git_commit": "aff5a936e",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T10:07:57",
+  "exit_code": 0,
+  "duration_seconds": 100.9
+}
