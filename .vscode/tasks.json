@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "git-commit-push-on-close",
+      "type": "shell",
+      "command": "${workspaceFolder}/.vscode/git-on-close.sh",
+      "isBackground": true,
+      "options": {
+        "env": {
+          "GIT_ON_CLOSE_SSH_KEY": "/mnt/e/fyassine/.ssh/id_rsa"
+        }
+      },
+      "problemMatcher": [],
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "presentation": {
+        "reveal": "never",
+        "panel": "dedicated",
+        "close": false
+      }
+    }
+  ]
+}

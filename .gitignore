@@ -107,6 +107,7 @@ DATA/**/*.zip.download/
 
 # External / nested repositories
 Brain-TokenGT/
+THESIS/
 
 node_modules/
 **/node_modules/
