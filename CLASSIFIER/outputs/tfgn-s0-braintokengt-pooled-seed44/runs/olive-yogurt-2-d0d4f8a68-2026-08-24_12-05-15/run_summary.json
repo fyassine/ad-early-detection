@@ -1,0 +1,164 @@
+{
+  "run_name": "olive-yogurt-2-d0d4f8a68-2026-08-24_12-05-15",
+  "data_info": {
+    "data_root": "/mnt/e/fyassine/ad-early-detection/DATA/POOLED_ADNI_DELCODE/__fc_wholebrain_sch200_flat__/matrices",
+    "dataset_dir": "__fc_wholebrain_sch200_flat__",
+    "modality": "fc",
+    "region": "wholebrain",
+    "atlas": "sch200",
+    "variant": "flat"
+  },
+  "dataset_info": {
+    "data_root": "/mnt/e/fyassine/ad-early-detection/DATA/POOLED_ADNI_DELCODE/__fc_wholebrain_sch200_flat__/matrices",
+    "dataset_dir": "__fc_wholebrain_sch200_flat__",
+    "modality": "fc",
+    "region": "wholebrain",
+    "atlas": "sch200",
+    "variant": "flat",
+    "train_csv": "/mnt/e/fyassine/ad-early-detection/DATA/POOLED_ADNI_DELCODE/SPLITS/downstream/train.csv",
+    "val_csv": "/mnt/e/fyassine/ad-early-detection/DATA/POOLED_ADNI_DELCODE/SPLITS/downstream/val.csv",
+    "test_csv": "/mnt/e/fyassine/ad-early-detection/DATA/POOLED_ADNI_DELCODE/SPLITS/downstream/test.csv",
+    "n_folds": 5
+  },
+  "model_config": {
+    "model_type": "BrainTokenGT",
+    "paper": "Dong et al., MICCAI 2023 (arXiv:2307.00858)",
+    "upstream_ref": "Brain-TokenGT/ (pristine checkout)",
+    "pretrained_encoder": null,
+    "in_features": 200,
+    "num_nodes": 200,
+    "output_sizes": [
+      32,
+      32
+    ],
+    "nhead": 2,
+    "num_layers": 2,
+    "static_edge_topk": 180,
+    "edge_density": 0.15012345679012346,
+    "adjacency_metric": "raw",
+    "min_visits": 2,
+    "max_visits": 3,
+    "edge_weight_mode": "weighted",
+    "readout": "graph_token",
+    "force_single_head": false,
+    "train_give": true,
+    "give_weight_decay": 0.001,
+    "give_lr_scale": 0.1,
+    "upstream_faithful": false
+  },
+  "training_config": {
+    "_comment": "Brain-TokenGT REPAIRED + fix-stabilized: same fidelity flags as braintokengt_repaired_delcode.json, but the newly-unfrozen GIVE/GRCU parameters (train_give=true) get their own optimizer param group -- give_weight_decay regularizes the recurrent weight-matrix GRU, give_lr_scale slows its evolution -- to address the run-to-run numerical divergence documented in outputs/braintokengt-delcode-whole-brain-repaired (two failed runs, IndexError in TopK from non-finite scores; isolated replay showed it is GPU floating-point-order sensitive, not data-dependent).",
+    "in_features": 200,
+    "num_nodes": 200,
+    "output_sizes": [
+      32,
+      32
+    ],
+    "nhead": 2,
+    "num_layers": 2,
+    "static_edge_topk": 180,
+    "edge_weight_mode": "weighted",
+    "readout": "graph_token",
+    "force_single_head": false,
+    "train_give": true,
+    "give_weight_decay": 0.001,
+    "give_lr_scale": 0.1,
+    "edge_density": 0.15012345679012346,
+    "adjacency_metric": "raw",
+    "min_visits": 2,
+    "max_visits": 3,
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0,
+    "epochs": 50,
+    "early_stopping_patience": 15,
+    "batch_size": 8,
+    "use_class_cost_weights": true,
+    "grad_clip": 1.0,
+    "n_folds": 5,
+    "external_test_cohort": "oasis3",
+    "defer_test_eval": true,
+    "seed": 44,
+    "cohort": "pooled"
+  },
+  "gaae_checkpoint": "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth",
+  "gaae_run_name": "ethereal-planet-16_2026-06-10_12-31-05",
+  "n_folds": 5,
+  "best_fold": 3,
+  "best_val_auc": 0.7586805555555556,
+  "active_threshold": 0.28765928745269775,
+  "threshold_method": "oof_f1",
+  "cv_results": {
+    "fold": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "val_auc": [
+      0.6493055555555556,
+      0.6388888888888888,
+      0.7586805555555556,
+      0.5863970588235294,
+      0.5161290322580645
+    ],
+    "val_sensitivity": [
+      0.8333333333333334,
+      0.9444444444444444,
+      0.6666666666666666,
+      0.7058823529411765,
+      1.0
+    ],
+    "val_specificity": [
+      0.53125,
+      0.3125,
+      0.75,
+      0.59375,
+      0.12903225806451613
+    ],
+    "val_f1": [
+      0.625,
+      0.5964912280701754,
+      0.631578947368421,
+      0.5714285714285714,
+      0.5714285714285714
+    ],
+    "best_threshold": [
+      0.28765928745269775,
+      0.41488122940063477,
+      0.5105609893798828,
+      0.48963791131973267,
+      0.2094557285308838
+    ]
+  },
+  "env": {
+    "python": "3.10.12",
+    "torch": "2.10.0+cu128",
+    "torch_geometric": "2.7.0",
+    "numpy": "1.26.4",
+    "sklearn": "1.7.2"
+  },
+  "git": {
+    "commit": "d0d4f8a68299a3f7a6789389f22d85dbcfe03f3c",
+    "short_commit": "d0d4f8a68",
+    "branch": "feat/tfgn-flipped",
+    "dirty": true
+  },
+  "oof": {
+    "oof_n": 248,
+    "oof_auc": 0.6034202529856547,
+    "oof_pr_auc": 0.4923735068657602,
+    "oof_balanced_accuracy": 0.5826090028973218,
+    "oof_threshold": 0.28765928745269775,
+    "oof_auc_adni": 0.575971058644326,
+    "oof_auc_delcode": 0.6309412861136998,
+    "oof_static_n1_auc": 0.5394671754646314,
+    "oof_prob_nscans_spearman_overall": -0.029535200623647746,
+    "oof_prob_nscans_spearman_converter": -0.06594187016749968,
+    "oof_prob_nscans_spearman_non_converter": -0.00637022499392984
+  },
+  "duration_seconds": 2653.2,
+  "state": "done",
+  "status": "done"
+}

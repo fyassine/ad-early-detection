@@ -53,7 +53,6 @@ from ABI.common.experiment_utils import (  # noqa: E402
     build_config,
     build_parameter_dict,
     collect_results,
-    find_latest_run,
     find_run_dir,
     load_experiment,
     load_registry,
@@ -61,7 +60,6 @@ from ABI.common.experiment_utils import (  # noqa: E402
 )
 from SHARED.provenance import (  # noqa: E402
     capture_git_provenance,
-    patch_run_summary,
     snapshot_source_dirs,
 )
 from SHARED.run_naming import generate_run_name  # noqa: E402

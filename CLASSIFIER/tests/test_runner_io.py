@@ -32,6 +32,7 @@ def test_format_elapsed_always_show_hours():
 
 def test_infer_notebook_duration(tmp_path):
     import json
+
     from SHARED.runner_io import infer_notebook_duration
 
     nb = tmp_path / "test.ipynb"
@@ -48,6 +49,7 @@ def test_infer_notebook_duration(tmp_path):
 
 def test_infer_run_duration_from_status(tmp_path):
     import json
+
     from SHARED.runner_io import infer_run_duration
 
     run_dir = tmp_path / "run1"
@@ -58,6 +60,7 @@ def test_infer_run_duration_from_status(tmp_path):
 
 def test_infer_run_duration_from_notebook(tmp_path):
     import json
+
     from SHARED.runner_io import infer_run_duration
 
     run_dir = tmp_path / "run2"
@@ -202,6 +205,7 @@ def test_watch_status_table_max_iterations():
 
 def test_watch_status_table_handles_keyboard_interrupt(monkeypatch):
     import time
+
     from SHARED.runner_io import watch_status_table
 
     def mock_sleep(_):
@@ -244,6 +248,7 @@ def test_classifier_parse_args():
 
 def test_follow_run_log_completed(tmp_path):
     import json
+
     from SHARED.runner_io import follow_run_log
 
     run_dir = tmp_path / "runs" / "run-done"
@@ -266,6 +271,7 @@ def test_follow_run_log_streaming_to_done(tmp_path):
     import json
     import os
     import threading
+
     from SHARED.runner_io import follow_run_log
 
     run_dir = tmp_path / "runs" / "run-streaming"
@@ -316,6 +322,7 @@ def test_follow_run_log_keyboard_interrupt(tmp_path, monkeypatch):
     import json
     import os
     import time
+
     from SHARED.runner_io import follow_run_log
 
     run_dir = tmp_path / "runs" / "run-int"
@@ -340,6 +347,7 @@ def test_infer_run_duration_running(tmp_path):
     import json
     import os
     from datetime import datetime, timedelta
+
     from SHARED.runner_io import infer_run_duration
 
     run_dir = tmp_path / "runs" / "run-active"
@@ -355,6 +363,7 @@ def test_infer_run_duration_running(tmp_path):
 
 def test_is_process_alive():
     import os
+
     from SHARED.runner_io import is_process_alive
 
     # Current process is definitely alive
@@ -373,6 +382,7 @@ def test_reconcile_run_status_alive(tmp_path):
     import json
     import os
     from datetime import datetime, timedelta
+
     from SHARED.runner_io import reconcile_run_status
 
     run_dir = tmp_path / "runs" / "live-run"
@@ -401,6 +411,7 @@ def test_reconcile_run_status_alive(tmp_path):
 def test_reconcile_run_status_dead_creates_summary(tmp_path):
     import json
     from datetime import datetime, timedelta
+
     from SHARED.runner_io import reconcile_run_status
 
     run_dir = tmp_path / "runs" / "dead-run"
@@ -444,6 +455,7 @@ def test_reconcile_run_status_dead_creates_summary(tmp_path):
 
 def test_run_lifecycle_normal(tmp_path):
     import json
+
     from SHARED.runner_io import RunLifecycle
 
     run_dir = tmp_path / "runs" / "lifecycle-run"
@@ -476,6 +488,7 @@ def test_run_lifecycle_normal(tmp_path):
 
 def test_run_lifecycle_failure(tmp_path):
     import json
+
     from SHARED.runner_io import RunLifecycle
 
     run_dir = tmp_path / "runs" / "lifecycle-fail"
@@ -502,7 +515,9 @@ def test_run_lifecycle_failure(tmp_path):
 
 def test_run_lifecycle_unhandled_exception(tmp_path):
     import json
+
     import pytest
+
     from SHARED.runner_io import RunLifecycle
 
     run_dir = tmp_path / "runs" / "lifecycle-exc"
@@ -529,6 +544,7 @@ def test_run_lifecycle_unhandled_exception(tmp_path):
 
 def test_render_status_table_warning_on_killed_runs(capsys):
     from datetime import datetime, timedelta
+
     from SHARED.runner_io import render_status_table
 
     recent_finished = (datetime.now() - timedelta(minutes=10)).isoformat()

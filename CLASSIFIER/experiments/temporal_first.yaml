@@ -5,25 +5,118 @@
 # Every entry shares: dataset: POOLED_WHOLE_BRAIN, threshold_mode: best-f1,
 # notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb,
 # hyperparams.external_test_cohort: oasis3, hyperparams.min_visits: 2 (SENS
-# overrides to 3), seeds 42/43/44/45. TFGN arms (S1+) share
+# overrides to 3), hyperparams.defer_test_eval: true (2026-08-24 addendum, see
+# below), seeds 42/43/44/45. TFGN arms (S1+) share
 # config_path: configs/tfgn_pooled.json, which encodes the S1 ("flip") baseline —
 # every later TFGN rung's hyperparams block is only the delta from that baseline,
 # same pattern as configs/gelstm_recon_ablation_delcode.json in ablation.yaml.
 #
-# Written in two passes per the ladder's own gating rule ("S1b's outcome sets
+# Written in passes per the ladder's own gating rule ("S1b's outcome sets
 # node_lstm_init for S1c-S5" - DOCS/temporal-first-ablation.md "The arms"):
-# this file currently holds Stage 0 (S0a-S0d) + S1 + S1b — the ungated portion
-# that can run without waiting on any prior rung's stopping-rule verdict. S1c
-# through SENS are appended only after S1b reports, per the pre-registration's
-# "never a silent edit" rule — do not pre-write their hyperparams blocks here.
+# each rung's hyperparams block is added only once the rung(s) before it have
+# reported against the stopping rule, per the pre-registration's "never a
+# silent edit" rule. S2 through SENS are still pending on S1c.
+#
+# S1b fork resolved 2026-08-24: S1/S1b both completed 4/4 seeds, OOF-AUC
+# stopping rule mean(Δ)=0.01067 SE(Δ)=0.00521 ratio=2.05 -> passes ->
+# node_lstm_init: pretrained_finetuned carries into S1c-S5 (S1's own entries
+# above are untouched — only S1c onward inherit the winning value). Full
+# per-seed table in DOCS/temporal-first-ablation.md "S1b fork decision".
 #
 # S0b/S0c's checkpoint_path points at the new pooled ADNI+DELCODE GAAE
-# (gaae-pretrain-pooled-adni-delcode, P1 of Phase 2) — filled in once that run
-# completes; do not point it at the DELCODE-only ethereal-planet-16 checkpoint,
-# that would silently break the "same encoder pretraining pool as the
-# classifier's own training pool" premise the whole ladder depends on.
+# (gaae-pretrain-pooled-adni-delcode, P1 of Phase 2) — do not point it at the
+# DELCODE-only ethereal-planet-16 checkpoint, that would silently break the
+# "same encoder pretraining pool as the classifier's own training pool"
+# premise the whole ladder depends on. P1's run_experiment.py status shows
+# "failed" (NameError: ADAPTER_KEY, a pre-existing bug in
+# STATIC_COMMON_DELCODE.ipynb, now fixed — unrelated to this ladder) but
+# training completed the full 500-epoch budget and the checkpoint saved
+# successfully *before* that crash: verified by loading it directly
+# (GraphAttentionAutoencoderConditioned, 952,136 params) and by
+# history.json/run_config.json (618/443/422 graphs, best_val_loss=0.0188 at
+# epoch 499/500). Reconstructed metrics patched into
+# outputs/gaae-pretrain-pooled-adni-delcode/runs/.../run_summary.json.
+#
+# Evaluation & Comparison Protocol addendum (2026-08-24,
+# DOCS/temporal-first-ablation.md "Evaluation & Comparison Protocol"):
+# every entry below now carries hyperparams.defer_test_eval: true, so a run
+# writes no test_*/ext_* keys (the frozen in-domain + OASIS-3 reads happen
+# exactly once, later, via CLASSIFIER/common/frozen_read.py from
+# notebooks/COMPARISON/COMPARISON_TEMPORAL_FIRST_LADDER.ipynb) and instead
+# writes run_summary["oof"] (CLASSIFIER/common/oof.py, via a per-fold
+# fold_probe wired into the shared notebook). This is not a new protocol for
+# S1c (not yet launched, unaffected by the flag beyond deferring its own test
+# reads) but it DOES require the 24 already-complete S0a-S0d/S1/S1b runs
+# (4 seeds each) to be **re-run** — their existing run_summary.json predates
+# the "oof" block. New Tier-1 floor: tfgn-s0-demo-pooled (age+sex only, no
+# PCA/ΔA — adapters/logreg_drift.py's feature_set="demo").
 
 experiments:
+  # ── S0-demo: demographics floor — is there signal beyond age/sex at all? ──
+  - id: tfgn-s0-demo-pooled-seed42
+    mode: longitudinal
+    model: LogRegDrift
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: logregdrift
+    hyperparams:
+      encoder_init: none  # bypasses the notebook's GAAE-checkpoint gate; adapter never reads it
+      feature_set: demo
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S0-demo 1/4: Tier-1 demographics floor, [age, sex] only, no PCA/ΔA. Every other arm must beat this on OOF AUC."
+
+  - id: tfgn-s0-demo-pooled-seed43
+    mode: longitudinal
+    model: LogRegDrift
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: logregdrift
+    hyperparams:
+      encoder_init: none
+      feature_set: demo
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S0-demo 2/4."
+
+  - id: tfgn-s0-demo-pooled-seed44
+    mode: longitudinal
+    model: LogRegDrift
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: logregdrift
+    hyperparams:
+      encoder_init: none
+      feature_set: demo
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S0-demo 3/4."
+
+  - id: tfgn-s0-demo-pooled-seed45
+    mode: longitudinal
+    model: LogRegDrift
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: logregdrift
+    hyperparams:
+      encoder_init: none
+      feature_set: demo
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S0-demo 4/4."
+
   # ── S0a: logreg-drift — linear floor on raw FC change ──────────────────────
   - id: tfgn-s0-logreg-drift-pooled-seed42
     mode: longitudinal
@@ -36,6 +129,7 @@ experiments:
       encoder_init: none  # bypasses the notebook's GAAE-checkpoint gate; adapter never reads it
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     threshold_mode: best-f1
     notes: "S0a 1/4: logistic regression on PCA-compressed ΔA + metadata. Floor: is there signal in raw change at all?"
 
@@ -50,6 +144,7 @@ experiments:
       encoder_init: none
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     threshold_mode: best-f1
     notes: "S0a 2/4."
 
@@ -64,6 +159,7 @@ experiments:
       encoder_init: none
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     threshold_mode: best-f1
     notes: "S0a 3/4."
 
@@ -78,12 +174,11 @@ experiments:
       encoder_init: none
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     threshold_mode: best-f1
     notes: "S0a 4/4."
 
   # ── S0b: gelstm-frozen — spatial-first WITH a self-supervised encoder ──────
-  # checkpoint_path: PENDING — fill with the gaae-pretrain-pooled-adni-delcode
-  # checkpoint (P1) once it finishes. Do not launch these four before then.
   - id: tfgn-s0-gelstm-frozen-pooled-seed42
     mode: longitudinal
     model: GELSTM
@@ -96,7 +191,8 @@ experiments:
       encoder_init: pretrained_frozen
       external_test_cohort: oasis3
       min_visits: 2
-    checkpoint_path: PENDING_P1_CHECKPOINT
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
     threshold_mode: best-f1
     notes: "S0b 1/4: today's spatial-first GELSTM, pretrained-frozen pooled GAAE. Matched floor for S1c."
 
@@ -112,7 +208,8 @@ experiments:
       encoder_init: pretrained_frozen
       external_test_cohort: oasis3
       min_visits: 2
-    checkpoint_path: PENDING_P1_CHECKPOINT
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
     threshold_mode: best-f1
     notes: "S0b 2/4."
 
@@ -128,7 +225,8 @@ experiments:
       encoder_init: pretrained_frozen
       external_test_cohort: oasis3
       min_visits: 2
-    checkpoint_path: PENDING_P1_CHECKPOINT
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
     threshold_mode: best-f1
     notes: "S0b 3/4."
 
@@ -144,7 +242,8 @@ experiments:
       encoder_init: pretrained_frozen
       external_test_cohort: oasis3
       min_visits: 2
-    checkpoint_path: PENDING_P1_CHECKPOINT
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
     threshold_mode: best-f1
     notes: "S0b 4/4."
 
@@ -152,7 +251,7 @@ experiments:
   # Matched floor for S1 (neither encoder self-supervised). checkpoint_path is
   # ignored by the model for encoder_init=random but still validated to exist
   # by run_experiment.py / the notebook's GAAE-checkpoint gate (same convention
-  # as recon-ablation-gelstm-random in ablation.yaml) — same PENDING path as S0b.
+  # as recon-ablation-gelstm-random in ablation.yaml) — same checkpoint_path as S0b.
   - id: tfgn-s0-gelstm-random-pooled-seed42
     mode: longitudinal
     model: GELSTM
@@ -165,7 +264,8 @@ experiments:
       encoder_init: random
       external_test_cohort: oasis3
       min_visits: 2
-    checkpoint_path: PENDING_P1_CHECKPOINT
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
     threshold_mode: best-f1
     notes: "S0c 1/4: spatial-first GELSTM, random-init encoder trained end-to-end. Matched floor for S1 (DOCS/temporal-first-ablation.md 'two clean contrasts')."
 
@@ -181,7 +281,8 @@ experiments:
       encoder_init: random
       external_test_cohort: oasis3
       min_visits: 2
-    checkpoint_path: PENDING_P1_CHECKPOINT
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
     threshold_mode: best-f1
     notes: "S0c 2/4."
 
@@ -197,7 +298,8 @@ experiments:
       encoder_init: random
       external_test_cohort: oasis3
       min_visits: 2
-    checkpoint_path: PENDING_P1_CHECKPOINT
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
     threshold_mode: best-f1
     notes: "S0c 3/4."
 
@@ -213,7 +315,8 @@ experiments:
       encoder_init: random
       external_test_cohort: oasis3
       min_visits: 2
-    checkpoint_path: PENDING_P1_CHECKPOINT
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
     threshold_mode: best-f1
     notes: "S0c 4/4."
 
@@ -234,6 +337,7 @@ experiments:
     hyperparams:
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
     threshold_mode: best-f1
     notes: "S0d 1/4: BrainTokenGT (stabilized) competitor baseline on the pooled cohort. Reference point, not a clean baseline — see caveat."
@@ -249,6 +353,7 @@ experiments:
     hyperparams:
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
     threshold_mode: best-f1
     notes: "S0d 2/4."
@@ -264,6 +369,7 @@ experiments:
     hyperparams:
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
     threshold_mode: best-f1
     notes: "S0d 3/4."
@@ -279,6 +385,7 @@ experiments:
     hyperparams:
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/ethereal-planet-16_2026-06-10_12-31-05/model_ethereal-planet-16_2026-06-10_12-31-05.pth
     threshold_mode: best-f1
     notes: "S0d 4/4."
@@ -298,6 +405,7 @@ experiments:
     hyperparams:
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     threshold_mode: best-f1
     notes: "S1 1/4: flip alone (node_lstm_init=random, gate off, recon_target=none, fusion=z_only, readout=mean). vs S0c isolates the flip itself."
 
@@ -312,6 +420,7 @@ experiments:
     hyperparams:
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     threshold_mode: best-f1
     notes: "S1 2/4."
 
@@ -326,6 +435,7 @@ experiments:
     hyperparams:
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     threshold_mode: best-f1
     notes: "S1 3/4."
 
@@ -340,6 +450,7 @@ experiments:
     hyperparams:
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     threshold_mode: best-f1
     notes: "S1 4/4."
 
@@ -362,6 +473,7 @@ experiments:
       node_lstm_ckpt_path: outputs/tfgn-nodelstm-ssl-pooled/runs/morning-violet-1-fa30969e6-2026-08-24_08-36-00/checkpoint_morning-violet-1-fa30969e6-2026-08-24_08-36-00.pth
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     threshold_mode: best-f1
     notes: "S1b 1/4: node-shared LSTM initialised from P2's self-supervised next-visit-FC-row forecasting checkpoint, finetuned. vs S1 = value of node-level SSL pretraining alone."
 
@@ -378,6 +490,7 @@ experiments:
       node_lstm_ckpt_path: outputs/tfgn-nodelstm-ssl-pooled/runs/morning-violet-1-fa30969e6-2026-08-24_08-36-00/checkpoint_morning-violet-1-fa30969e6-2026-08-24_08-36-00.pth
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     threshold_mode: best-f1
     notes: "S1b 2/4."
 
@@ -394,6 +507,7 @@ experiments:
       node_lstm_ckpt_path: outputs/tfgn-nodelstm-ssl-pooled/runs/morning-violet-1-fa30969e6-2026-08-24_08-36-00/checkpoint_morning-violet-1-fa30969e6-2026-08-24_08-36-00.pth
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     threshold_mode: best-f1
     notes: "S1b 3/4."
 
@@ -410,12 +524,270 @@ experiments:
       node_lstm_ckpt_path: outputs/tfgn-nodelstm-ssl-pooled/runs/morning-violet-1-fa30969e6-2026-08-24_08-36-00/checkpoint_morning-violet-1-fa30969e6-2026-08-24_08-36-00.pth
       external_test_cohort: oasis3
       min_visits: 2
+      defer_test_eval: true
     threshold_mode: best-f1
     notes: "S1b 4/4."
 
-# S1c ("recon", headline arm vs S0b), S2 ("gate"), S3 ("fusion"), S4
-# ("attnpool"), S5 ("dualscore"), and SENS ("minvisits3") are appended here —
-# never as a silent edit to the entries above — once S1b's four seeds report
-# against the stopping rule and fix node_lstm_init for the rest of the chain.
-# See DOCS/temporal-first-ablation.md and the addendum in
-# ~/.claude/plans/enchanted-brewing-crane.md.
+  # ── S1c: recon — both encoders self-supervised. HEADLINE ARM vs S0b. ──────
+  # Inherits node_lstm_init: pretrained_finetuned from the S1b fork decision
+  # above (2026-08-24) — the only knob change vs S1b is recon_target itself;
+  # lambda_recon/beta_kl/free_bits/beta_warmup_epochs stay at
+  # configs/tfgn_pooled.json's dataclass-default values (already the
+  # pre-registered ladder defaults for when reconstruction is active — see
+  # DOCS/temporal-first-ablation.md "Reconstruction target"). fusion stays
+  # z_only (S3 is what turns on concat_residual); use_gate/dual_score/readout
+  # unchanged (S2/S5/S4 respectively).
+  - id: tfgn-s1c-recon-pooled-seed42
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: pretrained_finetuned
+      node_lstm_ckpt_path: outputs/tfgn-nodelstm-ssl-pooled/runs/morning-violet-1-fa30969e6-2026-08-24_08-36-00/checkpoint_morning-violet-1-fa30969e6-2026-08-24_08-36-00.pth
+      recon_target: delta_a_topk
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S1c 1/4: HEADLINE ARM. Both encoders self-supervised (node-LSTM via P2, GVAE via delta_a_topk reconstruction). vs S0b isolates the flip with both sides matched on pretraining."
+
+  - id: tfgn-s1c-recon-pooled-seed43
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: pretrained_finetuned
+      node_lstm_ckpt_path: outputs/tfgn-nodelstm-ssl-pooled/runs/morning-violet-1-fa30969e6-2026-08-24_08-36-00/checkpoint_morning-violet-1-fa30969e6-2026-08-24_08-36-00.pth
+      recon_target: delta_a_topk
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S1c 2/4."
+
+  - id: tfgn-s1c-recon-pooled-seed44
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: pretrained_finetuned
+      node_lstm_ckpt_path: outputs/tfgn-nodelstm-ssl-pooled/runs/morning-violet-1-fa30969e6-2026-08-24_08-36-00/checkpoint_morning-violet-1-fa30969e6-2026-08-24_08-36-00.pth
+      recon_target: delta_a_topk
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S1c 3/4."
+
+  - id: tfgn-s1c-recon-pooled-seed45
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: pretrained_finetuned
+      node_lstm_ckpt_path: outputs/tfgn-nodelstm-ssl-pooled/runs/morning-violet-1-fa30969e6-2026-08-24_08-36-00/checkpoint_morning-violet-1-fa30969e6-2026-08-24_08-36-00.pth
+      recon_target: delta_a_topk
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S1c 4/4."
+
+# S2 ("gate"), S3 ("fusion"), S4 ("attnpool"), S5 ("dualscore"), and SENS
+# ("minvisits3") are appended here — never as a silent edit to the entries
+# above — once S1c's four seeds report against the stopping rule (cumulative
+# vs S1b) and S1c-S3 clear the Block-B gate. See DOCS/temporal-first-ablation.md
+# and the addendum in ~/.claude/plans/enchanted-brewing-crane.md.
+
+# ── W3: matched-window SOTA comparison (additive, post-ladder) ────────────────
+# DOCS/flipped/PLAN.md "Addendum (2026-08-24) — Matched-window SOTA comparison"
+# and DOCS/temporal-first-ablation.md "Matched-window SOTA comparison (addendum,
+# 2026-08-24)". BrainTokenGT (S0d, above) is NOT re-run: it already operates at
+# min_visits=2/max_visits=3 by its own architectural constraint, so its existing
+# numbers are the Table-A reference point as-is. These 8 entries are the two
+# GELSTM arms needed to complete the matched-window head-to-head — byte-identical
+# to S0b / S0c respectively, with exactly one added key: max_visits: 3. OOF-only;
+# never feeds ladder Tier-2 selection (see the addendum's "Not a ladder rung").
+  - id: tfgn-w3-gelstm-frozen-pooled-seed42
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      external_test_cohort: oasis3
+      min_visits: 2
+      max_visits: 3
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
+    threshold_mode: best-f1
+    notes: "W3-frozen 1/4: matched-window (T∈[2,3]) spatial-first GELSTM, pretrained-frozen pooled GAAE. Same arm as S0b with max_visits: 3 — strict head-to-head vs BrainTokenGT (S0d)."
+
+  - id: tfgn-w3-gelstm-frozen-pooled-seed43
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      external_test_cohort: oasis3
+      min_visits: 2
+      max_visits: 3
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
+    threshold_mode: best-f1
+    notes: "W3-frozen 2/4."
+
+  - id: tfgn-w3-gelstm-frozen-pooled-seed44
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      external_test_cohort: oasis3
+      min_visits: 2
+      max_visits: 3
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
+    threshold_mode: best-f1
+    notes: "W3-frozen 3/4."
+
+  - id: tfgn-w3-gelstm-frozen-pooled-seed45
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: pretrained_frozen
+      external_test_cohort: oasis3
+      min_visits: 2
+      max_visits: 3
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
+    threshold_mode: best-f1
+    notes: "W3-frozen 4/4."
+
+  - id: tfgn-w3-gelstm-random-pooled-seed42
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: random
+      external_test_cohort: oasis3
+      min_visits: 2
+      max_visits: 3
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
+    threshold_mode: best-f1
+    notes: "W3-random 1/4: matched-window (T∈[2,3]) spatial-first GELSTM, random-init encoder trained end-to-end. Same arm as S0c with max_visits: 3 — matched floor for the head-to-head."
+
+  - id: tfgn-w3-gelstm-random-pooled-seed43
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: random
+      external_test_cohort: oasis3
+      min_visits: 2
+      max_visits: 3
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
+    threshold_mode: best-f1
+    notes: "W3-random 2/4."
+
+  - id: tfgn-w3-gelstm-random-pooled-seed44
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: random
+      external_test_cohort: oasis3
+      min_visits: 2
+      max_visits: 3
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
+    threshold_mode: best-f1
+    notes: "W3-random 3/4."
+
+  - id: tfgn-w3-gelstm-random-pooled-seed45
+    mode: longitudinal
+    model: GELSTM
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    config_path: configs/gelstm_recon_ablation_delcode.json
+    hyperparams:
+      encoder_init: random
+      external_test_cohort: oasis3
+      min_visits: 2
+      max_visits: 3
+      defer_test_eval: true
+    checkpoint_path: notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth
+    threshold_mode: best-f1
+    notes: "W3-random 4/4."
+
+# tfgn-w3-winner-pooled (adapter: tfgn, winning ladder config + max_visits: 3) is
+# deliberately NOT registered yet: its hyperparams inherit whichever config wins
+# S1c-SENS, which has not been decided. Writing a guessed config now would freeze
+# that choice before the ladder speaks. Add it here, 4 seeds, once the ladder
+# freezes — per DOCS/temporal-first-ablation.md's "Matched-window SOTA comparison"
+# addendum and PLAN.md's "Timing" note.
+#
+#   - id: tfgn-w3-winner-pooled-seed42
+#     mode: longitudinal
+#     model: TFGN
+#     dataset: POOLED_WHOLE_BRAIN
+#     seed: 42
+#     notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+#     adapter: tfgn
+#     config_path: configs/tfgn_pooled.json
+#     hyperparams:
+#       # <winning ladder knobs, copied from the frozen S1c-SENS config>
+#       external_test_cohort: oasis3
+#       min_visits: 2
+#       max_visits: 3
+#       defer_test_eval: true
+#     threshold_mode: best-f1
+#     notes: "W3-winner 1/4: TFGN under the matched window, winning ladder config."

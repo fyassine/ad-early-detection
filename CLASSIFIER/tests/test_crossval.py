@@ -134,6 +134,49 @@ def test_best_f1_threshold_computed_from_oof():
     assert isinstance(res.best_f1_threshold, float)
 
 
+def test_run_kfold_cv_without_fold_probe_is_unaffected():
+    """``fold_probe=None`` (the default): oof_folds is still populated but
+    oof_extras is empty and every other field is exactly as before."""
+    bundle = _make_bundle(40)
+    res = run_kfold_cv(bundle, _fold_stub([0.6, 0.9, 0.7, 0.5, 0.8]), cfg={}, n_folds=5,
+                        rng=None, device="cpu")
+    assert res.oof_extras == {}
+    assert len(res.oof_folds) == len(bundle)
+    assert set(res.oof_folds.tolist()) == {1, 2, 3, 4, 5}
+
+
+def test_run_kfold_cv_fold_probe_concatenates_in_oof_sid_order():
+    bundle = _make_bundle(40)
+
+    def probe(bundle_va, fold_out):
+        # Deliberately returned in reverse subject order — the CV loop must
+        # re-order by fold_out['oof_sids'], not by dict insertion order.
+        return {"prob_n1": {sid: 0.5 for sid in reversed(list(bundle_va.groups))}}
+
+    res = run_kfold_cv(bundle, _fold_stub([0.6, 0.9, 0.7, 0.5, 0.8]), cfg={}, n_folds=5,
+                        rng=None, device="cpu", fold_probe=probe)
+    assert set(res.oof_extras) == {"prob_n1"}
+    assert len(res.oof_extras["prob_n1"]) == len(bundle)
+    assert np.all(res.oof_extras["prob_n1"] == 0.5)
+    assert len(res.oof_folds) == len(bundle)
+
+
+def test_run_kfold_cv_fold_probe_missing_subject_raises():
+    bundle = _make_bundle(40)
+
+    def probe(bundle_va, fold_out):
+        sids = list(bundle_va.groups)[:-1]  # drop one subject
+        return {"prob_n1": {sid: 0.5 for sid in sids}}
+
+    try:
+        run_kfold_cv(bundle, _fold_stub([0.6] * 5), cfg={}, n_folds=5, rng=None,
+                     device="cpu", fold_probe=probe)
+    except ValueError as e:
+        assert "prob_n1" in str(e)
+    else:
+        raise AssertionError("expected ValueError for a fold_probe missing a subject")
+
+
 def test_bundle_subset_reindexes():
     b = _make_bundle(10)
     sub = b.subset([0, 2, 4])

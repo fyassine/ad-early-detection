@@ -1,0 +1,120 @@
+{
+  "run_name": "fragrant-moon-1-d0d4f8a68-2026-08-24_12-02-58",
+  "data_info": {
+    "data_root": "/mnt/e/fyassine/ad-early-detection/DATA/POOLED_ADNI_DELCODE/__fc_wholebrain_sch200_flat__/matrices",
+    "dataset_dir": "__fc_wholebrain_sch200_flat__",
+    "modality": "fc",
+    "region": "wholebrain",
+    "atlas": "sch200",
+    "variant": "flat"
+  },
+  "dataset_info": {
+    "data_root": "/mnt/e/fyassine/ad-early-detection/DATA/POOLED_ADNI_DELCODE/__fc_wholebrain_sch200_flat__/matrices",
+    "dataset_dir": "__fc_wholebrain_sch200_flat__",
+    "modality": "fc",
+    "region": "wholebrain",
+    "atlas": "sch200",
+    "variant": "flat",
+    "train_csv": "/mnt/e/fyassine/ad-early-detection/DATA/POOLED_ADNI_DELCODE/SPLITS/downstream/train.csv",
+    "val_csv": "/mnt/e/fyassine/ad-early-detection/DATA/POOLED_ADNI_DELCODE/SPLITS/downstream/val.csv",
+    "test_csv": "/mnt/e/fyassine/ad-early-detection/DATA/POOLED_ADNI_DELCODE/SPLITS/downstream/test.csv",
+    "n_folds": 5
+  },
+  "model_config": {
+    "model_type": "LogRegDriftAdapter",
+    "feature_set": "demo",
+    "pca_components": 0,
+    "n_folds": 5,
+    "min_visits": 2,
+    "max_visits": null
+  },
+  "training_config": {
+    "encoder_init": "none",
+    "feature_set": "demo",
+    "external_test_cohort": "oasis3",
+    "min_visits": 2,
+    "defer_test_eval": true,
+    "seed": 45,
+    "cohort": "pooled"
+  },
+  "gaae_checkpoint": null,
+  "gaae_run_name": "none",
+  "n_folds": 5,
+  "best_fold": 5,
+  "best_val_auc": 0.6200716845878136,
+  "active_threshold": 0.39552281135621364,
+  "threshold_method": "oof_f1",
+  "cv_results": {
+    "fold": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "val_auc": [
+      0.47135416666666663,
+      0.5164930555555556,
+      0.5894097222222221,
+      0.4806985294117647,
+      0.6200716845878136
+    ],
+    "val_sensitivity": [
+      0.3333333333333333,
+      0.5,
+      0.6666666666666666,
+      0.29411764705882354,
+      1.0
+    ],
+    "val_specificity": [
+      0.8125,
+      0.65625,
+      0.3125,
+      0.71875,
+      0.1935483870967742
+    ],
+    "val_f1": [
+      0.4,
+      0.47368421052631576,
+      0.46153846153846156,
+      0.3225806451612903,
+      0.5901639344262295
+    ],
+    "best_threshold": [
+      0.5456444180718627,
+      0.5166550562974954,
+      0.47055582766293186,
+      0.5304643135277368,
+      0.46162878249626305
+    ]
+  },
+  "env": {
+    "python": "3.10.12",
+    "torch": "2.10.0+cu128",
+    "torch_geometric": "2.7.0",
+    "numpy": "1.26.4",
+    "sklearn": "1.7.2"
+  },
+  "git": {
+    "commit": "d0d4f8a68299a3f7a6789389f22d85dbcfe03f3c",
+    "short_commit": "d0d4f8a68",
+    "branch": "feat/tfgn-flipped",
+    "dirty": true
+  },
+  "oof": {
+    "oof_n": 248,
+    "oof_auc": 0.5295738817044732,
+    "oof_pr_auc": 0.39823738889337906,
+    "oof_balanced_accuracy": 0.5139212776482227,
+    "oof_threshold": 0.39552281135621364,
+    "oof_auc_adni": 0.5161843107387661,
+    "oof_auc_delcode": 0.5186393289841565,
+    "oof_static_n1_auc": 0.5295738817044732,
+    "oof_prob_nscans_spearman_overall": -0.13103304342421082,
+    "oof_prob_nscans_spearman_converter": -0.31704474176574066,
+    "oof_prob_nscans_spearman_non_converter": -0.03583259484348784
+  },
+  "duration_seconds": 84.9,
+  "state": "done",
+  "status": "done"
+}

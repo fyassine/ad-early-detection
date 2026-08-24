@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s0-gelstm-random-pooled-seed43",
+  "run_name": "electric-tide-2-d0d4f8a68-2026-08-24_12-05-18",
+  "state": "done",
+  "pid": 1322862,
+  "host": "frieda",
+  "started_at": "2026-08-24T12:05:25",
+  "git_commit": "d0d4f8a68",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T13:24:09",
+  "exit_code": 0,
+  "duration_seconds": 4722.6
+}

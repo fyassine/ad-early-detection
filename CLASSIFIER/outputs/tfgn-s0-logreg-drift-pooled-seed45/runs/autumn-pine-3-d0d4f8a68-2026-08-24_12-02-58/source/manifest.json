@@ -1,0 +1,13 @@
+{
+  "copied": [
+    "CLASSIFIER/model/classification/logreg_cv.py",
+    "CLASSIFIER/adapters/logreg_drift.py"
+  ],
+  "missing": [],
+  "git": {
+    "commit": "d0d4f8a68299a3f7a6789389f22d85dbcfe03f3c",
+    "short_commit": "d0d4f8a68",
+    "branch": "feat/tfgn-flipped",
+    "dirty": true
+  }
+}

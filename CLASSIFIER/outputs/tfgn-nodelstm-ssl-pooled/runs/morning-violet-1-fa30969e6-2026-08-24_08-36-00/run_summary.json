@@ -73,5 +73,12 @@
   },
   "duration_seconds": 163.4,
   "state": "done",
-  "status": "done"
+  "status": "done",
+  "persistence_baseline": {
+    "val_loss_mse": 0.063011,
+    "n_val_subjects": 103,
+    "lstm_best_val_loss": 0.045883,
+    "improvement_pct": 27.2,
+    "note": "x(t+1)=x(t) baseline on the same val split; LSTM at init (epoch 0, val_loss=0.0658) started worse than persistence, training pulled it 27.2% below."
+  }
 }

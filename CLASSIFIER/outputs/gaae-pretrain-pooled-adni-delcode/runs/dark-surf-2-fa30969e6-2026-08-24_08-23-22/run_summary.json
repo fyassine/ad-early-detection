@@ -1,0 +1,21 @@
+{
+  "experiment_id": "gaae-pretrain-pooled-adni-delcode",
+  "run_name": "dark-surf-2-fa30969e6-2026-08-24_08-23-22",
+  "state": "failed",
+  "status": "failed",
+  "error": "NameError: name 'ADAPTER_KEY' is not defined",
+  "duration_seconds": 8406.0,
+  "started_at": "2026-08-24T08:23:27",
+  "finished_at": "2026-08-24T10:43:34",
+  "git": {
+    "short_commit": "fa30969e6",
+    "dirty": false
+  },
+  "metrics": {
+    "best_val_loss": 0.018794897411550795,
+    "best_epoch": 499,
+    "total_epochs_run": 500
+  },
+  "checkpoint": "notebooks/checkpoints/checkpoints_gaae_whole_brain/dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31/model_dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31.pth",
+  "reconstructed_note": "Training completed the full 500-epoch budget and the checkpoint saved successfully; papermill then crashed on a downstream cosmetic plotting cell (NameError: ADAPTER_KEY, fixed in STATIC_COMMON_DELCODE.ipynb) before this notebook's own run_summary.json-writing cell ran. metrics/checkpoint here were reconstructed from the checkpoint dir's history.json/run_config.json (same values the crashed cell would have written), verified by loading the checkpoint (GraphAttentionAutoencoderConditioned, 952,136 params) directly."
+}

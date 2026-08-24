@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s0-logreg-drift-pooled-seed44",
+  "run_name": "resilient-stone-3-d0d4f8a68-2026-08-24_12-02-52",
+  "state": "done",
+  "pid": 424441,
+  "host": "fritz",
+  "started_at": "2026-08-24T12:02:57",
+  "git_commit": "d0d4f8a68",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T12:04:07",
+  "exit_code": 0,
+  "duration_seconds": 69.8
+}

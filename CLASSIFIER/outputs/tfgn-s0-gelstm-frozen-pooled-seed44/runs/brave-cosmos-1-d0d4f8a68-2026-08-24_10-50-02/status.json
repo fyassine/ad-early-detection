@@ -1,0 +1,16 @@
+{
+  "experiment_id": "tfgn-s0-gelstm-frozen-pooled-seed44",
+  "run_name": "brave-cosmos-1-d0d4f8a68-2026-08-24_10-50-02",
+  "state": "failed",
+  "pid": 1313131,
+  "host": "frieda",
+  "started_at": "2026-08-24T10:50:08",
+  "git_commit": "d0d4f8a68",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T11:35:55",
+  "duration_seconds": 2747.3,
+  "error": "SystemExit: 143",
+  "signal": "SIGTERM",
+  "exit_code": 143
+}

@@ -1,0 +1,415 @@
+"""
+Experiment-registry helpers for the notebook runner.
+
+These functions turn an entry in ``CLASSIFIER/experiments.yaml`` into the flat
+parameter dict that ``run_experiment.py`` injects into a notebook via papermill,
+and aggregate finished runs into a single results ledger.
+
+Layering: this module knows about config dataclasses and the registry, but does
+NOT import torch or any model code — it stays cheap to import inside the CLI.
+"""
+
+from __future__ import annotations
+
+import csv
+import dataclasses
+import json
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
+
+import yaml
+
+from SHARED.runner_io import infer_run_duration, reconcile_run_status
+from ..configs import EvalConfig, GECTrainConfig, GELSTMTrainConfig, TFGNEvalConfig, TFGNTrainConfig
+
+_REQUIRED_FIELDS = ("id", "mode", "model", "dataset", "seed", "notebook")
+_VALID_THRESHOLD_MODES = {None, "youden", "best-f1", "fixed"}
+
+
+# --------------------------------------------------------------------------- #
+# Load + validate
+# --------------------------------------------------------------------------- #
+def load_registry(yaml_path: str | Path) -> List[Dict[str, Any]]:
+    """Load all experiment entries, raising on a malformed registry."""
+    registry_path = Path(yaml_path)
+
+    experiments = []
+
+    if registry_path.is_dir():
+        yaml_files = sorted(registry_path.glob("*.yaml"))
+        if not yaml_files:
+            raise FileNotFoundError(
+                f"No .yaml files found in experiment registry directory: {registry_path}"
+            )
+    elif registry_path.is_file():
+        yaml_files = [registry_path]
+    else:
+        raise FileNotFoundError(f"Experiment registry not found: {registry_path}")
+
+    for current_yaml_path in yaml_files:
+        data = yaml.safe_load(current_yaml_path.read_text()) or {}
+        file_exps = data.get("experiments")
+        if not isinstance(file_exps, list) or not file_exps:
+            raise ValueError(f"{current_yaml_path} has no 'experiments:' list.")
+
+        for exp in file_exps:
+            if isinstance(exp, dict):
+                exp["_source_yaml"] = str(current_yaml_path)
+            experiments.append(exp)
+
+    ids = [e.get("id") for e in experiments]
+    dupes = {i for i in ids if i is not None and ids.count(i) > 1}
+    if dupes:
+        raise ValueError(f"Duplicate experiment id(s) in {registry_path}: {sorted(dupes)}")
+    for exp in experiments:
+        source_yaml = (
+            Path(exp.pop("_source_yaml"))
+            if isinstance(exp, dict) and "_source_yaml" in exp
+            else registry_path
+        )
+        _validate_experiment(exp, source_yaml)
+    return experiments
+
+
+def load_experiment(yaml_path: str | Path, exp_id: str) -> Dict[str, Any]:
+    """Return the validated registry entry whose ``id`` equals ``exp_id``."""
+    experiments = load_registry(yaml_path)
+    for exp in experiments:
+        if exp.get("id") == exp_id:
+            return exp
+    known = ", ".join(sorted(e.get("id", "?") for e in experiments))
+    raise ValueError(f"No experiment with id={exp_id!r} in {yaml_path}. Known ids: {known}")
+
+
+def _validate_experiment(exp: Dict[str, Any], yaml_path: Path) -> None:
+    """Fail loudly on a missing/invalid field (see .claude/rules/errors.md)."""
+    if not isinstance(exp, dict):
+        raise ValueError(
+            f"Each experiment in {yaml_path} must be a mapping, got {type(exp).__name__}."
+        )
+    missing = [f for f in _REQUIRED_FIELDS if exp.get(f) is None]
+    if missing:
+        raise ValueError(
+            f"Experiment {exp.get('id', '<no-id>')!r} in {yaml_path} is missing "
+            f"required field(s): {missing}."
+        )
+    mode = exp.get("threshold_mode")
+    if mode not in _VALID_THRESHOLD_MODES:
+        raise ValueError(
+            f"Experiment {exp['id']!r}: threshold_mode={mode!r} invalid; "
+            f"expected one of {sorted(m for m in _VALID_THRESHOLD_MODES if m)} or omitted."
+        )
+    if mode == "fixed" and exp.get("fixed_threshold") is None:
+        raise ValueError(
+            f"Experiment {exp['id']!r}: threshold_mode='fixed' requires 'fixed_threshold'."
+        )
+
+
+# --------------------------------------------------------------------------- #
+# Build the merged hyperparameter config + papermill parameter dict
+# --------------------------------------------------------------------------- #
+def _dataclass_defaults(model: str) -> Dict[str, Any]:
+    """Typed defaults for the model's config dataclass(es)."""
+    model = (model or "").upper()
+    if model == "GELSTM":
+        return {**dataclasses.asdict(GELSTMTrainConfig()), **dataclasses.asdict(EvalConfig())}
+    if model == "GEC":
+        return dataclasses.asdict(GECTrainConfig())
+    if model == "TFGN":
+        return {**dataclasses.asdict(TFGNTrainConfig()), **dataclasses.asdict(TFGNEvalConfig())}
+    return {}
+
+
+def build_config(exp: Dict[str, Any], classifier_root: str | Path) -> Dict[str, Any]:
+    """Merge hyperparameters: dataclass defaults < JSON config < YAML overrides.
+
+    ``hyperparams`` and ``eval_config`` blocks from the registry are layered on
+    top. The result is the resolved config a notebook should train with; the
+    runner writes it to ``resolved_config.json`` and injects it as
+    ``RESOLVED_CONFIG``.
+    """
+    classifier_root = Path(classifier_root)
+    config: Dict[str, Any] = _dataclass_defaults(exp.get("model"))
+
+    config_path = exp.get("config_path")
+    if config_path:
+        json_path = classifier_root / config_path
+        if not json_path.is_file():
+            raise FileNotFoundError(
+                f"Experiment {exp['id']!r}: config_path {json_path} does not exist."
+            )
+        config.update(json.loads(json_path.read_text()))
+
+    config.update(exp.get("hyperparams") or {})
+    config.update(exp.get("eval_config") or {})
+    # Registry seed always wins — layered last so a JSON config_path or a
+    # hyperparams block can never shadow it. RESOLVED_CONFIG["seed"] ends up
+    # in run_summary.json's training_config.seed purely as a provenance
+    # record; actual seeding runs off the papermill SEED parameter
+    # (build_parameter_dict, below), which was already correct.
+    config["seed"] = exp["seed"]
+    return config
+
+
+def build_parameter_dict(exp: Dict[str, Any], classifier_root: str | Path) -> Dict[str, Any]:
+    """Flat papermill parameters for ``exp`` (run_dir/run_name added by runner)."""
+    params: Dict[str, Any] = {
+        "EXPERIMENT_ID": exp["id"],
+        "MODE": exp["mode"],
+        "MODEL": exp["model"],
+        "DATASET": exp["dataset"],
+        "SEED": exp["seed"],
+        "GAAE_CHECKPOINT_PATH": exp.get("checkpoint_path"),
+        "THRESHOLD_MODE": exp.get("threshold_mode"),
+        "FIXED_THRESHOLD": exp.get("fixed_threshold"),
+        "WANDB_ENABLED": exp.get("wandb", True),
+        "OUTPUT_DIR": exp.get("output_dir") or f"outputs/{exp['id']}",
+        "RESOLVED_CONFIG": build_config(exp, classifier_root),
+        # Filled in per-execution by the runner:
+        "RUN_DIR": None,
+        "RUN_NAME": None,
+    }
+
+    # Adapter registry key for the shared LONGITUDINAL_COMMON notebook; defaults
+    # to MODEL when 'adapter:' is omitted (see CLASSIFIER/adapters/__init__.py).
+    if "adapter" in exp or exp.get("mode") == "longitudinal":
+        params["ADAPTER"] = exp.get("adapter") or exp["model"]
+
+    # Source run to reload for analysis-only notebooks (e.g. the visit-count
+    # confound sanity notebook): the notebook reads outputs/<id>/latest/.
+    if "source_experiment" in exp:
+        params["SOURCE_EXPERIMENT"] = exp["source_experiment"]
+
+    # Experiment id whose outputs hold a calibration anchor file (e.g. the
+    # site_heterogeneity_stats.json written by COMPARISON_GEGRU_CROSS_DATASET.ipynb
+    # and read by SANITY_GEGRU_SYNTHETIC_SCANNER_DRIFT.ipynb).
+    if "site_stats_experiment_id" in exp:
+        params["SITE_STATS_EXPERIMENT_ID"] = exp["site_stats_experiment_id"]
+
+    return params
+
+
+# --------------------------------------------------------------------------- #
+# Results ledger + status aggregation
+# --------------------------------------------------------------------------- #
+def _iter_run_summaries(outputs_root: Path):
+    yield from outputs_root.glob("*/runs/*/run_summary.json")
+
+
+def _cv_summary(summary: Dict[str, Any]) -> Dict[str, Any]:
+    """Summarise k-fold CV into ``cv.*`` columns (mean ± std across folds).
+
+    Reads the per-fold lists the training notebooks write under ``cv_results``
+    (``val_auc``, ``val_f1``, ``val_sensitivity``, ``val_specificity``, …) plus
+    the top-level ``best_fold`` / ``best_val_auc``. Returns ``{}`` for runs
+    without cross-validation (e.g. sanity/comparison notebooks).
+    """
+    import statistics
+
+    out: Dict[str, Any] = {}
+    cv = summary.get("cv_results")
+    n_folds = 0
+    if isinstance(cv, dict):
+        for key, vals in cv.items():
+            if not key.startswith("val_") or not isinstance(vals, list):
+                continue
+            nums = [v for v in vals if isinstance(v, (int, float)) and not isinstance(v, bool)]
+            if not nums:
+                continue
+            n_folds = max(n_folds, len(nums))
+            out[f"cv.{key}_mean"] = statistics.fmean(nums)
+            out[f"cv.{key}_std"] = statistics.stdev(nums) if len(nums) > 1 else 0.0
+    if n_folds:
+        out["cv.n_folds"] = n_folds
+    for src, dst in (("best_fold", "cv.best_fold"), ("best_val_auc", "cv.best_val_auc")):
+        v = summary.get(src)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            out[dst] = v
+    return out
+
+
+def collect_results(outputs_root: str | Path) -> List[Dict[str, Any]]:
+    """Flatten every ``run_summary.json`` into rows and write RESULTS.{csv,jsonl}."""
+    outputs_root = Path(outputs_root)
+    rows: List[Dict[str, Any]] = []
+    for summary_path in sorted(_iter_run_summaries(outputs_root)):
+        try:
+            summary = json.loads(summary_path.read_text())
+        except Exception:
+            continue
+        run_dir = summary_path.parent
+        row: Dict[str, Any] = {
+            "experiment_id": summary.get("experiment_id") or run_dir.parents[1].name,
+            "run_dir": str(run_dir.relative_to(outputs_root.parent)),
+            "timestamp": summary.get("timestamp"),
+        }
+        duration = summary.get("duration_seconds")
+        if duration is None:
+            dur = infer_run_duration(run_dir)
+            if dur is not None:
+                duration = round(float(dur), 1)
+        if duration is not None:
+            row["duration_seconds"] = duration
+
+        git = summary.get("git") or {}
+        row["git_commit"] = git.get("short_commit")
+        row["git_dirty"] = git.get("dirty")
+        if summary.get("state") or summary.get("status"):
+            row["state"] = summary.get("state") or summary.get("status")
+            row["status"] = summary.get("status") or summary.get("state")
+        if summary.get("error"):
+            row["error"] = summary.get("error")
+        # Preferred: a uniform `metrics` block. Fallback: scalar top-level
+        # `test_*` keys, which the existing notebooks already write — this keeps
+        # the ledger populated even for notebooks not yet fully wired.
+        metrics = dict(summary.get("metrics") or {})
+        if not metrics:
+            metrics = {
+                k: v
+                for k, v in summary.items()
+                if k.startswith("test_") and isinstance(v, (int, float, bool))
+            }
+        for k, v in metrics.items():
+            row[f"metric.{k}"] = v
+        # Cross-validation summary (mean ± std across folds), when present.
+        row.update(_cv_summary(summary))
+        rows.append(row)
+
+    if rows:
+        fieldnames: List[str] = []
+        for row in rows:
+            for k in row:
+                if k not in fieldnames:
+                    fieldnames.append(k)
+        with open(outputs_root / "RESULTS.csv", "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+        with open(outputs_root / "RESULTS.jsonl", "w") as f:
+            for row in rows:
+                f.write(json.dumps(row) + "\n")
+    return rows
+
+
+def find_run_dir(outputs_root: str | Path, target: str) -> Path | None:
+    """Find a run directory given a run name, run name prefix, path, or experiment id.
+
+    Parameters
+    ----------
+    outputs_root : str | Path
+        Root outputs directory (e.g. CLASSIFIER/outputs).
+    target : str
+        Run name (e.g. 'crimson-galaxy-4-5e33e2170-2026-08-22_12-54-20'),
+        run name prefix, experiment id (e.g. 'gelstm-trajectory-whole-brain'),
+        or relative/absolute path to a run dir.
+    """
+    outputs_root = Path(outputs_root).resolve()
+    target = target.strip()
+    if not target:
+        return None
+
+    # 1. Direct path check
+    direct = Path(target)
+    if direct.is_dir():
+        return direct.resolve()
+    if (outputs_root / target).is_dir() and not (outputs_root / target / "runs").is_dir():
+        return (outputs_root / target).resolve()
+
+    # 2. Exact match for run name anywhere under outputs/*/runs/<target>
+    matching_runs = list(outputs_root.glob(f"*/runs/{target}"))
+    if matching_runs:
+        return matching_runs[0].resolve()
+
+    # 3. Partial / prefix match for run name (e.g. crimson-galaxy-4)
+    matching_runs_prefix = list(outputs_root.glob(f"*/runs/{target}*"))
+    if matching_runs_prefix:
+        def _sort_key(d: Path) -> str:
+            status_file = d / "status.json"
+            if status_file.is_file():
+                try:
+                    data = json.loads(status_file.read_text())
+                    return str(data.get("started_at") or "")
+                except Exception:
+                    pass
+            return str(d.stat().st_mtime)
+
+        matching_runs_prefix.sort(key=_sort_key, reverse=True)
+        return matching_runs_prefix[0].resolve()
+
+    # 4. Target is an experiment ID (check outputs/<target>/latest or outputs/<target>/runs/*)
+    exp_dir = outputs_root / target
+    if exp_dir.is_dir():
+        latest_link = exp_dir / "latest"
+        if latest_link.is_symlink() or latest_link.is_dir():
+            try:
+                resolved = latest_link.resolve()
+                if resolved.is_dir():
+                    return resolved
+            except Exception:
+                pass
+
+        latest_txt = exp_dir / "latest.txt"
+        if latest_txt.is_file():
+            try:
+                run_name = latest_txt.read_text().strip()
+                t = exp_dir / "runs" / run_name
+                if t.is_dir():
+                    return t.resolve()
+            except Exception:
+                pass
+
+        runs_dir = exp_dir / "runs"
+        if runs_dir.is_dir():
+            run_dirs = [d for d in runs_dir.iterdir() if d.is_dir()]
+            if run_dirs:
+                def _sort_key(d: Path) -> str:
+                    status_file = d / "status.json"
+                    if status_file.is_file():
+                        try:
+                            data = json.loads(status_file.read_text())
+                            return str(data.get("started_at") or "")
+                        except Exception:
+                            pass
+                    return str(d.stat().st_mtime)
+
+                run_dirs.sort(key=_sort_key, reverse=True)
+                return run_dirs[0].resolve()
+
+    return None
+
+
+find_latest_run = find_run_dir
+
+
+def read_statuses(
+    outputs_root: str | Path,
+    *,
+    experiment_id: str | None = None,
+    limit: int | None = None,
+    reconcile: bool = True,
+) -> List[Dict[str, Any]]:
+    """Gather run ``status.json`` files (most recent first) for ``--status``."""
+    outputs_root = Path(outputs_root)
+    statuses: List[Dict[str, Any]] = []
+    pattern = f"{experiment_id}/runs/*/status.json" if experiment_id else "*/runs/*/status.json"
+    for status_path in outputs_root.glob(pattern):
+        if reconcile:
+            try:
+                status = reconcile_run_status(status_path, write_disk=True)
+            except Exception:
+                try:
+                    status = json.loads(status_path.read_text())
+                except Exception:
+                    continue
+        else:
+            try:
+                status = json.loads(status_path.read_text())
+            except Exception:
+                continue
+        status["_path"] = str(status_path)
+        statuses.append(status)
+    statuses.sort(key=lambda s: s.get("started_at") or "", reverse=True)
+    if limit is not None and limit >= 0:
+        return statuses[:limit]
+    return statuses

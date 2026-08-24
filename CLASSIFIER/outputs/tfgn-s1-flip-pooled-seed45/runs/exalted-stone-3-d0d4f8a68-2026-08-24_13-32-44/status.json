@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s1-flip-pooled-seed45",
+  "run_name": "exalted-stone-3-d0d4f8a68-2026-08-24_13-32-44",
+  "state": "done",
+  "pid": 1330287,
+  "host": "frieda",
+  "started_at": "2026-08-24T13:32:50",
+  "git_commit": "d0d4f8a68",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T13:49:23",
+  "exit_code": 0,
+  "duration_seconds": 992.5
+}

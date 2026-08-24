@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s1b-ssl-pooled-seed42",
+  "run_name": "rosy-tide-2-d0d4f8a68-2026-08-24_13-32-42",
+  "state": "done",
+  "pid": 454377,
+  "host": "fritz",
+  "started_at": "2026-08-24T13:32:47",
+  "git_commit": "d0d4f8a68",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T13:48:12",
+  "exit_code": 0,
+  "duration_seconds": 923.5
+}

@@ -70,6 +70,32 @@ def test_extract_features_empty_raises():
         adapter._extract_features([])
 
 
+def test_feature_set_defaults_to_drift():
+    adapter = _make_adapter()
+    assert adapter.feature_set == "drift"
+
+
+def test_feature_set_demo_yields_two_columns_no_pca():
+    adapter = LogRegDriftAdapter(
+        gaae_ckpt_path="", gaae_hp={}, train_config={"min_visits": 2, "feature_set": "demo"},
+        data_root="", cohorts_csv="", device="cpu", rng=None,
+    )
+    items = [_make_synthetic_item(f"sub_{i}", i % 2, n_rois=15) for i in range(10)]
+    X, pca = adapter._extract_features(items)
+    assert X.shape == (10, 2)
+    assert pca is None
+    assert adapter.model_config()["feature_set"] == "demo"
+    assert adapter.model_config()["pca_components"] == 0
+
+
+def test_feature_set_unknown_raises():
+    with pytest.raises(ValueError, match="feature_set"):
+        LogRegDriftAdapter(
+            gaae_ckpt_path="", gaae_hp={}, train_config={"feature_set": "bogus"},
+            data_root="", cohorts_csv="", device="cpu", rng=None,
+        )
+
+
 def test_train_fold_returns_correct_keys():
     adapter = _make_adapter()
     adapter.n_folds = 2

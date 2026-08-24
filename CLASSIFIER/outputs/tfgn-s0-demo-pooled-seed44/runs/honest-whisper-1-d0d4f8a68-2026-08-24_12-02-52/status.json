@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s0-demo-pooled-seed44",
+  "run_name": "honest-whisper-1-d0d4f8a68-2026-08-24_12-02-52",
+  "state": "done",
+  "pid": 424718,
+  "host": "fritz",
+  "started_at": "2026-08-24T12:02:57",
+  "git_commit": "d0d4f8a68",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T12:04:06",
+  "exit_code": 0,
+  "duration_seconds": 68.7
+}

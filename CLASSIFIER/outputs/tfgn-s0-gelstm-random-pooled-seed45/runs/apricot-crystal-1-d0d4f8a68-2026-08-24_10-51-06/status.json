@@ -1,0 +1,16 @@
+{
+  "experiment_id": "tfgn-s0-gelstm-random-pooled-seed45",
+  "run_name": "apricot-crystal-1-d0d4f8a68-2026-08-24_10-51-06",
+  "state": "failed",
+  "pid": 1314792,
+  "host": "frieda",
+  "started_at": "2026-08-24T10:51:11",
+  "git_commit": "d0d4f8a68",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T11:35:55",
+  "duration_seconds": 2684.0,
+  "error": "SystemExit: 143",
+  "signal": "SIGTERM",
+  "exit_code": 143
+}

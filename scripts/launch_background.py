@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 import subprocess
-import sys
 from pathlib import Path
+
 
 def main():
     parser = argparse.ArgumentParser()

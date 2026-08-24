@@ -1,0 +1,15 @@
+{
+  "experiment_id": "tfgn-s1c-recon-pooled-seed42",
+  "run_name": "radiant-sea-1-d0d4f8a68-2026-08-24_11-01-32",
+  "state": "failed",
+  "status": "failed",
+  "error": "FileNotFoundError: [Errno 2] No such file or directory: 'None'",
+  "duration_seconds": 37.7,
+  "started_at": "2026-08-24T11:01:36",
+  "finished_at": "2026-08-24T11:02:14",
+  "git": {
+    "short_commit": "d0d4f8a68",
+    "dirty": true
+  },
+  "metrics": {}
+}

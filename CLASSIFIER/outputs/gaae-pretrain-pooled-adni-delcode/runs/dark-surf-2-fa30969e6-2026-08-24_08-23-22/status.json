@@ -1,11 +1,16 @@
 {
   "experiment_id": "gaae-pretrain-pooled-adni-delcode",
   "run_name": "dark-surf-2-fa30969e6-2026-08-24_08-23-22",
-  "state": "running",
+  "state": "failed",
   "pid": 1306687,
   "host": "frieda",
   "started_at": "2026-08-24T08:23:27",
   "git_commit": "fa30969e6",
   "git_dirty": false,
-  "notebook": "notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb"
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T10:43:34",
+  "duration_seconds": 8406.0,
+  "error": "NameError: name 'ADAPTER_KEY' is not defined",
+  "notebook_traceback": "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m\n\u001b[0;31mNameError\u001b[0m                                 Traceback (most recent call last)\nCell \u001b[0;32mIn[14], line 6\u001b[0m\n\u001b[1;32m      3\u001b[0m     _sys\u001b[38;5;241m.\u001b[39mpath\u001b[38;5;241m.\u001b[39minsert(\u001b[38;5;241m0\u001b[39m, \u001b[38;5;124m'\u001b[39m\u001b[38;5;124m/mnt/e/fyassine/ad-early-detection\u001b[39m\u001b[38;5;124m'\u001b[39m)\n\u001b[1;32m      4\u001b[0m \u001b[38;5;28;01mfrom\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;21;01mSHARED\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01mplotting\u001b[39;00m\u001b[38;5;250m \u001b[39m\u001b[38;5;28;01mimport\u001b[39;00m add_note, format_model_runs_note\n\u001b[0;32m----> 6\u001b[0m MODEL_RUNS \u001b[38;5;241m=\u001b[39m {\u001b[43mADAPTER_KEY\u001b[49m\u001b[38;5;241m.\u001b[39mupper(): run_name}\n\n\u001b[0;31mNameError\u001b[0m: name 'ADAPTER_KEY' is not defined",
+  "cell": "In [14]"
 }

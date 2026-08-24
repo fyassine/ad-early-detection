@@ -1,11 +1,14 @@
 {
   "experiment_id": "tfgn-s1b-ssl-pooled-seed44",
   "run_name": "lucky-field-1-aff5a936e-2026-08-24_10-02-42",
-  "state": "running",
+  "state": "done",
   "pid": 254312,
   "host": "fritz",
   "started_at": "2026-08-24T10:02:46",
   "git_commit": "aff5a936e",
   "git_dirty": true,
-  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb"
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T10:30:15",
+  "exit_code": 0,
+  "duration_seconds": 1648.6
 }

@@ -1,0 +1,8 @@
+{
+  "encoder_init": "none",
+  "feature_set": "demo",
+  "external_test_cohort": "oasis3",
+  "min_visits": 2,
+  "defer_test_eval": true,
+  "seed": 42
+}

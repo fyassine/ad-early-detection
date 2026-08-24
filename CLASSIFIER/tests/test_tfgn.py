@@ -303,6 +303,46 @@ def test_determinism_under_strict_seeding(tfgn_kwargs, synthetic_inputs):
     assert torch.equal(out1["mu_raw"], out2["mu_raw"])
 
 
+def test_build_model_with_recon_active_and_no_checkpoint_does_not_crash():
+    """Regression (S1c launch, 2026-08-24): a TFGN arm with recon_target active but
+    no GAAE/GVAE checkpoint configured (the entire ladder outside Block B) must not
+    try to load one. ``resolve_encoder_init(None, None)`` — configs/encoder.py's
+    GELSTM-oriented back-compat default — resolves an *unset* encoder_init to
+    "pretrained_frozen", which made TFGNAdapter._build_model() attempt
+    torch.load(self.gaae_ckpt_path) once recon_target built a GVAE (S1/S1b never
+    triggered this: recon_target='none' there means no GVAE exists to load into).
+    The fix is encoder_init='none' explicit in configs/tfgn_pooled.json; this test
+    guards the adapter contract that produced the crash, not just the config value.
+    """
+    adapter = TFGNAdapter(
+        gaae_ckpt_path=None,
+        gaae_hp={},
+        train_config={
+            "n_rois": 10,
+            "lstm_hidden": 8,
+            "gvae_latent": 8,
+            "recon_target": "delta_a_topk",
+            "encoder_init": "none",
+        },
+        data_root="",
+        cohorts_csv="",
+        device="cpu",
+        rng=None,
+    )
+    model = adapter._build_model()
+    assert model.gvae is not None  # recon_target active -> GVAE is built
+    assert not adapter.encoder_arm_info.loads_pretrained  # -> but never loaded from a checkpoint
+
+
+def test_tfgn_pooled_config_pins_encoder_init_none():
+    """Regression: configs/tfgn_pooled.json must set encoder_init='none' explicitly,
+    not omit it / leave it null — see the test above for what happens otherwise."""
+    import json
+
+    cfg = json.loads((_CLASSIFIER_ROOT / "configs" / "tfgn_pooled.json").read_text())
+    assert cfg.get("encoder_init") == "none"
+
+
 def _make_synthetic_item(subject_id="sub-01", label=1, n_visits=3, n_rois=10):
     graphs = []
     for _ in range(n_visits):

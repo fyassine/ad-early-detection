@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s1c-recon-pooled-seed45",
+  "run_name": "kind-haze-3-d0d4f8a68-2026-08-24_13-55-50",
+  "state": "done",
+  "pid": 1333645,
+  "host": "frieda",
+  "started_at": "2026-08-24T13:55:55",
+  "git_commit": "d0d4f8a68",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T14:28:40",
+  "exit_code": 0,
+  "duration_seconds": 1963.5
+}

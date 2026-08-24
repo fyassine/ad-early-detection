@@ -63,6 +63,12 @@ Written and committed *before* any run, in the style of
 > OASIS-3 AUC is reported with a bootstrap CI (`common/comparison.paired_bootstrap_ci`)
 > and never used to select an arm.
 
+**Superseded (2026-08-24 addendum, `DOCS/temporal-first-ablation.md` "Evaluation &
+Comparison Protocol").** The stopping rule now reads **pooled CV out-of-fold (OOF)
+AUC**, not in-domain test AUC — more statistical power (n=248 vs n=64), and the
+64-subject in-domain test set is read exactly once, on the frozen final winner, never
+during the ladder. Formula and machinery are otherwise unchanged. See Phase 4.5 below.
+
 **(b) Reconstruction target.** `σ(ZZᵀ) ∈ (0,1)` cannot be BCE'd against
 `ΔA = A^(T) − A^(1) ∈ [−2,2]`. Three well-typed targets, one chosen up front:
 
@@ -353,6 +359,123 @@ split) plus the 2×2 quadrant scatter.
 
 ---
 
+## Phase 4.5 — Evaluation & comparison protocol (addendum, 2026-08-24)
+
+`DOCS/temporal-first-ablation.md`'s 2026-08-24 addendum moves the ladder onto a
+four-tier evaluation protocol — floor gates, the OOF stopping rule, robustness vetoes,
+and a single frozen test read — and requires **re-running the 24 already-complete
+arms** (S0a/S0b/S0c/S0d/S1/S1b × 4 seeds) under the artifact contract this phase adds,
+since none of them persisted per-subject OOF predictions.
+
+**4.5.1 The OOF artifact contract.** `common/crossval.py::run_kfold_cv` gains an
+optional `fold_probe(bundle_va, fold_out) -> {name: {subject_id: value}}` hook, called
+once per fold; `CVResult` gains `oof_folds` (always populated) and `oof_extras`
+(populated only when a probe is supplied). `common/oof.py` (new) — `build_oof_frame`
+(tidy per-subject frame: `subject_id, fold, cohort, label, prob, n_scans, age, sex` +
+any probe extras) and `oof_metrics` (pooled + per-cohort AUC, PR-AUC, balanced
+accuracy, the static-baseline AUC when a `prob_n1` extra is present, scan-count
+Spearman). `common/run_artifacts.py::record_oof_artifacts` writes
+`oof_predictions.csv` and patches `run_summary["oof"]`; `collect_results`
+(`common/experiment_utils.py`) surfaces it as `oof.*` columns in `RESULTS.csv`.
+
+**4.5.2 Deferred test reads.** Every ladder arm sets `defer_test_eval: true`.
+`LONGITUDINAL_COMMON_DELCODE.ipynb`'s Configuration cell resolves `DEFER_TEST_EVAL`
+from it; the Test-Set / External Test-Set / ROC / Early-Detection / Trajectory cells
+each no-op under it (additive `if not DEFER_TEST_EVAL:` guards — every pre-addendum,
+non-deferred entry is unaffected). The CV-run cell passes a `fold_probe` that scores
+each fold's own N=1-truncated validation subjects at that fold's own threshold, for
+the Tier-1 static-baseline floor.
+
+**4.5.3 Tier-1 floors.** `adapters/logreg_drift.py` gains `feature_set: "drift" |
+"demo"` — `"demo"` restricts features to `[age, sex]`, no PCA/ΔA (four new registry
+entries, `tfgn-s0-demo-pooled-seed{42..45}`). The static baseline is the OOF N=1 row
+(no extra runs). The SSL persistence baseline was already computed by
+`LONGITUDINAL_TFGN_SSL_POOLED.ipynb` itself and is already in
+`tfgn-nodelstm-ssl-pooled`'s `run_summary.json["persistence_baseline"]` — nothing new
+needed there.
+
+**4.5.4 Tier-4 frozen reads.** `common/frozen_read.py` (new) —
+`score_frozen_split(run_dir, df, ...)` reconstructs a run's adapter from its own saved
+`run_summary.json` + checkpoint (`adapter.load_state`, no retraining), scores at the
+run's OOF-derived threshold (`adapters.read_run_threshold`), and records through the
+existing `record_test_metrics` / `record_external_metrics` — so `RESULTS.csv`'s schema
+is identical whether the read happened inline (pre-addendum runs) or here. Fixed a
+latent bug in `LogRegDriftAdapter.load_state` while wiring this: it returned the raw
+checkpoint dict instead of unwrapping `model_state_dict` (the pattern every sibling
+adapter already follows) — meant `eval_split(state, ...)`'s `state["pca"]` lookup
+would have failed on any reload; unexercised until this phase's frozen-read path.
+
+**4.5.5 Comparison notebook.** `notebooks/COMPARISON/COMPARISON_TEMPORAL_FIRST_LADDER.ipynb`
+(new) — one section per tier, reading only `oof.*` / `oof_predictions.csv` through
+Tier 3, and calling `common.frozen_read.score_frozen_split` exactly twice (in-domain,
+OASIS-3) in its final section only.
+
+**4.5.6 Re-run ledger.** All 24 completed arms re-run under the new contract
+(`defer_test_eval: true` added to each registry entry) before S1c launches, so the S1b
+fork decision is re-verified on OOF numbers computed the same way as every later rung.
+S0d (BrainTokenGT) will not reproduce bit-for-bit (`.claude/rules/…` BrainTokenGT
+determinism caveat, restated in `DOCS/temporal-first-ablation.md`) — its re-run number
+replaces the old one with the caveat attached, not silently.
+
+---
+
+## Addendum (2026-08-24) — Matched-window SOTA comparison (additive, post-ladder)
+
+**Motivation.** BrainTokenGT is architecturally capped at `min_visits=2, max_visits=3`
+(Dong et al., MICCAI 2023 — the model was designed for short fixed-length sequences).
+GELSTM and TFGN consume full trajectories (T up to ~10 in ADNI). Block A already carries
+the S0d caveat, but a strict head-to-head against the SOTA competitor requires identical
+inputs. This block adds it without altering any rung definition, the stopping rule, or
+the two headline contrasts (S0c↔S1, S0b↔S1c).
+
+**Scope.** Three new arms, 4 seeds each (42–45); everything else identical to Block A —
+same pooled splits, seeds, OOF-artifact contract, and evaluation protocol addendum:
+
+| id prefix | config | question |
+|---|---|---|
+| `tfgn-w3-gelstm-frozen-pooled` | `adapter: gelstm`, `encoder_init: pretrained_frozen`, `min_visits: 2`, `max_visits: 3` | spatial-first matched-window reference |
+| `tfgn-w3-gelstm-random-pooled` | `adapter: gelstm`, `encoder_init: random`, `min_visits: 2`, `max_visits: 3` | matched floor |
+| `tfgn-w3-winner-pooled` | `adapter: tfgn`, winning ladder config, `min_visits: 2`, `max_visits: 3` | our best model under the competitor's input constraint |
+
+BrainTokenGT is NOT re-run: S0d already runs at exactly this window by construction. Its
+Block A numbers are reused verbatim, with the reproducibility caveat attached. This reuse
+was checked, not assumed: `BRAINTOKENGT/adapter.py:184-186` filters `n_scans >= min_visits`
+*before* calling `window_item(...)` to truncate to `max_visits` — the same
+filter-then-truncate order every other adapter here uses
+(`model/GELSTM/dataset.py:74-76, 187-191`) — so S0d already sees the same 248 CV / 64 test
+subjects as the rest of Block A. No code changes are required for this block:
+`max_visits` is already a forwarded hyperparam on the GELSTM and TFGN adapters
+(`adapters/gelstm.py:69`, `adapters/tfgn.py:108`).
+
+**Timing.** Registered now. The two GELSTM arms may dispatch any time after P1 completes
+(they need the pooled GAAE checkpoint). The TFGN arm's `hyperparams` can only be written
+after the ladder freezes, since they inherit the winning config — record that
+finalisation as an addendum to `DOCS/temporal-first-ablation.md`, per its own rule.
+
+**Reporting.** Two tables:
+- Table A (matched short window, T∈[2,3]): BrainTokenGT (S0d) vs GELSTM-frozen/random
+  (w3) vs TFGN-winner (w3) — the strict head-to-head.
+- Table B (full trajectory, T≥2): the ladder as registered — quantifies what the
+  recurrent models gain from visits 4–10.
+
+Table B carries the contribution claim; Table A is the constrained-input head-to-head
+required for a fair SOTA comparison and must not be read as the main result — a windowing
+handicap that throws away the visits 4-10 information the LSTM architectures exist to
+exploit cannot double as evidence for or against the thesis.
+
+**Discipline.** Matched-window arms are evaluated on the CV pool (OOF) only and never
+feed ladder keep/drop decisions. If a test-set number is wanted for the matched-window
+winner, it joins the single frozen estimation pass (one read, same threshold
+discipline) — never a separate peek.
+
+**Sanity check.** Truncation must not change the subject pool: assert the w3 arms see the
+same 248 CV / 64 test subjects as Block A (`min_visits=2` is unchanged, so no subject is
+dropped — only visits are). Report the per-cohort OOF columns as usual: truncation
+removes more follow-up from ADNI than from DELCODE, and the per-cohort rows are where
+that asymmetry would surface.
+
+---
+
 ## Phase 5 — Block B (written now, run only if Block A clears the rule)
 
 Gate: **S1c–S3 must show a cumulative in-domain gain exceeding the SE of the seed-level
@@ -397,6 +520,20 @@ Run at each stage, not only at the end:
 7. **Before hand-off** — `python scripts/run_checks.py` from the repo root, once, after
    all of Phases 0–4 are implemented (`.claude/rules/ci.md`). Verify `CHECKS.json` against
    HEAD before trusting its "NEW" report (`[[feedback_checks_json_staleness]]`).
+8. **Phase 4.5** — `pytest CLASSIFIER/tests/test_oof.py CLASSIFIER/tests/test_crossval.py
+   CLASSIFIER/tests/test_frozen_read.py CLASSIFIER/tests/test_logreg_drift.py -q`. Then a
+   foreground `epochs: 2` run of any ladder arm: confirm `oof_predictions.csv` exists,
+   `run_summary["oof"]` is populated, and — with `defer_test_eval: true` — **no** `test_*`
+   / `ext_*` keys are written. Re-run each of the 24 completed arms under the new
+   contract before launching S1c; diff `tfgn-s1-flip-pooled-seed42`'s re-run `cv_results`
+   against the archived one (must match — confirms the re-run is a pure artifact upgrade,
+   per Phase 0.2's determinism check already having verified this once).
+9. **Matched-window addendum** — `python run_experiment.py --dry-run --id
+   tfgn-w3-gelstm-frozen-pooled-seed42` and the `-random-` sibling resolve with no config
+   errors (no new code path: `max_visits` is already plumbed through `adapters/gelstm.py`
+   and `model/GELSTM/dataset.py`). On the first real w3 run, confirm the notebook's
+   `run_full_audit` reports the same 248 CV / 64 test subject counts as Block A — truncation
+   must drop only visits, never subjects.
 
 ## Files
 
@@ -408,14 +545,24 @@ Run at each stage, not only at the end:
 `CLASSIFIER/notebooks/LONGITUDINAL/LONGITUDINAL_TFGN_SSL_POOLED.ipynb` ·
 `CLASSIFIER/notebooks/COMPARISON/COMPARISON_TEMPORAL_FIRST_LADDER.ipynb` ·
 `CLASSIFIER/tests/{test_tfgn,test_pooled_data,test_logreg_drift}.py` ·
-`DOCS/temporal-first-ablation.md`
+`DOCS/temporal-first-ablation.md` ·
+`CLASSIFIER/common/{oof,frozen_read}.py` (+ `tests/{test_oof,test_frozen_read}.py`, Phase 4.5)
 
 **Modified:** `SHARED/seeding.py` (opt-in strict determinism) ·
 `CLASSIFIER/adapters/__init__.py` (two registry lines) ·
 `CLASSIFIER/adapters/gelstm.py` (`prepare_data` cohort dispatch) ·
-`CLASSIFIER/common/run_artifacts.py` (`record_external_metrics`) ·
+`CLASSIFIER/common/run_artifacts.py` (`record_external_metrics`, Phase 4.5's
+`record_oof_artifacts`) ·
+`CLASSIFIER/common/crossval.py` (Phase 4.5's `fold_probe` / `oof_folds` / `oof_extras`) ·
+`CLASSIFIER/common/experiment_utils.py` (Phase 4.5's `oof.*` columns in `RESULTS.csv`) ·
+`CLASSIFIER/adapters/logreg_drift.py` (Phase 4.5's `feature_set` knob + `load_state` fix) ·
 `CLASSIFIER/notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb` (pooled branch,
-external-test cell, cohort probe — all additive and guarded).
+external-test cell, cohort probe, Phase 4.5's OOF-artifact cell + `defer_test_eval`
+guards — all additive and guarded) ·
+`CLASSIFIER/experiments/temporal_first.yaml` (matched-window addendum's 8
+`tfgn-w3-gelstm-{frozen,random}-pooled-seed{42..45}` entries + a commented
+`tfgn-w3-winner-pooled` placeholder pending the ladder freeze — no Python changes, the
+`max_visits` knob is already wired end to end).
 
 **Reused, not rewritten:** `LongitudinalSubjectDataset`, `common/crossval.run_kfold_cv`,
 `common/thresholds.select_oof_threshold`, `common/comparison.{paired_delong_test,
