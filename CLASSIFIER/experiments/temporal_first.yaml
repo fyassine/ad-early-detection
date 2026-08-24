@@ -15,13 +15,34 @@
 # node_lstm_init for S1c-S5" - DOCS/temporal-first-ablation.md "The arms"):
 # each rung's hyperparams block is added only once the rung(s) before it have
 # reported against the stopping rule, per the pre-registration's "never a
-# silent edit" rule. S2 through SENS are still pending on S1c.
+# silent edit" rule. S2 through SENS are still pending on the S1c re-run below.
 #
-# S1b fork resolved 2026-08-24: S1/S1b both completed 4/4 seeds, OOF-AUC
-# stopping rule mean(Δ)=0.01067 SE(Δ)=0.00521 ratio=2.05 -> passes ->
-# node_lstm_init: pretrained_finetuned carries into S1c-S5 (S1's own entries
-# above are untouched — only S1c onward inherit the winning value). Full
-# per-seed table in DOCS/temporal-first-ablation.md "S1b fork decision".
+# S1b fork resolved 2026-08-24 (pre-OOF-artifact reading, per-fold
+# cv_results.val_auc): S1/S1b both completed 4/4 seeds, stopping rule
+# mean(Δ)=0.01067 SE(Δ)=0.00521 ratio=2.05 -> passes ->
+# node_lstm_init: pretrained_finetuned carried into S1c-S5 (S1's own entries
+# above untouched). This is what the four tfgn-s1c-recon-pooled-seed* entries
+# below were built with.
+#
+# CORRECTING ADDENDUM (2026-08-24, after oof_predictions.csv existed for all
+# 4 seeds): re-read on the fold-matched OOF statistic Tier 2 actually
+# specifies, S1b-S1 is mean(Δ)=+0.01199 SE=0.00186 ratio=6.46 (passes), but
+# the pooled per-seed OOF AUC Δ is +0.00138 SE=0.00739 ratio=0.19 (fails) --
+# the two readings disagree. Tier 2's own pre-registered one-SE tie-breaker
+# resolves it: S1's pooled OOF AUC (0.7488) is within one SE (0.0074) of
+# S1b's (0.7502), so the simpler config (S1, node_lstm_init: random) is
+# selected. Full derivation: DOCS/temporal-first-ablation.md "S1b fork
+# decision" correcting addendum; DOCS/flipped/PLAN.md "Ladder state and
+# corrected order (2026-08-24)".
+#
+# REVISED DECISION: node_lstm_init: random (S1's own config) carries into
+# S1c-S5, not pretrained_finetuned. S1b is retained as a documented
+# sensitivity arm (secondary Tier-4 read only), not primary. The four
+# tfgn-s1c-recon-pooled-seed* entries below (built on pretrained_finetuned)
+# are LEFT UNTOUCHED as the record of that now-superseded configuration --
+# recorded as undecidable, not re-pointed (.claude/rules/gpu-dispatch.md:
+# never repoint an existing id's outputs/<id>/latest). The protocol-valid
+# re-run is tfgn-s1c-recon-random-pooled-seed{42..45} below.
 #
 # S0b/S0c's checkpoint_path points at the new pooled ADNI+DELCODE GAAE
 # (gaae-pretrain-pooled-adni-delcode, P1 of Phase 2) — do not point it at the
@@ -528,7 +549,15 @@ experiments:
     threshold_mode: best-f1
     notes: "S1b 4/4."
 
-  # ── S1c: recon — both encoders self-supervised. HEADLINE ARM vs S0b. ──────
+  # ── S1c (SUPERSEDED, 2026-08-24): recon on the reversed pretrained_finetuned
+  # fork. node_lstm_init: pretrained_finetuned was correct when these entries
+  # were written but the S1b fork decision above has since been reversed (see
+  # the CORRECTING ADDENDUM at the top of this file). These four runs are
+  # recorded as undecidable per DOCS/temporal-first-ablation.md "S1c
+  # (2026-08-24 run) — recorded as undecidable" — NOT re-pointed, NOT deleted,
+  # left exactly as run. The protocol-valid re-run is the
+  # tfgn-s1c-recon-random-pooled-seed{42..45} block immediately below this one.
+  # Original comment, unedited for the historical record:
   # Inherits node_lstm_init: pretrained_finetuned from the S1b fork decision
   # above (2026-08-24) — the only knob change vs S1b is recon_target itself;
   # lambda_recon/beta_kl/free_bits/beta_warmup_epochs stay at
@@ -609,11 +638,517 @@ experiments:
     threshold_mode: best-f1
     notes: "S1c 4/4."
 
-# S2 ("gate"), S3 ("fusion"), S4 ("attnpool"), S5 ("dualscore"), and SENS
-# ("minvisits3") are appended here — never as a silent edit to the entries
-# above — once S1c's four seeds report against the stopping rule (cumulative
-# vs S1b) and S1c-S3 clear the Block-B gate. See DOCS/temporal-first-ablation.md
-# and the addendum in ~/.claude/plans/enchanted-brewing-crane.md.
+  # ── S1c re-run (random init) — protocol-valid, registered 2026-08-24 ───────
+  # Byte-identical to the tfgn-s1c-recon-pooled entries above except
+  # node_lstm_init: random (S1's carried-forward config, per the correcting
+  # addendum at the top of this file) in place of pretrained_finetuned, and
+  # node_lstm_ckpt_path dropped (unused when node_lstm_init != pretrained_*).
+  # Answers the registered S0b<->S1c headline contrast; the original S1c block
+  # above stays as the undecidable record, untouched.
+  - id: tfgn-s1c-recon-random-pooled-seed42
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: delta_a_topk
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S1c-random 1/4: protocol-valid re-run of S1c (node_lstm_init=random, i.e. S1's carried-forward config; recon_target=delta_a_topk). vs S0b isolates the flip with both sides self-supervised, without the reversed S1b fork's confound."
+
+  - id: tfgn-s1c-recon-random-pooled-seed43
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: delta_a_topk
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S1c-random 2/4."
+
+  - id: tfgn-s1c-recon-random-pooled-seed44
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: delta_a_topk
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S1c-random 3/4."
+
+  - id: tfgn-s1c-recon-random-pooled-seed45
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: delta_a_topk
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S1c-random 4/4."
+
+  # ── S1c loss-component diagnostic (non-ladder observation, 5 epochs) ─────────
+  - id: tfgn-s1c-diag-loss-components
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: delta_a_topk
+      epochs: 5
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "Diagnostic: 5 epochs of per-term loss logging (bce/recon/kl) to observe loss component magnitudes from epoch 0."
+
+
+  # ── S2: Temporal Saliency Gate (registered 2026-08-24) ──────────────────────
+  # Evaluates whether learned regional temporal gating (use_gate: true,
+  # gate_rho: 0.15, lambda_sparse: 0.1, lambda_drift: 0.01) improves OOF
+  # classification and yields sparse, biologically plausible saliency patterns.
+  # Branches from S1 (random init, recon_target: none) per Tier-2 decision.
+  - id: tfgn-s2-gate-pooled-seed42
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: true
+      lambda_sparse: 0.1
+      lambda_drift: 0.01
+      gate_rho: 0.15
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S2 1/4: Temporal Saliency Gate. use_gate=true, lambda_sparse=0.1, lambda_drift=0.01, gate_rho=0.15. Branches from S1."
+
+  - id: tfgn-s2-gate-pooled-seed43
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: true
+      lambda_sparse: 0.1
+      lambda_drift: 0.01
+      gate_rho: 0.15
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S2 2/4."
+
+  - id: tfgn-s2-gate-pooled-seed44
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: true
+      lambda_sparse: 0.1
+      lambda_drift: 0.01
+      gate_rho: 0.15
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S2 3/4."
+
+  - id: tfgn-s2-gate-pooled-seed45
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: true
+      lambda_sparse: 0.1
+      lambda_drift: 0.01
+      gate_rho: 0.15
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S2 4/4."
+
+  # ── S3: Concat Residual Fusion (registered 2026-08-24) ──────────────────────
+  # Evaluates whether preserving raw temporal features via concat-residual skip
+  # (fusion: concat_residual) outperforms graph-smoothed latents alone (fusion: z_only).
+  # Branches from S1 (random init, recon_target: none, use_gate: false).
+  - id: tfgn-s3-fusion-pooled-seed42
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      fusion: concat_residual
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S3 1/4: Concat Residual Fusion. fusion=concat_residual. Branches from S1."
+
+  - id: tfgn-s3-fusion-pooled-seed43
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      fusion: concat_residual
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S3 2/4."
+
+  - id: tfgn-s3-fusion-pooled-seed44
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      fusion: concat_residual
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S3 3/4."
+
+  - id: tfgn-s3-fusion-pooled-seed45
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      fusion: concat_residual
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S3 4/4."
+
+  # ── S4: Attentive Graph Pooling (registered 2026-08-24) ─────────────────────
+  # Evaluates whether sparsemax attentive graph pooling (readout: attention)
+  # outperforms global uniform mean graph pooling (readout: mean).
+  # Branches from S1 (random init, recon_target: none, use_gate: false).
+  - id: tfgn-s4-attnpool-pooled-seed42
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: attention
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S4 1/4: Attentive Graph Pooling. readout=attention. Branches from S1."
+
+  - id: tfgn-s4-attnpool-pooled-seed43
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: attention
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S4 2/4."
+
+  - id: tfgn-s4-attnpool-pooled-seed44
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: attention
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S4 3/4."
+
+  - id: tfgn-s4-attnpool-pooled-seed45
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: attention
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S4 4/4."
+
+  # ── S5: Dual Score Readout / Interpretability (registered 2026-08-24) ───────
+  # Adds the topological centrality anchor head (dual_score: true, lambda_cent: 0.1)
+  # to produce regional diagnostic maps at zero risk to classification backbone.
+  # Branches from S1 (random init, recon_target: none, use_gate: false, readout: mean).
+  - id: tfgn-s5-dualscore-pooled-seed42
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: mean
+      dual_score: true
+      lambda_cent: 0.1
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S5 1/4: Dual Score Readout. dual_score=true, lambda_cent=0.1. Branches from S1."
+
+  - id: tfgn-s5-dualscore-pooled-seed43
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: mean
+      dual_score: true
+      lambda_cent: 0.1
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S5 2/4."
+
+  - id: tfgn-s5-dualscore-pooled-seed44
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: mean
+      dual_score: true
+      lambda_cent: 0.1
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S5 3/4."
+
+  - id: tfgn-s5-dualscore-pooled-seed45
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: mean
+      dual_score: true
+      lambda_cent: 0.1
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "S5 4/4."
+
+  # ── SENS: Sequence-length sensitivity (registered 2026-08-24) ───────────────
+  # Evaluates the winning ladder configuration (Rung S1 Flip) on subjects with
+  # at least 3 longitudinal visits (min_visits: 3).
+  - id: tfgn-sens-minvisits3-pooled-seed42
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: mean
+      external_test_cohort: oasis3
+      min_visits: 3
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "SENS 1/4: Sequence-length sensitivity (min_visits=3) on winning ladder config (S1)."
+
+  - id: tfgn-sens-minvisits3-pooled-seed43
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: mean
+      external_test_cohort: oasis3
+      min_visits: 3
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "SENS 2/4."
+
+  - id: tfgn-sens-minvisits3-pooled-seed44
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: mean
+      external_test_cohort: oasis3
+      min_visits: 3
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "SENS 3/4."
+
+  - id: tfgn-sens-minvisits3-pooled-seed45
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: mean
+      external_test_cohort: oasis3
+      min_visits: 3
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "SENS 4/4."
+
 
 # ── W3: matched-window SOTA comparison (additive, post-ladder) ────────────────
 # DOCS/flipped/PLAN.md "Addendum (2026-08-24) — Matched-window SOTA comparison"
@@ -768,26 +1303,90 @@ experiments:
     threshold_mode: best-f1
     notes: "W3-random 4/4."
 
-# tfgn-w3-winner-pooled (adapter: tfgn, winning ladder config + max_visits: 3) is
-# deliberately NOT registered yet: its hyperparams inherit whichever config wins
-# S1c-SENS, which has not been decided. Writing a guessed config now would freeze
-# that choice before the ladder speaks. Add it here, 4 seeds, once the ladder
-# freezes — per DOCS/temporal-first-ablation.md's "Matched-window SOTA comparison"
-# addendum and PLAN.md's "Timing" note.
-#
-#   - id: tfgn-w3-winner-pooled-seed42
-#     mode: longitudinal
-#     model: TFGN
-#     dataset: POOLED_WHOLE_BRAIN
-#     seed: 42
-#     notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
-#     adapter: tfgn
-#     config_path: configs/tfgn_pooled.json
-#     hyperparams:
-#       # <winning ladder knobs, copied from the frozen S1c-SENS config>
-#       external_test_cohort: oasis3
-#       min_visits: 2
-#       max_visits: 3
-#       defer_test_eval: true
-#     threshold_mode: best-f1
-#     notes: "W3-winner 1/4: TFGN under the matched window, winning ladder config."
+  # ── W3-winner: TFGN winning ladder config under matched window (T ∈ [2,3]) ──
+  - id: tfgn-w3-winner-pooled-seed42
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: mean
+      external_test_cohort: oasis3
+      min_visits: 2
+      max_visits: 3
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "W3-winner 1/4: TFGN under matched window (T∈[2,3]), winning ladder config (S1)."
+
+  - id: tfgn-w3-winner-pooled-seed43
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: mean
+      external_test_cohort: oasis3
+      min_visits: 2
+      max_visits: 3
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "W3-winner 2/4."
+
+  - id: tfgn-w3-winner-pooled-seed44
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: mean
+      external_test_cohort: oasis3
+      min_visits: 2
+      max_visits: 3
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "W3-winner 3/4."
+
+  - id: tfgn-w3-winner-pooled-seed45
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      node_lstm_init: random
+      recon_target: none
+      use_gate: false
+      readout: mean
+      external_test_cohort: oasis3
+      min_visits: 2
+      max_visits: 3
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "W3-winner 4/4."
+
+
+
+
+
+
+

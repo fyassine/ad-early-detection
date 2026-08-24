@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s2-gate-pooled-seed44",
+  "run_name": "fragrant-brook-1-358dbb54d-2026-08-24_16-26-25",
+  "state": "done",
+  "pid": 1345517,
+  "host": "frieda",
+  "started_at": "2026-08-24T16:26:31",
+  "git_commit": "358dbb54d",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T17:08:55",
+  "exit_code": 0,
+  "duration_seconds": 2542.9
+}

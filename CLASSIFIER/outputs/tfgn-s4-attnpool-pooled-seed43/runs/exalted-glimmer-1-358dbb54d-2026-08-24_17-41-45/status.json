@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s4-attnpool-pooled-seed43",
+  "run_name": "exalted-glimmer-1-358dbb54d-2026-08-24_17-41-45",
+  "state": "done",
+  "pid": 1351048,
+  "host": "frieda",
+  "started_at": "2026-08-24T17:41:50",
+  "git_commit": "358dbb54d",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T17:58:58",
+  "exit_code": 0,
+  "duration_seconds": 1027.5
+}

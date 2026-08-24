@@ -295,10 +295,10 @@ seeds 42/43/44/45.
 | **S0b** | `tfgn-s0-gelstm-frozen-pooled` | `adapter: gelstm`, `encoder_init: pretrained_frozen` | Spatial-first **with** a self-supervised encoder |
 | **S0c** | `tfgn-s0-gelstm-random-pooled` | `adapter: gelstm`, `encoder_init: random` | Spatial-first **without** one — the matched floor for S1 |
 | **S0d** | `tfgn-s0-braintokengt-pooled` | `adapter: braintokengt` | Competitor reference |
-| **S1** | `tfgn-s1-flip-pooled` | `node_lstm_init: random`, gate off, `recon_target: none`, `fusion: z_only`, `readout: mean` | **Flip alone, no self-supervision anywhere → compare to S0c** |
-| **S1b** | `tfgn-s1b-ssl-pooled` | `node_lstm_init: pretrained_finetuned` (P2) | Does node-LSTM SSL forecasting help? |
-| **S1c** | `tfgn-s1c-recon-pooled` | `recon_target: delta_a_topk`, `lambda_recon`, `beta_kl` + free bits + warmup | **Headline arm: both encoders self-supervised → compare to S0b** |
-| **S2** | `tfgn-s2-gate-pooled` | `use_gate: true`, `lambda_sparse`, `lambda_drift = 0.1·λ_sparse`, `gate_rho: 0.15` | Does suppressing static regions help? |
+| **S1** | `tfgn-s1-flip-pooled` | `node_lstm_init: random`, gate off, `recon_target: none`, `fusion: z_only`, `readout: mean` | **Flip alone, no self-supervision anywhere → compare to S0c. Primary arm, carried forward (see "Ladder state and corrected order" below).** |
+| **S1b** | `tfgn-s1b-ssl-pooled` | `node_lstm_init: pretrained_finetuned` (P2) | Does node-LSTM SSL forecasting help? **Dropped by Tier 2's one-SE tie-breaker — sensitivity arm, not primary.** |
+| **S1c** | `tfgn-s1c-recon-pooled` (original, invalid) / `tfgn-s1c-recon-random-pooled` (re-run) | `recon_target: delta_a_topk`, `lambda_recon`, `beta_kl` + free bits + warmup; `node_lstm_init: random` in the re-run | **Headline arm: both encoders self-supervised → compare to S0b.** The original run inherited `pretrained_finetuned` from the since-reversed S1b fork and is recorded as undecidable; the re-run is protocol-valid. |
+| **S2** | `tfgn-s2-gate-pooled` | `use_gate: true`, `lambda_sparse`, `lambda_drift = 0.1·λ_sparse`, `gate_rho: 0.15` | Does suppressing static regions help? Branches from **S1**. |
 | **S3** | `tfgn-s3-fusion-pooled` | `fusion: concat_residual` | Does preserving unsmoothed H help? |
 | **S4** | `tfgn-s4-attnpool-pooled` | `readout: attention` | Does attentive pooling beat mean pooling? |
 | **S5** | `tfgn-s5-dualscore-pooled` | `dual_score: true`, `lambda_cent` | Interpretability at zero risk to the backbone |
@@ -320,7 +320,10 @@ strengthens with sequence length instead of leaving the question open.
 Each rung inherits the *kept* knobs of the rungs before it. If a rung fails the stopping
 rule its knob is dropped and the next rung branches from the last surviving config —
 `temporal_first.yaml` carries the full chain, but the `hyperparams` of S2+ are finalised
-after S1c reports. **S1b is the only fork**: its winner sets `node_lstm_init` for S1c–S5.
+after the S1c re-run reports. **S1b was the fork**: per the correcting addendum in
+`DOCS/temporal-first-ablation.md`, Tier 2's one-SE tie-breaker resolves it to
+`node_lstm_init: random` (S1's own config), which is what S1c–S5 inherit — see "Ladder
+state and corrected order (2026-08-24)" below for the full derivation.
 
 **Run order and dispatch** (both boxes are currently idle; >2 ids per call uses both):
 
@@ -339,6 +342,10 @@ cd CLASSIFIER && python run_experiment.py --dry-run --id tfgn-s1-flip-pooled-see
 scripts/dispatch.sh --pkg CLASSIFIER --id tfgn-s0-logreg-drift-pooled-seed42 ... (16 ids)
 scripts/dispatch.sh --pkg CLASSIFIER --id tfgn-s1-flip-pooled-seed{42..45}
 scripts/dispatch.sh --pkg CLASSIFIER --id tfgn-s1b-ssl-pooled-seed{42..45}
+# S0-S1b complete as of 2026-08-24 — see "Ladder state and corrected order" below
+# for the verified results and the corrected continuation:
+# tfgn-s1c-recon-random-pooled -> S2 -> S3 -> S4 -> S5 -> SENS
+scripts/dispatch.sh --pkg CLASSIFIER --id tfgn-s1c-recon-random-pooled-seed{42..45}
 # ... one block per rung, reading the stopping rule between blocks
 
 cd CLASSIFIER && python run_experiment.py --status --watch
@@ -417,6 +424,83 @@ S0d (BrainTokenGT) will not reproduce bit-for-bit (`.claude/rules/…` BrainToke
 determinism caveat, restated in `DOCS/temporal-first-ablation.md`) — its re-run number
 replaces the old one with the caveat attached, not silently.
 
+**Outcome of the re-verified fork decision (2026-08-24).** Reading the re-run OOF
+artifacts is what caught the winner's-curse selection this section's re-verification was
+meant to prevent: the fold-matched Tier-2 statistic passes for S1b (ratio 6.46) while the
+pooled per-seed statistic fails (ratio 0.19), and Tier 2's own one-SE tie-breaker
+resolves the disagreement to **S1**, not S1b. See "Ladder state and corrected order
+(2026-08-24)" below for the full numbers; `DOCS/temporal-first-ablation.md`'s "S1b fork
+decision" correcting addendum is the pre-registration record.
+
+---
+
+## Ladder state and corrected order (2026-08-24)
+
+Three protocol violations were caught in the scorecard read after S0a–S1c (32 runs)
+completed, all traced back to `oof_predictions.csv` numbers, never the scorecard's own
+summary. Full derivation and the corrected pre-registration text are in
+`DOCS/temporal-first-ablation.md`'s "S1b fork decision" correcting addendum, "S1c
+(2026-08-24 run) — recorded as undecidable", and "S1c re-run (random init)" sections —
+this section carries the state forward into the execution plan.
+
+**Verified ladder state** (pooled OOF AUC, mean ± SD over seeds 42–45, from
+`run_summary.json["oof"]`):
+
+| arm | OOF AUC | note |
+|---|---|---|
+| S0-demo floor | 0.5296 | Tier-1 demographics floor |
+| S0c gelstm-random | 0.5625 | matched floor for S1 |
+| S0d BrainTokenGT | 0.6207 | **below the linear ΔA baseline** — citable for the matched-window framing, BTGT non-reproducibility caveat attached |
+| S0a logreg-drift | 0.7053 | linear floor |
+| S0b gelstm-frozen | 0.7186 | spatial-first, pretrained |
+| **S1 flip** | **0.7488 ± 0.0028** | **primary arm.** Tightest seed SD of any deep model in the table — cite in the stability section next to the strict-determinism work. Static N=1 row: **0.4919** (chance) vs full-trajectory 0.7488 — "all signal is longitudinal," worth a figure. |
+| S1b ssl | 0.7502 ± 0.0125 | +0.0014 pooled (SE 0.0074, ratio 0.19) / +0.0120 fold-matched (SE 0.0019, ratio 6.46) vs S1 — the two Tier-2 statistics disagree; see the doc's Tier-2 clarification. Tier 2's one-SE tie-breaker selects S1 (simpler, within one SE either way). **Sensitivity arm, not primary.** |
+| S1c recon (original run) | 0.5507 | built on `pretrained_finetuned` (inherited the now-reversed fork) — **protocol-invalid, recorded as undecidable, not a loss for the flip.** S0b↔S1c is unanswered pending the re-run below. |
+
+**Three fixes baked into the plan:**
+
+1. **S1, not S1b, is the primary arm.** S1b is retained only as a documented secondary
+   sensitivity read at Tier 4.
+2. **S0b↔S1c is undecidable, not a flip loss.** The original S1c run tested an
+   unregistered configuration (SSL node-LSTM init on a since-dropped fork + reconstruction
+   loss together). A protocol-valid re-run, `tfgn-s1c-recon-random-pooled-seed{42..45}`
+   (`node_lstm_init: random`, everything else identical to the original S1c entries), is
+   registered in `CLASSIFIER/experiments/temporal_first.yaml` and answers the contrast.
+   The original run's artifacts are left untouched as the record of the invalid
+   configuration (`.claude/rules/gpu-dispatch.md` — never repoint an existing id).
+3. **The ladder is not finished.** S2 (gate) branches from **S1**, then S3, S4, S5, and
+   SENS remain unrun. S2 and S5 are where the gate maps and the quadrant scatter live —
+   the interpretability contribution and the main MICCAI differentiator. Frozen reads stay
+   Tier 4, after SENS reports, per `DOCS/temporal-first-ablation.md`'s restated Tier-4
+   gate.
+
+**Corrected order, superseding Phase 4's original run-order list:**
+
+```
+tfgn-s1c-recon-random-pooled (S1c re-run, branches from S1)
+  -> S2 (gate, branches from S1)
+  -> S3 (fusion)
+  -> S4 (attention pool)
+  -> S5 (dual-score / interpretability)
+  -> SENS (min_visits=3)
+  -> comparison notebook (Tier 1-3 read between every block above)
+  -> Tier-4 frozen reads: S1 lineage primary, S1b secondary if taken
+  -> matched-window w3 arms
+```
+
+**Loss-component diagnostic** (supports, does not replace, the "recorded as
+undecidable" framing): `model/TFGN/train.py::train_epoch` gains additive per-term loss
+logging (bce/recon/kl/gate/drift/cent), wired through `adapters/tfgn.py`'s existing
+`epoch_log_fn`. One short non-ladder run, `tfgn-s1c-diag-loss-components`, checks whether
+the reconstruction/KL terms dominate `bce` from epoch 0 — an observation recorded in
+`DOCS/temporal-first-ablation.md`, never a Tier-2 input and never grounds for a lambda
+change without its own documented deviation (a λ sweep is explicitly out of scope as a
+quiet re-run).
+
+**All GPU runs in this section — the S1c re-run block and the loss-component diagnostic
+— are held for explicit user approval before dispatch.** Everything else (docs, registry
+entries, code instrumentation, tests, notebook cells) proceeds without waiting.
+
 ---
 
 ## Addendum (2026-08-24) — Matched-window SOTA comparison (additive, post-ladder)
@@ -478,10 +562,14 @@ that asymmetry would surface.
 
 ## Phase 5 — Block B (written now, run only if Block A clears the rule)
 
-Gate: **S1c–S3 must show a cumulative in-domain gain exceeding the SE of the seed-level
-differences.** If the flip cannot clear the noise floor at 64k parameters, a 300k model
-is not the answer and the honest thesis result is that signal quality and sample size,
-not capacity, are the bottleneck — write that instead of scaling.
+Gate: **S1c-random–S5 must show a cumulative gain (OOF, Tier 2 fold-matched statistic)
+exceeding the SE of the seed-level differences, read only after SENS reports** — per
+"Ladder state and corrected order (2026-08-24)" above, S2–S5 branch from **S1**, not
+S1b, and the gate is evaluated once the whole chain (S1c-random through SENS) has run,
+not at S1c-random↔S3 in isolation. If the flip cannot clear the noise floor at 64k
+parameters, a 300k model is not the answer and the honest thesis result is that signal
+quality and sample size, not capacity, are the bottleneck — write that instead of
+scaling.
 
 If the gate passes, `CLASSIFIER/experiments/temporal_first_scaled.yaml`, 6 arms × 4 seeds:
 masked-FC modelling (15–30 % of node rows re-masked each epoch) added to P2; temporal

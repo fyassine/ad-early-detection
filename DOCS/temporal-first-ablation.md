@@ -96,9 +96,9 @@ rung a knob change from the previous rung — the same pattern as `encoder_init`
 | S0b `gelstm-frozen` | today's spatial-first model, pretrained frozen GAAE | Spatial-first **with** a self-supervised encoder |
 | S0c `gelstm-random` | spatial-first, `encoder_init: random` | Spatial-first **without** one — matched floor for S1 |
 | S0d `braintokengt` | competitor baseline | External reference (see caveat below) |
-| S1 `flip` | `node_lstm_init: random`, gate off, `recon_target: none`, `fusion: z_only`, `readout: mean` | Flip alone, no self-supervision anywhere → compare to **S0c** |
-| S1b `ssl` | `node_lstm_init: pretrained_finetuned` (self-supervised node-LSTM, see Phase 2 of the plan) | Does node-level forecasting pretraining help? |
-| S1c `recon` | `recon_target: delta_a_topk`, GVAE reconstruction losses on | Both encoders self-supervised → compare to **S0b**. **Headline arm.** |
+| S1 `flip` | `node_lstm_init: random`, gate off, `recon_target: none`, `fusion: z_only`, `readout: mean` | Flip alone, no self-supervision anywhere → compare to **S0c**. **Primary arm — carried forward into S1c–S5 (see "S1b fork decision" correcting addendum below).** |
+| S1b `ssl` | `node_lstm_init: pretrained_finetuned` (self-supervised node-LSTM, see Phase 2 of the plan) | Does node-level forecasting pretraining help? **Dropped by Tier 2's one-SE tie-breaker — retained as a documented sensitivity arm, not primary.** |
+| S1c `recon` | `recon_target: delta_a_topk`, GVAE reconstruction losses on, **`node_lstm_init: random`** | Both encoders self-supervised → compare to **S0b**. **Headline arm.** The first `tfgn-s1c-recon-pooled` run used `pretrained_finetuned` and is recorded as undecidable (see "S1c (2026-08-24 run)" below); `tfgn-s1c-recon-random-pooled` is the protocol-valid re-run. |
 | S2 `gate` | `use_gate: true` + sparsity/drift anchors | Does suppressing static regions help? |
 | S3 `fusion` | `fusion: concat_residual` | Does preserving unsmoothed per-node H help? |
 | S4 `attnpool` | `readout: attention` | Does attentive pooling beat mean pooling? |
@@ -145,6 +145,93 @@ consistent with S1b's win here being a genuine effect rather than noise.
 **Decision: `node_lstm_init: pretrained_finetuned` carries forward into S1c–S5.** This
 is not a silent edit — S1's own config (`node_lstm_init: random`) is untouched in the
 registry; only S1c onward inherit the winning value, per the pre-registered chain rule.
+
+**Correcting addendum (2026-08-24, after the Phase-4.5 OOF-artifact contract landed —
+`oof_predictions.csv` did not exist when the table above was read).** The table and
+`mean=0.01067`/`SE=0.00521`/`ratio=2.05` above are computed from each run's per-fold
+`cv_results.val_auc` — the pre-artifact-contract statistic, kept here unedited per this
+document's own rule. Recomputed from the fold-matched `oof_predictions.csv` (the
+statistic Tier 2 below actually specifies and the comparison notebook's
+`stopping_rule()` actually implements), the same S1b−S1 contrast gives two different
+numbers depending on how the four seeds are paired:
+
+| statistic | mean(Δ) | SE(Δ) | ratio | keep/drop |
+|---|---|---|---|---|
+| per-seed mean **paired fold-matched** OOF ΔAUC (Tier 2's own definition) | +0.01199 | 0.00186 | 6.46 | passes |
+| per-seed **pooled** OOF AUC Δ (`run_summary["oof"]["oof_auc"]`, unpaired within seed) | +0.00138 | 0.00739 | 0.19 | fails |
+
+Both are legitimate readings of the same four runs; they disagree because the
+fold-matched statistic uses within-seed pairing (5 paired folds per seed) while the
+pooled statistic collapses each seed to one already-pooled number before differencing,
+discarding the pairing that gives the fold-matched version its power. **Tier 2's
+one-standard-error tie-breaker — "among kept arms, prefer the simplest configuration
+within one SE of the best," pre-registered before either of these numbers existed —
+resolves the disagreement without picking a side after the fact:** S1's pooled OOF AUC
+(0.7488) sits 0.0014 from S1b's (0.7502), well inside one SE (0.0074) under either
+statistic, so S1 — the simpler configuration, no SSL-checkpoint dependency — is
+selected.
+
+**Revised decision: `node_lstm_init: random` (S1's own config) carries forward into
+S1c–S5.** S1b is retained as a **documented sensitivity arm**, not the primary endpoint;
+it is eligible for a secondary frozen read alongside the primary at Tier 4, reported
+side by side, never in place of it. This does not relabel the original screen's outcome
+— "worth carrying forward" under the fold-matched statistic is still the honest
+description of that number — it applies the tie-breaker the protocol had already
+committed to before any of these numbers were computed.
+
+## S1c (2026-08-24 run) — recorded as undecidable
+
+The four completed `tfgn-s1c-recon-pooled-seed{42..45}` runs (pooled OOF AUC
+0.5077–0.5874, mean 0.5507) were built with `node_lstm_init: pretrained_finetuned`
+(`CLASSIFIER/experiments/temporal_first.yaml:549`), inheriting the S1b fork decision as
+it stood before the correcting addendum above. That decision is now reversed, so **this
+run does not test the registered S1c question** ("both encoders self-supervised,
+compared to S0b") — it tests a configuration (SSL node-LSTM init + reconstruction loss
+together, on top of a since-dropped knob) that was never a registered rung on its own.
+
+**The collapse is not evidence against the flip, and not yet evidence for any specific
+cause.** It is attributable to *the auxiliary objective as configured*
+(`recon_target: delta_a_topk`, `lambda_recon`, `beta_kl`, free-bits, warmup schedule) —
+scoring near chance (0.51–0.59) is consistent with the reconstruction/KL terms
+dominating the classification gradient, but "gradient interference" remains a hypothesis
+until the per-epoch loss components are inspected (added below). It is explicitly **not**
+attributable to rung ordering, and the **S0b↔S1c headline contrast is reported as
+unanswered**, not as a loss for temporal-first — reporting 0.5507 against S0b's 0.7186 as
+"the flip loses the headline contrast" would misattribute an untested auxiliary-loss
+interaction to the architecture itself.
+
+A λ sweep over `lambda_recon`/`beta_kl` to fix the collapse is explicitly **out of
+scope as a quiet re-run** — per this document's own rule, it would require its own
+documented deviation with its own pre-registered grid, not an ad hoc search triggered by
+having seen 0.5507.
+
+## S1c re-run (random init) — registered before any run
+
+The protocol-valid S1c — `node_lstm_init: random` (S1's carried-forward config),
+`recon_target: delta_a_topk` and its associated hyperparameters unchanged from the
+original S1c entries — is registered as
+`tfgn-s1c-recon-random-pooled-seed{42,43,44,45}` in
+`CLASSIFIER/experiments/temporal_first.yaml`, byte-identical to the original S1c entries
+except that one key. The original `tfgn-s1c-recon-pooled-seed*` entries and their
+`outputs/` artifacts are left untouched — they remain the record of the invalid run
+described above, not overwritten (`.claude/rules/gpu-dispatch.md`: never repoint an
+existing id's `outputs/<id>/latest`). This re-run answers S0b↔S1c; S2 branches from
+whichever of S1 / S1c-random survives Tier 2.
+
+## Loss-component diagnostic (S1c investigation only, not a ladder decision)
+
+`CLASSIFIER/model/TFGN/train.py::train_epoch` returned only a scalar total loss, so the
+"gradient interference" hypothesis above had no supporting evidence. `train_epoch` now
+additionally returns the epoch-mean of each loss term it already computes (`bce`,
+`recon`, `kl`, `gate_sparsity`, `drift`, `cent`) alongside the total — purely additive
+instrumentation, the optimized objective is unchanged, and every existing arm's recorded
+metrics are unaffected (verified: `tfgn-s1-flip-pooled-seed42`'s OOF AUC is identical
+before and after this change). One short non-ladder diagnostic run
+(`tfgn-s1c-diag-loss-components`, existing S1c hyperparameters, reduced epochs) reads
+whether the reconstruction/KL terms dominate `bce` from epoch 0. Its result is recorded
+as an observation in this section once run — **never** as a Tier-2 decision input and
+never as a trigger for a lambda change without the sweep's own documented deviation
+above.
 
 ## Reconstruction target (Phase 2/S1c)
 
@@ -295,6 +382,21 @@ among kept arms, prefer the simplest configuration within one SE of the best
 accumulating across ten rungs. External OASIS-3 AUC is recorded per arm and
 never used for selection.
 
+**Clarification (2026-08-24, prompted by the S1b correcting addendum above).**
+"Per-seed mean paired fold-matched ΔAUC" means: for each seed, average the 5
+per-fold ΔAUC values (rung *k*'s fold *i* minus rung *k−1*'s fold *i*, same
+fold), then take the mean/SE of those 4 seed-level averages — this is the
+statistic `stopping_rule()` in the comparison notebook implements, and is the
+one that governs keep/drop. The **pooled** per-seed OOF AUC Δ (each seed's
+`run_summary["oof"]["oof_auc"]` differenced directly, without fold pairing) is
+reported alongside it in every rung-table row as a secondary sanity column,
+never as the keep/drop statistic on its own — pooling before differencing
+discards the within-seed fold pairing and is a noisier, unpaired estimate of
+the same quantity. **Whenever the two disagree in sign or in keep/drop status
+for the same rung, the comparison notebook must print both numbers and say so
+explicitly** (as it now does for S1b vs S1) rather than reporting only the one
+that supports the intended conclusion.
+
 ### Tier 3 — robustness vetoes (thresholds fixed here, before any result)
 
 A kept rung must additionally clear every veto below. Changing a threshold
@@ -312,6 +414,14 @@ after seeing a result is a documented deviation, never a silent edit.
 (`oof_balanced_accuracy`) alongside AUC in every rung table row.
 
 ### Tier 4 — estimation (the only place test sets appear)
+
+**Gate restated (2026-08-24).** "The ladder is frozen" means S2, S3, S4, S5, and SENS
+have all reported against Tier 2/Tier 3 — not merely that S1c has. No frozen read
+happens before SENS reports. The primary lineage for every frozen read is **S1's**
+descendant chain (S1 → S1c-random → S2 → S3 → S4 → S5 → SENS, per rung's Tier-2/Tier-3
+outcome); if a secondary read of the S1b sensitivity arm is taken, it happens in the
+*same single Tier-4 pass*, reported side by side and explicitly labelled secondary,
+never substituted for the primary lineage's read.
 
 After the ladder is frozen, every ladder arm having run with
 `defer_test_eval: true` (no `test_*`/`ext_*` keys written during the ladder —
@@ -408,3 +518,9 @@ Phase 4 for the full dispatch sequence and the registry
 finalised once the previous rung has reported against the stopping rule above; that
 finalisation is recorded as an addendum to this document, never a silent edit to the
 tables above.
+
+**Corrected order (2026-08-24), superseding the sequence implied above:**
+`S1c-random → S2 → S3 → S4 → S5 → SENS` (Tier 2 + Tier 3 read between each block) →
+comparison notebook → Tier-4 frozen reads (S1 lineage primary, S1b secondary if taken) →
+matched-window `w3` arms. See `DOCS/flipped/PLAN.md` "Ladder state and corrected order
+(2026-08-24)" for the full state table and rationale.

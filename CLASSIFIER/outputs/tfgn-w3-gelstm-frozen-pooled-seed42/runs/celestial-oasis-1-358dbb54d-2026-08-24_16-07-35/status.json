@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-w3-gelstm-frozen-pooled-seed42",
+  "run_name": "celestial-oasis-1-358dbb54d-2026-08-24_16-07-35",
+  "state": "done",
+  "pid": 511950,
+  "host": "fritz",
+  "started_at": "2026-08-24T16:07:41",
+  "git_commit": "358dbb54d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T17:11:08",
+  "exit_code": 0,
+  "duration_seconds": 3807.0
+}

@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s1c-diag-loss-components",
+  "run_name": "classic-ocean-1-358dbb54d-2026-08-24_15-45-49",
+  "state": "done",
+  "pid": 504603,
+  "host": "fritz",
+  "started_at": "2026-08-24T15:45:55",
+  "git_commit": "358dbb54d",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T15:52:40",
+  "exit_code": 0,
+  "duration_seconds": 405.0
+}

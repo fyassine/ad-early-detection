@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s4-attnpool-pooled-seed44",
+  "run_name": "olive-field-1-358dbb54d-2026-08-24_17-41-38",
+  "state": "done",
+  "pid": 545226,
+  "host": "fritz",
+  "started_at": "2026-08-24T17:41:42",
+  "git_commit": "358dbb54d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T17:54:05",
+  "exit_code": 0,
+  "duration_seconds": 741.9
+}

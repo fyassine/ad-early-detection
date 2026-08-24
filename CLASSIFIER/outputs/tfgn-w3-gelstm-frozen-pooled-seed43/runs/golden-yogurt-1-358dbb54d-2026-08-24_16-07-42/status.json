@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-w3-gelstm-frozen-pooled-seed43",
+  "run_name": "golden-yogurt-1-358dbb54d-2026-08-24_16-07-42",
+  "state": "done",
+  "pid": 1342395,
+  "host": "frieda",
+  "started_at": "2026-08-24T16:07:53",
+  "git_commit": "358dbb54d",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T17:11:13",
+  "exit_code": 0,
+  "duration_seconds": 3799.6
+}

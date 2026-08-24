@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-w3-gelstm-random-pooled-seed43",
+  "run_name": "still-dawn-1-358dbb54d-2026-08-24_16-07-42",
+  "state": "done",
+  "pid": 1342525,
+  "host": "frieda",
+  "started_at": "2026-08-24T16:07:53",
+  "git_commit": "358dbb54d",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T16:57:49",
+  "exit_code": 0,
+  "duration_seconds": 2995.3
+}

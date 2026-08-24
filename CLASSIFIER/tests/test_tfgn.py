@@ -27,7 +27,9 @@ for _p in (str(_REPO_ROOT), str(_CLASSIFIER_ROOT)):
 
 from CLASSIFIER.adapters.tfgn import TFGNAdapter  # noqa: E402
 from CLASSIFIER.common.crossval import Bundle  # noqa: E402
+from CLASSIFIER.configs.tfgn import TFGNTrainConfig  # noqa: E402
 from CLASSIFIER.model.TFGN.dataset import (  # noqa: E402
+    TFGNItem,
     compute_change_mask,
     compute_drift_anchor,
     compute_strength_centrality,
@@ -50,6 +52,7 @@ from CLASSIFIER.model.TFGN.losses import (  # noqa: E402
     gate_sparsity_kl,
 )
 from CLASSIFIER.model.TFGN.models import TFGNClassifier  # noqa: E402
+from CLASSIFIER.model.TFGN.train import make_batches, train_epoch  # noqa: E402
 from SHARED.seeding import set_seed  # noqa: E402
 
 
@@ -301,6 +304,103 @@ def test_determinism_under_strict_seeding(tfgn_kwargs, synthetic_inputs):
     assert torch.equal(out1["logits"], out2["logits"])
     assert torch.equal(out1["gate_scores"], out2["gate_scores"])
     assert torch.equal(out1["mu_raw"], out2["mu_raw"])
+
+
+def _make_synthetic_tfgn_item(n_rois: int, kappa: float, gate_rho: float, tau_d: float, label: int) -> TFGNItem:
+    """Build a self-contained TFGNItem for train_epoch tests (bypasses
+    prepare_tfgn_item's LongitudinalSubjectDataset-dict input contract, since
+    these tests only need a valid item, not the full data-loading path)."""
+    T = 3
+    X = torch.randn(T, n_rois, n_rois)
+    change_mask = compute_change_mask(X, kappa=kappa)
+    strength_centrality = compute_strength_centrality(X[0])
+    drift_anchor = compute_drift_anchor(X, gate_rho=gate_rho, tau_d=tau_d)
+    A0_edge_index = torch.randint(0, n_rois, (2, 2 * n_rois))
+    A0_edge_attr = torch.randn(2 * n_rois)
+    return TFGNItem(
+        subject_id="synthetic",
+        label=label,
+        n_visits=T,
+        X=X,
+        log_dt=torch.randn(T),
+        A0_edge_index=A0_edge_index,
+        A0_edge_attr=A0_edge_attr,
+        change_mask=change_mask,
+        strength_centrality=strength_centrality,
+        drift_anchor=drift_anchor,
+        age=70.0,
+        sex=0,
+    )
+
+
+def test_train_epoch_loss_components_sum_to_total(tfgn_kwargs):
+    """train_epoch's returned per-term component means must sum to the returned
+    total loss — the loss-component diagnostic (S1c investigation) is purely
+    additive instrumentation, not a second accounting of the objective."""
+    set_seed(42, strict=False)
+    model = TFGNClassifier(**tfgn_kwargs)
+    items = [
+        _make_synthetic_tfgn_item(
+            n_rois=tfgn_kwargs["n_rois"], kappa=0.10, gate_rho=0.15, tau_d=0.05, label=i % 2
+        )
+        for i in range(4)
+    ]
+    batches = make_batches(items, batch_size=2, shuffle=False)
+    train_cfg = TFGNTrainConfig(
+        use_gate=True,
+        lambda_sparse=0.1,
+        lambda_drift=0.01,
+        gate_rho=0.15,
+        recon_target=tfgn_kwargs["recon_target"],
+        lambda_recon=1.0,
+        beta_kl=1.0,
+        free_bits=0.5,
+        beta_warmup_epochs=0,
+        change_mask_kappa=0.10,
+        lambda_cent=0.1,
+    )
+    criterion = torch.nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam(model.get_trainable_params(), lr=1e-3)
+
+    total_loss, components = train_epoch(
+        model, batches, optimizer, criterion, torch.device("cpu"), cfg=train_cfg, epoch=0
+    )
+
+    assert set(components) == {"bce", "recon", "kl", "gate_sparsity", "drift", "cent"}
+    assert abs(total_loss - sum(components.values())) < 1e-4
+
+
+def test_train_epoch_recon_component_zero_when_recon_target_none(tfgn_kwargs):
+    """recon_target='none' must report an exact-zero recon component, not just
+    skip it from the total — the diagnostic must not silently mask the case."""
+    set_seed(42, strict=False)
+    kwargs = tfgn_kwargs.copy()
+    kwargs["recon_target"] = "none"
+    model = TFGNClassifier(**kwargs)
+    items = [
+        _make_synthetic_tfgn_item(
+            n_rois=kwargs["n_rois"], kappa=0.10, gate_rho=0.15, tau_d=0.05, label=i % 2
+        )
+        for i in range(4)
+    ]
+    batches = make_batches(items, batch_size=2, shuffle=False)
+    train_cfg = TFGNTrainConfig(
+        use_gate=True,
+        lambda_sparse=0.1,
+        lambda_drift=0.01,
+        gate_rho=0.15,
+        recon_target="none",
+        beta_warmup_epochs=0,
+        lambda_cent=0.1,
+    )
+    criterion = torch.nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam(model.get_trainable_params(), lr=1e-3)
+
+    _, components = train_epoch(
+        model, batches, optimizer, criterion, torch.device("cpu"), cfg=train_cfg, epoch=0
+    )
+
+    assert components["recon"] == 0.0
 
 
 def test_build_model_with_recon_active_and_no_checkpoint_does_not_crash():

@@ -1,0 +1,11 @@
+{
+  "experiment_id": "tfgn-w3-winner-pooled-seed42",
+  "run_name": "sunny-lake-1-358dbb54d-2026-08-24_20-14-00",
+  "state": "running",
+  "pid": 564601,
+  "host": "fritz",
+  "started_at": "2026-08-24T20:14:06",
+  "git_commit": "358dbb54d",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb"
+}

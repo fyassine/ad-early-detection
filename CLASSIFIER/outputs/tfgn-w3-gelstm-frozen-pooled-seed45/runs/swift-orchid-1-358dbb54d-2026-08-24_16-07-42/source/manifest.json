@@ -1,0 +1,18 @@
+{
+  "copied": [
+    "CLASSIFIER/model/GELSTM/models.py",
+    "CLASSIFIER/model/GELSTM/dataset.py",
+    "CLASSIFIER/model/GELSTM/train.py",
+    "CLASSIFIER/model/GELSTM/utils.py",
+    "CLASSIFIER/model/GAAE/models.py",
+    "CLASSIFIER/configs/encoder.py",
+    "CLASSIFIER/adapters/gelstm.py"
+  ],
+  "missing": [],
+  "git": {
+    "commit": "358dbb54db35a8d190192ca24827d60064cf0d84",
+    "short_commit": "358dbb54d",
+    "branch": "feat/tfgn-flipped",
+    "dirty": true
+  }
+}

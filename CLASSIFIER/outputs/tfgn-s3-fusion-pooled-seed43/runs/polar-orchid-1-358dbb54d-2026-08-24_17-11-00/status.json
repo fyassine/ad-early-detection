@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s3-fusion-pooled-seed43",
+  "run_name": "polar-orchid-1-358dbb54d-2026-08-24_17-11-00",
+  "state": "done",
+  "pid": 1348490,
+  "host": "frieda",
+  "started_at": "2026-08-24T17:11:05",
+  "git_commit": "358dbb54d",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T17:31:57",
+  "exit_code": 0,
+  "duration_seconds": 1250.9
+}

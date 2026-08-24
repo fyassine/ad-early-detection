@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s1c-recon-random-pooled-seed44",
+  "run_name": "copper-valley-1-358dbb54d-2026-08-24_15-45-51",
+  "state": "done",
+  "pid": 1340526,
+  "host": "frieda",
+  "started_at": "2026-08-24T15:46:02",
+  "git_commit": "358dbb54d",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T16:18:45",
+  "exit_code": 0,
+  "duration_seconds": 1962.3
+}

@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s5-dualscore-pooled-seed43",
+  "run_name": "exalted-mountain-1-358dbb54d-2026-08-24_18-00-52",
+  "state": "done",
+  "pid": 1352944,
+  "host": "frieda",
+  "started_at": "2026-08-24T18:00:58",
+  "git_commit": "358dbb54d",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T18:29:05",
+  "exit_code": 0,
+  "duration_seconds": 1687.2
+}

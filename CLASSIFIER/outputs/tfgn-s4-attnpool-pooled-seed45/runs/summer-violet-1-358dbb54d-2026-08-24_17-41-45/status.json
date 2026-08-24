@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s4-attnpool-pooled-seed45",
+  "run_name": "summer-violet-1-358dbb54d-2026-08-24_17-41-45",
+  "state": "done",
+  "pid": 1351114,
+  "host": "frieda",
+  "started_at": "2026-08-24T17:41:50",
+  "git_commit": "358dbb54d",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T17:54:37",
+  "exit_code": 0,
+  "duration_seconds": 766.4
+}

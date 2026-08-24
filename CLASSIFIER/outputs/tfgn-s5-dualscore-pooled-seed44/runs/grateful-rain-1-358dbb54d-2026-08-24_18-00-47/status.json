@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s5-dualscore-pooled-seed44",
+  "run_name": "grateful-rain-1-358dbb54d-2026-08-24_18-00-47",
+  "state": "done",
+  "pid": 548946,
+  "host": "fritz",
+  "started_at": "2026-08-24T18:00:51",
+  "git_commit": "358dbb54d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T18:22:39",
+  "exit_code": 0,
+  "duration_seconds": 1308.1
+}

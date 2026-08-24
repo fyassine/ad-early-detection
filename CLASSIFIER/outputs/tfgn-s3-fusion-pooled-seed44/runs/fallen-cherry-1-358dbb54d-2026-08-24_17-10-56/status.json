@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s3-fusion-pooled-seed44",
+  "run_name": "fallen-cherry-1-358dbb54d-2026-08-24_17-10-56",
+  "state": "done",
+  "pid": 530289,
+  "host": "fritz",
+  "started_at": "2026-08-24T17:11:01",
+  "git_commit": "358dbb54d",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T17:30:24",
+  "exit_code": 0,
+  "duration_seconds": 1163.2
+}

@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s3-fusion-pooled-seed45",
+  "run_name": "autumn-surf-1-358dbb54d-2026-08-24_17-11-00",
+  "state": "done",
+  "pid": 1348555,
+  "host": "frieda",
+  "started_at": "2026-08-24T17:11:05",
+  "git_commit": "358dbb54d",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T17:28:48",
+  "exit_code": 0,
+  "duration_seconds": 1062.6
+}
