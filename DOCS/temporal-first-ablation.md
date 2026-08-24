@@ -100,7 +100,7 @@ rung a knob change from the previous rung — the same pattern as `encoder_init`
 | S1b `ssl` | `node_lstm_init: pretrained_finetuned` (self-supervised node-LSTM, see Phase 2 of the plan) | Does node-level forecasting pretraining help? **Dropped by Tier 2's one-SE tie-breaker — retained as a documented sensitivity arm, not primary.** |
 | S1c `recon` | `recon_target: delta_a_topk`, GVAE reconstruction losses on, **`node_lstm_init: random`** | Both encoders self-supervised → compare to **S0b**. **Headline arm.** The first `tfgn-s1c-recon-pooled` run used `pretrained_finetuned` and is recorded as undecidable (see "S1c (2026-08-24 run)" below); `tfgn-s1c-recon-random-pooled` is the protocol-valid re-run. |
 | S2 `gate` | `use_gate: true` + sparsity/drift anchors | Does suppressing static regions help? |
-| S3 `fusion` | `fusion: concat_residual` | Does preserving unsmoothed per-node H help? |
+| S3 `fusion` | `fusion: concat_residual` | Does preserving unsmoothed per-node H help? **Void, not rejected — the knob is inert without a `recon_target ≠ none` parent (see "Batch 5 verdicts" addendum below).** |
 | S4 `attnpool` | `readout: attention` | Does attentive pooling beat mean pooling? |
 | S5 `dualscore` | `dual_score: true` | Interpretability, zero risk to the backbone (kept regardless of AUC) |
 | SENS `minvisits3` | winning config, `min_visits: 3` | Does the flip's advantage grow with longer sequences? |
@@ -218,6 +218,54 @@ described above, not overwritten (`.claude/rules/gpu-dispatch.md`: never repoint
 existing id's `outputs/<id>/latest`). This re-run answers S0b↔S1c; S2 branches from
 whichever of S1 / S1c-random survives Tier 2.
 
+## Batch 5 verdicts (2026-08-24 addendum) — S5, S3, and the frozen-arm confirmation
+
+S2–S5, SENS, and the three matched-window `w3` arms all completed and reported against
+Tier 2/Tier 3 (full numbers and derivation: `DOCS/flipped/PLAN.md` "Ladder complete —
+verified scorecard and corrected verdicts"). Two of the verdicts in that read require a
+correction to how the stopping rule was applied, recorded here per this document's own
+"never a silent edit" rule — both are corrections to *interpretation*, not to any number.
+
+**S5 is kept, not rejected.** "The arms" table above already pre-registers S5 as
+*"Interpretability, zero risk to the backbone (kept regardless of AUC)"* — the keep/drop
+stopping rule in "The stopping rule" / Tier 2 does not apply to it by design. S5's
+fold-matched Δ vs S1 is −0.0046 ± 0.0067 (`|Δ| < SE`) — classification-neutral, which is
+exactly what "zero risk to the backbone" was pre-registered to mean. **Verdict: S5 is
+kept as the interpretability layer.** Applying the keep/drop rule to it and recording
+"rejected" — as an early read of the batch-5 scorecard did — contradicts this document's
+own S5 row and is corrected here before it propagates into the thesis write-up.
+
+**S3 is void, not rejected — the knob never executed.** `tfgn-s3-fusion-pooled` sets
+`fusion: concat_residual` on top of S1's `recon_target: none`. Under `recon_target:
+none`, `TFGNClassifier.__init__` never constructs a GVAE
+(`CLASSIFIER/model/TFGN/models.py:95-105`), so `self.fusion_module = None` and the
+forward pass takes `h_fused = h_T` regardless of `self.fusion`
+(`models.py:175-183`) — the fusion knob is dead code on this branch by construction, not
+by an unlucky training outcome. Verified, not inferred: S3's `oof_predictions.csv` is
+**bit-identical to S1's on all four seeds** (max `|Δprob| = 0.0e+00`), and every OOF
+metric matches to full precision. **Verdict: S3 is untestable at this rung** — it
+requires a `recon_target ≠ none` parent to have any effect, and the one available
+parent, S1c-random, already failed the stopping rule (fold-matched Δ = −0.1587,
+`DOCS/flipped/PLAN.md` §L). Recording S3 as "ran and failed the keep rule" — as an early
+scorecard read did — misrepresents a knob that had no gradient path to affect, not a
+knob that was tried and lost. **Do not re-run S3 under a `recon_target ≠ none` parent**
+without registering that as its own new rung; branching from S1c-random inherits its
+~0.20 AUC collapse and would answer nothing about fusion itself. One further correction
+that follows from the same fact: the winning config's own `fusion: z_only` string is
+*also* a no-op under `recon_target: none` (no GVAE, hence no latent `z` to select) —
+report the winning architecture as **node-shared LSTM → mean-pool → linear head**, with
+no graph-propagation stage, not as a model that uses a GVAE latent.
+
+**Frozen-arm decision, confirmed as executed.** Tier 4's "Gate restated" above commits
+to S1's lineage as primary with S1b eligible as a secondary read in the same pass. Given
+S5's classification-neutral verdict above, S5 was read as a **second secondary** in that
+same single Tier-4 pass (`FROZEN_WINNER_ID='tfgn-s1-flip-pooled'`,
+`SECONDARY_SENSITIVITY_ID=['tfgn-s1b-ssl-pooled','tfgn-s5-dualscore-pooled']`) —
+consistent with, not an extension of, the pre-registered gate: S5 was never a candidate
+for the primary lineage (Block B's own gate closed with no rung above S1 kept on AUC),
+so its Tier-4 number is reported as the interpretability layer's estimate, never as a
+competing classification endpoint. Full frozen-read numbers: `DOCS/flipped/PLAN.md` §L.
+
 ## Loss-component diagnostic (S1c investigation only, not a ladder decision)
 
 `CLASSIFIER/model/TFGN/train.py::train_epoch` returned only a scalar total loss, so the
@@ -314,6 +362,34 @@ reinterpreted after the fact.
 The aggregation notebook additionally reports the gate map and the S5 quadrant scatter
 **split by cohort** regardless of the probe's outcome.
 
+**Addendum (2026-08-24) — the escalation trigger fired, and the remedy did not work.**
+`cohort_probe_auc` was above the 0.75 threshold on every TFGN arm from the first ladder
+runs onward (S1: 0.860 ± 0.007; every other TFGN rung 0.84–0.89), unnoticed against this
+section's own threshold until the Tier-4 frozen read pulled every arm's numbers together
+(`DOCS/flipped/PLAN.md` §L) — a genuine process gap, not a data problem: the probe was
+computed and persisted correctly at every step, it simply was never read against this
+section's rule until then. The pre-registered remedy was then run exactly as specified —
+`tfgn-s1-advcohort-pooled-seed{42..45}`, `cohort_conditioning: "adversarial"`, a
+gradient-reversal cohort head attached to the same pooled patient embedding the probe
+scores (`CLASSIFIER/model/TFGN/layers.py::grad_reverse`, `CohortAdversaryHead`) — and
+**it did not work**: pooled OOF AUC dropped 0.7488 → 0.7066 (Tier-2 fold-matched ratio
+−8.68, a clear loss, not noise), and `cohort_probe_auc` **rose** to 0.9411 ± 0.0131 — the
+diagnostic this remedy exists to suppress moved in the wrong direction. Full numbers,
+the under-powered-reversal hypothesis for why (stated as a hypothesis, not confirmed —
+no gradient-magnitude comparison was run), and the decision not to sweep
+`cohort_adv_lambda` further: `DOCS/flipped/PLAN.md` §M.
+
+**Verdict, closing this section's own rule.** The escalation was attempted, not skipped,
+and it failed on both the classification axis and the diagnostic it targeted. No further
+GPU work follows from it under this plan. The OASIS-3 external-transfer number
+(0.4892 ± 0.0224, n=60 — indistinguishable from chance) is reported as an **open
+limitation with a tried-and-failed mitigation attached**, not as an unexplored trigger
+and not as a solved problem: cohort-invariant representation learning under this pooling
+protocol remains open. This section's threshold and remedy were fixed in advance
+precisely so this outcome could not be quietly reinterpreted after the fact — it is
+recorded here as specified, not as a reason to relax the 0.75 threshold or substitute a
+different remedy retroactively.
+
 ## Gate-map validation (S2, S5) — pre-registered so it survives an underperforming rung
 
 Fixed now, independent of whether S2/S5 clear the stopping rule on AUC, because a gate
@@ -331,6 +407,39 @@ artifact, and that question must not be quietly dropped if the AUC story is nega
 This mirrors the repeatability caveat already flagged for saliency-style outputs in
 medical imaging in the original architecture proposal — it is mandatory, not optional,
 precisely because saliency maps routinely fail this check silently.
+
+**Addendum (2026-08-24) — quadrant temporal-axis decision.** S2 (the learned temporal
+saliency gate) failed the stopping rule (`DOCS/flipped/PLAN.md` §L: fold-matched Δ vs
+S1 = −0.0064 ± 0.0075), so the winning arm carries no learned gate and S5's
+`dual_scores.npy` supplies only `s_topo` — the 2×2 quadrant scatter this section
+pre-registers needs a second, temporal axis and none was fixed in advance for this case.
+**Decision: the temporal axis is the model-free rank-sigmoid drift anchor `d̃`**
+(`compute_drift_anchor` in `CLASSIFIER/model/TFGN/dataset.py`, already defined in
+"Anchoring quantities" above), computed offline from each subject's `X` with no
+checkpoint and no GPU. Two reasons this is the better of the two candidates, not just
+the cheaper one: it requires no import from a rejected rung's artifacts (S2's own
+`gate_scores.npy` would need its rejection re-litigated as "about AUC, not map
+validity" every time the quadrant map is cited), and it keeps the pre-registered
+permutation-null / stability / per-cohort validation above targeting one learned axis
+(`s_topo`) against one measured axis (`d̃`) rather than two learned axes from arms with
+different fates. S2's `gate_scores.npy` is still reported as a **supporting panel**
+alongside the primary quadrant map, with its rejection stated plainly next to it — not
+silently dropped, not silently promoted to the primary axis.
+
+**Addendum (2026-08-24) — cross-fold Spearman reduced to cross-seed.** This section
+pre-registers "Spearman correlation of the gate vector `s` across the 5 folds × 4 seeds
+(20 gate vectors)." `TFGNAdapter.extra_artifacts` (`CLASSIFIER/adapters/tfgn.py`)
+persists only the **winning fold's** map per run — `gate_scores.npy` / `dual_scores.npy`
+are `(50, 200)`, one fold's validation subjects, per seed — so only 4 maps exist per
+rung (one per seed), not 20. The pre-registered statistic as written is **not
+computable** from the artifacts this ladder produced. **Deviation: report cross-*seed*
+Spearman over the 4 available best-fold maps** (S5 for `s_topo`, the offline `d̃`
+computation for the temporal axis) instead of cross-fold. This is a genuine reduction in
+statistical power for the stability claim, stated here rather than silently substituted;
+it costs no GPU time and no re-run. If a reviewer requires the full cross-fold
+statistic, the fix is a `fold_probe` addition to persist per-fold maps and a 4-seed
+re-run of S5 (`DOCS/flipped/PLAN.md` §C) — not attempted here, and not required to close
+out this ladder.
 
 ## Determinism
 
