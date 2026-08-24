@@ -1,0 +1,15 @@
+{
+  "seed": 42,
+  "epochs": 100,
+  "lr": 0.001,
+  "weight_decay": 0.0,
+  "batch_size": 16,
+  "grad_clip": 1.0,
+  "early_stopping_patience": 20,
+  "n_rois": 200,
+  "lstm_hidden": 64,
+  "lstm_layers": 1,
+  "lstm_dropout": 0.3,
+  "use_time_delta": true,
+  "adjacency_k": 8
+}

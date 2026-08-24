@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-nodelstm-ssl-pooled",
+  "run_name": "morning-violet-1-fa30969e6-2026-08-24_08-36-00",
+  "state": "done",
+  "pid": 171230,
+  "host": "fritz",
+  "started_at": "2026-08-24T08:36:04",
+  "git_commit": "fa30969e6",
+  "git_dirty": true,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_TFGN_SSL_POOLED.ipynb",
+  "finished_at": "2026-08-24T08:38:48",
+  "exit_code": 0,
+  "duration_seconds": 163.4
+}
