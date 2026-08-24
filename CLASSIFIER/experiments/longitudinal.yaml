@@ -127,3 +127,17 @@ experiments:
     checkpoint_path: notebooks/checkpoints/checkpoints_vgae_whole_brain/VGAE_GAT_ANTICOLLAPSE.pth
     threshold_mode: best-f1
     notes: GEP head on the pooled anti-collapse VGAE(GAT) embedding.
+
+  # DOCS/flipped/PLAN.md Phase 2 (P2) — self-supervised node-shared LSTM pretraining
+  # (next-visit FC-row forecasting) over the pooled ADNI+DELCODE pretrain split.
+  # No adapter contract (no labels/CV/threshold) — mode is 'pretrain', not
+  # 'longitudinal', so build_parameter_dict does not inject an ADAPTER param.
+  # Produces the checkpoint consumed by TFGN's node_lstm_init=pretrained_* arms.
+  - id: tfgn-nodelstm-ssl-pooled
+    mode: pretrain
+    model: TFGN
+    dataset: POOLED_PRETRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_TFGN_SSL_POOLED.ipynb
+    config_path: configs/tfgn_nodelstm_ssl_pooled.json
+    notes: Node-shared LSTM SSL pretrain (next-visit FC-row forecasting) — feeds node_lstm_init.
