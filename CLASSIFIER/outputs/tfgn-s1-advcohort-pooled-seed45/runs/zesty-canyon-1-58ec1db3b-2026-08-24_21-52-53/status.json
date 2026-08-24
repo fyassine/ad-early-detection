@@ -1,0 +1,14 @@
+{
+  "experiment_id": "tfgn-s1-advcohort-pooled-seed45",
+  "run_name": "zesty-canyon-1-58ec1db3b-2026-08-24_21-52-53",
+  "state": "done",
+  "pid": 1367179,
+  "host": "frieda",
+  "started_at": "2026-08-24T21:52:59",
+  "git_commit": "58ec1db3b",
+  "git_dirty": false,
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T22:09:02",
+  "exit_code": 0,
+  "duration_seconds": 962.5
+}

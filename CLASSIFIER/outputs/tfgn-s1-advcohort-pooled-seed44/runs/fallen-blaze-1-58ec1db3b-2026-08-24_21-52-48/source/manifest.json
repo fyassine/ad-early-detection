@@ -1,0 +1,18 @@
+{
+  "copied": [
+    "CLASSIFIER/model/TFGN/models.py",
+    "CLASSIFIER/model/TFGN/dataset.py",
+    "CLASSIFIER/model/TFGN/layers.py",
+    "CLASSIFIER/model/TFGN/losses.py",
+    "CLASSIFIER/model/TFGN/train.py",
+    "CLASSIFIER/configs/tfgn.py",
+    "CLASSIFIER/adapters/tfgn.py"
+  ],
+  "missing": [],
+  "git": {
+    "commit": "c0075c711d84a7a7a8601598ab4f8712973b6fd2",
+    "short_commit": "c0075c711",
+    "branch": "feat/tfgn-flipped",
+    "dirty": true
+  }
+}
