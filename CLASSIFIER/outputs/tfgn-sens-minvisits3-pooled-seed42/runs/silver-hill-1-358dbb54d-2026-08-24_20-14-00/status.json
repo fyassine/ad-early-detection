@@ -1,11 +1,14 @@
 {
   "experiment_id": "tfgn-sens-minvisits3-pooled-seed42",
   "run_name": "silver-hill-1-358dbb54d-2026-08-24_20-14-00",
-  "state": "running",
+  "state": "done",
   "pid": 564388,
   "host": "fritz",
   "started_at": "2026-08-24T20:14:06",
   "git_commit": "358dbb54d",
   "git_dirty": false,
-  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb"
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T20:22:59",
+  "exit_code": 0,
+  "duration_seconds": 532.8
 }

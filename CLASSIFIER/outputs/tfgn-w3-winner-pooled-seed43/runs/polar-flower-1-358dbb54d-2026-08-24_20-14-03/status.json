@@ -1,11 +1,14 @@
 {
   "experiment_id": "tfgn-w3-winner-pooled-seed43",
   "run_name": "polar-flower-1-358dbb54d-2026-08-24_20-14-03",
-  "state": "running",
+  "state": "done",
   "pid": 1359976,
   "host": "frieda",
   "started_at": "2026-08-24T20:14:11",
   "git_commit": "358dbb54d",
   "git_dirty": false,
-  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb"
+  "notebook": "notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-24T20:34:06",
+  "exit_code": 0,
+  "duration_seconds": 1194.8
 }

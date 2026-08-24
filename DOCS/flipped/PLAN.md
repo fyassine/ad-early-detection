@@ -299,9 +299,9 @@ seeds 42/43/44/45.
 | **S1b** | `tfgn-s1b-ssl-pooled` | `node_lstm_init: pretrained_finetuned` (P2) | Does node-LSTM SSL forecasting help? **Dropped by Tier 2's one-SE tie-breaker — sensitivity arm, not primary.** |
 | **S1c** | `tfgn-s1c-recon-pooled` (original, invalid) / `tfgn-s1c-recon-random-pooled` (re-run) | `recon_target: delta_a_topk`, `lambda_recon`, `beta_kl` + free bits + warmup; `node_lstm_init: random` in the re-run | **Headline arm: both encoders self-supervised → compare to S0b.** The original run inherited `pretrained_finetuned` from the since-reversed S1b fork and is recorded as undecidable; the re-run is protocol-valid. |
 | **S2** | `tfgn-s2-gate-pooled` | `use_gate: true`, `lambda_sparse`, `lambda_drift = 0.1·λ_sparse`, `gate_rho: 0.15` | Does suppressing static regions help? Branches from **S1**. |
-| **S3** | `tfgn-s3-fusion-pooled` | `fusion: concat_residual` | Does preserving unsmoothed H help? |
+| **S3** | `tfgn-s3-fusion-pooled` | `fusion: concat_residual` | Does preserving unsmoothed H help? **VOID — the knob is inert under `recon_target: none`; the run reproduced S1 bit-for-bit. See "Ladder complete" below.** |
 | **S4** | `tfgn-s4-attnpool-pooled` | `readout: attention` | Does attentive pooling beat mean pooling? |
-| **S5** | `tfgn-s5-dualscore-pooled` | `dual_score: true`, `lambda_cent` | Interpretability at zero risk to the backbone |
+| **S5** | `tfgn-s5-dualscore-pooled` | `dual_score: true`, `lambda_cent` | Interpretability at zero risk to the backbone. **Kept regardless of AUC by pre-registration — the stopping rule does not apply to it.** |
 | **SENS** | `tfgn-sens-minvisits3-pooled` | winning config, `min_visits: 3` | Does the flip's advantage grow with sequence length? |
 
 **Why S0c and S1c exist.** Without them the flip is handicapped: S0b's GAAE is
@@ -474,7 +474,9 @@ this section carries the state forward into the execution plan.
    Tier 4, after SENS reports, per `DOCS/temporal-first-ablation.md`'s restated Tier-4
    gate.
 
-**Corrected order, superseding Phase 4's original run-order list:**
+**Corrected order, superseding Phase 4's original run-order list** (this block is itself
+superseded by "Ladder complete — verified scorecard and corrected verdicts" below, now
+that every rung has reported)**:**
 
 ```
 tfgn-s1c-recon-random-pooled (S1c re-run, branches from S1)
@@ -560,7 +562,221 @@ that asymmetry would surface.
 
 ---
 
+## Ladder complete — verified scorecard and corrected verdicts (2026-08-24, batch 5)
+
+S2–S5, SENS and the three W3 matched-window arms have all reported. Every number below
+was recomputed from `oof_predictions.csv` (per-subject, per-fold), not from any run's own
+summary line. This section supersedes the "Corrected order" block above; the Tier-4
+frozen read is now the only unfinished step, and four things must be fixed first.
+
+### Verified scorecard (pooled CV OOF, mean ± SD over seeds 42–45)
+
+| arm | N | pooled OOF AUC | ADNI | DELCODE | bal. acc | static N=1 |
+|---|---|---|---|---|---|---|
+| S0-demo (age+sex) | 248 | 0.5296 ± 0.0000 | 0.5162 | 0.5186 | 0.5139 | 0.5296 |
+| S0c gelstm-random | 248 | 0.5625 ± 0.0292 | 0.5348 | 0.6067 | 0.5631 | 0.5140 |
+| S0d BrainTokenGT | 248 | 0.6207 ± 0.0338 | 0.6194 | 0.6217 | 0.5889 | 0.5353 |
+| S0a logreg-drift | 248 | 0.7053 ± 0.0000 | 0.5564 | 0.9129 | 0.6776 | 0.5653 |
+| S0b gelstm-frozen | 248 | 0.7186 ± 0.0334 | 0.4971 | 0.9178 | 0.6505 | 0.4699 |
+| **S1 flip (winner)** | 248 | **0.7488 ± 0.0033** | 0.6526 | 0.8741 | 0.7093 | 0.4919 |
+| S1b ssl (sensitivity) | 248 | 0.7502 ± 0.0125 | 0.6624 | 0.8707 | 0.7037 | 0.5072 |
+| S1c recon-random | 248 | 0.5433 ± 0.0311 | 0.5335 | 0.5589 | 0.5477 | 0.5213 |
+| S2 gate | 248 | 0.7308 ± 0.0160 | 0.6266 | 0.8700 | 0.6811 | 0.4969 |
+| S3 fusion | 248 | 0.7488 ± 0.0033 | 0.6526 | 0.8741 | 0.7093 | 0.4919 |
+| S4 attn-pool | 248 | 0.6490 ± 0.0144 | 0.5415 | 0.8022 | 0.6111 | 0.5197 |
+| S5 dual-score | 248 | 0.7331 ± 0.0173 | 0.6460 | 0.8530 | 0.6885 | 0.5010 |
+| SENS (min_visits=3) | 140 | 0.7413 ± 0.0137 | 0.6328 | 0.8986 | 0.6907 | 0.5469 |
+| W3 gelstm-random | 248 | 0.5885 ± 0.0304 | 0.5564 | 0.6385 | 0.5541 | 0.5190 |
+| W3 gelstm-frozen | 248 | 0.7500 ± 0.0138 | 0.5848 | 0.9075 | 0.7000 | 0.5013 |
+| W3 TFGN-winner | 248 | 0.7318 ± 0.0348 | 0.6584 | 0.8342 | 0.6756 | 0.4880 |
+
+Report **SD** across seeds, as above. The batch-5 scorecard mixed SD and SE in the same
+column (S1 as "± 0.0028" is neither) — one convention, stated in the caption.
+
+### Tier-2 statistics, every rung against S1
+
+| contrast | fold-matched Δ ± SE (ratio) | pooled Δ ± SE (ratio) | verdict |
+|---|---|---|---|
+| S1b vs S1 | +0.0120 ± 0.0019 (+6.46) | +0.0014 ± 0.0074 (+0.19) | disagree → one-SE tie-breaker → **S1** |
+| S1c-random vs S1 | −0.1587 ± 0.0099 (−15.98) | −0.2055 ± 0.0150 (−13.72) | dropped |
+| S2 gate vs S1 | −0.0064 ± 0.0075 (−0.85) | −0.0180 ± 0.0086 (−2.08) | dropped |
+| S3 fusion vs S1 | +0.0000 ± 0.0000 | +0.0000 ± 0.0000 | **VOID — not a result** |
+| S4 attn-pool vs S1 | −0.0558 ± 0.0058 (−9.60) | −0.0999 ± 0.0083 (−11.96) | dropped |
+| S5 dual-score vs S1 | −0.0046 ± 0.0067 (−0.68) | −0.0158 ± 0.0101 (−1.56) | **kept — see A below** |
+
+### A. S5 is kept, not rejected
+
+`DOCS/temporal-first-ablation.md:105` pre-registers S5 as *"Interpretability, zero risk
+to the backbone (**kept regardless of AUC**)"*. The keep/drop stopping rule does not
+apply to it, and applying it retroactively is exactly the post-hoc rule change Phase 0
+exists to prevent. The correct record, to be written into both the doc and the
+comparison notebook:
+
+> S5 is **classification-neutral**: fold-matched Δ = −0.0046 ± 0.0067, i.e. |Δ| < SE —
+> indistinguishable from zero, which is what "zero risk to the backbone" was
+> pre-registered to mean. It is **kept as the interpretability layer**, and the §0.1d
+> validation runs on its outputs regardless of the AUC delta.
+
+**Frozen-arm decision, fixed here before `RUN_FROZEN_READ` is flipped:** the Tier-4
+frozen arm is **S1** for the headline classification number, with **S5's artifacts
+analysed on OOF only**. Rationale: S1 is the arm the ladder selected under the
+pre-registered rule; S5's Δ is neutral but negative in both statistics, and freezing a
+strictly-worse-in-expectation arm to get artifacts that are already available OOF buys
+nothing. S5 is read at Tier 4 as a *secondary* arm in the same single pass (alongside
+S1b), never substituted for the primary. Set `FROZEN_WINNER_ID =
+'tfgn-s1-flip-pooled'`, `SECONDARY_SENSITIVITY_ID = 'tfgn-s1b-ssl-pooled'`.
+
+### B. S3 is void, not rejected — the knob never executed
+
+`tfgn-s3-fusion-pooled` sets `fusion: concat_residual` **with `recon_target: none`**.
+Under `recon_target: none` the model builds no GVAE (`model/TFGN/models.py:95-105`),
+`self.fusion_module = None`, and the forward pass takes `h_fused = h_T` regardless of
+`self.fusion` (`models.py:175-183`). The knob is dead code on that branch. Verified, not
+inferred: S3's `oof_predictions.csv` is **bit-identical to S1's** on all four seeds
+(max |Δprob| = 0.0e+00), and every OOF metric matches to full precision.
+
+So S3's row in the batch-5 scorecard is S1's number relabelled. Record it as
+**"not testable at this rung — the fusion knob is inert without a latent `z`; requires a
+`recon_target ≠ none` parent, which S1c-random ruled out"**, never as "ran and failed the
+keep rule". The same fact is the cosmetic annotation the winner's config needs: the
+winner's `fusion: z_only` is likewise a no-op under `recon_target: none` — annotate the
+config string so no reader concludes the winning model uses a GVAE latent. It does not;
+the winning TFGN is node-LSTM → mean-pool → linear head, with no graph propagation stage
+at all. That is a substantive finding about the architecture and belongs in the results
+text, not a footnote.
+
+**Do not re-run S3 under a recon parent.** S1c-random (`recon_target: delta_a_topk`,
+0.5433) collapses ~0.20 AUC below S1; any S3 branching from it inherits that collapse and
+answers nothing. The honest record is that the fusion question is unanswerable within
+this ladder, because its prerequisite rung failed.
+
+### C. The quadrant map's temporal axis — decision
+
+S2's rejection leaves the winner with no learned gate, so S5's `dual_scores.npy` supplies
+`s_topo` but no `s_temp`. **Decision: use the model-free rank-sigmoid drift anchor `d̃`
+as the temporal axis** — one learned axis (S5's `s_topo`), one measured axis (`d̃`).
+Reasons it is the better of the two options: it is pre-registered already (§0.1c), it is
+computable offline with **zero GPU cost** from
+`model/TFGN/dataset.py::compute_drift_anchor` (a pure function of `X`, no checkpoint
+needed), and it does not require importing a map from a rejected arm and then arguing the
+rejection was "about AUC, not map validity". S2's `gate_scores.npy` is reported
+**alongside** it as a supporting panel, with the rejection stated explicitly — not as the
+primary axis.
+
+Run the §0.1d validation (permutation null over 1 000 label permutations with the
+DMN/hippocampal overlap percentile, cross-map Spearman stability, and both split per
+cohort) on the (`s_topo`, `d̃`) pair.
+
+**Artifact limitation, to be recorded as a documented deviation:** `adapters/tfgn.py`'s
+`extra_artifacts` persists only the **best fold's** maps — `dual_scores.npy` and
+`gate_scores.npy` are `(50, 200)`, one fold's validation subjects, per seed. The
+pre-registered "cross-fold Spearman across 5 folds × 4 seeds" therefore cannot be
+computed from existing artifacts. Two options, in preference order:
+
+1. **Report cross-*seed* Spearman over the 4 best-fold maps** and record the reduction as
+   a deviation in `DOCS/temporal-first-ablation.md`. Zero GPU cost. Recommended — the
+   stability claim survives in weakened form and the deviation is stated.
+2. Add a `fold_probe` that persists per-fold maps and re-run S5 (4 runs, ~2 h). Only
+   worth it if a reviewer challenges option 1.
+
+### D. Housekeeping — verified
+
+- **S0b checkpoint provenance: confirmed correct.** All four S0b seeds (and all four W3
+  gelstm-frozen seeds) record `gaae_run_name =
+  dark-surf-2-gaae-pretrain-pooled-adni-delcode-2026-08-24_08-23-22_2026-08-24_10-43-31`
+  — the pooled checkpoint, not `ethereal-planet-16`. The S0b↔S1c contrast rests on a
+  valid pointer. No action.
+- **P1's "failed" status is cosmetic** (full 500 epochs, val loss 0.018795, checkpoint
+  saved; papermill died on a plotting cell). Confirmed by the provenance check above.
+
+### E. SENS reads better than "direction-only" — but not in the direction claimed
+
+SENS's 140 subjects are a strict subset of S1's 248. Restricting **S1's own OOF
+predictions** to those same 140 subjects gives, per seed:
+
+| seed | S1 restricted to the ≥3-visit subjects | SENS (trained on ≥3-visit only) |
+|---|---|---|
+| 42 | 0.7762 | 0.7385 |
+| 43 | 0.7656 | 0.7499 |
+| 44 | 0.7603 | 0.7230 |
+| 45 | 0.7825 | 0.7535 |
+| mean | **0.7712** | **0.7412** |
+
+Two separable statements, and the batch-5 write-up conflated them:
+
+1. **The ≥3-visit subgroup is easier** — S1 scores 0.7712 on them vs 0.7488 on the full
+   pool. This *is* the pre-registered "does the advantage grow with sequence length"
+   signal, and it is positive.
+2. **Training only on ≥3-visit subjects is worse** — 0.7412 vs 0.7712 on identical
+   subjects. Shrinking the pool 248 → 140 costs more than the longer sequences gain.
+
+Report both, with (1) as the sequence-length evidence and (2) as a sample-size result.
+Keep the pre-registered "too small to decide on its own" language on both. Do **not**
+report SENS's 0.7413 next to S1's 0.7488 as a like-for-like row — different N, different
+subjects, not fold-matched.
+
+### F. The matched-window head-to-head — TFGN loses to spatial-first
+
+This is the batch-5 result most in need of stating plainly, and the write-up omitted it:
+
+| arm (T ∈ [2,3]) | pooled OOF AUC |
+|---|---|
+| BrainTokenGT (S0d) | 0.6207 ± 0.0338 |
+| W3 GELSTM-random | 0.5885 ± 0.0304 |
+| **W3 GELSTM-frozen** | **0.7500 ± 0.0138** |
+| W3 TFGN-winner | 0.7318 ± 0.0348 |
+
+Fold-matched: **W3-TFGN vs W3-GELSTM-frozen = −0.0244 ± 0.0027 (ratio −8.94)** — a
+consistent loss across all four seeds, well outside noise. W3-TFGN vs BrainTokenGT =
++0.0999 ± 0.0162 (+6.17) — a clean win over the SOTA competitor.
+
+The honest framing, which Table A must carry: **under the competitor's short-window
+constraint the temporal-first flip loses its advantage over spatial-first.** TFGN's win
+in Table B (0.7488 vs 0.7186, full trajectory) comes from the visits the window throws
+away — which is precisely the claim Table B was built to make, and this is the
+confirmation of it, not a contradiction. State it as such: the flip's gain is a
+*long-sequence* gain. Never present Table A's TFGN row without its GELSTM-frozen
+neighbour.
+
+### Next steps, in order
+
+1. **Docs first, no GPU.** Write A–F into `DOCS/temporal-first-ablation.md` as a
+   "Batch 5 verdicts (2026-08-24)" addendum: S5 kept (classification-neutral); S3 void
+   with the `models.py:175-183` inertness citation and the bit-identity evidence; the
+   quadrant temporal-axis decision (`d̃`); the cross-fold → cross-seed Spearman
+   deviation; the frozen-arm decision (S1 primary, S5 + S1b secondary).
+2. **Comparison notebook.** Uncomment and complete `RUNG_PREFIXES` with `S2_gate`,
+   `S3_fusion`, `S4_attnpool`, `S5_dualscore`, `SENS`, and the three `W3_*` arms — S2–S4
+   must appear in the rung table with their Δ ± SE, or the ladder reads as if only the
+   working rungs were run. Mark S3's row VOID in the table itself, not only in prose.
+   Add the SENS-restricted-comparison cell (§E) and Table A/Table B (§F).
+3. **§0.1d interpretability validation** on (`s_topo` from S5, `d̃` computed offline) —
+   permutation null, cross-seed Spearman, per-cohort split, and the 2×2 quadrant scatter
+   with S2's gate map as a supporting panel. This is now the *entire* interpretability
+   contribution, since every performance rung above S1 was dropped.
+4. **Tier-4 frozen read — the last step, once 1–3 are done.** One pass:
+   `RUN_FROZEN_READ = True`, `FROZEN_WINNER_ID = 'tfgn-s1-flip-pooled'`,
+   `SECONDARY_SENSITIVITY_ID = 'tfgn-s1b-ssl-pooled'`, plus S5 as a second secondary.
+   In-domain n=64 and OASIS-3 n=60, scored at each seed's own OOF threshold. The guard
+   cell in the notebook stays; flip the gate exactly once.
+5. **Block B gate: closed.** Per Phase 5's own wording, the gate is a cumulative gain
+   from S1c-random through S5 exceeding the SE of the seed-level differences. The chain
+   delivered −0.1587 (S1c-random), −0.0064 (S2), void (S3), −0.0558 (S4), −0.0046 (S5).
+   No rung above S1 was kept. **Block B does not run.** Write Phase 5's own stated
+   conclusion — signal quality and sample size, not capacity, are the bottleneck — as a
+   thesis result rather than scaling to 300k parameters.
+6. `python scripts/run_checks.py` once before hand-off; commit the currently-dirty
+   notebook/status artifacts in `CLASSIFIER/outputs/` from the SENS and W3 runs.
+
+No further GPU runs are required to finish the ladder. The only remaining compute is the
+single Tier-4 frozen-read pass, which is CPU-side scoring of saved checkpoints.
+
+---
+
 ## Phase 5 — Block B (written now, run only if Block A clears the rule)
+
+> **Gate evaluated 2026-08-24: CLOSED — Block B does not run.** No rung above S1 was
+> kept; see "Ladder complete" §Next steps item 5 above for the derivation.
 
 Gate: **S1c-random–S5 must show a cumulative gain (OOF, Tier 2 fold-matched statistic)
 exceeding the SE of the seed-level differences, read only after SENS reports** — per
