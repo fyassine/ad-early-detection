@@ -1390,3 +1390,97 @@ experiments:
 
 
 
+
+# ── Cohort-shift escalation: adversarial conditioning (post-ladder, additive) ──
+# DOCS/flipped/PLAN.md "Ladder complete" section L: every TFGN arm's
+# cohort_probe_auc sits at ~0.86, exceeding Phase 3's pre-registered 0.75
+# escalation threshold, and Tier-4's frozen OASIS-3 read came back at chance
+# (0.4892 +/- 0.0224). Branches from S1 (tfgn-s1-flip-pooled, the primary
+# arm) with only cohort_conditioning switched to "adversarial" -- every other
+# knob is configs/tfgn_pooled.json's default, unchanged. Tests whether
+# removing the cohort-identity shortcut (gradient-reversal head,
+# model/TFGN/layers.py::CohortAdversaryHead) recovers external transfer.
+# Read on OOF/cohort_probe_auc first (Tier 1-3, cheap); OASIS-3 gets its own
+# separate one-shot frozen read if and when this arm is judged worth it --
+# never folded into the already-spent S1/S1b/S5 pass.
+
+  - id: tfgn-s1-advcohort-pooled-seed42
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      cohort_conditioning: adversarial
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "Escalation 1/4: S1 + cohort_conditioning=adversarial. Tests whether removing the cohort shortcut (cohort_probe_auc~0.86) recovers OASIS-3 transfer."
+
+  - id: tfgn-s1-advcohort-pooled-seed43
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 43
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      cohort_conditioning: adversarial
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "Escalation 2/4."
+
+  - id: tfgn-s1-advcohort-pooled-seed44
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 44
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      cohort_conditioning: adversarial
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "Escalation 3/4."
+
+  - id: tfgn-s1-advcohort-pooled-seed45
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 45
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      cohort_conditioning: adversarial
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "Escalation 4/4."
+
+  - id: tfgn-s1-advcohort-smoke
+    mode: longitudinal
+    model: TFGN
+    dataset: POOLED_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/LONGITUDINAL/LONGITUDINAL_COMMON_DELCODE.ipynb
+    adapter: tfgn
+    config_path: configs/tfgn_pooled.json
+    hyperparams:
+      cohort_conditioning: adversarial
+      epochs: 2
+      external_test_cohort: oasis3
+      min_visits: 2
+      defer_test_eval: true
+    threshold_mode: best-f1
+    notes: "Smoke test (2 epochs, non-ladder): confirms cohort_conditioning=adversarial trains end to end before dispatching the real 4-seed block. Never re-run once it passes."

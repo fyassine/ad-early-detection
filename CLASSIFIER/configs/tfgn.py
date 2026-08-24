@@ -56,8 +56,14 @@ class TFGNTrainConfig:
     dual_score: bool = True
     lambda_cent: float = 0.1
     tau: float = 0.05
-    cohort_conditioning: str = "none"
-    encoder_init: Optional[str] = None  # GVAE encoder arm: "pretrained_frozen" | "pretrained_finetuned" | "random" | "none"
+    cohort_conditioning: str = "none"  # "none" | "adversarial"
+    cohort_adv_lambda: float = 1.0  # gradient-reversal strength once warmed up
+    cohort_adv_warmup_epochs: float = (
+        5.0  # linear ramp 0 -> cohort_adv_lambda, mirrors beta_warmup_epochs
+    )
+    encoder_init: Optional[str] = (
+        None  # GVAE encoder arm: "pretrained_frozen" | "pretrained_finetuned" | "random" | "none"
+    )
     gvae_ckpt_path: Optional[str] = None
 
 

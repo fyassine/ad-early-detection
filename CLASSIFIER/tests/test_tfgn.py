@@ -37,16 +37,19 @@ from CLASSIFIER.model.TFGN.dataset import (  # noqa: E402
 )
 from CLASSIFIER.model.TFGN.layers import (  # noqa: E402
     AttentivePool,
+    CohortAdversaryHead,
     ConcatResidualFusion,
     DualScoreReadout,
     GVAEEncoder,
     NodeSharedLSTM,
     TemporalSaliencyGate,
+    grad_reverse,
     sparsemax,
 )
 from CLASSIFIER.model.TFGN.losses import (  # noqa: E402
     centrality_anchor_mse,
     change_mask_bce,
+    cohort_adversarial_bce,
     drift_anchor_mse,
     free_bits_kl,
     gate_sparsity_kl,
@@ -266,10 +269,12 @@ def test_z_only_none_recon_still_backpropagates_to_lstm(tfgn_kwargs, synthetic_i
     loss = out["logits"].sum()
     loss.backward()
 
-    lstm_grad_norm = sum(p.grad.norm().item() for p in model.lstm.parameters() if p.grad is not None)
-    assert lstm_grad_norm > 0.0, (
-        "Classification gradient failed to reach LSTM under fusion='z_only', recon_target='none'"
+    lstm_grad_norm = sum(
+        p.grad.norm().item() for p in model.lstm.parameters() if p.grad is not None
     )
+    assert (
+        lstm_grad_norm > 0.0
+    ), "Classification gradient failed to reach LSTM under fusion='z_only', recon_target='none'"
 
 
 def test_z_only_backpropagates_to_lstm(tfgn_kwargs, synthetic_inputs):
@@ -284,8 +289,12 @@ def test_z_only_backpropagates_to_lstm(tfgn_kwargs, synthetic_inputs):
     loss = out["logits"].sum()
     loss.backward()
 
-    lstm_grad_norm = sum(p.grad.norm().item() for p in model.lstm.parameters() if p.grad is not None)
-    assert lstm_grad_norm > 0.0, "Classification gradient failed to reach LSTM under fusion='z_only'"
+    lstm_grad_norm = sum(
+        p.grad.norm().item() for p in model.lstm.parameters() if p.grad is not None
+    )
+    assert (
+        lstm_grad_norm > 0.0
+    ), "Classification gradient failed to reach LSTM under fusion='z_only'"
 
 
 def test_determinism_under_strict_seeding(tfgn_kwargs, synthetic_inputs):
@@ -306,7 +315,9 @@ def test_determinism_under_strict_seeding(tfgn_kwargs, synthetic_inputs):
     assert torch.equal(out1["mu_raw"], out2["mu_raw"])
 
 
-def _make_synthetic_tfgn_item(n_rois: int, kappa: float, gate_rho: float, tau_d: float, label: int) -> TFGNItem:
+def _make_synthetic_tfgn_item(
+    n_rois: int, kappa: float, gate_rho: float, tau_d: float, label: int, cohort: str = "adni"
+) -> TFGNItem:
     """Build a self-contained TFGNItem for train_epoch tests (bypasses
     prepare_tfgn_item's LongitudinalSubjectDataset-dict input contract, since
     these tests only need a valid item, not the full data-loading path)."""
@@ -330,6 +341,7 @@ def _make_synthetic_tfgn_item(n_rois: int, kappa: float, gate_rho: float, tau_d:
         drift_anchor=drift_anchor,
         age=70.0,
         sex=0,
+        cohort=cohort,
     )
 
 
@@ -366,7 +378,7 @@ def test_train_epoch_loss_components_sum_to_total(tfgn_kwargs):
         model, batches, optimizer, criterion, torch.device("cpu"), cfg=train_cfg, epoch=0
     )
 
-    assert set(components) == {"bce", "recon", "kl", "gate_sparsity", "drift", "cent"}
+    assert set(components) == {"bce", "recon", "kl", "gate_sparsity", "drift", "cent", "cohort_adv"}
     assert abs(total_loss - sum(components.values())) < 1e-4
 
 
@@ -487,3 +499,154 @@ def test_patient_embeddings_hook():
     embs = adapter.patient_embeddings(state, bundle, device="cpu")
     assert isinstance(embs, np.ndarray)
     assert embs.shape == (4, 8)
+
+
+# ── Cohort-adversary conditioning (PLAN.md section L escalation) ───────────
+
+
+def test_cohort_conditioning_invalid_raises(tfgn_kwargs):
+    """'film' is documented in PLAN.md Phase 3 as an option but was never
+    implemented -- must raise, not silently build a 'none' model."""
+    with pytest.raises(ValueError, match="cohort_conditioning"):
+        TFGNClassifier(**tfgn_kwargs, cohort_conditioning="film")
+
+
+def test_cohort_head_built_only_when_adversarial(tfgn_kwargs):
+    kwargs = tfgn_kwargs
+    none_model = TFGNClassifier(**kwargs, cohort_conditioning="none")
+    assert none_model.cohort_head is None
+
+    adv_model = TFGNClassifier(**kwargs, cohort_conditioning="adversarial")
+    assert isinstance(adv_model.cohort_head, CohortAdversaryHead)
+
+
+def test_gradient_reversal_negates_and_scales_gradient():
+    """Forward is identity; backward negates the incoming gradient and scales
+    it by lambda_ -- the entire adversarial effect lives here, not in the loss."""
+    x = torch.randn(5, requires_grad=True)
+    lambda_ = 0.37
+    y = grad_reverse(x, lambda_)
+    assert torch.equal(y.detach(), x.detach())
+
+    upstream_grad = torch.randn(5)
+    y.backward(upstream_grad)
+    assert torch.allclose(x.grad, -lambda_ * upstream_grad)
+
+
+def test_forward_returns_cohort_logit_when_adversarial(tfgn_kwargs, synthetic_inputs):
+    X, log_dt, A0_edge_index, A0_edge_attr, cond_vec = synthetic_inputs
+    kwargs = tfgn_kwargs.copy()
+    model = TFGNClassifier(**kwargs, cohort_conditioning="adversarial")
+    out = model(X, log_dt, A0_edge_index, A0_edge_attr, cond_vec, cohort_adv_lambda=1.0)
+    assert out["cohort_logit"] is not None
+    assert out["cohort_logit"].shape == out["logits"].shape
+
+    none_model = TFGNClassifier(**kwargs, cohort_conditioning="none")
+    out_none = none_model(X, log_dt, A0_edge_index, A0_edge_attr, cond_vec)
+    assert out_none["cohort_logit"] is None
+
+
+def test_train_epoch_cohort_adversarial_loss_present(tfgn_kwargs):
+    """With cohort_conditioning='adversarial', the cohort_adv component must be
+    nonzero and must contribute to the returned total (mirrors the existing
+    sum-to-total contract test, restricted to this one config)."""
+    set_seed(42, strict=False)
+    model = TFGNClassifier(**tfgn_kwargs, cohort_conditioning="adversarial")
+    items = [
+        _make_synthetic_tfgn_item(
+            n_rois=tfgn_kwargs["n_rois"],
+            kappa=0.10,
+            gate_rho=0.15,
+            tau_d=0.05,
+            label=i % 2,
+            cohort="adni" if i % 2 == 0 else "delcode",
+        )
+        for i in range(4)
+    ]
+    batches = make_batches(items, batch_size=2, shuffle=False)
+    train_cfg = TFGNTrainConfig(
+        recon_target=tfgn_kwargs["recon_target"],
+        beta_warmup_epochs=0,
+        cohort_conditioning="adversarial",
+        cohort_adv_lambda=1.0,
+        cohort_adv_warmup_epochs=0,
+    )
+    criterion = torch.nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam(model.get_trainable_params(), lr=1e-3)
+
+    total_loss, components = train_epoch(
+        model, batches, optimizer, criterion, torch.device("cpu"), cfg=train_cfg, epoch=0
+    )
+
+    assert components["cohort_adv"] > 0.0
+    assert abs(total_loss - sum(components.values())) < 1e-4
+
+
+def test_train_epoch_cohort_adv_zero_when_conditioning_none(tfgn_kwargs):
+    """The default arm (cohort_conditioning='none') must report an exact-zero
+    cohort_adv component, not just skip it -- same contract as recon_target='none'."""
+    set_seed(42, strict=False)
+    model = TFGNClassifier(**tfgn_kwargs, cohort_conditioning="none")
+    items = [
+        _make_synthetic_tfgn_item(
+            n_rois=tfgn_kwargs["n_rois"], kappa=0.10, gate_rho=0.15, tau_d=0.05, label=i % 2
+        )
+        for i in range(4)
+    ]
+    batches = make_batches(items, batch_size=2, shuffle=False)
+    train_cfg = TFGNTrainConfig(
+        recon_target=tfgn_kwargs["recon_target"],
+        beta_warmup_epochs=0,
+        cohort_conditioning="none",
+    )
+    criterion = torch.nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam(model.get_trainable_params(), lr=1e-3)
+
+    _, components = train_epoch(
+        model, batches, optimizer, criterion, torch.device("cpu"), cfg=train_cfg, epoch=0
+    )
+    assert components["cohort_adv"] == 0.0
+
+
+def test_train_epoch_rejects_unmapped_cohort_under_adversarial(tfgn_kwargs):
+    """OASIS-3 (or any cohort outside {adni, delcode}) must never train through
+    the adversarial head -- it must stay fully external (PLAN.md 'Decisions
+    already fixed'). Fail loud, not silently skip or mis-encode."""
+    set_seed(42, strict=False)
+    model = TFGNClassifier(**tfgn_kwargs, cohort_conditioning="adversarial")
+    items = [
+        _make_synthetic_tfgn_item(
+            n_rois=tfgn_kwargs["n_rois"],
+            kappa=0.10,
+            gate_rho=0.15,
+            tau_d=0.05,
+            label=0,
+            cohort="oasis3",
+        )
+    ]
+    batches = make_batches(items, batch_size=1, shuffle=False)
+    train_cfg = TFGNTrainConfig(
+        recon_target=tfgn_kwargs["recon_target"],
+        beta_warmup_epochs=0,
+        cohort_conditioning="adversarial",
+        cohort_adv_warmup_epochs=0,
+    )
+    criterion = torch.nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam(model.get_trainable_params(), lr=1e-3)
+
+    with pytest.raises(ValueError, match="oasis3"):
+        train_epoch(
+            model, batches, optimizer, criterion, torch.device("cpu"), cfg=train_cfg, epoch=0
+        )
+
+
+def test_cohort_adversarial_bce_shape_and_type_guards():
+    logits = torch.randn(3)
+    labels = torch.tensor([0.0, 1.0, 0.0])
+    loss = cohort_adversarial_bce(logits, labels)
+    assert loss.item() >= 0.0
+
+    with pytest.raises(ValueError):
+        cohort_adversarial_bce(logits, labels[:2])
+    with pytest.raises(ValueError):
+        cohort_adversarial_bce([1.0, 2.0], labels)

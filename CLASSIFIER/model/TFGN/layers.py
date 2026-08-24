@@ -61,9 +61,7 @@ class NodeSharedLSTM(nn.Module):
             batch_first=True,
         )
 
-    def forward(
-        self, x: torch.Tensor, log_dt: Optional[torch.Tensor] = None
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, log_dt: Optional[torch.Tensor] = None) -> torch.Tensor:
         """Parameters
         ----------
         x : torch.Tensor
@@ -192,9 +190,7 @@ class GVAEEncoder(nn.Module):
             return edge_attr.unsqueeze(-1)
         return edge_attr
 
-    def reparameterize(
-        self, mu: torch.Tensor, logvar: torch.Tensor
-    ) -> torch.Tensor:
+    def reparameterize(self, mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
         """Sample from the variational distribution if training, else return mu."""
         if self.training:
             std = torch.exp(0.5 * logvar)
@@ -255,9 +251,7 @@ class GVAEEncoder(nn.Module):
 class ConcatResidualFusion(nn.Module):
     """Concatenates hidden state and latent vectors, projects, and applies LayerNorm."""
 
-    def __init__(
-        self, h_dim: int, z_dim: int, out_dim: int | None = None
-    ) -> None:
+    def __init__(self, h_dim: int, z_dim: int, out_dim: int | None = None) -> None:
         super().__init__()
         out_dim = out_dim if out_dim is not None else h_dim
         self.W_u = nn.Linear(h_dim + z_dim, out_dim)
@@ -325,3 +319,53 @@ class DualScoreReadout(nn.Module):
         if self.use_dual and self.topo_head is not None and h_nodes is not None:
             s_topo = self.topo_head(h_nodes).squeeze(-1)
         return cls_logit, s_topo
+
+
+class _GradientReversal(torch.autograd.Function):
+    """Identity on the forward pass, negates and scales the gradient on backward.
+
+    Standard DANN (Ganin & Lempitsev 2015) trick: placing this between a
+    representation and a domain/cohort classifier turns "minimize cohort CE"
+    into "maximize cohort CE from the representation's perspective" without
+    needing a separate min-max optimizer loop -- the classifier's own gradient
+    descent step, run through this function, does the adversarial update.
+    """
+
+    @staticmethod
+    def forward(ctx, x: torch.Tensor, lambda_: float) -> torch.Tensor:
+        ctx.lambda_ = lambda_
+        return x.view_as(x)
+
+    @staticmethod
+    def backward(ctx, grad_output: torch.Tensor):
+        return grad_output.neg() * ctx.lambda_, None
+
+
+def grad_reverse(x: torch.Tensor, lambda_: float = 1.0) -> torch.Tensor:
+    """Apply the gradient-reversal layer with reversal strength ``lambda_``."""
+    return _GradientReversal.apply(x, lambda_)
+
+
+class CohortAdversaryHead(nn.Module):
+    """Binary cohort (ADNI vs. DELCODE) classifier for adversarial conditioning.
+
+    Consumes the patient-pooled embedding through a gradient-reversal layer
+    (``grad_reverse`` — applied by the caller, not here, so the reversal
+    strength can be warmed up per-epoch like ``beta_kl``) and predicts cohort
+    identity. Trained normally (minimize CE); the reversed gradient is what
+    pushes the *upstream* encoder toward cohort-invariant representations.
+    Two cohorts only — OASIS-3 is never in the pooled training set
+    (`DOCS/flipped/PLAN.md` "Decisions already fixed": kept fully external),
+    so this is a binary head, not a 3-way one.
+    """
+
+    def __init__(self, hidden_dim: int, adv_hidden: int = 32) -> None:
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(hidden_dim, adv_hidden),
+            nn.ReLU(),
+            nn.Linear(adv_hidden, 1),
+        )
+
+    def forward(self, h_pooled: torch.Tensor) -> torch.Tensor:
+        return self.net(h_pooled).squeeze(-1)

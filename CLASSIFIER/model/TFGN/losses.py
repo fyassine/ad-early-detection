@@ -121,3 +121,25 @@ def free_bits_kl(mu: torch.Tensor, logvar: torch.Tensor, free_bits: float = 0.5)
     if not isinstance(mu, torch.Tensor) or not isinstance(logvar, torch.Tensor):
         raise ValueError("Inputs must be torch.Tensors")
     return kl_divergence(mu, logvar, free_bits=free_bits)
+
+
+def cohort_adversarial_bce(logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+    """BCE for the cohort-adversary head.
+
+    Ordinary (unweighted) BCE forward pass -- the adversarial effect comes
+    entirely from the gradient-reversal layer applied upstream of this head's
+    input, not from anything in this loss. Two cohorts, so ``labels`` is a
+    0/1 float tensor (see ``model.TFGN.layers.CohortAdversaryHead``).
+
+    Args:
+        logits: cohort-classification logit(s), any shape
+        labels: binary cohort labels, matching shape
+
+    Returns:
+        Scalar BCEWithLogitsLoss.
+    """
+    if not isinstance(logits, torch.Tensor) or not isinstance(labels, torch.Tensor):
+        raise ValueError("Inputs must be torch.Tensors")
+    if logits.shape != labels.shape:
+        raise ValueError(f"Shape mismatch: {logits.shape} vs {labels.shape}")
+    return F.binary_cross_entropy_with_logits(logits, labels.float())

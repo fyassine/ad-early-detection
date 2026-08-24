@@ -24,11 +24,13 @@ for _p in (str(_REPO_ROOT), str(_ROOT)):
 
 from .layers import (  # noqa: E402
     AttentivePool,
+    CohortAdversaryHead,
     ConcatResidualFusion,
     DualScoreReadout,
     GVAEEncoder,
     NodeSharedLSTM,
     TemporalSaliencyGate,
+    grad_reverse,
 )
 
 
@@ -53,12 +55,16 @@ class TFGNClassifier(nn.Module):
         fusion: str = "concat_residual",
         readout: str = "attention",
         dual_score: bool = True,
+        cohort_conditioning: str = "none",
+        cohort_adv_hidden: int = 32,
     ):
         super().__init__()
 
         valid_recon_targets = ("delta_a_topk", "delta_a_mse", "a_last", "none")
         if recon_target not in valid_recon_targets:
-            raise ValueError(f"Unknown recon_target '{recon_target}'. Valid options: {valid_recon_targets}")
+            raise ValueError(
+                f"Unknown recon_target '{recon_target}'. Valid options: {valid_recon_targets}"
+            )
 
         valid_fusions = ("concat_residual", "z_only")
         if fusion not in valid_fusions:
@@ -68,6 +74,15 @@ class TFGNClassifier(nn.Module):
         if readout not in valid_readouts:
             raise ValueError(f"Unknown readout '{readout}'. Valid options: {valid_readouts}")
 
+        valid_cohort_conditioning = ("none", "adversarial")
+        if cohort_conditioning not in valid_cohort_conditioning:
+            raise ValueError(
+                f"Unknown cohort_conditioning '{cohort_conditioning}'. Valid options: "
+                f"{valid_cohort_conditioning}. Note: 'film' is documented in "
+                "DOCS/flipped/PLAN.md Phase 3 as a design option but was never "
+                "implemented -- do not pass it expecting FiLM conditioning to happen."
+            )
+
         self.n_rois = n_rois
         self.lstm_hidden = lstm_hidden
         self.use_time_delta = use_time_delta
@@ -76,6 +91,7 @@ class TFGNClassifier(nn.Module):
         self.fusion = fusion
         self.readout = readout
         self.dual_score = dual_score
+        self.cohort_conditioning = cohort_conditioning
 
         # 1. Node-shared LSTM: processes per-node temporal FC profiles (+ log Δt)
         self.lstm = NodeSharedLSTM(
@@ -133,6 +149,16 @@ class TFGNClassifier(nn.Module):
             use_dual=self.dual_score,
         )
 
+        # 7. Cohort-adversary head (gradient-reversal, ADNI vs. DELCODE) -- only
+        # built when explicitly requested; adds no parameters or forward cost
+        # to every arm that isn't testing this escalation.
+        if self.cohort_conditioning == "adversarial":
+            self.cohort_head = CohortAdversaryHead(
+                hidden_dim=readout_dim, adv_hidden=cohort_adv_hidden
+            )
+        else:
+            self.cohort_head = None
+
     def _encode_sequence(
         self,
         X: torch.Tensor,
@@ -141,7 +167,7 @@ class TFGNClassifier(nn.Module):
         A0_edge_attr: Optional[torch.Tensor],
         cond_vec: Optional[torch.Tensor],
     ) -> Dict[str, Optional[torch.Tensor]]:
-        is_single = (X.dim() == 3)
+        is_single = X.dim() == 3
         if is_single:
             X_expanded = X.unsqueeze(0)  # (1, T, N, N)
             log_dt_expanded = log_dt.unsqueeze(0) if log_dt is not None else None
@@ -219,6 +245,7 @@ class TFGNClassifier(nn.Module):
         A0_edge_index: torch.Tensor = None,
         A0_edge_attr: Optional[torch.Tensor] = None,
         cond_vec: Optional[torch.Tensor] = None,
+        cohort_adv_lambda: float = 1.0,
     ) -> Dict[str, Optional[torch.Tensor]]:
         enc = self._encode_sequence(X, log_dt, A0_edge_index, A0_edge_attr, cond_vec)
         h_pooled = enc["h_pooled"]
@@ -227,10 +254,19 @@ class TFGNClassifier(nn.Module):
 
         logits, s_topo = self.cls_head(h_pooled, h_fused)
 
+        cohort_logit = None
+        if self.cohort_head is not None:
+            # Reversal happens on the backward pass only -- see _GradientReversal.
+            # cohort_adv_lambda is the caller's per-epoch warmed-up value (mirrors
+            # how beta_kl_eff is computed externally in train.py), not stored state.
+            cohort_logit = self.cohort_head(grad_reverse(h_pooled, cohort_adv_lambda))
+
         if is_single:
             logits = logits.unsqueeze(0)
             if s_topo is not None:
                 s_topo = s_topo.squeeze(0) if s_topo.dim() > 1 else s_topo
+            if cohort_logit is not None:
+                cohort_logit = cohort_logit.unsqueeze(0)
 
         return {
             "logits": logits,
@@ -240,6 +276,7 @@ class TFGNClassifier(nn.Module):
             "logvar": enc["logvar"],
             "mu_raw": enc["mu_raw"],
             "recon_logits": enc["recon_logits"],
+            "cohort_logit": cohort_logit,
         }
 
     # ── Freeze / unfreeze / load helpers ────────────────────────────────────
@@ -254,7 +291,11 @@ class TFGNClassifier(nn.Module):
 
     def load_node_lstm_weights(self, ckpt_path: str, device: str | torch.device = "cpu") -> None:
         ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
-        sd = ckpt["model_state_dict"] if isinstance(ckpt, dict) and "model_state_dict" in ckpt else ckpt
+        sd = (
+            ckpt["model_state_dict"]
+            if isinstance(ckpt, dict) and "model_state_dict" in ckpt
+            else ckpt
+        )
         own_sd = self.lstm.state_dict()
         to_load = {k: v for k, v in sd.items() if k in own_sd and v.shape == own_sd[k].shape}
         own_sd.update(to_load)
@@ -274,7 +315,11 @@ class TFGNClassifier(nn.Module):
         if self.gvae is None:
             raise ValueError("Cannot load GVAE weights when recon_target='none' (no GVAE built).")
         ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
-        sd = ckpt["model_state_dict"] if isinstance(ckpt, dict) and "model_state_dict" in ckpt else ckpt
+        sd = (
+            ckpt["model_state_dict"]
+            if isinstance(ckpt, dict) and "model_state_dict" in ckpt
+            else ckpt
+        )
         own_sd = self.gvae.state_dict()
         to_load = {k: v for k, v in sd.items() if k in own_sd and v.shape == own_sd[k].shape}
         own_sd.update(to_load)

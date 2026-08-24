@@ -86,6 +86,8 @@ class TFGNAdapter(LongitudinalAdapter):
         self.lambda_cent = c.get("lambda_cent", 0.1)
         self.tau = c.get("tau", 0.05)
         self.cohort_conditioning = c.get("cohort_conditioning", "none")
+        self.cohort_adv_lambda = c.get("cohort_adv_lambda", 1.0)
+        self.cohort_adv_warmup_epochs = c.get("cohort_adv_warmup_epochs", 5.0)
 
         # Encoder arm (GVAE init)
         self.encoder_init = resolve_encoder_init(c.get("encoder_init"), c.get("freeze_encoder"))
@@ -126,6 +128,7 @@ class TFGNAdapter(LongitudinalAdapter):
             fusion=self.fusion,
             readout=self.readout,
             dual_score=self.dual_score,
+            cohort_conditioning=self.cohort_conditioning,
         ).to(self.device)
 
         # Handle node_lstm_init arm
@@ -262,6 +265,9 @@ class TFGNAdapter(LongitudinalAdapter):
             change_mask_kappa=self.change_mask_kappa,
             lambda_cent=self.lambda_cent,
             use_gate=self.use_gate,
+            cohort_conditioning=self.cohort_conditioning,
+            cohort_adv_lambda=self.cohort_adv_lambda,
+            cohort_adv_warmup_epochs=self.cohort_adv_warmup_epochs,
         )
         eval_cfg = TFGNEvalConfig()
 
@@ -495,6 +501,8 @@ class TFGNAdapter(LongitudinalAdapter):
             "tau": self.tau,
             "encoder_init": self.encoder_init,
             "cohort_conditioning": self.cohort_conditioning,
+            "cohort_adv_lambda": self.cohort_adv_lambda,
+            "cohort_adv_warmup_epochs": self.cohort_adv_warmup_epochs,
             "min_visits": self.min_visits,
             "max_visits": self.max_visits,
         }
