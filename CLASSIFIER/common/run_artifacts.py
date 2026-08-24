@@ -51,6 +51,7 @@ def save_run(
     source_files: Sequence[str | Path],
     n_folds: int,
     model_tag: str = "sample",
+    checkpoint_extras: Dict[str, Any] | None = None,
 ) -> Tuple[str, Path]:
     """Persist a completed run and return ``(run_name, run_dir)``.
 
@@ -63,6 +64,11 @@ def save_run(
       * ``source/`` + ``git_commit.txt`` — code snapshot of ``source_files``.
       * ``run_summary.json``          — the run ledger (test metrics patched later
                                         via :func:`record_test_metrics`).
+
+    ``checkpoint_extras`` (from the adapter's :meth:`checkpoint_extras` hook) is
+    merged into the top level of the full-state checkpoint. It carries non-weight
+    state the adapter's ``load_state`` needs back — per-fold normalisation
+    statistics, above all — which ``model_state`` deliberately cannot hold.
     """
     import torch  # local import keeps the module importable without torch loaded eagerly
 
@@ -88,6 +94,7 @@ def save_run(
         best_fold=int(best_fold),
         gaae_checkpoint=gaae_checkpoint,
         run_name=run_name,
+        **(checkpoint_extras or {}),
     )
 
     snapshot_source(run_dir_path, list(source_files))

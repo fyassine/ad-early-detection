@@ -88,9 +88,7 @@ class TFGNAdapter(LongitudinalAdapter):
         self.cohort_conditioning = c.get("cohort_conditioning", "none")
 
         # Encoder arm (GVAE init)
-        self.encoder_init = resolve_encoder_init(
-            c.get("encoder_init"), c.get("freeze_encoder")
-        )
+        self.encoder_init = resolve_encoder_init(c.get("encoder_init"), c.get("freeze_encoder"))
         self.encoder_arm_info = encoder_arm(self.encoder_init)
         self.gvae_ckpt_path = c.get("gvae_ckpt_path") or self.gaae_ckpt_path
 
@@ -131,7 +129,10 @@ class TFGNAdapter(LongitudinalAdapter):
         ).to(self.device)
 
         # Handle node_lstm_init arm
-        if self.node_lstm_init in ("pretrained_frozen", "pretrained_finetuned") and self.node_lstm_ckpt_path:
+        if (
+            self.node_lstm_init in ("pretrained_frozen", "pretrained_finetuned")
+            and self.node_lstm_ckpt_path
+        ):
             m.load_node_lstm_weights(self.node_lstm_ckpt_path, device=self.device)
             if self.node_lstm_init == "pretrained_frozen":
                 m.freeze_node_lstm()
@@ -212,16 +213,12 @@ class TFGNAdapter(LongitudinalAdapter):
         va_items = self._prepare_tfgn_items(va_items_raw)
 
         # Fit log_dt StandardScaler on training items
-        all_log_dt = np.concatenate(
-            [it.log_dt.numpy() for it in tr_items], axis=0
-        )
+        all_log_dt = np.concatenate([it.log_dt.numpy() for it in tr_items], axis=0)
         log_dt_scaler = StandardScaler()
         log_dt_scaler.fit(all_log_dt.reshape(-1, 1))
 
         # Fit centrality z-scoring on training items
-        all_cent = np.concatenate(
-            [it.strength_centrality.numpy() for it in tr_items], axis=0
-        )
+        all_cent = np.concatenate([it.strength_centrality.numpy() for it in tr_items], axis=0)
         cent_mean = float(all_cent.mean())
         cent_std = float(max(all_cent.std(), 1e-8))
 
@@ -270,9 +267,7 @@ class TFGNAdapter(LongitudinalAdapter):
 
         best_auc, best_state, no_improve = 0.0, None, 0
         for epoch in range(self.epochs):
-            tr_batches = make_batches(
-                tr_items, self.batch_size, shuffle=True, rng=rng
-            )
+            tr_batches = make_batches(tr_items, self.batch_size, shuffle=True, rng=rng)
             va_batches = make_batches(va_items, self.batch_size, shuffle=False)
             train_loss, train_loss_components = train_epoch(
                 model,
@@ -293,10 +288,7 @@ class TFGNAdapter(LongitudinalAdapter):
                         "train_loss": train_loss,
                         "val_auc": va["auc"],
                         "val_f1": va["f1"],
-                        **{
-                            f"train_loss_{k}": v
-                            for k, v in train_loss_components.items()
-                        },
+                        **{f"train_loss_{k}": v for k, v in train_loss_components.items()},
                     }
                 )
             if va["auc"] > best_auc:
@@ -325,10 +317,7 @@ class TFGNAdapter(LongitudinalAdapter):
         }
         return {
             "state_dict": state,
-            "val_metrics": {
-                k: final_va[k]
-                for k in ("auc", "sensitivity", "specificity", "f1")
-            },
+            "val_metrics": {k: final_va[k] for k in ("auc", "sensitivity", "specificity", "f1")},
             "best_threshold": final_va["best_threshold"],
             "oof_probs": final_va["probs"],
             "oof_targets": final_va["targets"],
@@ -344,9 +333,7 @@ class TFGNAdapter(LongitudinalAdapter):
             self._cached_model, self._cached_state_id = m, id(state)
         return self._cached_model
 
-    def _apply_state_normalization(
-        self, items: List[TFGNItem], state: Dict
-    ) -> None:
+    def _apply_state_normalization(self, items: List[TFGNItem], state: Dict) -> None:
         """Apply the winning fold's standardization to items in-place."""
         log_dt_mean = np.array(state["log_dt_scaler_mean"])
         log_dt_scale = np.array(state["log_dt_scaler_scale"])
@@ -356,11 +343,11 @@ class TFGNAdapter(LongitudinalAdapter):
             raw = it.log_dt.numpy().reshape(-1, 1)
             normed = (raw - log_dt_mean) / log_dt_scale
             it.log_dt = torch.tensor(normed.ravel(), dtype=torch.float32)
-            it.strength_centrality = (
-                it.strength_centrality - cent_mean
-            ) / cent_std
+            it.strength_centrality = (it.strength_centrality - cent_mean) / cent_std
 
-    def patient_embeddings(self, state: Dict[str, Any], bundle: Bundle, *, device: Any) -> np.ndarray:
+    def patient_embeddings(
+        self, state: Dict[str, Any], bundle: Bundle, *, device: Any
+    ) -> np.ndarray:
         """Encode each subject into a pooled patient embedding vector for the cohort probe."""
         model = self._model_for_state(state)
         tfgn_items = self._prepare_tfgn_items(bundle.items)
@@ -369,9 +356,7 @@ class TFGNAdapter(LongitudinalAdapter):
         model.eval()
         with torch.no_grad():
             for it in tfgn_items:
-                cond = torch.tensor(
-                    [[it.age, float(it.sex)]], dtype=torch.float32, device=device
-                )
+                cond = torch.tensor([[it.age, float(it.sex)]], dtype=torch.float32, device=device)
                 A0_ea = it.A0_edge_attr.to(device) if it.A0_edge_attr is not None else None
                 emb = model.encode_patient(
                     it.X.to(device),
@@ -383,16 +368,12 @@ class TFGNAdapter(LongitudinalAdapter):
                 embs.append(emb.cpu().numpy().ravel())
         return np.stack(embs, axis=0)
 
-    def eval_split(
-        self, state, bundle, threshold, *, device
-    ) -> Dict[str, Any]:
+    def eval_split(self, state, bundle, threshold, *, device) -> Dict[str, Any]:
         model = self._model_for_state(state)
         tfgn_items = self._prepare_tfgn_items(bundle.items)
         self._apply_state_normalization(tfgn_items, state)
         batches = make_batches(tfgn_items, self.batch_size, shuffle=False)
-        eval_cfg = TFGNEvalConfig(
-            threshold_mode="fixed", fixed_threshold=threshold
-        )
+        eval_cfg = TFGNEvalConfig(threshold_mode="fixed", fixed_threshold=threshold)
         res = evaluate(model, batches, device, eval_cfg=eval_cfg)
 
         # Collect gate scores, dual scores, and cohort tags for extra_artifacts
@@ -402,9 +383,7 @@ class TFGNAdapter(LongitudinalAdapter):
         model.eval()
         with torch.no_grad():
             for it in tfgn_items:
-                cond = torch.tensor(
-                    [[it.age, float(it.sex)]], dtype=torch.float32, device=device
-                )
+                cond = torch.tensor([[it.age, float(it.sex)]], dtype=torch.float32, device=device)
                 A0_ea = it.A0_edge_attr.to(device) if it.A0_edge_attr is not None else None
                 out = model(
                     it.X.to(device),
@@ -469,9 +448,7 @@ class TFGNAdapter(LongitudinalAdapter):
                 tfgn_item.log_dt = tfgn_item.log_dt.to(device)
                 tfgn_item.A0_edge_index = tfgn_item.A0_edge_index.to(device)
                 if tfgn_item.A0_edge_attr is not None:
-                    tfgn_item.A0_edge_attr = tfgn_item.A0_edge_attr.to(
-                        device
-                    )
+                    tfgn_item.A0_edge_attr = tfgn_item.A0_edge_attr.to(device)
                 cond = torch.tensor(
                     [[tfgn_item.age, float(tfgn_item.sex)]],
                     dtype=torch.float32,
@@ -534,8 +511,35 @@ class TFGNAdapter(LongitudinalAdapter):
             root / "adapters" / "tfgn.py",
         ]
 
+    #: Non-weight entries of the composite ``state`` that ``load_state`` needs back.
+    #: Single source of truth for the save/load round trip — see
+    #: ``checkpoint_extras`` and ``load_state`` below, which both read it.
+    STATE_NORMALIZATION_KEYS = (
+        "log_dt_scaler_mean",
+        "log_dt_scaler_scale",
+        "cent_mean",
+        "cent_std",
+    )
+
     def model_state_for_save(self, state) -> Dict[str, Any]:
         return state["model_state"]
+
+    def checkpoint_extras(self, state) -> Dict[str, Any]:
+        """Persist the winning fold's normalisation statistics into the checkpoint.
+
+        ``_apply_state_normalization`` re-applies the *training* fold's ``log Δt``
+        scaler and centrality z-scoring to any split scored later, so a frozen read
+        is only valid if these four numbers survive the save. They are not model
+        weights, so ``model_state_for_save`` cannot carry them.
+        """
+        missing = [k for k in self.STATE_NORMALIZATION_KEYS if k not in state]
+        if missing:
+            raise ValueError(
+                f"TFGN state is missing normalization statistics {missing}. "
+                "train_fold must return them alongside 'model_state' — without "
+                "them the checkpoint cannot be re-scored on a held-out split."
+            )
+        return {k: state[k] for k in self.STATE_NORMALIZATION_KEYS}
 
     def extra_artifacts(self, run_dir, state) -> None:
         run_dir = Path(run_dir)
@@ -554,13 +558,22 @@ class TFGNAdapter(LongitudinalAdapter):
         ckpt = load_run_checkpoint(run_dir, device=self.device)
         model_state = model_state_from_checkpoint(ckpt)
         state = {"model_state": model_state}
-        if isinstance(ckpt, dict):
-            for key in (
-                "log_dt_scaler_mean",
-                "log_dt_scaler_scale",
-                "cent_mean",
-                "cent_std",
-            ):
-                if key in ckpt:
-                    state[key] = ckpt[key]
+        if not isinstance(ckpt, dict):
+            raise ValueError(
+                f"{run_dir}: checkpoint is a bare state dict, not a full-state "
+                "checkpoint — it carries no normalization statistics and cannot be "
+                "re-scored on a held-out split."
+            )
+        missing = [k for k in self.STATE_NORMALIZATION_KEYS if k not in ckpt]
+        if missing:
+            raise KeyError(
+                f"{run_dir}: checkpoint is missing normalization statistics "
+                f"{missing}. Runs saved before `checkpoint_extras` was wired do not "
+                "carry them; scoring without them would silently apply the wrong "
+                "feature scaling. Backfill the checkpoint from the winning fold's "
+                "training split first — see `scripts/backfill_tfgn_norm_stats.py` "
+                "and DOCS/flipped/PLAN.md section G."
+            )
+        for key in self.STATE_NORMALIZATION_KEYS:
+            state[key] = ckpt[key]
         return state

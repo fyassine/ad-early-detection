@@ -264,6 +264,23 @@ class LongitudinalAdapter:
         """
         raise NotImplementedError
 
+    def checkpoint_extras(self, state) -> Dict[str, Any]:
+        """Non-weight state that must ride *inside* the full-state checkpoint.
+
+        ``model_state_for_save`` deliberately strips the composite ``state`` back to
+        a bare ``nn.Module`` state dict so the back-compat ``model_<run>.pth`` stays
+        loadable by the dashboard and comparison notebooks. Anything else the eval
+        hooks need on reload — per-fold normalisation statistics, in particular —
+        therefore has nowhere to live unless it is declared here: the returned dict
+        is merged into the top level of ``checkpoint_<run>.pth``, which is exactly
+        where ``load_state`` reads it back from.
+
+        Default: nothing. Override in any adapter whose ``load_state`` expects a key
+        that is not a model weight, and keep the two in sync — the round-trip test
+        in ``tests/test_adapter_checkpoint_roundtrip.py`` enforces it.
+        """
+        return {}
+
     def extra_artifacts(self, run_dir, state) -> None:
         """Write any model-specific side artifacts (dim_filter.npy, scaler.pkl, …).
 

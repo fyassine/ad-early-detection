@@ -84,6 +84,7 @@ def score_frozen_split(
     device: Any,
     record_as: str,
     cohort: Optional[str] = None,
+    allow_overwrite: bool = False,
 ) -> Dict[str, Any]:
     """Score ``df`` once against a saved run's frozen checkpoint and record it.
 
@@ -95,6 +96,22 @@ def score_frozen_split(
         raise ValueError(f"record_as must be 'test' or 'external', got {record_as!r}.")
     if record_as == "external" and not cohort:
         raise ValueError("record_as='external' requires cohort=.")
+
+    # The held-out splits are read exactly once (DOCS/temporal-first-ablation.md
+    # section 4). A second call would silently re-read them and overwrite the
+    # first estimate -- the precise failure the Tier-4 protocol exists to
+    # prevent, and one that leaves no trace in the artifact. Refuse loudly
+    # instead; `allow_overwrite=True` is the deliberate, documented escape.
+    existing = load_run_summary(run_dir).get("metrics") or {}
+    prefix = "test_" if record_as == "test" else f"ext_{cohort}_"
+    already = sorted(k for k in existing if k.startswith(prefix))
+    if already and not allow_overwrite:
+        raise ValueError(
+            f"{run_dir} already carries {record_as} metrics {already}. This split "
+            "has been read once already; reading it again spends a one-shot "
+            "estimate and overwrites the original. Pass allow_overwrite=True only "
+            "if that re-read is deliberate and documented."
+        )
 
     adapter, summary = build_adapter_from_run(
         run_dir,
@@ -112,10 +129,16 @@ def score_frozen_split(
 
     threshold_method = summary.get("threshold_method", "oof_f1")
     if record_as == "test":
-        record_test_metrics(run_dir, metrics, threshold=threshold, threshold_method=threshold_method)
+        record_test_metrics(
+            run_dir, metrics, threshold=threshold, threshold_method=threshold_method
+        )
     else:
         record_external_metrics(
-            run_dir, metrics, threshold=threshold, threshold_method=threshold_method, cohort=cohort,
+            run_dir,
+            metrics,
+            threshold=threshold,
+            threshold_method=threshold_method,
+            cohort=cohort,
         )
     return metrics
 

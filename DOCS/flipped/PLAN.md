@@ -738,6 +738,263 @@ confirmation of it, not a contradiction. State it as such: the flip's gain is a
 *long-sequence* gain. Never present Table A's TFGN row without its GELSTM-frozen
 neighbour.
 
+### G. Tier-4 frozen reads — state, and the blocker that must be fixed first
+
+**Nothing has been read.** Verified across all 76 ladder runs: every `run_summary.json`
+carries `defer_test_eval: true` and **zero** `test_*` and **zero** `ext_*` keys. The
+in-domain test set (n=64) and OASIS-3 (n=60) are both completely unspent. The deferral
+discipline held.
+
+**Both target splits are present and fully resolvable:**
+
+- In-domain test: `DATA/POOLED_ADNI_DELCODE/SPLITS/downstream/test.csv` — **64** subjects
+  (ADNI 39 + DELCODE 25), 24 converters / 40 non-converters. Matches the pre-registered count.
+- External OASIS-3: `DATA/OASIS3/__metadata__/SPLITS/downstream/{train,val,test}.csv`
+  concatenated — **60** subjects (35+12+13), 31 converters / 29 non-converters. All 60
+  resolve ≥2 FC files under `min_visits=2` (T=2: 36, T=3: 13, T=4: 9, T=6: 2), so none is
+  dropped. `COHORT_ROOTS['oasis3']` is wired in `common/pooled_data.py`, and the notebook
+  tags the frame `cohort='oasis3'`, so the multi-cohort dispatch handles it.
+
+`pytest CLASSIFIER/tests/test_frozen_read.py -q` — 6 passed.
+
+**STATUS 2026-08-24: FIXED AND VALIDATED.** All 12 target checkpoints (S1, S1b, S5 ×
+4 seeds) now carry the statistics, every one validated against its own recorded
+predictions. Details under "Resolution" at the end of this section. The original
+diagnosis is kept below because it is the record of what went wrong and why.
+
+**BLOCKER — the frozen read will crash on the first seed as things stand.**
+`TFGNAdapter.load_state` (`adapters/tfgn.py:558-565`) rebuilds the eval state by reading
+`log_dt_scaler_mean`, `log_dt_scaler_scale`, `cent_mean`, `cent_std` from the checkpoint.
+`model_state_for_save` (`adapters/tfgn.py:537-538`) returns **only** `state["model_state"]`,
+so those four keys are dropped at checkpoint-write time and are absent from every saved
+TFGN checkpoint — confirmed by inspecting S1 and S5 seed-42 checkpoints (top-level keys
+are `model_config`, `training_config`, `optimizer_state_dict`, `scheduler_state_dict`,
+`rng_state`, `torch_rng_state`, `env`, `git`, `val_auc`, `best_threshold`,
+`threshold_method`, `best_fold`, `gaae_checkpoint`, `run_name` — none of the four).
+`_apply_state_normalization` (`adapters/tfgn.py:351-354`) then does a bare
+`state["log_dt_scaler_mean"]` lookup.
+
+This fails **loudly** with `KeyError`, not silently with unnormalised features — the
+`.claude/rules/errors.md` discipline is what makes this a two-hour fix instead of a
+silently wrong headline number. It was never exercised because no TFGN run has ever been
+reloaded: `defer_test_eval: true` meant nothing ever called `load_state`. Same class of
+latent bug as the `LogRegDriftAdapter.load_state` unwrapping fix in §4.5.4.
+
+**Fix — CPU-only, no retraining, no GPU.** The winning fold's statistics are exactly
+recoverable, because the CV split is deterministic and recorded:
+
+- `StratifiedGroupKFold` in `common/crossval.run_kfold_cv` takes no seed and no shuffle,
+  so fold *i* is the same subject group for every seed and every arm. Verified: the
+  `subject_id → fold` map in `oof_predictions.csv` is byte-identical across
+  `tfgn-s1-flip-pooled-seed{42,45}`, `tfgn-s1b-ssl-pooled-seed44` and
+  `tfgn-s5-dualscore-pooled-seed43`. Folds are {1:50, 2:50, 3:50, 4:49, 5:49}.
+- `best_fold` is in every checkpoint (= 1 for all four S1 seeds — consistent with the
+  `(50, 200)` artifact shape in §C).
+
+So the winning fold's train set is exactly the `oof_predictions.csv` rows with
+`fold != best_fold`, and `log_dt_scaler` / `cent_mean` / `cent_std` can be recomputed from
+those subjects by the same code that produced them (`adapters/tfgn.py:225-234, 321-324`).
+
+Steps:
+
+1. Extend `TFGNAdapter.model_state_for_save` to persist the four keys alongside
+   `model_state` (matching what `load_state` already expects), so future runs never hit
+   this. Add a test that round-trips `model_state_for_save` → `load_state` and asserts all
+   four survive — the test that would have caught this.
+2. Write a one-off CPU backfill that, for each of the 12 arms to be frozen-read
+   (S1, S1b, S5 × 4 seeds), rebuilds the `best_fold` train items and patches the four
+   statistics into the existing checkpoint. **Never repoint or re-run the id**
+   (`.claude/rules/gpu-dispatch.md`) — this patches the artifact in place, additively.
+3. **Validate the backfill before spending the read.** With the recomputed statistics,
+   re-score each run's own held-out `best_fold` and confirm it reproduces the checkpoint's
+   stored `val_auc` (S1: 0.8125 / 0.8125 / 0.8090 / 0.7917 for seeds 42–45) and the
+   matching `prob` column of `oof_predictions.csv`. If it reproduces, the statistics are
+   provably the originals and the frozen read is sound. If it does not, stop — do not
+   flip `RUN_FROZEN_READ`, and fall back to re-running the 12 arms.
+
+**Second defect, lower priority — the notebook's `adapter_key` map is incomplete.**
+`run_frozen_reads` maps `model_type` → adapter key with
+`{'tfgnclassifier': 'tfgn', 'logregdriftadapter': 'logregdrift'}`. GELSTM arms report
+`model_type = 'GELSTMClassifier'` → `'gelstmclassifier'`, which is not a registered
+adapter key. Harmless for the planned pass (S1/S1b/S5 are all TFGN), but §F notes the
+matched-window winner is **W3-GELSTM-frozen** — if a test number is ever wanted for it,
+this bites. Add `'gelstmclassifier': 'gelstm'` (and `'braintokengt*'`) while fixing the
+above.
+
+**Third defect — the one-shot read has no idempotency guard.**
+`score_frozen_split` → `record_test_metrics` (`common/run_artifacts.py:116-141`) patches
+`run_summary.json` unconditionally. Re-executing the notebook with `RUN_FROZEN_READ=True`
+would silently read the test set a second time and overwrite the first result — the exact
+failure the whole Tier-4 protocol exists to prevent, guarded today only by a hand-set
+boolean. Add a guard to `score_frozen_split`: if the target `test_*` / `ext_*` keys already
+exist in `run_summary.json`, raise unless an explicit `allow_overwrite=True` is passed.
+This is the cheapest possible insurance on the single most expensive-to-lose asset in the
+project.
+
+**Resolution (2026-08-24) — implemented, validated, no GPU used.**
+
+*Code (all additive; single-cohort and non-TFGN behaviour unchanged):*
+
+- `adapters/__init__.py` — new base hook `LongitudinalAdapter.checkpoint_extras(state)
+  -> {}`. Declares non-weight state that must ride inside the full-state checkpoint,
+  which is exactly where `load_state` reads it back from.
+- `adapters/tfgn.py` — `STATE_NORMALIZATION_KEYS` is now the single source of truth for
+  the four statistics; `checkpoint_extras` returns them (raising if `train_fold` omitted
+  one), and `load_state` **raises `KeyError` naming the backfill script** instead of
+  silently skipping a missing key and failing later inside
+  `_apply_state_normalization` with an opaque message.
+- `common/run_artifacts.py::save_run` — new `checkpoint_extras=` parameter merged into
+  `save_full_checkpoint`'s top level.
+- `LONGITUDINAL_COMMON_DELCODE.ipynb` cell 23 — passes
+  `checkpoint_extras=adapter.checkpoint_extras(BEST_MODEL_STATE)`, so every future run
+  is correct by construction.
+- `common/frozen_read.py::score_frozen_split` — new `allow_overwrite=False`: refuses to
+  score a split whose `test_*` / `ext_*` keys already exist. The one-shot read can no
+  longer be spent twice by re-executing a cell.
+- `COMPARISON_TEMPORAL_FIRST_LADDER.ipynb` — `adapter_key` map extended with
+  `gelstmclassifier` and `braintokengtclassifier` (both occurrences).
+- `tests/test_adapter_checkpoint_roundtrip.py` (new, 5 tests) — asserts
+  `checkpoint_extras`'s key set equals what `load_state` demands (the assertion that
+  would have caught this), round-trips through a real checkpoint file, and pins both
+  loud-failure paths. `pytest tests/test_adapter_checkpoint_roundtrip.py
+  tests/test_frozen_read.py -q` → **11 passed**.
+
+*Backfill (`CLASSIFIER/scripts/backfill_tfgn_norm_stats.py`, new):* recovers the winning
+fold's training subjects from `best_fold` + `oof_predictions.csv`, rebuilds the adapter
+through `frozen_read.build_adapter_from_run` (the same path the frozen read itself uses,
+so the refit cannot diverge from its consumer), refits the scaler and centrality
+statistics with the identical code `train_fold` uses, and patches them into the
+checkpoint. Each original checkpoint is copied to `*.pth.pre-backfill` first; the script
+refuses to touch a checkpoint that already carries the keys.
+
+*Validation — the criterion, and why it is the right one.* `--validate` re-scores each
+run's own held-out winning fold with the recomputed statistics and compares against the
+predictions that run originally wrote. Two conditions, both required:
+
+1. `|ΔAUC| ≤ 1e-9` against the recorded fold AUC. This is the decision-relevant test —
+   every downstream number derives from it, and mis-scaled features cannot leave it
+   invariant.
+2. `max|Δprob| ≤ 1e-5` per subject, confirming the agreement is pointwise rather than a
+   coincidence of tied ranks. Exact equality is unavailable: the model emits float32 and
+   `oof_predictions.csv` round-trips through text. Observed residuals are 4.8e-07 to
+   2.2e-06 — a wrong scaler moves probabilities by ~1e-1, five orders of magnitude above
+   this floor.
+
+**Result: 12/12 PASS, every one at `|ΔAUC| = 0.00e+00` exactly.** Each run's re-scored
+fold AUC reproduces both its `oof_predictions.csv` rows and the `val_auc` stored in its
+checkpoint (S1: 0.812500 / 0.812500 / 0.809028 / 0.791667; S1b: 0.802083 / 0.777778 /
+0.792115 / 0.782986; S5: 0.812500 / 0.810764 / 0.824653 / 0.795139). `best_fold` is 1 for
+all four S1 and S5 seeds; S1b seeds 44 and 45 won on folds 5 and 2, and the backfill
+handles each correctly. The statistics are provably the originals, not an approximation.
+`adapter.load_state()` on a backfilled run now returns all five keys. **Tier 4 is
+unblocked and no GPU time was needed.**
+
+### H. The "no graph stage" corollary, and its capacity defense
+
+State the winner exactly as it is: **node-shared LSTM → mean-pool → linear head.** With
+`recon_target: none` no GVAE is constructed (`model/TFGN/models.py:95-105`), so the
+winning TFGN contains no graph propagation stage at all. This is the honest result and
+the more interesting one — but it invites the obvious reviewer question, *"is the flip's
+win just capacity or bandwidth?"* Close it with the parameter counts, measured from the
+runs' own configs via `_build_model()`:
+
+| arm | total params | trainable | OOF AUC |
+|---|---|---|---|
+| **S1 flip (TFGN, winner)** | **68,417** | **68,417** | **0.7488** |
+| S5 dual-score | 68,482 | 68,482 | 0.7331 |
+| S2 gate | 72,642 | 72,642 | 0.7308 |
+| S0b gelstm-frozen | 965,897 | 520,905 | 0.7186 |
+| S0c gelstm-random | 965,897 | 965,897 | 0.5625 |
+
+**Correction to the ~30k / ~240k figures:** the true counts are 68,417 and 965,897. The
+ratio is therefore **14.1×** against S0c (not ~8×), and **7.6×** against S0b's trainable
+parameters. Use the measured numbers — the argument is stronger than the estimate, and a
+parameter count is trivially checkable by a reviewer.
+
+The one-sentence mechanism statement this licenses:
+
+> The winning model is 14× smaller than the spatial-first baseline it beats by 0.186 AUC
+> and 7.6× smaller (trainable) than the pretrained one it beats by 0.030, so the gain
+> cannot be capacity — it comes from deferring pooling until after node-level temporal
+> encoding, which is precisely what the flip hypothesis claimed.
+
+That closes the capacity critique without another run. Note the same table also kills a
+"the graph stage was never given a chance" objection from the other direction: S2 and S5
+*add* parameters to S1 and both score lower.
+
+### I. The matched-window result is two-sided — state both directions
+
+§F's single-sided "TFGN loses to GELSTM-frozen under the short window" is half the
+finding. Truncation moves the two architectures in **opposite** directions:
+
+| arm | full trajectory (T≥2) | matched window (T∈[2,3]) | Δ from truncation |
+|---|---|---|---|
+| GELSTM-frozen (spatial-first) | 0.7186 | 0.7500 | **+0.0314** |
+| TFGN (temporal-first) | 0.7488 | 0.7318 | **−0.0170** |
+| GELSTM-random | 0.5625 | 0.5885 | +0.0260 |
+
+Spatial-first **gains** from truncation; temporal-first **pays** for it. That two-sided
+statement is far stronger evidence for "the flip's value lives in visits 4–10" than the
+loss alone, and it makes Table B load-bearing by construction rather than by assertion:
+the only regime where temporal-first wins is the one with long sequences, and the only
+regime where spatial-first wins is the one where the trajectory has been cut to a
+difference. Write it as a crossover, not a defeat.
+
+**Reconciling +0.0999 (fold-matched) with +0.1111 (raw means) — the reviewer's guessed
+cause is not the actual one.** It is *not* single-class fold exclusion: checked
+explicitly, all 5 folds carry both classes in both arms across all 4 seeds (fold sizes
+50/50/50/49/49), and no fold is dropped from either statistic. The real cause:
+
+- **Fold-matched Δ** averages per-fold AUCs: 0.7586 (W3-TFGN) − 0.6587 (BTGT) = +0.0999.
+- **Pooled Δ** ranks all 248 subjects together: 0.7318 − 0.6207 = +0.1111.
+
+Pooled AUC is *lower* than the mean per-fold AUC for both arms, because pooling
+additionally penalises cross-fold score incomparability — each fold is a separately
+trained model with its own probability scale. That penalty is **−0.0268 for W3-TFGN and
+−0.0379 for BrainTokenGT**, and the 0.0112 difference between the two penalties is
+exactly the gap between the two statistics.
+
+So the reconciling line in the notebook should say: both statistics use all 5 folds × 4
+seeds with no exclusions; they differ because pooled AUC also charges for cross-fold
+calibration drift, and charges BrainTokenGT more. That is itself a reportable result —
+TFGN's per-fold outputs are more mutually comparable, consistent with its being the
+tightest-seed-SD deep model in the table (§"Verified scorecard").
+
+### J. Sequence-length evidence — the SENS decomposition is the section, not a footnote
+
+Promote §E from a caveat to the thesis's sequence-length result, stated as the
+decomposition rather than as SENS's headline number. SENS's 140 subjects are a strict
+subset of S1's 248, which is what makes the two effects separable — SENS alone cannot
+separate them:
+
+- **Subgroup difficulty (+0.022):** S1, trained on the full pool, scores **0.7712** on
+  the ≥3-visit subgroup vs **0.7488** overall. Longer trajectories are more predictable.
+  This is the sequence-length signal, and it is positive.
+- **Training-pool cost (−0.030):** SENS, trained only on those subjects, scores
+  **0.7412** on the same 140 — worse than S1 scores on them. Shrinking the pool
+  248 → 140 costs more than the subgroup's easiness returns.
+
+Net: restricting to ≥3 visits is a losing trade at this sample size, *and* longer
+sequences carry more signal. Both are true and they are not in tension. Keep the
+pre-registered "too small to decide on its own" language on both halves, and never
+report SENS's 0.7413 beside S1's 0.7488 as a like-for-like row — different N, different
+subjects, not fold-matched.
+
+### K. Remaining bookkeeping — confirmed
+
+- **Cross-seed-only Spearman.** Best-fold maps are `(50, 200)`, so 4 maps not 20. Log as
+  a documented deviation in `DOCS/temporal-first-ablation.md`; zero cost, no re-run.
+- **`SECONDARY_SENSITIVITY_ID` takes a single id.** The frozen pass needs S5 *and* S1b as
+  secondaries, so either call `run_frozen_reads` twice or make the parameter a list and
+  loop. Prefer the list — one pass, one guard, no chance of a half-run. Record S5's
+  secondary read as **the interpretability layer's number, not a competing endpoint**;
+  the label string already printed on every line (`'SECONDARY (sensitivity arm, not
+  primary)'`) should be specialised for S5 to say so.
+- **Block B closed.** Correct read of Phase 5's own wording. Paired with §H's parameter
+  counts it is a clean conclusion: signal quality and sample size, not capacity, are the
+  bottleneck — and the winner being 14× smaller than the baseline it beats is the
+  evidence for that sentence, not merely consistent with it.
+
 ### Next steps, in order
 
 1. **Docs first, no GPU.** Write A–F into `DOCS/temporal-first-ablation.md` as a
@@ -754,22 +1011,40 @@ neighbour.
    permutation null, cross-seed Spearman, per-cohort split, and the 2×2 quadrant scatter
    with S2's gate map as a supporting panel. This is now the *entire* interpretability
    contribution, since every performance rung above S1 was dropped.
-4. **Tier-4 frozen read — the last step, once 1–3 are done.** One pass:
+4. ~~**Fix the Tier-4 blocker (§G).**~~ **DONE 2026-08-24** — `checkpoint_extras` hook
+   wired end to end, 12/12 checkpoints backfilled and validated at `|ΔAUC| = 0`,
+   overwrite guard and adapter-key map fixed, 5 new round-trip tests passing. Tier 4 is
+   unblocked. Remaining sub-item: make `SECONDARY_SENSITIVITY_ID` accept a list (§K) so
+   S5 and S1b are read in the same single pass.
+5. **Tier-4 frozen read — the last step, once 1–4 are done.** One pass:
    `RUN_FROZEN_READ = True`, `FROZEN_WINNER_ID = 'tfgn-s1-flip-pooled'`,
    `SECONDARY_SENSITIVITY_ID = 'tfgn-s1b-ssl-pooled'`, plus S5 as a second secondary.
    In-domain n=64 and OASIS-3 n=60, scored at each seed's own OOF threshold. The guard
    cell in the notebook stays; flip the gate exactly once.
-5. **Block B gate: closed.** Per Phase 5's own wording, the gate is a cumulative gain
+6. **Block B gate: closed.** Per Phase 5's own wording, the gate is a cumulative gain
    from S1c-random through S5 exceeding the SE of the seed-level differences. The chain
    delivered −0.1587 (S1c-random), −0.0064 (S2), void (S3), −0.0558 (S4), −0.0046 (S5).
    No rung above S1 was kept. **Block B does not run.** Write Phase 5's own stated
    conclusion — signal quality and sample size, not capacity, are the bottleneck — as a
    thesis result rather than scaling to 300k parameters.
-6. `python scripts/run_checks.py` once before hand-off; commit the currently-dirty
+7. **`CHECKS.json` is 7 weeks stale — regenerate it on a clean tree (user's call).**
+   Verified 2026-08-24: the baseline was written **2026-07-04**, before any TFGN file
+   existed, so `run_checks.py` reports all 191 findings in `adapters/tfgn.py`,
+   `configs/tfgn.py`, `common/{oof,frozen_read}.py`, `adapters/logreg_drift.py`,
+   `tests/test_{tfgn,frozen_read}.py` etc. as "NEW" no matter who wrote them
+   (`[[feedback_checks_json_staleness]]`). Confirmed against HEAD in a scratch
+   worktree rather than assumed: **bandit is 164 findings at HEAD and 164 in the
+   working tree — zero added, zero removed** — and `ruff format` went from 48
+   unformatted files to 46, because this change *formatted* `adapters/tfgn.py` and
+   `common/frozen_read.py`. So the blocking gates pass and this work adds nothing to
+   the backlog. Do not hand-edit `CHECKS.json` (`.claude/rules/ci.md`); regenerate it
+   by running the script on a clean tree and committing the result as its own change.
+8. `python scripts/run_checks.py` once before hand-off; commit the currently-dirty
    notebook/status artifacts in `CLASSIFIER/outputs/` from the SENS and W3 runs.
 
-No further GPU runs are required to finish the ladder. The only remaining compute is the
-single Tier-4 frozen-read pass, which is CPU-side scoring of saved checkpoints.
+**No further GPU runs are required to finish the ladder.** The §G backfill validated
+12/12 at `|ΔAUC| = 0`, so the re-run fallback is closed out. The only remaining compute
+is the single Tier-4 frozen-read pass — CPU-side scoring of saved checkpoints.
 
 ---
 
