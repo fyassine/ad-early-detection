@@ -1092,22 +1092,22 @@ now read **"no evidence of transfer to an unseen cohort, consistent with an un-e
 cohort-identity shortcut (cohort_probe_auc≈0.86 ≫ 0.75)"** rather than as a second
 performance number alongside in-domain test.
 
-**What is NOT done here, and needs your decision, not mine:** the pre-registered
-escalation arm (`cohort_conditioning: 'adversarial'`, gradient-reversal cohort head) has
-not been run. It is a **new GPU training arm** (4 seeds, ~30–90 min each), which
-`.claude/rules/gpu-dispatch.md` and this document's own convention hold for explicit
-approval before dispatch — same standing as the S1c re-run block earlier in this
-document. Two honest options, either defensible:
+**Escalation status: run, and reported as attempted-and-failed (§M).** The pre-registered
+escalation arm (`cohort_conditioning: 'adversarial'`, gradient-reversal cohort head) was
+implemented and run on all 4 seeds. It did not recover external transfer — see §M for the
+full result (OOF AUC dropped 0.7488 → 0.7066, and `cohort_probe_auc` *rose* 0.86 → 0.94,
+the wrong direction). Decision taken 2026-08-24: report the OASIS-3 gap as-is, with both
+the missed threshold and the failed mitigation attempt stated explicitly — not as an
+unexplored follow-up, but as a limitation that was pursued and did not resolve.
 
-1. **Run the adversarial-conditioning arm** and report OASIS-3 for it against the current
-   0.49 baseline — directly tests whether removing the cohort shortcut recovers external
-   transfer. This is the arm the pre-registration itself asks for.
-2. **Report the gap as-is, with the escalation trigger and its miss stated explicitly**
-   as a limitation and a pre-registered-but-unexplored follow-up. Defensible for a
-   thesis on a tight timeline, provided the write-up does not omit that the trigger fired.
-
-Do not report OASIS-3 as a clean external-validation number without one of these two
-sentences attached — the pre-registration itself makes that the wrong thing to do.
+The OASIS-3 line in Table B / the thesis write-up must therefore read: **"no evidence of
+transfer to an unseen cohort (AUC 0.4892 ± 0.0224, indistinguishable from chance),
+consistent with an un-escalated cohort-identity shortcut (`cohort_probe_auc`≈0.86 ≫ 0.75
+threshold); an adversarial gradient-reversal mitigation was attempted and did not recover
+transfer (§M) — cohort-invariant representation learning under this pooling protocol is an
+open problem, not a solved one."** Do not report OASIS-3 as a clean external-validation
+number, and do not omit that a fix was tried and failed — either omission misrepresents
+what is known.
 
 ### M. Adversarial-conditioning escalation — run, and it failed on both axes
 
@@ -1172,24 +1172,20 @@ rung since S2. No lambda sweep was run either: quietly retrying with a different
 `cohort_adv_lambda` after seeing this result would be an undocumented re-run of the exact
 kind Phase 0's pre-registration exists to prevent, even in service of a plausible fix.
 
-**Three honest options, not decided here:**
-
-1. **Report the escalation as attempted and failed.** The pre-registration asked for an
-   attempt at threshold-crossing, not a guaranteed fix; a documented negative result closes
-   the loop honestly. Combine with §L's finding: OASIS-3 transfer is at chance, a
-   cohort-identity shortcut is the leading hypothesis, and the one attempted mitigation did
-   not work at the lambda tried.
-2. **Register a `lambda_cohort_adv` sweep as a new, explicitly pre-registered arm** (e.g.
-   λ ∈ {3, 10, 30} or a stronger/longer warmup) before concluding adversarial conditioning
-   cannot work here — this failure mode is consistent with under-powered reversal, not
-   necessarily a dead end. New GPU runs, held for approval like every escalation before it.
-3. **Abandon the adversarial path entirely** and treat the cohort-identity shortcut as a
-   stated limitation of the thesis rather than something to fix — defensible given the
-   timeline, provided the write-up states the escalation was tried, not skipped.
-
-Do not silently pick one of these and proceed — this is the same class of decision §L
-already deferred to the user, now informed by a failed first attempt rather than an
-untried hypothesis.
+**Decision (2026-08-24): option 1 — report the escalation as attempted and failed.** No
+`lambda_cohort_adv` sweep will be run and the adversarial path is not being pursued
+further under this plan. The pre-registration asked for an attempt at
+threshold-crossing, not a guaranteed fix; a documented negative result closes the loop
+honestly. The write-up combines this with §L's finding: OASIS-3 transfer is at chance, a
+cohort-identity shortcut is the leading hypothesis, and the one attempted mitigation
+(gradient-reversal, `lambda=1.0`) did not work — and, on the diagnostic it targeted,
+moved in the wrong direction. The under-powered-reversal hypothesis in the section above
+stays a hypothesis: it is not being tested by a sweep, so it must not be stated as a
+settled explanation, only as the leading candidate for *why* this specific attempt
+failed. The two options not taken (a `lambda_cohort_adv` sweep as a new pre-registered
+arm; abandoning the adversarial framing entirely) remain available as future work if a
+reviewer or later phase of this project wants to revisit cohort-invariant training, but
+neither is in scope for this plan going forward.
 
 ### Next steps, in order
 
@@ -1216,10 +1212,13 @@ untried hypothesis.
    one pass. In-domain test 0.7909 ± 0.0162 (n=64); OASIS-3 0.4892 ± 0.0224 (n=60,
    statistically indistinguishable from chance). See §L for the full results and a
    pre-registered escalation trigger (`cohort_probe_auc≈0.86 > 0.75`) that fired on every
-   TFGN arm and was never actioned — likely the mechanism behind the OASIS-3 result.
-   **Open decision for the user: run the adversarial-conditioning escalation arm (new
-   GPU training, held for approval) or report the gap with the trigger stated as a
-   limitation.**
+   TFGN arm and was never actioned.
+5b. ~~**Adversarial-conditioning escalation.**~~ **DONE 2026-08-24, FAILED** — implemented
+   and run on all 4 seeds (§M). OOF AUC 0.7488 → 0.7066 (Tier-2 ratio −8.68, a clear
+   loss); `cohort_probe_auc` rose 0.86 → 0.94, the wrong direction. **Decision: report as
+   attempted-and-failed (§L/§M), no further lambda sweep, adversarial path closed for
+   this plan.** The OASIS-3 gap is written up as an open limitation with a tried-and-failed
+   mitigation attached, not as an unexplored trigger.
 6. **Block B gate: closed.** Per Phase 5's own wording, the gate is a cumulative gain
    from S1c-random through S5 exceeding the SE of the seed-level differences. The chain
    delivered −0.1587 (S1c-random), −0.0064 (S2), void (S3), −0.0558 (S4), −0.0046 (S5).
