@@ -995,6 +995,120 @@ subjects, not fold-matched.
   bottleneck — and the winner being 14× smaller than the baseline it beats is the
   evidence for that sentence, not merely consistent with it.
 
+### L. Tier 4 executed (2026-08-24) — results, and a missed pre-registered escalation
+
+**RUN_FROZEN_READ flipped and executed.** One papermill pass, `FROZEN_WINNER_ID =
+'tfgn-s1-flip-pooled'` (PRIMARY), `SECONDARY_SENSITIVITY_ID =
+['tfgn-s1b-ssl-pooled', 'tfgn-s5-dualscore-pooled']` (both SECONDARY, S5 labelled as the
+interpretability layer's number per §A). Confirmed unspent immediately beforehand — every
+one of the 12 target checkpoints still carried zero `test_*`/`ext_*` keys. Executed
+notebook archived at
+`CLASSIFIER/notebooks/COMPARISON/_results/temporal_first_ladder_tier4_frozen_read_2026-08-24.ipynb`.
+
+**Pre-flight fix, caught by dry-running Tier 1–3 first with `RUN_FROZEN_READ=False`
+before spending anything.** The papermill parameter cell (cell 1) had no `tags:
+["parameters"]` metadata. Without it papermill *prepends* an `injected-parameters` cell
+instead of replacing the original — so the notebook's own untagged cell then re-executes
+its hardcoded defaults immediately afterward and **silently stomps every override back**,
+including `RUN_FROZEN_READ` itself. Uncaught, this would not have spent the test read
+(the flag would have stayed `False`) but would have made "flip the flag and run" a silent
+no-op, indistinguishable from success in the executed-notebook output. Fixed by tagging
+the cell; re-verified with a second dry run showing no injection warnings and the correct
+override taking effect. Also extended `RUNG_PREFIXES` with `S2_gate`, `S3_fusion`,
+`S4_attnpool`, `S5_dualscore`, `SENS` (Tier 1–3 only, needed for the transport-check
+diagnostic on the S5 secondary; deliberately left out of `RUNG_CHAIN`, per the comment
+now in the cell, since none branch from `S1c_recon_random`).
+
+**Results — in-domain test (n=64) and OASIS-3 (n=60), mean ± SD over 4 seeds:**
+
+| arm | role | in-domain test AUC | OASIS-3 AUC | OOF (for reference) |
+|---|---|---|---|---|
+| **S1 flip** | **PRIMARY** | **0.7909 ± 0.0162** | **0.4892 ± 0.0224** | 0.7488 ± 0.0033 |
+| S1b ssl | secondary (sensitivity) | 0.7760 ± 0.0568 | 0.4602 ± 0.0274 | 0.7502 ± 0.0125 |
+| S5 dual-score | secondary (interpretability layer) | 0.7870 ± 0.0139 | 0.5070 ± 0.0109 | 0.7331 ± 0.0173 |
+
+**Transport checks** (95% prediction interval from OOF SE ⊕ test SE, per `run_frozen_reads`):
+
+- S1: OOF 0.7488, PI [0.7326, 0.7650], test 0.7909 → **inconsistent** — test lands *above*
+  the interval, not below. In-domain test AUC is higher than the pooled OOF estimate.
+- S1b: OOF 0.7502, PI [0.6932, 0.8072], test 0.7760 → consistent (wide PI — n=4 test-seed
+  SD of 0.0568 dominates).
+- S5: OOF 0.7331, PI [0.7113, 0.7548], test 0.7870 → inconsistent, same direction as S1.
+
+**Read this soberly, not as a second win.** The in-domain test set is n=64 — the plan's
+own "Honest expectation" (top of this document) already states differences below ~0.08
+are not resolvable at this size, and a positive transport-check surprise at this n is not
+grounds to prefer the test number over OOF as more reliable; if anything it argues the
+reverse, since OOF pools 248 subjects across 5 folds and the point estimate is the
+better-powered one. Report both numbers, flag the direction as "did not degrade
+in-domain, contrary to the winner's-curse prior" — a fact, not evidence of anything
+beyond what n=64 can support — and do not update the headline claim on it.
+
+**The load-bearing result is OASIS-3, and it is at chance.** All three arms land within
+noise of AUC=0.5: under the null the per-seed SE at n≈60 (31/29 split) is ≈0.075, so even
+a single seed's 0.47–0.52 range is unremarkable, and the 4-seed-mean SE (≈0.011–0.037) puts
+every arm's mean within ~1 SE of 0.5. This is **not** "below-chance failure" — it is
+**no signal transferred to a cohort never seen in training or pretraining**, tightly and
+consistently across all three arms and all four seeds (S1: 0.4705–0.5217; S1b:
+0.4416–0.5006; S5: 0.4972–0.5217). Contrast with in-domain test (0.77–0.79 for all three):
+the winning model works well within the ADNI+DELCODE distribution it was pooled from, and
+carries essentially zero information to a genuinely external cohort.
+
+**Why — a pre-registered mechanism, and the escalation trigger it should have fired
+was missed until this read.** `DOCS/flipped/PLAN.md`'s own "Cohort-shift control" section
+(Phase 3) pre-registers exactly this risk and a mandatory probe for it: *"if
+`cohort_probe_auc > 0.75` on the winning arm, run `cohort_conditioning: 'adversarial'`
+... as an additional arm and report both."* Every completed TFGN arm's `run_summary.json`
+already carries this probe, and it has been **above threshold since the first ladder
+runs, unnoticed through every prior section of this document**:
+
+| arm | `cohort_probe_auc` | escalation (>0.75) |
+|---|---|---|
+| S1_flip | 0.860 ± 0.010 | **True** |
+| S1b_ssl | 0.890 | **True** |
+| S1c_recon_random | 0.860 | **True** |
+| S2_gate | 0.869 | **True** |
+| S3_fusion | 0.860 (identical to S1, §B) | **True** |
+| S4_attnpool | 0.847 | **True** |
+| S5_dualscore | 0.863 | **True** |
+| SENS (min_visits=3) | 0.742 | False (just under, smaller pool) |
+
+A logistic probe decodes ADNI vs. DELCODE from the pooled patient latent at **~0.86 AUC**
+despite `cohort_conditioning: 'none'` — the model is encoding cohort identity strongly as
+a side effect of learning to classify, with no explicit signal telling it to. That is
+exactly the shortcut the "no unseen one-hot slot" design in Phase 3 was meant to prevent
+downstream harm from, and OASIS-3 is precisely the unseen-category case the pre-
+registration flagged as ill-defined under it. The near-chance OASIS-3 result is the
+predicted consequence of an un-escalated cohort shortcut, not an unrelated failure.
+
+**This is a genuine process gap, not a data problem.** The probe was computed and
+persisted correctly at every step; nothing was hidden. It simply was never read against
+its own pre-registered threshold until this Tier-4 pass pulled every arm's numbers
+together. Every §A–§K analysis above is unaffected — the stopping-rule verdicts, the
+parameter-count argument, the matched-window crossover, and the SENS decomposition are
+all in-domain (OOF/CV) results and do not depend on cross-cohort transfer. Only the
+external-generalization claim is affected, and Table B / the thesis's OASIS-3 line must
+now read **"no evidence of transfer to an unseen cohort, consistent with an un-escalated
+cohort-identity shortcut (cohort_probe_auc≈0.86 ≫ 0.75)"** rather than as a second
+performance number alongside in-domain test.
+
+**What is NOT done here, and needs your decision, not mine:** the pre-registered
+escalation arm (`cohort_conditioning: 'adversarial'`, gradient-reversal cohort head) has
+not been run. It is a **new GPU training arm** (4 seeds, ~30–90 min each), which
+`.claude/rules/gpu-dispatch.md` and this document's own convention hold for explicit
+approval before dispatch — same standing as the S1c re-run block earlier in this
+document. Two honest options, either defensible:
+
+1. **Run the adversarial-conditioning arm** and report OASIS-3 for it against the current
+   0.49 baseline — directly tests whether removing the cohort shortcut recovers external
+   transfer. This is the arm the pre-registration itself asks for.
+2. **Report the gap as-is, with the escalation trigger and its miss stated explicitly**
+   as a limitation and a pre-registered-but-unexplored follow-up. Defensible for a
+   thesis on a tight timeline, provided the write-up does not omit that the trigger fired.
+
+Do not report OASIS-3 as a clean external-validation number without one of these two
+sentences attached — the pre-registration itself makes that the wrong thing to do.
+
 ### Next steps, in order
 
 1. **Docs first, no GPU.** Write A–F into `DOCS/temporal-first-ablation.md` as a
@@ -1016,11 +1130,14 @@ subjects, not fold-matched.
    overwrite guard and adapter-key map fixed, 5 new round-trip tests passing. Tier 4 is
    unblocked. Remaining sub-item: make `SECONDARY_SENSITIVITY_ID` accept a list (§K) so
    S5 and S1b are read in the same single pass.
-5. **Tier-4 frozen read — the last step, once 1–4 are done.** One pass:
-   `RUN_FROZEN_READ = True`, `FROZEN_WINNER_ID = 'tfgn-s1-flip-pooled'`,
-   `SECONDARY_SENSITIVITY_ID = 'tfgn-s1b-ssl-pooled'`, plus S5 as a second secondary.
-   In-domain n=64 and OASIS-3 n=60, scored at each seed's own OOF threshold. The guard
-   cell in the notebook stays; flip the gate exactly once.
+5. ~~**Tier-4 frozen read.**~~ **DONE 2026-08-24** — S1 primary, S1b + S5 secondaries,
+   one pass. In-domain test 0.7909 ± 0.0162 (n=64); OASIS-3 0.4892 ± 0.0224 (n=60,
+   statistically indistinguishable from chance). See §L for the full results and a
+   pre-registered escalation trigger (`cohort_probe_auc≈0.86 > 0.75`) that fired on every
+   TFGN arm and was never actioned — likely the mechanism behind the OASIS-3 result.
+   **Open decision for the user: run the adversarial-conditioning escalation arm (new
+   GPU training, held for approval) or report the gap with the trigger stated as a
+   limitation.**
 6. **Block B gate: closed.** Per Phase 5's own wording, the gate is a cumulative gain
    from S1c-random through S5 exceeding the SE of the seed-level differences. The chain
    delivered −0.1587 (S1c-random), −0.0064 (S2), void (S3), −0.0558 (S4), −0.0046 (S5).
