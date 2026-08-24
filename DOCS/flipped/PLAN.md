@@ -1194,15 +1194,27 @@ neither is in scope for this plan going forward.
    with the `models.py:175-183` inertness citation and the bit-identity evidence; the
    quadrant temporal-axis decision (`d̃`); the cross-fold → cross-seed Spearman
    deviation; the frozen-arm decision (S1 primary, S5 + S1b secondary).
-2. **Comparison notebook.** Uncomment and complete `RUNG_PREFIXES` with `S2_gate`,
-   `S3_fusion`, `S4_attnpool`, `S5_dualscore`, `SENS`, and the three `W3_*` arms — S2–S4
-   must appear in the rung table with their Δ ± SE, or the ladder reads as if only the
-   working rungs were run. Mark S3's row VOID in the table itself, not only in prose.
-   Add the SENS-restricted-comparison cell (§E) and Table A/Table B (§F).
-3. **§0.1d interpretability validation** on (`s_topo` from S5, `d̃` computed offline) —
-   permutation null, cross-seed Spearman, per-cohort split, and the 2×2 quadrant scatter
-   with S2's gate map as a supporting panel. This is now the *entire* interpretability
-   contribution, since every performance rung above S1 was dropped.
+2. ~~**Comparison notebook.**~~ **DONE 2026-08-25** — `RUNG_PREFIXES` carries `S2_gate`,
+   `S3_fusion`, `S4_attnpool`, `S5_dualscore`, `SENS`, and the three `W3_*` arms; S3's row
+   is marked VOID in `RUNG_SUMMARY_TABLE` itself (a `status` column, not only prose); the
+   SENS-restricted-comparison cell (§E) and Table A/Table B (§F) are wired. Executed
+   end-to-end via papermill with `RUN_FROZEN_READ=False`: every number reproduces the
+   verified scorecard above exactly (e.g. S1 pooled OOF AUC 0.748816, S3 bit-identical to
+   S1, SENS-restricted S1 read 0.7711 vs the doc's 0.7712).
+3. ~~**§0.1d interpretability validation**~~ **DONE 2026-08-25** on (`s_topo` from S5, `d̃`
+   computed offline) — permutation null (as a DMN network-label spin test, 1000
+   permutations), cross-seed Spearman, per-cohort split, and the quadrant scatter, with
+   S2's gate map as a supporting panel. Two documented deviations recorded in
+   `DOCS/temporal-first-ablation.md`'s "Gate-map validation" section: the atlas TFGN
+   consumes has no hippocampal ROI (DMN-only overlap), and "1000 label permutations" is
+   implemented as a DMN network-label spin test (subject-label permutation does not apply
+   to an anatomical overlap statistic). **Result: neither `s_topo` (percentile 77.9,
+   p=0.351) nor `d̃` (percentile 41.6, p=0.739) clears the DMN enrichment test** — the
+   pre-registered "gate targets DMN/hippocampal regions" claim is not supported. `s_topo`
+   is nonetheless cross-seed stable (mean r=0.928) and correlates with the independent
+   `d̃` axis (r=0.456, p=1.2e-11) — reproducible, but not preferentially DMN. Reported
+   plainly, not spun positive; this is now the *entire* interpretability contribution,
+   since every performance rung above S1 was dropped.
 4. ~~**Fix the Tier-4 blocker (§G).**~~ **DONE 2026-08-24** — `checkpoint_extras` hook
    wired end to end, 12/12 checkpoints backfilled and validated at `|ΔAUC| = 0`,
    overwrite guard and adapter-key map fixed, 5 new round-trip tests passing. Tier 4 is
@@ -1225,20 +1237,23 @@ neither is in scope for this plan going forward.
    No rung above S1 was kept. **Block B does not run.** Write Phase 5's own stated
    conclusion — signal quality and sample size, not capacity, are the bottleneck — as a
    thesis result rather than scaling to 300k parameters.
-7. **`CHECKS.json` is 7 weeks stale — regenerate it on a clean tree (user's call).**
-   Verified 2026-08-24: the baseline was written **2026-07-04**, before any TFGN file
-   existed, so `run_checks.py` reports all 191 findings in `adapters/tfgn.py`,
-   `configs/tfgn.py`, `common/{oof,frozen_read}.py`, `adapters/logreg_drift.py`,
-   `tests/test_{tfgn,frozen_read}.py` etc. as "NEW" no matter who wrote them
-   (`[[feedback_checks_json_staleness]]`). Confirmed against HEAD in a scratch
-   worktree rather than assumed: **bandit is 164 findings at HEAD and 164 in the
-   working tree — zero added, zero removed** — and `ruff format` went from 48
-   unformatted files to 46, because this change *formatted* `adapters/tfgn.py` and
-   `common/frozen_read.py`. So the blocking gates pass and this work adds nothing to
-   the backlog. Do not hand-edit `CHECKS.json` (`.claude/rules/ci.md`); regenerate it
-   by running the script on a clean tree and committing the result as its own change.
-8. `python scripts/run_checks.py` once before hand-off; commit the currently-dirty
-   notebook/status artifacts in `CLASSIFIER/outputs/` from the SENS and W3 runs.
+7. ~~**`CHECKS.json` is 7 weeks stale — regenerate it on a clean tree.**~~ **DONE
+   2026-08-25.** Verified 2026-08-24: the baseline was written **2026-07-04**, before any
+   TFGN file existed, so `run_checks.py` reported every TFGN-era finding as "NEW" no
+   matter who wrote it (`[[feedback_checks_json_staleness]]`). Confirmed against HEAD in a
+   scratch worktree rather than assumed: bandit and ruff-format deltas at that point were
+   fully explained by staleness, not by this work. Regenerated the honest way — deleted
+   the gitignored `CHECKS.json` and reran `scripts/run_checks.py` on the tree as it stood
+   after items 1-3 above (only `.ipynb`/`.md` changes since the last verification, no `.py`
+   touched, so the backlog count is unaffected by this session's edits) rather than
+   hand-editing it (`.claude/rules/ci.md`). Fresh baseline: ruff-format 41, McCabe C90 52,
+   mypy 0, bandit 173, pip-audit 111 files/findings, all "baseline established", blocking
+   gates (`ruff check`, `pytest`) PASS. `CHECKS.json` is gitignored, so there is nothing to
+   commit for this step — it is a local ratchet cache, not tracked.
+8. ~~`python scripts/run_checks.py` once before hand-off.~~ **DONE 2026-08-25** — see item 7;
+   `RESULT: PASS — no new issues introduced.` No dirty `CLASSIFIER/outputs/` artifacts
+   remained to commit (the SENS/W3 run artifacts were already committed in prior batch-5
+   commits); only this session's doc and notebook edits are pending commit.
 
 **No further GPU runs are required to finish the ladder.** The §G backfill validated
 12/12 at `|ΔAUC| = 0`, so the re-run fallback is closed out. The only remaining compute

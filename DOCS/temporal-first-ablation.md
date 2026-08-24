@@ -441,6 +441,60 @@ statistic, the fix is a `fold_probe` addition to persist per-fold maps and a 4-s
 re-run of S5 (`DOCS/flipped/PLAN.md` §C) — not attempted here, and not required to close
 out this ladder.
 
+**§0.1d results (2026-08-25) — the validation ran, computed from the artifacts above.**
+Implemented in `notebooks/COMPARISON/COMPARISON_TEMPORAL_FIRST_LADDER.ipynb`'s "Gate-map
+validation" section, on (`s_topo` from S5, `d̃` computed offline via
+`compute_drift_anchor`), with `gate_scores.npy` from the dropped S2 arm as the supporting
+panel. Two further documented deviations, beyond the cross-fold-to-cross-seed reduction
+above:
+
+- **DMN only, not DMN/hippocampal.** The whole-brain atlas every TFGN rung actually
+  consumes (`__fc_wholebrain_sch200_flat__`, Schaefer-200 cortical parcellation) contains
+  no hippocampal or other subcortical ROI -- that requires the separate
+  `__fc_dmn-hippo_sch200-tian2_flat__` data product, which no TFGN rung reads. The overlap
+  statistic below is restricted to the Yeo-7 `Default` (DMN) network, 46/200 ROIs, the
+  only anatomically-labelled network the atlas actually contains.
+- **Permutation-null design.** "1000 label permutations" is ambiguous for a spatial
+  overlap statistic -- DMN membership is an anatomical label, not a subject label, so there
+  is no subject-label permutation that changes it. **Decision: a network-label spin
+  test** -- 1000 permutations reassigning which 46 of the 200 nodes carry the DMN label
+  (uniform without replacement, preserving the true DMN count), each time recomputing the
+  overlap against the *fixed, observed* top-`round(0.15x200)=30`-score node set; the
+  observed overlap's percentile against this null is the reported statistic. This is the
+  question the atlas actually available can answer: is the score's node ranking enriched
+  for the DMN label beyond what a random 46-node subset would give.
+
+| statistic | `s_topo` (S5, primary) | `d̃` (offline, temporal axis) | `gate_scores` (S2, supporting/dropped) |
+|---|---|---|---|
+| DMN overlap (top 30 of 200) | 8/30, percentile 77.9, p=0.351 | 6/30, percentile 41.6, p=0.739 | 0/30, percentile 0.0, p=1.000 |
+| Cross-seed Spearman, mean [range] | 0.928 [0.898, 0.968] | 1.000 [1.000, 1.000] | 0.823 [0.676, 0.923] |
+| ADNI-only DMN overlap (mean) | 7.0 | 10.0 | 0.25 |
+| DELCODE-only DMN overlap (mean) | 9.5 | 3.0 | 0.0 |
+
+Quadrant scatter (`s_topo` vs `d̃`, cross-seed-averaged node maps, median split): HH=66,
+HL=34, LH=34, LL=66 -- Spearman r=0.456 (p=1.2e-11), a real positive association between
+the learned topology score and the model-free drift anchor. (S2's rejected gate map
+correlates with `d̃` too, but far more weakly: r=0.186, p=8.2e-3, HH=57/HL=43/LH=43/LL=57.)
+`d̃`'s cross-seed Spearman is exactly 1.0 because it is a deterministic function of each
+subject's own data -- three of the four S5 seeds happen to select the identical best fold
+(fold 1), so the maps are bit-identical, not merely correlated; where a seed selects a
+different fold (S2's seed45, fold 4), `d̃`'s cross-seed r drops to 0.633, tracking the
+subject-set change exactly as expected for a subject-driven quantity.
+
+**Verdict, stated plainly rather than spun positive.** Neither axis clears the DMN spin
+test: `s_topo`'s 8/30 overlap sits at the 77.9th percentile of the null (p=0.351, not
+significant at any conventional threshold), and `d̃`'s 6/30 sits at the 41.6th percentile
+(p=0.739). **The pre-registered "the gate targets DMN/hippocampal regions" interpretability
+claim is not supported** by this ladder's artifacts, on the atlas actually available. What
+*is* supported: `s_topo` is stable across seeds (mean r=0.928, both cohorts separately
+above 0.91) and correlates with the independent, model-free drift anchor (r=0.456,
+p=1.2e-11) -- the learned topology score is reproducible and tracks *something* coherent
+about within-subject FC change, just not preferentially the DMN network as originally
+hypothesized. S2's dropped gate map is markedly *less* stable across seeds (0.823 vs
+0.928) and shows a curious anti-enrichment for DMN (0/30 in every fold, both cohorts) --
+consistent with it being a rejected arm, reported for the record and not leaned on for any
+claim.
+
 ## Determinism
 
 TFGN uses GATv2's scatter-based attention aggregation and sparsemax, both of which have
