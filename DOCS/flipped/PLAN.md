@@ -1109,6 +1109,88 @@ document. Two honest options, either defensible:
 Do not report OASIS-3 as a clean external-validation number without one of these two
 sentences attached — the pre-registration itself makes that the wrong thing to do.
 
+### M. Adversarial-conditioning escalation — run, and it failed on both axes
+
+The escalation arm from §L (`tfgn-s1-advcohort-pooled-seed{42..45}`,
+`cohort_conditioning: "adversarial"`, gradient-reversal cohort head, everything else
+identical to S1) completed all four seeds. It does not recover external transfer, and it
+should not be pursued further at this lambda without a documented reason to expect a
+different outcome.
+
+**Implementation, for the record.** `model/TFGN/layers.py` gained a standard DANN
+gradient-reversal function (`grad_reverse` — identity forward, negated-and-scaled
+gradient backward) and `CohortAdversaryHead` (binary ADNI-vs-DELCODE MLP), attached to
+`h_pooled` — the exact representation `patient_embeddings` feeds to the cohort probe, so
+the escalation targets precisely the quantity the probe measures. `cohort_conditioning:
+"film"` now raises instead of silently building a `"none"` model (it was documented in
+Phase 3 but never implemented; the same gap the adversarial arm was closing is now closed
+for both cases). 9 new tests cover the reversal's gradient sign/scale, head-construction
+gating, the loss-component contract, and a fail-loud path if an unmapped cohort (e.g.
+OASIS-3) ever reached the adversarial loss. A 2-epoch foreground smoke test (before
+committing GPU time to the real block) showed `cohort_probe_auc` dropping from S1's ~0.86
+to 0.74 — encouraging at the time, and, in hindsight, a trap: see below.
+
+**Results (pooled OOF, mean ± SD over 4 seeds):**
+
+| arm | OOF AUC | `cohort_probe_auc` |
+|---|---|---|
+| S1 (baseline) | 0.7488 ± 0.0033 | 0.8600 ± 0.0074 |
+| **S1 + adversarial** | **0.7066 ± 0.0075** | **0.9411 ± 0.0131** |
+
+Tier-2 stopping-rule statistic (adversarial vs. S1): fold-matched **−0.0193 ± 0.0022
+(ratio −8.68)**, pooled **−0.0422 ± 0.0051 (ratio −8.31)** — both far past the |ratio|>1
+threshold, in the loss direction, consistently across all four seeds. This is not noise.
+
+**Both intended effects failed, and the escalation made the diagnostic worse, not
+better.** Classification AUC dropped ~0.042 — larger than any single rung's loss in the
+entire Block A ladder. The cohort probe, the quantity the escalation exists to suppress,
+*increased* from 0.86 to 0.94: the model became **more** cohort-decodable, not less. The
+2-epoch smoke number (0.74) was not a preview of the trained result — it was an artifact
+of an undertrained network where *no* structure, cohort-relevant or otherwise, was
+strongly encoded yet. Read that as a standing caution for this codebase's other early-stop
+smoke checks: a probe or diagnostic computed at 2 epochs measures "how much has this
+network learned to encode anything," not the phenomenon under test, whenever the network
+starts near-random. It happened to move in the reassuring direction here by chance.
+
+**Likely mechanism, stated as a hypothesis, not fact.** `cohort_adv_lambda: 1.0` scales
+only the reversed gradient at the GRL, with no separate weight on the cohort loss term
+itself (`losses.py::cohort_adversarial_bce` is unweighted BCE) — the textbook-minimal DANN
+form. If the primary BCE gradient dominates the shared encoder's gradient at this scale,
+a `lambda=1.0` reversal may be too weak to counteract cohort-correlated features the
+network finds useful for classification as a side effect of fitting harder — and a weak,
+losing adversarial game can *increase* observed cohort separability relative to no
+adversarial term at all, if the classifier head only partially learns to ignore what
+little invariance pressure it receives while the encoder keeps specializing. This is a
+plausible, common DANN failure mode, not a verified diagnosis — no gradient-magnitude
+comparison was run to confirm it.
+
+**What was NOT done, deliberately.** No second Tier-4 frozen read was spent on this arm.
+Reading OASIS-3 for a model that already lost on OOF classification *and* moved the
+targeted diagnostic in the wrong direction would spend a one-shot resource on an arm the
+ladder's own stopping rule already rejects — the same discipline that has governed every
+rung since S2. No lambda sweep was run either: quietly retrying with a different
+`cohort_adv_lambda` after seeing this result would be an undocumented re-run of the exact
+kind Phase 0's pre-registration exists to prevent, even in service of a plausible fix.
+
+**Three honest options, not decided here:**
+
+1. **Report the escalation as attempted and failed.** The pre-registration asked for an
+   attempt at threshold-crossing, not a guaranteed fix; a documented negative result closes
+   the loop honestly. Combine with §L's finding: OASIS-3 transfer is at chance, a
+   cohort-identity shortcut is the leading hypothesis, and the one attempted mitigation did
+   not work at the lambda tried.
+2. **Register a `lambda_cohort_adv` sweep as a new, explicitly pre-registered arm** (e.g.
+   λ ∈ {3, 10, 30} or a stronger/longer warmup) before concluding adversarial conditioning
+   cannot work here — this failure mode is consistent with under-powered reversal, not
+   necessarily a dead end. New GPU runs, held for approval like every escalation before it.
+3. **Abandon the adversarial path entirely** and treat the cohort-identity shortcut as a
+   stated limitation of the thesis rather than something to fix — defensible given the
+   timeline, provided the write-up states the escalation was tried, not skipped.
+
+Do not silently pick one of these and proceed — this is the same class of decision §L
+already deferred to the user, now informed by a failed first attempt rather than an
+untried hypothesis.
+
 ### Next steps, in order
 
 1. **Docs first, no GPU.** Write A–F into `DOCS/temporal-first-ablation.md` as a
