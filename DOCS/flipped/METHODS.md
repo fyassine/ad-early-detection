@@ -1,3 +1,5 @@
+<a id="top"></a>
+
 # Temporal-First Graph Network (TFGN): Methods and Results
 
 **Scope.** This document is the self-contained methods + results write-up for the
@@ -10,9 +12,41 @@ Status: **ladder complete**. All 76 ladder runs plus the pre-registered escalati
 have reported; the single Tier-4 held-out read has been spent; no further GPU work is
 planned under this plan.
 
+One-page version: [`METHODS_SUMMARY.md`](METHODS_SUMMARY.md).
+
+## Table of Contents
+
+- [1. Methods](#1-methods)
+  - [1.1 Motivation and hypothesis](#11-motivation-and-hypothesis)
+  - [1.2 Data, preprocessing and labels](#12-data-preprocessing-and-labels)
+  - [1.3 Self-supervised pretraining (two runs, both on pooled ADNI+DELCODE only)](#13-self-supervised-pretraining-two-runs-both-on-pooled-adnidelcode-only)
+  - [1.4 The TFGN architecture](#14-the-tfgn-architecture)
+  - [1.5 Pre-registered design decisions (fixed before any run)](#15-pre-registered-design-decisions-fixed-before-any-run)
+  - [1.6 Training and optimisation](#16-training-and-optimisation)
+  - [1.7 The ablation ladder — arms](#17-the-ablation-ladder--arms)
+  - [1.8 Evaluation protocol](#18-evaluation-protocol)
+  - [1.9 Interpretability validation (pre-registered, independent of AUC)](#19-interpretability-validation-pre-registered-independent-of-auc)
+- [2. Results](#2-results)
+  - [2.1 Scorecard](#21-scorecard)
+  - [2.2 Stopping-rule verdicts (every rung against S1)](#22-stopping-rule-verdicts-every-rung-against-s1)
+  - [2.3 The winner, and why the win is not capacity](#23-the-winner-and-why-the-win-is-not-capacity)
+  - [2.4 S3 is void, not rejected](#24-s3-is-void-not-rejected)
+  - [2.5 Sequence length — the SENS decomposition](#25-sequence-length--the-sens-decomposition)
+  - [2.6 Matched-window head-to-head — a crossover, not a defeat](#26-matched-window-head-to-head--a-crossover-not-a-defeat)
+  - [2.7 Tier-4 held-out reads (one pass, spent once)](#27-tier-4-held-out-reads-one-pass-spent-once)
+  - [2.8 The cohort shortcut, and a mitigation that was tried and failed](#28-the-cohort-shortcut-and-a-mitigation-that-was-tried-and-failed)
+  - [2.9 Interpretability validation — reproducible, but not DMN-specific](#29-interpretability-validation--reproducible-but-not-dmn-specific)
+  - [2.10 Scaling gate: closed](#210-scaling-gate-closed)
+- [3. Summary and limitations](#3-summary-and-limitations)
+- [4. Reproducibility](#4-reproducibility)
+
 ---
 
+<a id="1-methods"></a>
+
 ## 1. Methods
+
+<a id="11-motivation-and-hypothesis"></a>
 
 ### 1.1 Motivation and hypothesis
 
@@ -37,6 +71,8 @@ improve prediction at matched or lower capacity.
 set is n=60. AUC differences below ≈0.08 are not resolvable at those sizes (≈0.04 on the
 248-subject cross-validation pool). The ladder was designed to *rule changes out* cheaply,
 not to guarantee a win.
+
+<a id="12-data-preprocessing-and-labels"></a>
 
 ### 1.2 Data, preprocessing and labels
 
@@ -75,6 +111,8 @@ concatenates the items, dropping the non-native allow-list column and raising if
 retained one is entirely null — otherwise the dataset's first-match column pick would have
 silently disabled DELCODE's post-conversion leakage filter.
 
+<a id="13-self-supervised-pretraining-two-runs-both-on-pooled-adnidelcode-only"></a>
+
 ### 1.3 Self-supervised pretraining (two runs, both on pooled ADNI+DELCODE only)
 
 - **P1 — pooled GAAE** (`gaae-pretrain-pooled-adni-delcode`). Graph autoencoder on ~3 700
@@ -89,6 +127,8 @@ silently disabled DELCODE's post-conversion leakage filter.
   (`x(t+1)=x(t)`, MSE 0.0630) confirms the checkpoint learned something real: the
   untrained network started worse (0.0658) and training pulled it 27.2 % below persistence
   (0.0459).
+
+<a id="14-the-tfgn-architecture"></a>
 
 ### 1.4 The TFGN architecture
 
@@ -116,6 +156,8 @@ k=8, on `|FC|`), covariates `[age, sex]`, and — where an arm needs them — th
 7. **Cohort-adversary head** (escalation only). Gradient-reversal layer (identity forward,
    negated-and-scaled gradient backward) into a binary ADNI-vs-DELCODE MLP attached to the
    pooled patient embedding.
+
+<a id="15-pre-registered-design-decisions-fixed-before-any-run"></a>
 
 ### 1.5 Pre-registered design decisions (fixed before any run)
 
@@ -153,6 +195,8 @@ out-of-fold patient latents, recorded as `cohort_probe_auc`. Pre-registered esca
 that probe exceeds **0.75** on the winning arm, re-run it with adversarial (gradient-
 reversal) cohort conditioning and report both.
 
+<a id="16-training-and-optimisation"></a>
+
 ### 1.6 Training and optimisation
 
 Shared across TFGN arms (`configs/tfgn_pooled.json`): Adam, lr 1e-3, weight decay 0,
@@ -163,6 +207,8 @@ per-fold `StandardScaler` on the temporal embeddings, and the `log Δt` and cent
 statistics fitted on the training fold only and carried inside the saved model state.
 Decision thresholds are selected on validation/out-of-fold predictions (best-F1) and never
 from test metrics.
+
+<a id="17-the-ablation-ladder--arms"></a>
 
 ### 1.7 The ablation ladder — arms
 
@@ -239,6 +285,8 @@ identical inputs: `tfgn-w3-gelstm-{frozen,random}-pooled` and `tfgn-w3-winner-po
 at `max_visits: 3`. BrainTokenGT is not re-run — S0d already runs at exactly this window
 by construction, and the filter-then-truncate order was verified to leave the subject pool
 unchanged (only visits are dropped, never subjects).
+
+<a id="18-evaluation-protocol"></a>
 
 ### 1.8 Evaluation protocol
 
@@ -325,6 +373,8 @@ remaining arm in the table above (S0a–S0d, S1c both versions, S2/S3/S4, SENS,
 W3-random/winner) has **no** in-domain or external number at all, ad hoc or otherwise;
 their only performance evidence is the pooled OOF column in §2.1.
 
+<a id="19-interpretability-validation-pre-registered-independent-of-auc"></a>
+
 ### 1.9 Interpretability validation (pre-registered, independent of AUC)
 
 Fixed in advance so it could not be dropped if the interpretability rung underperformed:
@@ -353,11 +403,17 @@ promoted to the primary axis.
 
 ---
 
+[↑ Back to top](#top)
+
+<a id="2-results"></a>
+
 ## 2. Results
 
 All numbers are pooled cross-validation OOF AUC, mean ± **SD** across seeds 42–45, and
 were recomputed from per-subject `oof_predictions.csv` rather than from any run's own
 summary line.
+
+<a id="21-scorecard"></a>
 
 ### 2.1 Scorecard
 
@@ -385,6 +441,8 @@ Two features of this table are worth naming directly. First, **all of the signal
 longitudinal**: S1's static N=1 row is 0.4919 — chance — against 0.7488 on full
 trajectories. Second, S1 has the **tightest seed SD of any deep model here** (0.0033),
 which is a direct consequence of the strict-determinism work rather than luck.
+
+<a id="22-stopping-rule-verdicts-every-rung-against-s1"></a>
 
 ### 2.2 Stopping-rule verdicts (every rung against S1)
 
@@ -420,6 +478,8 @@ what the pre-registration exists to prevent.
 classification-neutral, which is precisely what "zero risk to the backbone" was
 pre-registered to mean. It is kept as the interpretability layer.
 
+<a id="23-the-winner-and-why-the-win-is-not-capacity"></a>
+
 ### 2.3 The winner, and why the win is not capacity
 
 The selected model is **S1**: node-shared LSTM → mean-pool → linear head. Under
@@ -442,6 +502,8 @@ node-level temporal encoding, which is exactly what the flip hypothesis claimed.
 table also answers the objection from the other side: S2 and S5 *add* parameters to S1 and
 both score lower.
 
+<a id="24-s3-is-void-not-rejected"></a>
+
 ### 2.4 S3 is void, not rejected
 
 `tfgn-s3-fusion-pooled` sets `fusion: concat_residual` on top of S1's
@@ -452,6 +514,8 @@ this branch by construction. Verified rather than inferred: S3's `oof_prediction
 **bit-identical to S1's on all four seeds** (max |Δprob| = 0.0e+00). The fusion question is
 **untestable within this ladder**, because its only available parent (S1c-random) failed;
 branching S3 from a collapsed parent would answer nothing about fusion.
+
+<a id="25-sequence-length--the-sens-decomposition"></a>
 
 ### 2.5 Sequence length — the SENS decomposition
 
@@ -476,6 +540,8 @@ separable that SENS alone conflates. Restricting **S1's own** OOF predictions to
 Both are true and not in tension; both retain the pre-registered "too small to decide on
 its own" caveat. SENS's 0.7413 must never be reported beside S1's 0.7488 as a like-for-like
 row — different N, different subjects, not fold-matched.
+
+<a id="26-matched-window-head-to-head--a-crossover-not-a-defeat"></a>
 
 ### 2.6 Matched-window head-to-head — a crossover, not a defeat
 
@@ -514,6 +580,8 @@ That penalty is −0.0268 for W3-TFGN and −0.0379 for BrainTokenGT, and the 0.
 between the penalties is exactly the gap between the statistics — itself a reportable
 result: TFGN's per-fold outputs are more mutually comparable.
 
+<a id="27-tier-4-held-out-reads-one-pass-spent-once"></a>
+
 ### 2.7 Tier-4 held-out reads (one pass, spent once)
 
 Primary S1, secondaries S1b (sensitivity) and S5 (interpretability layer, never a competing
@@ -537,6 +605,8 @@ so every arm's mean is within ~1 SE of chance), tightly and consistently across 
 (S1 0.4705–0.5217; S1b 0.4416–0.5006; S5 0.4972–0.5217). This is **not** below-chance
 failure — it is **no signal transferred** to a cohort never seen in training or
 pretraining, against 0.77–0.79 in-domain for the same models.
+
+<a id="28-the-cohort-shortcut-and-a-mitigation-that-was-tried-and-failed"></a>
 
 ### 2.8 The cohort shortcut, and a mitigation that was tried and failed
 
@@ -595,6 +665,8 @@ gradient-reversal mitigation was attempted and did not recover transfer — coho
 representation learning under this pooling protocol is an open problem, not a solved one.*
 It is neither a clean external-validation number nor an unexplored trigger.
 
+<a id="29-interpretability-validation--reproducible-but-not-dmn-specific"></a>
+
 ### 2.9 Interpretability validation — reproducible, but not DMN-specific
 
 Computed on `s_topo` (from S5, primary) and the offline drift anchor `d̃` (temporal axis),
@@ -626,6 +698,8 @@ Since every performance rung above S1 was dropped, this is the *entire* interpre
 contribution, and it is reported as a negative result on the enrichment claim with a
 positive result on reproducibility.
 
+<a id="210-scaling-gate-closed"></a>
+
 ### 2.10 Scaling gate: closed
 
 The pre-registered gate for the scaled Block B was a cumulative gain from S1c-random
@@ -637,6 +711,10 @@ not capacity, are the bottleneck** — and a winner 14× smaller than the baseli
 is the evidence for that sentence, not merely consistent with it.
 
 ---
+
+[↑ Back to top](#top)
+
+<a id="3-summary-and-limitations"></a>
 
 ## 3. Summary and limitations
 
@@ -681,6 +759,10 @@ is the evidence for that sentence, not merely consistent with it.
 
 ---
 
+[↑ Back to top](#top)
+
+<a id="4-reproducibility"></a>
+
 ## 4. Reproducibility
 
 - Pre-registration: `DOCS/temporal-first-ablation.md` (every deviation recorded as an
@@ -695,3 +777,5 @@ is the evidence for that sentence, not merely consistent with it.
 - Every arm ran under strict determinism with seeds 42–45; per-subject OOF predictions are
   persisted for every run, so every statistic in §2 is recomputable per subject and per
   fold.
+
+[↑ Back to top](#top)
