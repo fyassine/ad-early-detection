@@ -1,0 +1,104 @@
+================================================================================
+                    AGE REGRESSION FORMULAS FOR POWERPOINT
+================================================================================
+
+FORMULA 1: LINEAR REGRESSION MODEL
+================================================================================
+
+Plain Text Version:
+C_ij = β₀ + β₁ × Age_i + ε_ij
+
+Unicode Version (Copy this):
+Cᵢⱼ = β₀ + β₁ × Ageᵢ + εᵢⱼ
+
+Where:
+  • Cᵢⱼ = observed connectivity value for subject i, edge j
+  • β₀ = intercept (mean connectivity)
+  • β₁ = slope (change in connectivity per year of age)
+  • Ageᵢ = age of subject i
+  • εᵢⱼ = residual (error term)
+
+
+FORMULA 2: AGE-CORRECTED CONNECTIVITY (Standard Method)
+================================================================================
+
+Plain Text Version:
+C_ij^corrected = C_ij - β̂₁ × Age_i + β̂₁ × Age_mean
+
+Unicode Version (Copy this):
+Cᵢⱼᶜᵒʳʳᵉᶜᵗᵉᵈ = Cᵢⱼ - β̂₁ × Ageᵢ + β̂₁ × Age_mean
+
+
+FORMULA 3: AGE-CORRECTED CONNECTIVITY (Simplified)
+================================================================================
+
+Plain Text Version:
+C_ij^corrected = C_ij - β̂₁ × (Age_i - Age_mean)
+
+Unicode Version (Copy this):
+Cᵢⱼᶜᵒʳʳᵉᶜᵗᵉᵈ = Cᵢⱼ - β̂₁ × (Ageᵢ - Age_mean)
+
+Note: This removes only age variation, not the absolute level
+
+
+FORMULA 4: FITTING PROCEDURE
+================================================================================
+
+Step 1: Estimate parameters using least squares
+  β̂₁ = Σ(Age_i - Age_mean)(C_ij - C_mean) / Σ(Age_i - Age_mean)²
+  β̂₀ = C_mean - β̂₁ × Age_mean
+
+Step 2: Predict age effect
+  Predicted_ij = β̂₀ + β̂₁ × Age_i
+
+Step 3: Calculate residuals
+  C_ij^residual = C_ij - Predicted_ij + β̂₀
+
+
+POWERPOINT SLIDE TEMPLATE
+================================================================================
+
+Title: Age Confound Regression
+
+Bullet Points:
+• Model: Cᵢⱼ = β₀ + β₁ × Ageᵢ + εᵢⱼ
+• Correction: Cᵢⱼᶜᵒʳʳᵉᶜᵗᵉᵈ = Cᵢⱼ - β̂₁ × (Ageᵢ - Age_mean)
+• Result: Connectivity independent of age effects
+
+
+QUICK COPY-PASTE CHUNKS
+================================================================================
+
+Chunk 1 (Model):
+Linear Model:
+Cᵢⱼ = β₀ + β₁ × Ageᵢ + εᵢⱼ
+
+Where β₀ is the intercept and β₁ is the slope (change per year)
+
+
+Chunk 2 (Correction):
+Age-Corrected Connectivity:
+Cᵢⱼᶜᵒʳʳᵉᶜᵗᵉᵈ = Cᵢⱼ - β̂₁ × (Ageᵢ - Age_mean)
+
+This removes the linear age effect while preserving mean connectivity.
+
+
+Chunk 3 (Interpretation):
+The residuals represent connectivity patterns that are independent of age.
+This ensures group differences reflect disease status, not age confounds.
+
+
+LATEX VERSIONS (for reference/other tools)
+================================================================================
+
+Formula 1:
+C_{ij} = \beta_0 + \beta_1 \cdot \text{Age}_i + \epsilon_{ij}
+
+Formula 2:
+C_{ij}^{\text{corrected}} = C_{ij} - \hat{\beta}_1 \times (\text{Age}_i - \overline{\text{Age}})
+
+Formula 3:
+\hat{\beta}_1 = \frac{\sum (\text{Age}_i - \overline{\text{Age}})(C_{ij} - \overline{C})}
+                    {\sum (\text{Age}_i - \overline{\text{Age}})^2}
+
+================================================================================

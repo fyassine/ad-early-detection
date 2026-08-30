@@ -4,9 +4,10 @@ Applies only when writing or editing files under `THESIS/`.
 
 ## 1. Voice
 
-- Before drafting or editing prose, read `DOCS/writing_style/thesis_updated.pdf` and match
-  its sentence length, tone, and level of hedging. Do not fall back to generic
-  LaTeX-thesis boilerplate phrasing.
+- Before drafting or editing prose, read `DOCS/writing_style/thesis_updated.md` (plain
+  text, read directly; `thesis_updated.pdf` is the same bachelor's-thesis source kept as
+  the archival copy) and match its sentence length, tone, and level of hedging. Do not
+  fall back to generic LaTeX-thesis boilerplate phrasing.
 - Register is firm, scientific, academic. No poetic or rhetorical flourish.
 - Write in the first-person plural, present tense. Use "we" for every methodological
   decision and present tense for facts and procedures, even as a sole author. Example:

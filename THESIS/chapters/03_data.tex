@@ -313,31 +313,7 @@ split sizes.
 
 \ac{OASIS} is excluded from every upstream stage, including self-supervised pretraining,
 so that it remains a genuinely external test rather than a held-out fold of data the
-pipeline has otherwise seen. Every pooled split uses the same four seeds
-(42, 43, 44, 45) as the single-cohort splits it is built from.
-
-\paragraph{Keeping cohort-specific timing apart.} \ac{DELCODE} conditions its trajectory
-models on nominal protocol months and \ac{ADNI} and \ac{OASIS} on elapsed calendar days
-(\autoref{sec:sampling}), and the pooling step preserves this distinction rather than
-forcing every cohort onto one time axis. One subject-level dataset object is built per
-cohort, each pointed at that cohort's own data root and its own time-allow-list column,
-and the resulting per-cohort datasets are concatenated rather than merged into a shared
-table. The non-native timing column is dropped from each cohort's dataset before
-concatenation, and construction raises an error if the retained column is entirely empty
-for a given cohort. Without that check, a dataset implementation that falls back to
-whichever timing column is populated first would silently disable \ac{DELCODE}'s
-post-conversion visit exclusion (\autoref{sec:delcode}) for every pooled subject, which is
-exactly the kind of leakage-relevant bug rule \autoref{sec:leakage} is written to catch
-before it reaches a checkpoint.
-
-\paragraph{A schema-level guard on the same principle.} The two cohorts' allow-list columns
-are named \texttt{allowed\_months} and \texttt{allowed\_days} and are mutually exclusive by
-construction: the asset-building script raises an error if both are populated on the same
-row, because a row carrying both would leave the leakage filter ambiguous about which
-column governs it. The same script materialises a symlink farm over both cohorts'
-functional-connectivity matrices so that a single glob root can serve the pooled dataset
-without duplicating any file, and refuses to overwrite an existing symlink that does not
-already point at the expected source file, rather than silently repointing it.
+pipeline has otherwise seen.
 
 \paragraph{Disjointness and containment.} Three groups of assertions enforce
 \autoref{sec:leakage}'s split-integrity contract across the pooling step itself. Within the
@@ -442,14 +418,7 @@ at exactly the mean age is left untouched by construction.
 
 \paragraph{Attrition.} \autoref{tab:attrition} reports how many sessions and subjects each
 external cohort loses between the standardised imaging directory and the final,
-model-ready manifest. \ac{ADNI} loses 40 sessions across 31 subjects (5.6\% of its
-674 postprocessed sessions) to the motion gate; \ac{OASIS} loses a larger share, 36
-sessions across 23 subjects (13.3\% of 276), consistent with its higher mean motion
-(0.340\,mm against \ac{ADNI}'s 0.229\,mm) once both cohorts are pooled. Of the 18 subjects
-present after motion quality control but absent from the final manifest, 4 belong to
-\ac{ADNI} (every session for that subject failed quality control) and 14 to \ac{OASIS} (12
-with every session quality-control-failed and 2 missing the confound files the denoising
-step requires).
+model-ready manifest.
 
 \begin{table}[htb]
   \centering
@@ -625,25 +594,7 @@ then used to score is a narrower version of the same problem a visit-level split
 information from evaluation data reaching a decision the evaluation is meant to be blind
 to.
 
-\paragraph{The executable audit.} A shared auditing module provides four checks, each
-raising an error naming the specific violation rather than returning a pass/fail flag
-silently. One checks that a named collection of split files is pairwise disjoint at the
-subject level, raising with the offending pair of splits, the number of shared subjects and
-example subject identifiers. A second hashes every connectivity matrix referenced by a
-split and raises if two distinct file paths hash identically, catching a matrix
-accidentally duplicated across subjects or visits. A third re-runs the stratified,
-group-aware cross-validation fold assignment and asserts that no subject appears in more
-than one fold's validation set. A fourth checks whether a self-supervised pretraining
-cohort and a downstream cohort satisfy a stated containment policy, either that they must be
-disjoint or that overlap is permitted, and is the check that directly targets the
-containment failure described below. A single audit entry point runs a subset of these
-checks, currently only the pairwise-disjointness check, against whichever split dictionary
-it is called with; it is not yet a maintained default that always chains all four checks
-together, which is a limitation of the automated audit as it currently stands and is stated
-here rather than left implicit, since assuming the entry point runs every check would
-overstate how much protection calling it actually provides.
-
-\paragraph{A historical containment failure.} A prior split-generation script reserved the
+\paragraph{Pretraining and downstream split containment.} A prior split-generation script reserved the
 downstream classifier's \emph{test} subjects out of the self-supervised encoder's training
 pool, but not its \emph{validation} subjects, which went undetected until a supervisor
 observed an unexplained 0.10 to 0.15 drop in downstream test \ac{AUC} between an older and
@@ -657,24 +608,6 @@ and 0.8071 under the newer encoder, newer hyperparameters and the corrected spli
 full 0.1596-point drop between the original and newer runs, the leak alone, isolated by
 this re-run, accounts for 0.074 points, or roughly 46\%; the remaining 54\% is attributable
 to the encoder and hyperparameter changes made in the same refactor, which the leak
-investigation cannot separate further because both changed together. This is the case that
-motivated the pretrain-versus-downstream containment check described above, and the
+investigation cannot separate further because both changed together. The
 pooled-protocol assertions of \autoref{sec:pooled-protocol} extend the same check to the
 pooled splits so that pooling \ac{ADNI} into the training pool cannot reopen it.
-
-\paragraph{An executable test suite.} Beyond the audit module, a dedicated test suite pins
-27 invariants against every committed split file: that each split's required columns are
-present and free of nulls in key fields; that a converter's post-conversion visits never
-appear in their allowed set; that every split is internally free of duplicate rows; that
-splits are pairwise disjoint within the pretraining schema and within the downstream
-schema; that no subject is retained with zero usable scans; that diagnostic categories
-outside the modelled scope, such as subjective cognitive decline, never appear in either
-schema; that class balance across splits stays within a stated tolerance; and, as the direct
-descendants of the containment failure above, that the pretraining training set is disjoint
-from the downstream validation and test sets, that the pretraining validation set is
-disjoint from the downstream test set, and that the downstream validation and test sets are
-each fully contained in their pretraining-split counterparts. \autoref{ch:app-splits}
-records the full list of checks this test suite and the audit module pin, together with the
-audit module's exact function signatures, as a specification of the contract rather than as
-a live execution log, since the split and manifest files this audit runs against are
-generated artefacts rather than files committed to the project repository.
