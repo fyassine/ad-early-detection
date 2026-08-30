@@ -466,10 +466,115 @@ thesis consumes those existing matrices and applies the \ac{ADNI}- and
 stage through a consistent parcellation, connectivity and age-correction procedure.
 
 \section{Group-Level Characterisation Before Modelling}\label{sec:group-stats}
-\outlinenote{Converters against non-converters characterised with \ac{PERMANOVA} on the
-connectivity matrices, the \ac{NBS} for cluster-level differences, and per-edge effect
-sizes under \ac{FDR} control. Establishes whether a group difference is present before a
-deep model is asked to find one.}
+
+Before any classifier is fit, this section asks whether the \ac{DELCODE} connectivity
+matrices already separate by diagnostic group under classical statistics. Two separate
+analyses answer this. The first, a within-group and between-group variance decomposition,
+compares converters directly against pooled non-converters, the contrast the downstream
+classifiers of \autoref{ch:methodology} are trained on. The second, a multivariate and
+edge-level battery, applies \ac{PERMANOVA}, the \ac{NBS}, and per-edge effect sizes under
+\ac{FDR} control to converters against established \ac{AD} patients, a coarser and more
+clinically separable contrast used here to characterise the same connectivity matrices at
+the edge and network level. Both analyses draw on the full pool of available \ac{DELCODE}
+visits assigned each subject's diagnostic label at the time of that visit, rather than on
+the single-visit-per-subject, subject-level cohort of \autoref{sec:delcode}, since the
+question here is about group separability in the connectivity matrices themselves rather
+than about the modelling cohort.
+
+\paragraph{Converters against pooled non-converters: a variance decomposition.} For each of
+five connectivity-distance metrics (Pearson correlation, Spearman and Kendall rank
+correlation, cross-correlation, and a Riemannian distance between connectivity matrices
+treated as covariance-like objects), every edge's variance is decomposed into a within-group
+component, the average variance of that edge across visits sharing the same diagnostic
+label, and a between-group component, the variance of that edge's group means around the
+overall mean. The ratio of the two,
+\[
+  \rho = \frac{\sigma^2_{\text{between}}}{\sigma^2_{\text{within}}},
+\]
+is large when an edge's value differs consistently between converters and non-converters
+relative to how much it varies within either group, and small when between-patient
+variation swamps whatever group difference exists. Across all five metrics, the converter
+group (60 visits) and the pooled non-converter group (692 to 734 visits, depending on the
+metric's missing-data pattern) give a ratio between 0.0130 and 0.0157
+(\autoref{tab:variance-ratio}): within-group variance exceeds between-group variance by
+roughly two orders of magnitude for every metric tested, and not one of the 5{,}995
+edges evaluated reaches $\rho > 1$ under any metric. Converters and non-converters are
+therefore not separable at the level of individual edge variance under any of the five
+distance metrics tested: between-patient variation within either diagnostic group is the
+dominant source of variance in this cohort's connectivity matrices, at every edge and under
+every metric considered here.
+
+\begin{table}[htb]
+  \centering
+  \caption{Within-group and between-group edge variance, converters against pooled
+  non-converters (stable \ac{MCI} and cognitively healthy visits combined), by connectivity
+  metric. No metric reaches a between/within ratio above 1 on any of the 5{,}995 edges
+  evaluated.}
+  \label{tab:variance-ratio}
+  \begin{tabular}{@{}lrrrr@{}}
+    \toprule
+    Metric & $n$ converter / non-conv.\ & $\sigma^2_{\text{within}}$ & $\sigma^2_{\text{between}}$ & $\rho$ \\
+    \midrule
+    Pearson & 60 / 734 & 0.03240 & 0.000523 & 0.0157 \\
+    Kendall & 60 / 692 & 0.01773 & 0.000282 & 0.0154 \\
+    Spearman & 60 / 692 & 0.03732 & 0.000590 & 0.0153 \\
+    Cross-correlation & 60 / 734 & 0.00600 & 0.0000865 & 0.0130 \\
+    Riemannian & 60 / 734 & $5.589 \times 10^{11}$ & $4.342 \times 10^{9}$ & 0.0067 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Converters against AD: distance-based group tests.} \ac{PERMANOVA} tests whether
+two groups differ in their average pairwise distance in connectivity space by comparing an
+observed pseudo-$F$ statistic against a null distribution built by permuting group labels:
+\[
+  F = \frac{\mathrm{SS}_{\text{between}} / (g - 1)}{\mathrm{SS}_{\text{within}} / (N - g)},
+\]
+where $\mathrm{SS}_{\text{between}}$ and $\mathrm{SS}_{\text{within}}$ are the between-group
+and within-group sums of squared pairwise distances computed from the same distance matrix
+each metric induces, $g$ is the number of groups compared, and $N$ is the total number of
+subjects. Across 5{,}000 label permutations per metric, none of the five distance metrics
+yields a significant \ac{PERMANOVA} result at $\alpha = 0.05$ for converters against
+\ac{AD} (\autoref{tab:permanova-nbs}). The \ac{NBS} instead tests for group differences
+concentrated in a connected subnetwork of edges rather than distributed diffusely: a
+per-edge Welch $t$-statistic is computed for every edge, edges with $|t| > 3.0$ are kept and
+treated as a graph, and the size of each connected component in that graph is compared
+against the largest component size obtained under 5{,}000 label permutations, giving each
+observed component a permutation-based $p$-value. Four of the five metrics again show no
+significant component at $\alpha = 0.05$; the cross-correlation metric is the exception, with
+a 24-edge connected component reaching $p = 0.024$.
+
+\begin{table}[htb]
+  \centering
+  \caption{\ac{PERMANOVA} and \ac{NBS} results, converters against established \ac{AD}
+  patients, by connectivity metric. $F$, $R^2$ and $p$ are the \ac{PERMANOVA} pseudo-$F$
+  statistic, the fraction of total distance variance attributed to group, and its
+  permutation $p$-value; the last two columns give the largest \ac{NBS} connected component
+  and its permutation $p$-value.}
+  \label{tab:permanova-nbs}
+  \begin{tabular}{@{}lrrrrr@{}}
+    \toprule
+    Metric & $n$ conv.\ / AD & $F$ & $R^2$ & $p$ (\ac{PERMANOVA}) & Largest \ac{NBS} component ($p$) \\
+    \midrule
+    Pearson & 60 / 104 & 0.938 & 0.0058 & 0.700 & 3 edges (0.878) \\
+    Spearman & 60 / 93 & 0.903 & 0.0059 & 0.837 & 5 edges (0.610) \\
+    Kendall & 60 / 93 & 0.907 & 0.0060 & 0.830 & 5 edges (0.629) \\
+    Riemannian & 60 / 104 & 1.358 & 0.0083 & 0.190 & 2 edges (0.642) \\
+    Cross-correlation & 60 / 104 & 1.100 & 0.0067 & 0.125 & 24 edges (\textbf{0.024}) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Per-edge effect sizes are computed alongside these tests with a Mann-Whitney $U$ test at
+every edge, corrected for the resulting multiple comparisons at $\alpha = 0.05$ under the
+Benjamini-Hochberg procedure for controlling the \ac{FDR}, and paired with Cohen's $d$ as
+the effect-size statistic at each edge. The near-uniform absence of a significant group
+difference across four of five metrics, for a contrast as clinically separable as converters
+against established \ac{AD}, sets the scale against which the pooled non-converter
+comparison above should be read: if converters are not consistently distinguishable from
+manifest \ac{AD} patients under these edge-level and network-level tests, the smaller,
+within-cohort-variance-dominated difference between converters and stable \ac{MCI} subjects
+is not expected to be more detectable by the same methods.
 
 \section{Split Integrity and Leakage Control}\label{sec:leakage}
 \outlinenote{Patient-level splitting, the isolated test manifest, post-conversion visit
