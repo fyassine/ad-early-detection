@@ -204,12 +204,126 @@ records \ac{DELCODE} alone as largely free of: the pooled cross-validation pool 
 near-annual ones.
 
 \section{Preprocessing and Confound Management}\label{sec:preprocessing}
-\outlinenote{Confound regression, motion handling and the attrition accounting.}
 
 \ac{DELCODE} had been preprocessed before the start of this thesis using the laboratory's
 existing preprocessing pipeline. During the thesis, the same established preprocessing
 framework was applied to \ac{ADNI} and \ac{OASIS}. Cohort-specific adaptations required for
-processing and integrating these datasets were implemented as part of the thesis.
+processing and integrating these datasets were implemented as part of the thesis. This
+section describes that pipeline end to end, from the raw scan to the parcellated,
+confound-corrected connectivity matrix each downstream model consumes, and reports how many
+sessions each cohort loses at every stage.
+
+\paragraph{Acquisition.} \ac{DELCODE} is acquired at a single site under one nominal
+resting-state protocol: a repetition time of 2{,}580\,ms, an echo time of 30\,ms, 3.5\,mm
+isotropic voxels and 180 acquired volumes per scan, on a single scanner model. \ac{ADNI}
+and \ac{OASIS} are acquired across the many sites, vendors and scanner generations
+described in \autoref{sec:external-cohorts}. This single-site homogeneity is what makes
+\ac{DELCODE} the appropriate cohort for the group-level statistics of
+\autoref{sec:group-stats}: the acquisition variability that has to be explicitly modelled
+or excluded for \ac{ADNI} and \ac{OASIS} is largely absent from \ac{DELCODE} by
+construction.
+
+\paragraph{From raw scan to denoised time series.} Every cohort passes through the same
+pipeline. Raw scans are converted to a standardised imaging directory layout, then run
+through fMRIPrep (version 20.2.7) for motion correction, susceptibility-distortion
+correction, coregistration to an anatomical reference and normalisation to a common
+template space, with automated independent-component-based motion labelling enabled and
+FreeSurfer surface reconstruction disabled, since the downstream models operate on volume
+parcellations rather than cortical surfaces. Ten volumes are dropped from the start of each
+scan before any further processing, to let the scanner's signal reach steady state. The
+labelled motion components identified by fMRIPrep, together with the mean white-matter and
+cerebrospinal-fluid signals and one global-signal regressor, are then regressed out of the
+preprocessed time series in a single denoising call together with a band-pass filter that
+retains frequencies between 0.01 and 0.1\,Hz, the conventional resting-state
+functional-connectivity band. Regressing the automated motion components out of the
+minimally preprocessed signal, rather than starting from a partially cleaned variant, keeps
+exactly one denoising step between the raw signal and the final time series, so the effect
+of each individual regressor stays traceable.
+
+\paragraph{Motion quality control.} A session is excluded outright if its mean
+frame-to-frame head displacement, computed after the ten discarded volumes, exceeds
+0.5\,mm. A second, looser threshold of 0.2\,mm is computed and reported per session but
+does not itself exclude a session; it is a scrub-level diagnostic rather than a gate.
+Sessions excluded by the 0.5\,mm gate have a mean displacement above 0.67\,mm (maximum
+1.40\,mm), with more than half of their timepoints spiking above 0.5\,mm and more than
+92\% of frames above the looser 0.2\,mm threshold. The excluded sessions are therefore
+sessions in which the subject was moving through most of the scan rather than borderline
+cases close to the 0.5\,mm cutoff.
+
+\paragraph{Parcellation and connectivity.} The denoised time series are averaged within
+each of 200 cortical regions of the Schaefer parcellation, itself organised into seven
+canonical large-scale networks, giving one region-average time series per node. Pairwise
+Pearson correlation between every pair of regions' time series gives one
+$200 \times 200$ connectivity matrix per session, which is then Fisher-transformed:
+\[
+  z_{ij} = \operatorname{arctanh}\bigl(\operatorname{clip}(r_{ij}, -0.999999, 0.999999)\bigr),
+\]
+where $r_{ij}$ is the Pearson correlation between regions $i$ and $j$ and
+$\operatorname{clip}$ bounds it strictly inside $(-1, 1)$ before the inverse hyperbolic
+tangent is applied, since $\operatorname{arctanh}$ is unbounded at $\pm 1$ and a
+perfectly correlated pair of regions, which does occur in a 180-volume scan, would
+otherwise produce an infinite matrix entry. The Fisher transform is applied because Pearson
+correlation is bounded and its sampling variance depends on the correlation's own
+magnitude, so a linear model fitted directly on $r_{ij}$ would treat a change from 0.10 to
+0.20 as equivalent in magnitude to a change from 0.80 to 0.90, when the latter reflects a
+much larger displacement in the underlying uncorrelated-to-fully-correlated range that
+$\operatorname{arctanh}$ maps closer to linearly. A small number of hippocampus-focused
+analyses extend this cortical parcellation with subcortical hippocampal parcels from the
+Tian subcortical atlas; these variant matrices are used only where the analysis in question
+calls for them and are not part of the whole-brain matrices the main classifiers consume.
+
+\paragraph{Age regression.} A subject's age correlates with functional connectivity
+independently of diagnosis, so every connectivity entry is additionally corrected for a
+linear age effect before it reaches a classifier. For each edge $(i,j)$, a linear model
+\[
+  C_{ij} = \beta_0 + \beta_1 \, \text{Age} + \varepsilon_{ij}
+\]
+is fit across the cohort, where $C_{ij}$ is that edge's Fisher-transformed connectivity
+value, $\text{Age}$ is the subject's age at scan, $\beta_0$ and $\beta_1$ are the
+intercept and age slope estimated by ordinary least squares, and $\varepsilon_{ij}$ is the
+residual. Each subject's edge value is then replaced by
+$C_{ij} - \hat\beta_1 (\text{Age} - \overline{\text{Age}})$, where $\hat\beta_1$ is the
+fitted slope and $\overline{\text{Age}}$ is the cohort mean age, which removes the linear
+age trend while leaving the cohort's overall connectivity level unchanged, since a subject
+at exactly the mean age is left untouched by construction.
+
+\paragraph{Attrition.} \autoref{tab:attrition} reports how many sessions and subjects each
+external cohort loses between the standardised imaging directory and the final,
+model-ready manifest. \ac{ADNI} loses 40 sessions across 31 subjects (5.6\% of its
+674 postprocessed sessions) to the motion gate; \ac{OASIS} loses a larger share, 36
+sessions across 23 subjects (13.3\% of 276), consistent with its higher mean motion
+(0.340\,mm against \ac{ADNI}'s 0.229\,mm) once both cohorts are pooled. Of the 18 subjects
+present after motion quality control but absent from the final manifest, 4 belong to
+\ac{ADNI} (every session for that subject failed quality control) and 14 to \ac{OASIS} (12
+with every session quality-control-failed and 2 missing the confound files the denoising
+step requires).
+
+\begin{table}[htb]
+  \centering
+  \caption{Attrition from imaging-directory conversion to the final cohort manifest.
+  Subject and session counts are reported at each stage; the final manifest column also
+  gives the resulting stable-\ac{MCI}/converter split (\ac{OASIS} additionally carries 9
+  subjects pending label resolution).}
+  \label{tab:attrition}
+  \begin{tabular}{@{}lrrr@{}}
+    \toprule
+    Stage & \ac{ADNI} (subj.\ / sess.) & \ac{OASIS} (subj.\ / sess.) \\
+    \midrule
+    Imaging-directory conversion & 272 / 723 & 144 / 278 \\
+    fMRIPrep completion & 272 / 723 & 142 / 276 \\
+    After motion quality control & 268 / 674 & 128 / 239 \\
+    Final manifest & 237 / 567 & 128 / 234 \\
+    \quad stable \ac{MCI} / converter & 403 / 164 & 106 / 119 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The connectivity matrices \ac{DELCODE} contributes to this same manifest were not built
+during the thesis. \ac{DELCODE}'s functional scans had already been preprocessed, before
+the thesis began, on a separate computing cluster as part of another project's work; the
+thesis consumes those existing matrices and applies the \ac{ADNI}- and
+\ac{OASIS}-integration work described above so that all three cohorts reach the modelling
+stage through a consistent parcellation, connectivity and age-correction procedure.
 
 \section{Group-Level Characterisation Before Modelling}\label{sec:group-stats}
 \outlinenote{Converters against non-converters characterised with \ac{PERMANOVA} on the
