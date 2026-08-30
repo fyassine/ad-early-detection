@@ -3,15 +3,155 @@
 \chapter{Data, Cohorts and Preprocessing}\label{ch:data}
 
 \section{The DELCODE Cohort and the Conversion Label}\label{sec:delcode}
-\outlinenote{Cohort composition, and the label definition together with the follow-up
-window that defines it. States the tradeoff explicitly: the window choice trades cohort
-size against label noise.}
+
+\ac{DELCODE} is the primary cohort of this thesis. Its subject pool, visit structure and
+conversion label were built as part of the pre-existing project infrastructure this thesis
+consumes; this section describes that cohort and label as they enter the downstream
+classifiers, states the resulting cohort composition, and states explicitly what the
+absence of an imposed follow-up window means for the label.
+
+\paragraph{Diagnostic categories and cohort composition.} Every \ac{DELCODE} visit carries
+one of four diagnostic categories: cognitively healthy, subjective cognitive decline,
+\ac{MCI}, or \ac{AD}. A fifth group, first-degree relatives of \ac{AD} patients recruited
+as an additional comparison group, is excluded from every cohort used in this thesis, since
+the modelling task is restricted to the \ac{MCI}-to-\ac{AD} conversion question. Every
+\ac{DELCODE} visit is additionally recorded against a nominal study timepoint on a
+6-month-to-annual grid running from baseline to 60 months, used to label visits
+consistently across subjects rather than to bound how long any subject is followed.
+
+\paragraph{The conversion label.} A subject's conversion status is not read from the
+per-visit diagnostic category directly. Instead, it is established by matching each visit
+against a separately maintained, hand-curated record of confirmed conversions, keyed by
+subject identifier and visit date. Every visit occurring after a subject's earliest
+matched conversion is then relabelled \ac{AD} regardless of what diagnostic category it
+originally carried, on the reasoning that a subject confirmed to have converted has, by
+definition, remained converted at every later visit. A subject is a converter if any of
+their visits is confirmed this way, and stable \ac{MCI} if they have at least one \ac{MCI}
+visit and no confirmed conversion. Reading the label from this separately curated record,
+rather than from the routinely recorded diagnostic category alone, is what lets the label
+reflect a clinical confirmation step rather than a single visit's coding.
+
+\paragraph{No maximum follow-up horizon.} The label pipeline imposes no cutoff on how long
+after a subject's first \ac{MCI} visit a later conversion is still counted: a conversion
+recorded at any distance in the future still promotes every subsequent visit to \ac{AD} and
+marks the subject a converter. This is one endpoint of the tradeoff between cohort size and
+label noise that a follow-up window controls. Choosing no maximum horizon maximises the
+information used to assign every subject's label, since no confirmed conversion is ever
+discarded for occurring too late to count, but it means the stable-\ac{MCI} label carries a
+different meaning depending on how long a given subject happened to be followed: a subject
+who stops attending study visits after twelve months without converting is labelled stable
+in exactly the same way as a subject followed and observed not to convert for five years,
+even though only the second subject's stability has been checked at any length. This
+distinction between an unlimited-horizon label and a short one is separate from the visit
+grid's own resolution: because \ac{DELCODE} visits recur on an approximately annual cadence
+(\autoref{sec:sampling}), a conversion is in practice detectable only at the granularity of
+whichever nominal timepoint the confirming visit falls on, not at the resolution of the
+date on which conversion clinically occurred.
+
+\paragraph{Worked example.} Consider a subject scanned at baseline, twelve and twenty-four
+months, diagnosed \ac{MCI} at all three visits by the routinely recorded diagnostic
+category, whose twenty-four-month visit is later matched against the curated conversion
+record. Under the label pipeline, that twenty-four-month visit is relabelled \ac{AD}, and
+the subject is a converter regardless of what the raw diagnostic category at that visit
+said. Had the same subject instead stopped attending after the twelve-month visit, before
+any conversion record could exist for them, the pipeline would label them stable \ac{MCI}
+from exactly the same clinical trajectory up to that point, since no later visit was
+observed at which a conversion could be confirmed. The two outcomes differ only in how long
+the subject happened to remain in the study, which is the label-noise mechanism the
+unlimited-horizon choice trades against a larger, more fully labelled cohort.
+
+\paragraph{Downstream cohort.} Restricting to subjects with a valid stable-\ac{MCI} or
+converter label under this rule gives a downstream cohort of 167 subjects: 99 stable
+\ac{MCI} and 68 converters. This cohort is split at the subject level into training,
+validation and test sets in a 60/20/20 ratio, stratified by diagnostic group and fixed at
+seed 42, so that every visit belonging to a given subject falls in exactly one split
+(\autoref{sec:leakage}).
 
 \section{Longitudinal Sampling and Follow-Up Regularity}\label{sec:sampling}
-\outlinenote{Visit spacing, missing follow-ups, variable sequence length, and the masking
-and time-conditioning consequences. Records that DELCODE follow-up is more regular than the
-irregular-sampling literature assumes, and that the pooled protocol reintroduces
-irregularity.}
+
+Longitudinal classifiers condition on how a subject's connectivity changes between visits,
+which makes the spacing and number of those visits part of the input rather than incidental
+detail. This section describes how visit timing is represented for each cohort, how a
+variable number of visits per subject is handled, and how regular or irregular that visit
+spacing actually is in \ac{DELCODE} against \ac{ADNI} and \ac{OASIS}.
+
+\paragraph{Three notions of visit time.} A subject's visits are indexed three separate
+ways, kept distinct because they answer different questions. The visit index is a subject's
+visits numbered in acquisition order, independent of any calendar or protocol time, and is
+what a sequence model iterates over. The protocol month is the nominal study timepoint a
+visit is recorded against, meaningful for \ac{DELCODE}, whose visits are scheduled on the
+fixed grid described in \autoref{sec:delcode}, but not for \ac{ADNI} or \ac{OASIS}, which
+instead record each visit's elapsed time in days since a cohort-specific reference date.
+The inter-visit interval, $\Delta t$, is the elapsed time between two consecutive visits,
+converted to months by dividing the day difference by $30.44$, the average number of days
+per month, and is what the recurrent trajectory models of \autoref{ch:methodology}
+condition their gate updates on. Keeping these three separate matters because a fixed
+protocol month is not itself an elapsed time: two \ac{DELCODE} subjects both recorded at
+the twelve-month timepoint may have been scanned weeks apart in practice, and treating the
+nominal grid as if it were the elapsed time would misstate $\Delta t$ for exactly the
+subjects whose visits fall off-schedule.
+
+\paragraph{A variable number of visits per subject.} Subjects are not observed the same
+number of times. A sequence dataset built from these visits enforces a minimum visit count
+before a subject is included at all, and optionally truncates every kept subject to a fixed
+maximum, retaining that subject's earliest visits. A stricter setting requires every kept
+subject to be truncated to exactly this maximum, and raises an error if no maximum is given
+under this setting, since without a fixed length there is nothing to truncate every subject
+to.
+
+\paragraph{Visit count as a label proxy.} In the \ac{DELCODE} downstream cohort, converters
+are followed for more visits, on average, than stable \ac{MCI} subjects: in the held-out
+test split, converters average 3.71 scans per subject against 2.35 for stable \ac{MCI}
+subjects. Subjects who stop attending study visits earlier are therefore disproportionately
+stable \ac{MCI}, so the number of visits available for a subject is not independent of that
+subject's label. This is why the stricter fixed-length truncation setting exists: without
+it, a sequence model has access to a subject's visit count as a side channel correlated
+with the label it is asked to predict, alongside whatever signal the visits' content
+carries.
+
+\paragraph{Follow-up regularity.} \autoref{tab:interval-structure} reports each cohort's
+visit spacing, summarised by the coefficient of variation
+$\mathrm{CV} = \sigma_{\Delta t} / \mu_{\Delta t}$, the ratio of the standard deviation of a
+cohort's inter-visit intervals to their mean, which is near zero for a cohort whose visits
+recur at a near-fixed spacing and grows as that spacing becomes less predictable relative
+to its own average length. \ac{DELCODE} visits fall on the twelve-month nominal timepoint
+90.0\% of the time, which is why no coefficient of variation is reported for it: its
+follow-up is regular enough that the irregular-sampling literature's usual concerns, built
+around cohorts like \ac{ADNI} and \ac{OASIS} whose visit spacing this table quantifies,
+apply only weakly to \ac{DELCODE} on its own. \ac{ADNI} and \ac{OASIS} are markedly less
+regular: \ac{ADNI}'s median inter-visit interval is 371 days (interquartile range
+207 to 419 days, $\mathrm{CV} = 0.647$), with only 21.9\% of intervals falling near the
+twelve-month mark, and \ac{OASIS}'s median interval is 1{,}012 days (interquartile range
+708 to 1{,}342 days, $\mathrm{CV} = 0.574$), with its most common interval, at 8.1\% of
+cases, falling near thirty-six months rather than twelve. \autoref{sec:pooled-protocol}
+records that pooling \ac{ADNI} into the \ac{DELCODE}-based training pool reintroduces this
+irregularity into a cohort that would otherwise be sampled on a near-fixed schedule.
+
+\begin{table}[htb]
+  \centering
+  \caption{Visit spacing by cohort. Scans per subject and inter-visit interval statistics
+  are computed over subjects with at least two visits; \ac{DELCODE}'s scheduled grid makes
+  a scans-per-subject range and an interval coefficient of variation uninformative for it,
+  so only its modal-interval share is reported.}
+  \label{tab:interval-structure}
+  \begin{tabular}{@{}lccccl@{}}
+    \toprule
+    Cohort & Scans/subj.\ (range) & Median $\Delta t$ & IQR & CV & Modal interval \\
+    \midrule
+    \ac{DELCODE} & --- & 12 mo & --- & --- & 90.0\% at 12 mo \\
+    \ac{ADNI} & 3.11 (2--10) & 371 d & 207--419 d & 0.647 & 21.9\% at 12 mo \\
+    \ac{OASIS} & 2.65 (2--6) & 1{,}012 d & 708--1{,}342 d & 0.574 & 8.1\% at 36 mo \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Within \ac{DELCODE} itself, the distribution of inter-visit intervals concentrates sharply
+on the twelve-month nominal spacing: 242 of 269 recorded intervals (90.0\%) fall at twelve
+months, 19 (7.1\%) at twenty-four months, 7 (2.6\%) at thirty-six months and 1 (0.4\%) at
+forty-eight months. Because this near-annual cadence is also the resolution at which
+\autoref{sec:delcode}'s conversion label is detectable, \ac{DELCODE}'s follow-up regularity
+and its label resolution are two views of the same scheduled grid, rather than independent
+properties of the cohort.
 
 \section{External Cohorts: ADNI and OASIS-3}\label{sec:external-cohorts}
 
