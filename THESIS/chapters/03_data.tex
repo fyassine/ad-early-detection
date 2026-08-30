@@ -109,6 +109,19 @@ it, a sequence model has access to a subject's visit count as a side channel cor
 with the label it is asked to predict, alongside whatever signal the visits' content
 carries.
 
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.75\textwidth]{fig0_cohort_design_and_distribution}
+  \caption{Class balance of the \ac{DELCODE} downstream cohort restricted to subjects with
+  between two and three visits, the fixed-length window used for the matched-window
+  comparisons of \autoref{ch:baselines} and \autoref{ch:results}. This windowed cohort (95
+  subjects: 58 stable \ac{MCI} and 37 converters in the cross-validation pool, 14 stable
+  \ac{MCI} and 11 converters in the held-out test set) is a subset of the full 167-subject
+  downstream cohort reported in \autoref{sec:delcode}, which additionally includes subjects
+  observed at only one visit or at more than three.}
+  \label{fig:cohort-design}
+\end{figure}
+
 \paragraph{Follow-up regularity.} \autoref{tab:interval-structure} reports each cohort's
 visit spacing, summarised by the coefficient of variation
 $\mathrm{CV} = \sigma_{\Delta t} / \mu_{\Delta t}$, the ratio of the standard deviation of a
