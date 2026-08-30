@@ -14,11 +14,99 @@ irregular-sampling literature assumes, and that the pooled protocol reintroduces
 irregularity.}
 
 \section{External Cohorts: ADNI and OASIS-3}\label{sec:external-cohorts}
-\outlinenote{Field strength, acquisition protocol and phase differences.}
 
 As part of the broader project, \ac{ADNI} and \ac{OASIS} were included as additional
 cohorts for cross-cohort validation. During the thesis, these datasets were processed and
-integrated into the existing analysis framework.
+integrated into the existing analysis framework. This section describes the acquisition
+heterogeneity of both cohorts relative to \ac{DELCODE}, the diagnostic-label conventions
+used to identify conversion in each, and a scan-to-visit matching problem specific to
+multi-site data that does not arise in \ac{DELCODE}.
+
+\ac{DELCODE} is acquired at a single site under one nominal protocol
+(\autoref{sec:preprocessing} gives the exact scanning parameters), so within-cohort
+acquisition variability is not a concern for it. \ac{ADNI} and \ac{OASIS}, by contrast,
+pool scans collected over more than a decade across many sites, scanner vendors and
+hardware generations, which is the acquisition-heterogeneity challenge introduced in
+\autoref{ch:foundations}. An internal inventory of the \ac{ADNI} magnetic-resonance record
+metadata used for this project counts 18,616 records, of which 18,614 are acquired at
+3.0\,T field strength and only 2 at 1.5\,T, drawn from at least ten scanner models across
+three vendors (Siemens, 14,056 records; Philips, 2,416; General Electric, 2,144). \ac{OASIS}
+draws on a single vendor, Siemens, but spans six scanner generations over its acquisition
+window; its record inventory totals 30,339 magnetic-resonance sessions, of which 5,114
+scan rows across 2,138 sessions and 1,198 subjects are resting-state functional scans. Of
+these, 205 rows are reference or calibration acquisitions (\texttt{SeriesDescription} of
+\texttt{rsfmri\_ref}, repetition time 5.0\,s) rather than usable resting runs and are
+excluded before any downstream matching.
+
+\paragraph{Repetition-time grouping and a unit trap.} Cohort-level protocol comparisons
+group scans by repetition time (below 1{,}000\,ms as one group, below 2{,}000\,ms as a
+second, and 2{,}000\,ms and above as a third). \ac{OASIS} stores repetition and echo time
+in seconds in its scan metadata (for example 2.2\,s, 0.027\,s), whereas \ac{ADNI} stores
+the same fields directly in milliseconds; applying the grouping thresholds to \ac{OASIS}
+without first multiplying by 1{,}000 places every scan in the wrong group. Once converted,
+\ac{OASIS} resting-state scans populate only two of the three repetition-time groups: one
+at 2{,}200, 2{,}500 or 3{,}000\,ms and a second at 500, 806 or 816\,ms; the middle group is
+empty. This unit conversion was implemented as part of the cohort-integration work carried
+out during the thesis, alongside the rest of the \ac{OASIS} subject-list construction
+described below.
+
+\paragraph{An era boundary in the diagnostic label.} \ac{ADNI} and \ac{OASIS} each label a
+subject a converter from the same rule: a subject with at least one visit diagnosed
+\ac{MCI} is a converter if any later visit is diagnosed \ac{AD}, and stable \ac{MCI}
+otherwise; a subject whose only \ac{AD} diagnosis occurs at or before the first \ac{MCI}
+visit is treated as prevalent \ac{AD} rather than a converter and is dropped, since the
+label is meant to be predicted ahead of conversion rather than recognised in visits that
+are already demented.
+Applying this rule to \ac{OASIS} exposes a form-schema change that a same-cohort analysis
+would not: \ac{OASIS} diagnoses are drawn from the Uniform Data Set clinical form, whose
+Alzheimer's-disease field was renamed partway through the study. Earlier visits carry a
+single field, \texttt{PROBAD}; later visits instead carry two fields, \texttt{alzdis} and
+\texttt{alzdisif}, and leave \texttt{PROBAD} unset. Of 8{,}499 diagnostic rows, 4{,}855
+belong to the earlier form era and 3{,}644 to the later one, and the two eras are
+essentially non-overlapping: \texttt{PROBAD} is populated in 1{,}131 of the 4{,}855 earlier
+rows and in none of the 3{,}644 later rows. A subject is therefore labelled \ac{AD} at a
+visit if
+\[
+  \text{DEMENTED} = 1 \;\wedge\; \bigl(\text{PROBAD} = 1 \;\vee\; (\text{alzdis} = 1 \wedge \text{alzdisif} = 1)\bigr),
+\]
+where $\text{DEMENTED}$ is the form's general dementia flag, $\text{PROBAD}$ is the
+earlier-era probable-\ac{AD} flag, and $\text{alzdis}$ together with $\text{alzdisif}$ are
+the later-era Alzheimer's-disease and Alzheimer's-as-primary-cause flags that replace it.
+Using $\text{PROBAD}$ alone, ignoring the later form era, yields 23 converters and 130
+stable \ac{MCI} subjects; the era-aware rule above yields 73 converters and 85 stable
+\ac{MCI} subjects, nearly tripling the converter count. The single-field rule under-counts
+because it silently treats every later-era \ac{AD} visit as non-\ac{AD}, which is exactly
+the failure mode that motivates checking a label rule against both form eras of a cohort
+before trusting its counts, rather than assuming a diagnostic field keeps the same meaning
+across a multi-year, multi-site study.
+
+\paragraph{Matching a scan to a clinical visit.} Neither cohort scans a subject on the same
+day as its clinical assessment, so a scan is assigned to the nearest visit within a fixed
+window and left unmatched otherwise. \ac{ADNI} uses a window of $\pm 90$ days; \ac{OASIS}
+uses $\pm 365$ days. The difference follows from visit cadence rather than from a different
+tolerance for label noise: \ac{OASIS} clinical visits recur at approximately annual
+intervals, so a $\pm 90$-day window matches only 33 visit-scan pairs across the cohort,
+against 122 matched visit-scans over 84 subjects at $\pm 365$ days. A fixed matching window
+carried over unchanged from \ac{ADNI} to \ac{OASIS} would therefore have discarded most of
+the cohort's imaging data before any modelling step saw it.
+
+\paragraph{No calendar dates in \ac{OASIS}.} \ac{ADNI} visit and scan records carry an
+actual calendar exam date. \ac{OASIS}, being fully de-identified, carries no calendar date
+anywhere in its metadata: every visit and scan is instead timestamped as an integer count
+of days since an arbitrary per-subject entry point. The two cohorts' visit and scan
+timestamp columns are given identical names for downstream compatibility, but the
+\ac{OASIS} columns hold day offsets rather than dates, and parsing them as dates produces
+meaningless values. This is a cohort-integration detail specific to processing \ac{OASIS},
+addressed as part of the thesis when the \ac{OASIS} subject-list construction was built to
+mirror the pre-existing \ac{ADNI} pipeline.
+
+Applying the classification rule above to \ac{OASIS} yields 73 converters and 85 stable
+\ac{MCI} subjects; 67 of the converters and 73 of the stable \ac{MCI} subjects have at
+least one scan matched within the $\pm 365$-day window, for 122 matched visit-scans across
+84 subjects in total. The corresponding \ac{ADNI} classification, built on the same rule
+and applied to a substantially larger record inventory, is carried through the further
+attrition and split-construction stages described in \autoref{sec:pooled-protocol} and
+\autoref{sec:preprocessing}.
 
 \section{The Pooled ADNI and DELCODE Protocol}\label{sec:pooled-protocol}
 \outlinenote{The technical description of the asset-building pipeline.}
