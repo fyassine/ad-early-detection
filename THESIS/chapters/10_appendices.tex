@@ -14,6 +14,81 @@ the main text cites one table instead of interrupting the narrative.}
 
 \chapter{Split Integrity and Overlap Verification Logs}\label{ch:app-splits}
 
+\autoref{sec:leakage} states the split-integrity contract every cohort's splits are built
+against and the historical containment failure that motivated part of it. This appendix
+records that contract as a specification: the audit module's exact checks, and the full
+list of invariants the automated test suite pins against every committed split file. The
+split and manifest files these checks run against are generated on the shared training
+infrastructure described in \autoref{ch:app-environment} rather than committed to the
+project repository, so what follows is the audit's specification rather than a captured
+run of its console output; a live run against a current set of split files is deferred to
+the training environment where those files exist.
+
+\section*{Audit module}
+
+Four checks, each raising a descriptive error on the first violation found rather than
+returning a boolean:
+
+\begin{itemize}
+  \item \textbf{Pairwise split disjointness.} Given a named collection of split files and a
+  subject-identifier column, asserts every pair of splits shares no subject identifiers.
+  On failure, the error names the offending pair of splits, the number of shared subjects,
+  and up to five example shared identifiers.
+  \item \textbf{No duplicate connectivity matrices.} Given the connectivity-matrix file
+  referenced by every row of a split, hashes each matrix's array contents and asserts no
+  two distinct file paths hash identically, catching a matrix accidentally duplicated
+  across two subjects or two visits.
+  \item \textbf{Group-aware fold audit.} Re-runs the stratified, subject-grouped
+  cross-validation fold assignment for a given set of subject identifiers and labels, and
+  asserts that no subject's visits appear in more than one fold's validation set.
+  \item \textbf{Cohort containment policy.} Given a self-supervised pretraining cohort's
+  subject identifiers and a downstream cohort's subject identifiers, checks them against a
+  stated policy: under a disjoint policy, any overlap raises; under a shared policy, overlap
+  is permitted and no check is enforced, on the reasoning that some exploratory notebooks
+  legitimately reuse a subset of subjects across both roles. This is the check that directly
+  targets the historical containment failure described in \autoref{sec:leakage} when it is
+  invoked with the disjoint policy.
+\end{itemize}
+
+A single audit entry point runs the pairwise-disjointness check against whichever split
+dictionary it is called with. It does not currently chain the duplicate-matrix check, the
+fold audit, or the cohort-containment check into one call; a caller wanting those
+guarantees has to invoke them separately. \autoref{sec:leakage} states this as a limitation
+of the audit as it currently stands, since every notebook that calls the single entry point
+receives only the disjointness guarantee, not the full contract this appendix describes.
+
+\section*{Test suite invariants}
+
+The following invariants are pinned by an automated test suite run against every committed
+split file, grouped by what they check:
+
+\begin{itemize}
+  \item \emph{Schema and completeness.} Required columns are present in both the
+  pretraining and downstream split schemas; key columns carry no null values in the
+  downstream schema; every subject retained in either schema has at least one usable scan.
+  \item \emph{Label consistency.} A converter's post-conversion visits are excluded from
+  their allowed-visit set; a subject's converter status is encoded consistently as a binary
+  value; the number of scans recorded for a subject matches the number of visits in their
+  allowed-visit set; subjective cognitive decline, a diagnostic category outside the
+  modelled scope, never appears in either schema.
+  \item \emph{Intra-split integrity.} Neither the pretraining nor the downstream schema
+  contains duplicate rows within a single split.
+  \item \emph{Inter-split disjointness.} The training, validation and test subsets of the
+  pretraining schema are pairwise disjoint; the same holds for the downstream schema.
+  \item \emph{Cross-schema containment.} The pretraining training set is disjoint from the
+  downstream validation set; the pretraining training set is disjoint from the downstream
+  test set; the pretraining validation set is disjoint from the downstream test set; the
+  downstream validation set is a subset of the pretraining validation set; the downstream
+  test set is a subset of the pretraining test set. These five checks are the direct
+  descendants of the historical containment failure described in \autoref{sec:leakage}.
+  \item \emph{Balance and coverage.} Class balance across the downstream schema's splits,
+  and subject coverage across the pretraining schema's free (non-stratified) split, stay
+  within a stated tolerance; every subject referenced by either schema is present in the
+  corresponding subject-information table.
+  \item \emph{Smoke tests.} The audit entry point runs without error against both the
+  downstream and the pretraining split files.
+\end{itemize}
+
 \chapter{Complete Cross-Validation Metrics}\label{ch:app-metrics}
 
 \chapter{Software Dependencies and Hardware Environment}\label{ch:app-environment}
