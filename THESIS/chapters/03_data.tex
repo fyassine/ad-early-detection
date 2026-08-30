@@ -1,0 +1,47 @@
+% !TeX root = ../main.tex
+
+\chapter{Data, Cohorts and Preprocessing}\label{ch:data}
+
+\section{The DELCODE Cohort and the Conversion Label}\label{sec:delcode}
+\outlinenote{Cohort composition, and the label definition together with the follow-up
+window that defines it. States the tradeoff explicitly: the window choice trades cohort
+size against label noise.}
+
+\section{Longitudinal Sampling and Follow-Up Regularity}\label{sec:sampling}
+\outlinenote{Visit spacing, missing follow-ups, variable sequence length, and the masking
+and time-conditioning consequences. Records that DELCODE follow-up is more regular than the
+irregular-sampling literature assumes, and that the pooled protocol reintroduces
+irregularity.}
+
+\section{External Cohorts: ADNI and OASIS-3}\label{sec:external-cohorts}
+\outlinenote{Field strength, acquisition protocol and phase differences.}
+
+As part of the broader project, \ac{ADNI} and \ac{OASIS} were included as additional
+cohorts for cross-cohort validation. During the thesis, these datasets were processed and
+integrated into the existing analysis framework.
+
+\section{The Pooled ADNI and DELCODE Protocol}\label{sec:pooled-protocol}
+\outlinenote{The technical description of the asset-building pipeline.}
+
+The pooled protocol implemented during the thesis builds on the pre-existing
+\ac{DELCODE} split definitions and leakage-control framework, extending these structures
+to the additional cohort.
+
+\section{Preprocessing and Confound Management}\label{sec:preprocessing}
+\outlinenote{Confound regression, motion handling and the attrition accounting.}
+
+\ac{DELCODE} had been preprocessed before the start of this thesis using the laboratory's
+existing preprocessing pipeline. During the thesis, the same established preprocessing
+framework was applied to \ac{ADNI} and \ac{OASIS}. Cohort-specific adaptations required for
+processing and integrating these datasets were implemented as part of the thesis.
+
+\section{Group-Level Characterisation Before Modelling}\label{sec:group-stats}
+\outlinenote{Converters against non-converters characterised with \ac{PERMANOVA} on the
+connectivity matrices, the \ac{NBS} for cluster-level differences, and per-edge effect
+sizes under \ac{FDR} control. Establishes whether a group difference is present before a
+deep model is asked to find one.}
+
+\section{Split Integrity and Leakage Control}\label{sec:leakage}
+\outlinenote{Patient-level splitting, the isolated test manifest, post-conversion visit
+exclusion, validation-derived thresholds, and the executable audit that enforces all of it.
+The audit output is reproduced in \autoref{ch:app-splits}.}

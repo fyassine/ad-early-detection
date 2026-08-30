@@ -1,0 +1,40 @@
+% !TeX root = ../main.tex
+
+\chapter{Discussion and Limitations}\label{ch:discussion}
+
+% Scope rule for this chapter: interpret what Chapter 6 reported. Do not restate the
+% numbers themselves, and do not introduce results that appear nowhere else.
+
+\section{Scope of the Claims}\label{sec:scope-of-claims}
+
+The primary scope of this thesis is the methodological evaluation of supervised
+longitudinal classification approaches for \ac{MCI}-to-\ac{AD} conversion. It does not
+claim to develop or validate a normative healthy-reference framework for individualized
+abnormality detection.
+
+\outlinenote{States what the evaluated protocol licenses and what it does not, including
+that the time-to-event extension was scoped out.}
+
+\section{Capacity and Inductive Bias Under Sample Constraint}\label{sec:capacity}
+\outlinenote{What the parameter-per-subject accounting implies, across the independent
+comparisons that point the same way.}
+
+\section{What Self-Supervised Pretraining Contributed}\label{sec:ssl-contribution}
+\outlinenote{The reconstruction objective assessed against RQ2, across both the
+\ac{DELCODE}-only and the pooled protocols.}
+
+\section{Cohort Dependence and the Limits of Transfer}\label{sec:cohort-dependence}
+\outlinenote{Cohort identity is strongly decodable from the pooled embedding and in-domain
+performance differs substantially between \ac{DELCODE} and \ac{ADNI}, which together
+indicate that the learned representation remains strongly cohort-dependent. Discussed as
+consistent with cohort-specific representations contributing to the poor transfer, without
+attributing causality, and without concluding anything about which architecture transfers
+where. Also discusses what the delayed reading of the escalation threshold says about the
+check as a process.}
+
+\section{Threats to Validity}\label{sec:threats}
+\outlinenote{Cohort size as the dominant constraint, the conversion label as a censored
+observation, informative attrition, single-site development, and the limits of a negative
+result.}
+
+\section{Clinical Relevance}\label{sec:clinical-relevance}

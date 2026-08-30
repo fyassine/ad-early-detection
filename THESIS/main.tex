@@ -1,0 +1,107 @@
+% !BIB TS-program = biber
+
+\RequirePackage[l2tabu,orthodox]{nag}
+
+% TODO: decide if one-sided/two-sided
+%\documentclass[headsepline,footsepline,footinclude=false,fontsize=11pt,paper=a4,listof=totoc,bibliography=totoc,BCOR=12mm,DIV=12]{scrbook} % two-sided
+\documentclass[headsepline,footsepline,footinclude=false,oneside,fontsize=11pt,paper=a4,listof=totoc,bibliography=totoc]{scrbook} % one-sided
+
+\newcommand*{\getUniversity}{Technische Universität München}
+\newcommand*{\getFaculty}{Informatics}
+\newcommand*{\getDegree}{Informatics}
+\newcommand*{\getSchool}{Computation, Information and Technology}
+\newcommand*{\getTitle}{Longitudinal Graph Representation Learning for MCI-to-AD Conversion Prediction: A Cross-Cohort Evaluation}
+\newcommand*{\getTitleGer}{Longitudinales Graph-Repr\"asentationslernen zur Vorhersage der Konversion von MCI zu Alzheimer-Demenz: Eine kohorten\"ubergreifende Evaluation}
+\newcommand*{\getAuthor}{Fraj Yassine Lakhal}
+\newcommand*{\getDoctype}{Master's Thesis}
+\newcommand*{\getSupervisor}{Supervisor}
+\newcommand*{\getAdvisor}{Advisor}
+\newcommand*{\getKeywords}{Alzheimer's disease;MCI-to-AD conversion;longitudinal graph representation learning;functional connectivity;cross-cohort evaluation}
+\newcommand*{\getSubmissionDate}{Submission date}
+\newcommand*{\getSubmissionLocation}{Munich}
+
+% TODO: change citation style in settings
+\input{settings}
+
+\begin{document}
+
+% Set page numbering to avoid "destination with the same identifier has been already used" warning for cover page.
+% (see https://en.wikibooks.org/wiki/LaTeX/Hyperlinks#Problems_with_Links_and_Pages).
+\pagenumbering{alph}
+\input{pages/cover}
+
+\frontmatter{}
+
+\input{pages/title}
+% Uncomment the following line if you want to include a software usage table (see example in pages/software_used.tex)
+% \input{pages/software_used}
+\input{pages/acknowledgments}
+\input{pages/abstract}
+\microtypesetup{protrusion=false}
+\tableofcontents{}
+\microtypesetup{protrusion=true}
+
+\mainmatter{}
+
+\input{chapters/01_introduction}
+\input{chapters/02_foundations}
+\input{chapters/03_data}
+\input{chapters/04_methodology}
+\input{chapters/05_baselines}
+\input{chapters/06_results}
+\input{chapters/07_software}
+\input{chapters/08_discussion}
+\input{chapters/09_conclusion}
+
+\appendix{}
+
+\input{chapters/10_appendices}
+
+\microtypesetup{protrusion=false}
+
+\addchap{Abbreviations}
+\begin{acronym}
+	\itemsep-.25\baselineskip
+	\acro{AD}[AD]{Alzheimer's disease}
+	\acro{ADNI}[ADNI]{Alzheimer's Disease Neuroimaging Initiative}
+	\acro{AUC}[AUC]{area under the receiver operating characteristic curve}
+	\acro{CSF}[CSF]{cerebrospinal fluid}
+	\acro{CV}[CV]{cross-validation}
+	\acro{DELCODE}[DELCODE]{DZNE Longitudinal Cognitive Impairment and Dementia Study}
+	\acro{DMN}[DMN]{default mode network}
+	\acro{FC}[FC]{functional connectivity}
+	\acro{FDR}[FDR]{false discovery rate}
+	\acro{fMRI}[fMRI]{functional magnetic resonance imaging}
+	\acro{GAAE}[GAAE]{graph attention autoencoder}
+	\acro{GAT}[GAT]{graph attention network}
+	\acro{GCN}[GCN]{graph convolutional network}
+	\acro{GEC}[GEC]{graph embedding classifier}
+	\acro{GEGRU}[GE-GRU]{graph embedding gated recurrent unit}
+	\acro{GELSTM}[GE-LSTM]{graph embedding long short-term memory network}
+	\acro{GNN}[GNN]{graph neural network}
+	\acro{GRU}[GRU]{gated recurrent unit}
+	\acro{LSTM}[LSTM]{long short-term memory network}
+	\acro{MCI}[MCI]{mild cognitive impairment}
+	\acro{MLP}[MLP]{multilayer perceptron}
+	\acro{MRI}[MRI]{magnetic resonance imaging}
+	\acro{NBS}[NBS]{network-based statistic}
+	\acro{OASIS}[OASIS-3]{Open Access Series of Imaging Studies, third release}
+	\acro{OOF}[OOF]{out-of-fold}
+	\acro{PCA}[PCA]{principal component analysis}
+	\acro{PERMANOVA}[PERMANOVA]{permutational multivariate analysis of variance}
+	\acro{PET}[PET]{positron emission tomography}
+	\acro{ROC}[ROC]{receiver operating characteristic}
+	\acro{ROI}[ROI]{region of interest}
+	\acro{SSL}[SSL]{self-supervised learning}
+	\acro{TFGN}[TFGN]{temporal-first graph network}
+	\acro{TUM}[TUM]{Technical University of Munich}
+	\acro{UMAP}[UMAP]{uniform manifold approximation and projection}
+	\acro{VGAE}[VGAE]{variational graph autoencoder}
+\end{acronym}
+
+\listoffigures{}
+\listoftables{}
+\microtypesetup{protrusion=true}
+\printbibliography{}
+
+\end{document}

@@ -1,0 +1,53 @@
+% !TeX root = ../main.tex
+
+\chapter{Experimental Results and Ablations}\label{ch:results}
+
+% Scope rule for this chapter: report what happened, ordered by research question.
+% Interpretation belongs in Chapter 8.
+
+\section{Reporting Rules}\label{sec:reporting-rules}
+\outlinenote{Which metric is primary, what the independent unit is, what resolution the
+sample size supports, and the statement that every keep-or-drop verdict is a screening
+heuristic at four seeds rather than a significance test.}
+
+\section{RQ1: Does Longitudinal Modelling Add Information Beyond Static Representations?}\label{sec:rq1}
+\outlinenote{The demographics-only and static single-visit floors, the logistic-on-drift
+linear floor, and the sequence-length sensitivity analysis decomposing how performance
+depends on the minimum visit count.}
+
+\section{RQ2: Does Spatial-First Graph Representation Learning Add Value?}\label{sec:rq2}
+\outlinenote{The encoder ablation across the four arms, the reconstruction-fidelity
+measurement, and the \ac{GAAE} against \ac{GEC} contrast. Reports the pooling comparison,
+mean against attention, for the graph encoder classifier.}
+
+\section{RQ3: Does Temporal-First Modelling Improve over Spatial-First Modelling?}\label{sec:rq3}
+\outlinenote{The ablation-ladder scorecard, the per-rung verdicts including the rungs that
+were void for lack of a gradient path and the rung kept by design independently of \ac{AUC},
+the selected configuration and the capacity comparison, the matched-window head-to-head
+against the short-window comparator, and the direct \ac{GELSTM} against Brain-TokenGT
+comparison. Reports the reconciliation of the two delta-\ac{AUC} statistics.}
+
+\section{RQ4: Cross-Cohort Transfer}\label{sec:rq4}
+\outlinenote{The one-pass held-out reads, the \ac{OASIS} transfer result, the per-cohort
+split between \ac{ADNI} and \ac{DELCODE} for every arm, the cohort-identity probe and its
+decoding performance against the pre-specified escalation threshold, and the
+cohort-conditioning escalation that was run as specified together with its outcome on both
+axes it targeted. Records that the threshold was exceeded from the first ladder runs and was
+not read against its own rule until the final pass, and that in-domain results are
+\ac{OOF} quantities unaffected by it.}
+
+\section{Interpretability and Latent-Space Results}\label{sec:interpretability-results}
+\outlinenote{Seed stability of the saliency map and its correlation with the independent
+model-free drift measure, the pre-specified network-enrichment test and its outcome, the
+disease axis and the per-scan disease score, latent steering decoded back to connectivity,
+the Fisher discriminant ratio per latent dimension and per region, and the \ac{UMAP}
+projections with decision overlays. States the reduced statistical power of the map analysis
+and the cortical-only limitation of the enrichment statistic.}
+
+\section{Robustness and Perturbation Results}\label{sec:robustness-results}
+\outlinenote{Results for the four perturbation methods, reported by failure mode, and the
+cohort stability rate. The demographic-conditioning result is reported as the direct test of
+whether the decision rides on the graph or on age and sex. The scanner-drift simulation is
+reported with its stated non-validation caveat.}
+
+\section{Ablations Not Run}\label{sec:ablations-not-run}

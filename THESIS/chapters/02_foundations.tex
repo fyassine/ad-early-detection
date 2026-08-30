@@ -1,0 +1,44 @@
+% !TeX root = ../main.tex
+
+\chapter{Foundations and Related Work}\label{ch:foundations}
+
+\section{Brain Connectivity and Parcellation Schemes}\label{sec:parcellation}
+\outlinenote{Atlases, connectivity estimation, the 200-region choice and what it commits
+to.}
+
+\section{Graph Representation Learning in Neuroimaging}\label{sec:graph-learning}
+\outlinenote{Graph neural networks on connectomes, graph autoencoders, and pooling
+operators.}
+
+\section{Longitudinal and Spatiotemporal Modelling}\label{sec:longitudinal-modelling}
+\outlinenote{Recurrent approaches and spatiotemporal graph transformers, including
+Brain-TokenGT as the published comparator introduced in \autoref{ch:baselines}.}
+
+\section{Open Problems Addressed in This Thesis}\label{sec:open-problems}
+\outlinenote{Four open problems, each mapped to one research question. Closes with a short
+paragraph stating the position this thesis takes on each.}
+
+\subsection{Where Spatial Aggregation Belongs in a Longitudinal Pipeline}\label{sec:gap-aggregation}
+\outlinenote{Published longitudinal connectome classifiers aggregate a visit's graph to a
+single vector before the temporal model sees it, so region identity is discarded before any
+trajectory is modelled. Whether that ordering is necessary, and whether the graph topology
+carries signal beyond the connectivity matrix it is built from, are open. This is the gap
+RQ3 addresses.}
+
+\subsection{What Self-Supervision on Connectomes Learns}\label{sec:gap-ssl}
+\outlinenote{Reconstruction is the default pretext task for connectome autoencoders, but
+the objective rewards subject idiosyncrasy, and between-patient variation within a cohort
+can exceed between-group variation. Whether a reconstruction-pretrained encoder yields
+features useful for a downstream group contrast is open. This is the gap RQ2 addresses.}
+
+\subsection{Evidence Standards Under Small Samples}\label{sec:gap-evidence}
+\outlinenote{At cohort sizes in the low hundreds, three practices are unsettled: which
+floor a model must clear before an architectural claim is admissible, whether same-seed
+replicate variance is reported at all, and how longitudinal evaluation is protocolised.
+Treated here as one question about what a claim must survive.}
+
+\subsection{Time and Cohort as Confounds}\label{sec:gap-confounds}
+\outlinenote{Follow-up duration correlates with the outcome and is rarely controlled;
+visit-time semantics differ between cohorts in ways that silently drop or misalign scans;
+and pooling cohorts to buy sample size introduces cohort identity as a decodable nuisance
+variable. This is the gap RQ4 addresses.}

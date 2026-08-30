@@ -1,0 +1,33 @@
+% !TeX root = ../main.tex
+
+\chapter{Baselines}\label{ch:baselines}
+
+% Scope rule for this chapter: carry the baseline designs, the characterisation of the
+% published comparator, and the reproducibility audit. Results ordered by research
+% question belong in Chapter 6; interpretation belongs in Chapter 8.
+
+\section{The Baseline Ladder}\label{sec:baseline-ladder}
+\outlinenote{Each floor and why it is included: demographics only, the static single-visit
+baseline, logistic regression on connectivity drift, spatial-first \ac{GELSTM} with and
+without a pretrained encoder, and Brain-TokenGT. States which contrast each pair isolates.}
+
+\section{Brain-TokenGT as a Published Comparator}\label{sec:braintokengt}
+\outlinenote{The published architecture, its reproduction here, and its behaviour under the
+evaluated configuration, including the recurrent core as released and its behaviour when
+enabled. The stabilisation configuration is summarised in one paragraph; the knob-level
+settings are given in \autoref{ch:app-implementation}.}
+
+\section{Run-to-Run Variability and Reproducibility}\label{sec:reproducibility-audit}
+\outlinenote{The same-seed replicate audit: design, result, and the mechanism, namely
+nondeterministic scatter and gather operations that do not engage deterministic algorithms.
+Records that the same behaviour persists under the pooled protocol.}
+
+\subsection{The Trajectory Implementation Used in This Thesis Is Bit-Reproducible}\label{sec:bit-reproducible}
+\outlinenote{The \ac{GELSTM} none-arm implementation evaluated here re-runs byte-identically
+at a fixed seed.}
+
+\section{Comparability of the Head-to-Head}\label{sec:comparability}
+\outlinenote{What can and cannot be equalised: cohort windowing, resolved by the
+matched-window arm; capacity and tokenisation overhead, which cannot be equalised; tuning budget
+asymmetry; and temporal representation. States the consequences for the statistical
+comparison, including which comparisons survive.}

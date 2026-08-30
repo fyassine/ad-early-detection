@@ -1,0 +1,22 @@
+% !TeX root = ../main.tex
+
+\chapter{Software and Experiment Infrastructure}\label{ch:software}
+
+\section{Registry-Driven Experiment Execution}\label{sec:registry}
+\outlinenote{The experiment registry and runner, including the extensions built for the
+pooled ablation ladder.}
+
+\section{Layered Architecture and the Fail-Loudly Policy}\label{sec:layered-architecture}
+\outlinenote{The separation between model logic, configuration and orchestration, and the
+convention of raising on missing arguments rather than defaulting silently.}
+
+\section{Testing and Continuous Integration}\label{sec:testing}
+\outlinenote{The test suite, the ratcheted quality gates, and the checks that pin known
+correctness fixes.}
+
+\section{Dual-Host GPU Dispatch}\label{sec:dispatch}
+\outlinenote{Two workstations on one shared tree, the assignment policy, and the guard
+against running one experiment identifier twice.}
+
+\section{Interactive Research Dashboard}\label{sec:dashboard}
+\outlinenote{Cohort browsing and inference over trained checkpoints.}

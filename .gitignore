@@ -107,7 +107,6 @@ DATA/**/*.zip.download/
 
 # External / nested repositories
 Brain-TokenGT/
-THESIS/
 
 node_modules/
 **/node_modules/
@@ -145,3 +144,4 @@ logs/
 # LaTeX build output (regenerate via DOCS/all_sections/compile.sh)
 DOCS/all_sections/main.pdf
 DOCS/draft_paper/paper.pdf
+.git-thesis/

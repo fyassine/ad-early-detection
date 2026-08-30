@@ -1,0 +1,76 @@
+% !TeX root = ../main.tex
+
+\chapter{Methodology}\label{ch:methodology}
+
+% Scope rule for this chapter: state what was built and how it would be judged.
+% Every outcome, verdict and void rung belongs in Chapter 6.
+
+\section{Pre-Existing Framework, Research Questions and Scope}\label{sec:preexisting}
+
+This thesis was conducted within an ongoing research programme on individualized
+functional-connectivity abnormality detection. Prior to the start of the thesis, an
+existing methodological and software framework for \ac{fMRI} preprocessing,
+functional-connectivity analysis, subject-level graph construction, and
+graph-autoencoder-based modelling was available. The present thesis builds on this
+foundation and applies and extends it toward longitudinal \ac{MCI}-to-\ac{AD} conversion
+prediction, cross-cohort evaluation, and the longitudinal modelling and benchmarking
+experiments described below.
+
+\outlinenote{RQ1 to RQ4 are restated here, each with a pointer to where it is answered in
+\autoref{ch:results}.}
+
+\section{Problem Formulation and Graph Construction}\label{sec:problem-formulation}
+\outlinenote{The formal problem statement, node features and edge construction.}
+
+Subject-level functional-connectivity graph modelling was already part of the pre-existing
+project framework. The present analyses use this representation for the longitudinal
+experiments described below. The staged spatial-first pipeline likewise formed part of the
+pre-existing modelling framework. In this thesis, the consequences of this design are
+treated as an explicit hypothesis and tested through controlled ablations and comparison
+with the temporal-first alternative.
+
+\section{Static Representation Learning: GAAE and VGAE}\label{sec:static-representation}
+\outlinenote{Covers the \ac{VGAE} variants and the free-bits objective at the level needed
+to understand them, with the loss variants and their failure modes in
+\autoref{ch:app-implementation}. Defines the reconstruction-fidelity measure, a scale-free
+Pearson correlation between input and reconstruction, as a method; its value is reported in
+\autoref{sec:rq2}.}
+
+The \ac{GAAE} stage builds on a graph-attention-autoencoder implementation available in the
+pre-existing project codebase. The configuration and modifications used for the experiments
+reported in this thesis are described below. For the pooled \ac{GAAE}, the change concerns
+the training cohort and experimental setting rather than the graph-autoencoder concept
+itself.
+
+\section{Spatial-First Trajectory Modelling}\label{sec:spatial-first}
+\outlinenote{The \ac{GELSTM} and \ac{GEGRU} recurrent core with gate updates conditioned on
+the inter-visit interval, the regularisation scheme, and the four encoder arms that
+constitute the RQ2 ablation.}
+
+This part builds on the pre-existing spatial-first graph-learning and graph-autoencoder
+framework available at the start of the thesis and is applied here to longitudinal \ac{MCI}
+conversion prediction. The encoder handling inherited from the pre-existing implementation
+was modified during the thesis to enable the controlled fine-tuning ablation described
+below.
+
+\section{Temporal-First Modelling: The TFGN Architecture}\label{sec:tfgn}
+\outlinenote{The hypothesis behind inverting the pooling order, the per-region recurrent
+core, the optional graph stage, fusion, readout and the dual-score head. Capacity
+accounting against the subject-level denominator is stated here as a design argument.
+Selection outcomes are reported in \autoref{sec:rq3}.}
+
+\section{Experimental Protocol}\label{sec:protocol}
+\outlinenote{The pre-specified design decisions and the ablation ladder presented as a
+design: what each rung tests and what its keep-or-drop criterion is. The four-tier
+evaluation protocol: floor gates, the selection rule, robustness checks, and the one-pass
+held-out estimation, with the scope table stating which arms were eligible for which tier.
+Class-imbalance handling by cost-sensitive weighting, and the threshold policy. Run
+identifiers and registry entries are tabulated in \autoref{ch:app-reproducibility}.}
+
+\section{Interpretability and Robustness Instrumentation}\label{sec:instrumentation}
+\outlinenote{The disease axis and per-scan disease score, the orthogonal-residual \ac{PCA}
+trajectory space, latent steering back to connectivity, the per-dimension and per-region
+Fisher discriminant ratio, mean against attention pooling, and the four perturbation methods
+separated by failure mode. The scanner-drift simulation and its calibration to a measured
+heterogeneity inventory, stated as a simulation rather than a validation. The cohort
+stability rate as the robustness metric.}
