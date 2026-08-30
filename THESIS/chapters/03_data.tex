@@ -109,11 +109,99 @@ attrition and split-construction stages described in \autoref{sec:pooled-protoco
 \autoref{sec:preprocessing}.
 
 \section{The Pooled ADNI and DELCODE Protocol}\label{sec:pooled-protocol}
-\outlinenote{The technical description of the asset-building pipeline.}
 
 The pooled protocol implemented during the thesis builds on the pre-existing
 \ac{DELCODE} split definitions and leakage-control framework, extending these structures
-to the additional cohort.
+to the additional cohort. This section describes how the two cohorts' independently built
+splits are combined into one training and evaluation protocol, the schema that keeps their
+cohort-specific timing conventions apart while sharing a single dataset interface, and the
+resulting split sizes.
+
+\ac{ADNI} enters the pooled protocol with a downstream split of 192 subjects (115 train,
+38 validation, 39 test; 65 converters, 33.9\% of the cohort) that was already stratified
+and seeded before pooling. \ac{DELCODE} contributes its own downstream split of 167
+subjects (99 stable \ac{MCI}, 68 converters; 99 train, 34 validation, 34 test subjects,
+covering 308, 100 and 99 scans respectively) together with a separate pretraining split of
+241, 115 and 116 subjects (371, 217 and 224 scans) used for the self-supervised encoder.
+\ac{ADNI} had no pretraining split of its own; one was built for it during the thesis by
+re-applying \ac{DELCODE}'s own two-stage splitting procedure and seed policy to \ac{ADNI},
+so that the pretraining data for both cohorts follow one leakage-control rule rather than
+two independently designed ones.
+
+Pooling applies a minimum-visit filter (two visits per subject by default) to every cohort
+before combining them, because the downstream classifiers described in
+\autoref{sec:sampling} require at least one inter-visit interval to condition on. This
+filter removes no \ac{ADNI} subjects: its 192-subject downstream split already satisfies
+the two-visit minimum in full, so its pooled contribution is unchanged at 153 subjects
+across the pooled training and validation splits and 39 in the pooled test split.
+\ac{DELCODE}, whose downstream split includes single-visit subjects, shrinks under the
+same filter from 167 to 120 subjects: 95 across the pooled training and validation splits
+and 25 in the pooled test split. \autoref{tab:pooled-splits} gives the resulting pooled
+split sizes.
+
+\begin{table}[htb]
+  \centering
+  \caption{Pooled split composition. The cross-validation pool and in-domain test set
+  combine \ac{ADNI} and \ac{DELCODE} at the two-visit minimum; the external test set is
+  every \ac{OASIS} downstream subject, held out from every upstream stage including
+  pretraining; the sensitivity pool raises the minimum to three visits.}
+  \label{tab:pooled-splits}
+  \begin{tabular}{@{}lp{7cm}r@{}}
+    \toprule
+    Split & Composition & $n$ \\
+    \midrule
+    Cross-validation pool & \ac{ADNI} 153 + \ac{DELCODE} 95, $\geq 2$ visits & 248 \\
+    In-domain test & \ac{ADNI} 39 + \ac{DELCODE} 25, $\geq 2$ visits (24 converters, 40 stable) & 64 \\
+    External test & every \ac{OASIS} downstream subject (31 converters, 29 stable) & 60 \\
+    Sensitivity pool & cross-validation pool at $\geq 3$ visits & 140 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\ac{OASIS} is excluded from every upstream stage, including self-supervised pretraining,
+so that it remains a genuinely external test rather than a held-out fold of data the
+pipeline has otherwise seen. Every pooled split uses the same four seeds
+(42, 43, 44, 45) as the single-cohort splits it is built from.
+
+\paragraph{Keeping cohort-specific timing apart.} \ac{DELCODE} conditions its trajectory
+models on nominal protocol months and \ac{ADNI} and \ac{OASIS} on elapsed calendar days
+(\autoref{sec:sampling}), and the pooling step preserves this distinction rather than
+forcing every cohort onto one time axis. One subject-level dataset object is built per
+cohort, each pointed at that cohort's own data root and its own time-allow-list column,
+and the resulting per-cohort datasets are concatenated rather than merged into a shared
+table. The non-native timing column is dropped from each cohort's dataset before
+concatenation, and construction raises an error if the retained column is entirely empty
+for a given cohort. Without that check, a dataset implementation that falls back to
+whichever timing column is populated first would silently disable \ac{DELCODE}'s
+post-conversion visit exclusion (\autoref{sec:delcode}) for every pooled subject, which is
+exactly the kind of leakage-relevant bug rule \autoref{sec:leakage} is written to catch
+before it reaches a checkpoint.
+
+\paragraph{A schema-level guard on the same principle.} The two cohorts' allow-list columns
+are named \texttt{allowed\_months} and \texttt{allowed\_days} and are mutually exclusive by
+construction: the asset-building script raises an error if both are populated on the same
+row, because a row carrying both would leave the leakage filter ambiguous about which
+column governs it. The same script materialises a symlink farm over both cohorts'
+functional-connectivity matrices so that a single glob root can serve the pooled dataset
+without duplicating any file, and refuses to overwrite an existing symlink that does not
+already point at the expected source file, rather than silently repointing it.
+
+\paragraph{Disjointness and containment.} Three groups of assertions enforce
+\autoref{sec:leakage}'s split-integrity contract across the pooling step itself. Within the
+pooled pretraining split, the training, validation and test subject sets are pairwise
+disjoint; within the pooled downstream split, the same three sets are pairwise disjoint;
+and across the two, the pooled pretraining training set is disjoint from the pooled
+downstream validation and test sets, while the pooled downstream validation and test sets
+are each required to be subsets of their pretraining-split counterparts, so that no subject
+used to validate or test the downstream classifier can also have contributed to training
+the upstream encoder. \autoref{sec:leakage} discusses why the equivalent check failed to
+generalise to the pooled protocol on its first implementation.
+
+Because the two-visit minimum removes DELCODE's single-visit subjects but not \ac{ADNI}'s,
+pooling reintroduces some of the follow-up irregularity that \autoref{sec:sampling}
+records \ac{DELCODE} alone as largely free of: the pooled cross-validation pool inherits
+\ac{ADNI}'s wider and less regular inter-visit intervals alongside \ac{DELCODE}'s
+near-annual ones.
 
 \section{Preprocessing and Confound Management}\label{sec:preprocessing}
 \outlinenote{Confound regression, motion handling and the attrition accounting.}
