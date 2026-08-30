@@ -340,7 +340,8 @@ validation into a selection set, exactly the winner's-curse failure Tier 4 exist
 
 | arm | ADNI+DELCODE OOF (CV, n=248) | in-domain test (n=64) | OASIS-3 (n=60) |
 |---|---|---|---|
-| S0-demo, S0a, S0b, S0c, S0d | yes | no | no |
+| S0-demo, S0a, S0b, S0c | yes | no | no |
+| S0d BrainTokenGT | yes | ad hoc, post hoc | ad hoc, post hoc |
 | **S1 flip (primary)** | yes | **yes** | **yes** |
 | **S1b SSL (secondary)** | yes | **yes** | **yes** |
 | S1c (original, invalid) / S1c-random | yes | no | no |
@@ -353,7 +354,7 @@ validation into a selection set, exactly the winner's-curse failure Tier 4 exist
 
 Only **3 of 19 registered arms** (S1, S1b, S5 — the pre-registered primary and its two
 designated secondaries) were ever read on the held-out splits, in one single Tier-4 pass.
-Two further arms were frozen-read **after the fact, outside the pre-registration**, on
+Three further arms were frozen-read **after the fact, outside the pre-registration**, on
 explicit request rather than as part of the ladder's own protocol:
 
 - **W3-GELSTM-frozen** — the matched-window winner in the OOF comparison (§2.6, 0.7500 vs
@@ -363,13 +364,42 @@ explicit request rather than as part of the ladder's own protocol:
   own target diagnostic the wrong way (`cohort_probe_auc` 0.86 → 0.94) — was deliberately
   not read at Tier 4 originally, since spending a one-shot estimate on an arm the stopping
   rule already rejects is exactly the discipline every other rejected rung was held to.
+- **S0d BrainTokenGT** — the published SOTA competitor reference — was excluded from the
+  original Tier-4 scope entirely, since it is a caveated reference arm (§1.7) rather than a
+  candidate the stopping rule was selecting among. Read on request so the published
+  baseline has a held-out number to sit beside TFGN's own.
 
-Both ad-hoc reads have since been executed (`CLASSIFIER/scripts/frozen_read_w3_advcohort.py`)
-and permanently spend that arm's one-shot test/external read
-(`score_frozen_split`'s overwrite guard now blocks a second read of either); the resulting
-numbers are recorded in `run_summary.json` under each run's own `outputs/` directory but
-are **not yet transcribed into this document** — that is a separate, explicit step. Every
-remaining arm in the table above (S0a–S0d, S1c both versions, S2/S3/S4, SENS,
+All three ad-hoc reads have since been executed
+(`CLASSIFIER/scripts/frozen_read_w3_advcohort.py`,
+`CLASSIFIER/scripts/frozen_read_s0d_braintokengt.py`) and permanently spend each arm's
+one-shot test/external read (`score_frozen_split`'s overwrite guard now blocks a second
+read of any of them); the resulting numbers, mean ± SD over seeds 42–45:
+
+| arm | role | in-domain test AUC (n=64) | OASIS-3 AUC (n=60) |
+|---|---|---|---|
+| S1 + adversarial | rejected escalation, post hoc | 0.7820 ± 0.0143 | 0.4850 ± 0.0262 |
+| W3-GELSTM-frozen | matched-window OOF winner, post hoc | 0.6784 ± 0.0723 | 0.4519 ± 0.0705 |
+| S0d BrainTokenGT | competitor reference, post hoc | 0.4659 ± 0.0804 | 0.5984 ± 0.0957 |
+
+Three things stand out. First, S1+adversarial's in-domain test AUC (0.7820) sits *above*
+S1's own OOF (0.7488) despite losing on OOF to the un-adversarial baseline — a reminder
+that n=64 point estimates do not overturn a stopping-rule verdict computed on n=248.
+Second, W3-GELSTM-frozen — the arm that *wins* the matched-window OOF comparison
+(§2.6, 0.7500 vs TFGN's 0.7318) — falls to 0.6784 on the held-out test, well below
+TFGN's full-trajectory in-domain read of 0.7909, and its OASIS-3 operating point is
+degenerate at two of four seeds (specificity 0.000, sensitivity 1.000 — predicting
+nearly every subject positive), visible only because `ext_oasis3_sensitivity` /
+`ext_oasis3_specificity` are inspected alongside the AUC. The matched-window advantage
+identified in §2.6 does not survive to either held-out split. Third, S0d runs backwards
+relative to every other arm in this table: its in-domain test AUC (0.4659) is *below*
+its OASIS-3 AUC (0.5984), the opposite pattern from every TFGN/GELSTM arm above, which
+all score well in-domain and fall to chance externally. Given BrainTokenGT's documented
+non-determinism (§1.7 caveat; same-seed test AUC has been observed to span 0.357–0.708
+under the DELCODE-only protocol), this reversal is read as evidence of run-to-run noise
+in a single-run read, not as a genuine below-chance in-domain finding — neither number
+should be presented as a clean estimate of BrainTokenGT's held-out performance.
+
+Every remaining arm in the table above (S0a–S0d, S1c both versions, S2/S3/S4, SENS,
 W3-random/winner) has **no** in-domain or external number at all, ad hoc or otherwise;
 their only performance evidence is the pooled OOF column in §2.1.
 
