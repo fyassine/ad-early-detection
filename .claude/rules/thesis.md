@@ -61,6 +61,13 @@ Every abbreviation is defined once, in the acronym table
 - If it does not, add the entry to the table first, then use `\ac{KEY}`.
 - Never use an abbreviation, via `\ac{}` or typed directly in text, that has no entry in
   the table.
+- Exception: chapter/section/subsection titles use the plain short form typed directly
+  (e.g. `\section{External Cohorts: ADNI and OASIS-3}`), never `\ac{KEY}`. `\ac`'s
+  first-use expansion would otherwise dump the full long form into that heading, and
+  from there into the ToC, PDF bookmarks, and running headers — the one place expansion
+  is pure noise. This applies only to headings; the abbreviation must still have an
+  entry in the acronym table and still get its one `\ac{KEY}` expansion at its first
+  use in body prose.
 
 ## 6. Compile after every change
 

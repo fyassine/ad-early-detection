@@ -572,7 +572,8 @@ it must be checked against the table above before it enters a chapter.
   "reproducible, but not DMN-specific".
 - No editorialising or narrative titles. This rules out "Uncovering Baseline Failure Modes",
   "What Reconstruction Pretraining Actually Bought" and "The Actual Research Setting".
-- Every abbreviation is defined once in the acronym table and used through `\ac{}`.
+- Every abbreviation is defined once in the acronym table and used through `\ac{}`, except
+  in chapter/section/subsection titles, which use the plain short form typed directly.
 - Prefer fewer, longer subsections over fragmentation.
 
 ---
@@ -645,7 +646,9 @@ Every entry in `DOCS/critical_points/challenges.md`.
 ## 10. Abbreviations
 
 Each needs an `\acro{KEY}[SHORT]{LONG}` entry in the acronym table of `main.tex` before
-first use, and must then be referenced through `\ac{}` rather than typed inline.
+first use, and must then be referenced through `\ac{}` rather than typed inline. Exception:
+chapter/section/subsection titles use the plain short form typed directly, never `\ac{}` —
+expansion there would leak the long form into the ToC, PDF bookmarks, and running headers.
 
 AD, MCI, fMRI, FC, ROI, DMN, GNN, GAT, GCN, GAAE, VGAE, GEC, GE-LSTM, GE-GRU, TFGN, LSTM,
 GRU, MLP, AUC, ROC, OOF, CV, SSL, PCA, UMAP, FDR, PERMANOVA, NBS, ADNI, DELCODE, OASIS,
