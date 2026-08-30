@@ -3,7 +3,14 @@ OUT  := build
 
 .PHONY: pdf
 pdf:
-	+latexmk -interaction=nonstopmode -outdir="$(OUT)" -pdf -halt-on-error -jobname="$(jobname)" $(FILE)
+	@mkdir -p $(OUT)
+	@if command -v tectonic >/dev/null 2>&1; then \
+		tectonic -o "$(OUT)" $(FILE).tex; \
+	elif command -v latexmk >/dev/null 2>&1; then \
+		latexmk -interaction=nonstopmode -outdir="$(OUT)" -pdf -halt-on-error -jobname="$(jobname)" $(FILE); \
+	else \
+		echo "Neither tectonic nor latexmk found. Please activate .venv or install LaTeX."; exit 1; \
+	fi
 
 .PHONY: watch
 watch:

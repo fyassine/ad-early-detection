@@ -10,6 +10,7 @@ Use latest APIs as of May 2026.
 - numpy 1.26.4
 - pandas 2.2.0
 - scikit-learn 1.7.2
+- tectonic 0.15.0 (for compiling `THESIS/` LaTeX documents)
 
 This is the venv used by `CLASSIFIER/`, `PROGNOSER/`, and DASHBOARD's model-inference path. Always activate this virtual environment using `source .venv/bin/activate` before running any terminal commands.
 

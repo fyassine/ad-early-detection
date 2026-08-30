@@ -9,6 +9,12 @@
 
 ## 2. Planning Protocol & Artifact Storage
 
-- **Store Every Plan**: Whenever formulating, revising, or proposing an implementation plan (e.g., in planning mode or before executing multi-step tasks), you **must** persist the plan as a markdown file/artifact on disk.
-- **Provide the File Path**: Always provide the user with the exact absolute file path and a clickable Markdown link (`file:///...`) to the stored plan file in your response.
-- Never output plans only as ephemeral chat responses without storing them to disk.
+- **Store Every Plan**: Whenever formulating, revising, or proposing an implementation plan (e.g., in planning mode or before executing multi-step tasks), you **must** persist the plan as a markdown file/artifact on disk (`<appDataDir>/brain/<conversation-id>/<plan_name>.md`).
+- **Standardized Path Presentation**: Every planning response must explicitly display the stored plan's location using the following standard format block:
+  ```markdown
+  ### Implementation Plan
+  - **Absolute File Path**: `/path/to/<plan_name>.md`
+  - **Clickable Link**: [<plan_name>.md](file:///path/to/<plan_name>.md)
+  ```
+- **Visible Raw Path**: Always output the full raw absolute path in plain code format so it is directly readable and copy-pasteable in terminal environments where markdown link targets may not be visible.
+- **Never Ephemeral**: Never output plans only as ephemeral chat responses without storing them to disk.

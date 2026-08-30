@@ -44,7 +44,7 @@ German title, to be confirmed:
 > Longitudinales Graph-Repräsentationslernen zur Vorhersage der Konversion von MCI zu
 > Alzheimer-Demenz: Eine kohortenübergreifende Evaluation
 
-**Scope statement.** Placed verbatim in §1.1 and again at the head of Chapter 8:
+**Scope statement.** Placed verbatim in §1.1 and again at the head of Chapter 7:
 
 > The primary scope of this thesis is the methodological evaluation of supervised
 > longitudinal classification approaches for MCI-to-AD conversion. It does not claim to
@@ -369,7 +369,7 @@ comparisons survive.
 
 ### Chapter 6: Experimental Results and Ablations
 
-Ordered by research question. Reports what happened; interpretation is Chapter 8.
+Ordered by research question. Reports what happened; interpretation is Chapter 7.
 
 **6.1 Reporting rules for this chapter**
 Which metric is primary, what the independent unit is, what resolution the sample size
@@ -435,30 +435,22 @@ reported with its stated non-validation caveat.
 **6.8 Ablations not run**
 `was:` 6.15
 
-### Chapter 7: Software and Experiment Infrastructure
+### Chapter 7: Discussion and Limitations
 
-**7.1 Registry-driven experiment execution**, including the extensions built for the pooled
-ladder. **7.2 Layered architecture and the fail-loudly policy.** **7.3 Testing and
-continuous integration.** **7.4 Dual-host GPU dispatch.** **7.5 Interactive research
-dashboard.**
-`was:` 7.1 to 7.6, with 7.2 and 7.3 merged
-
-### Chapter 8: Discussion and Limitations
-
-**8.1 Scope of the claims**
+**7.1 Scope of the claims**
 Opens with the scope statement repeated verbatim. States what the evaluated protocol
 licenses and what it does not, including that the time-to-event extension was scoped out.
 
-**8.2 Capacity and inductive bias under sample constraint**
+**7.2 Capacity and inductive bias under sample constraint**
 What the parameter-per-subject accounting implies, across the independent comparisons that
 point the same way.
 
-**8.3 What self-supervised pretraining contributed**
+**7.3 What self-supervised pretraining contributed**
 The reconstruction objective assessed against RQ2, across both the DELCODE-only and the
 pooled protocols.
 `was:` 8.2
 
-**8.4 Cohort dependence and the limits of transfer**
+**7.4 Cohort dependence and the limits of transfer**
 The central discussion section. Cohort identity is strongly decodable from the pooled
 embedding and in-domain performance differs substantially between DELCODE and ADNI, which
 together indicate that the learned representation remains strongly cohort-dependent. This
@@ -468,19 +460,19 @@ architecture transfers where. Also discusses what the delayed reading of the esc
 threshold says about the check as a process.
 `was:` 8.3 and 8.4 merged
 
-**8.5 Threats to validity**
+**7.5 Threats to validity**
 Cohort size as the dominant constraint, the conversion label as a censored observation,
 informative attrition, single-site development, and the limits of a negative result.
 `was:` 8.5
 
-**8.6 Clinical relevance**
+**7.6 Clinical relevance**
 `was:` 8.6
 
-### Chapter 9: Conclusion and Outlook
+### Chapter 8: Conclusion and Outlook
 
-**9.1 Concluding remarks**
+**8.1 Concluding remarks**
 
-**9.2 Future work**
+**8.2 Future work**
 Leads with: developing cohort-invariant models based on harmonised clinical target
 definitions and individualized deviation from an appropriate reference population remains a
 topic for future work. Then isolating the inter-visit-interval contribution on a genuinely
@@ -582,7 +574,7 @@ it must be checked against the table above before it enters a chapter.
 
 ## 7. Methods and results separation
 
-Chapter 4 explains what was done and why. Chapter 6 states what happened. Chapter 8
+Chapter 4 explains what was done and why. Chapter 6 states what happened. Chapter 7
 interprets why. The following constructions appear in the current writeups inside
 methodological sections and belong in Chapter 6:
 

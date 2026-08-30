@@ -8,6 +8,16 @@ Applies only when writing or editing files under `THESIS/`.
   its sentence length, tone, and level of hedging. Do not fall back to generic
   LaTeX-thesis boilerplate phrasing.
 - Register is firm, scientific, academic. No poetic or rhetorical flourish.
+- Write in the first-person plural, present tense. Use "we" for every methodological
+  decision and present tense for facts and procedures, even as a sole author. Example:
+  "We use a fixed subject-level split rather than a per-scan split to prevent leakage."
+  This does not license "our pipeline" for inherited components — the attribution rule
+  (§10) still applies, and "we" covers decisions actually made in this thesis.
+- Chain reasoning with explicit causal connectors. Make every inference visible with
+  "therefore", "as a result", "consequently", "this is due to the fact that". Example:
+  "Converters are a minority of the cohort; as a result, accuracy is uninformative and
+  we report balanced accuracy and AUC." A connector must not smuggle in a causal claim
+  that no experiment isolates — §11 still governs.
 - Never use an em dash (`—`).
 - Never use contrastive "X, not Y" filler framing. Banned examples:
   - "a design choice, not a given"
@@ -30,7 +40,7 @@ Applies only when writing or editing files under `THESIS/`.
   overclaiming label (e.g. not "Methodology: Spatiotemporal Graph Modelling" if the
   chapter is really about baselines — call it "Baselines").
 - Never say "this thesis's own pipeline" / "our pipeline" when components predate the
-  thesis (see §7) — name the specific model/arm instead, e.g. "the GELSTM none-arm
+  thesis (see §10) — name the specific model/arm instead, e.g. "the GELSTM none-arm
   implementation evaluated here re-runs byte-identically at a fixed seed."
 
 ## 2. Verify before stating
@@ -43,14 +53,38 @@ memory or assumption.
 
 Do not restate the same claim or point in different words within a section or paragraph.
 
-## 4. Prefer longer subsections over fragmentation
+## 4. Open every chapter with a roadmap sentence
 
-Favor fewer, longer `\subsection`s developed across multiple paragraphs over branching
-into many small subsections. If a subsection is about to spawn several
-`\subsubsection`s, merge them into a single coherent subsection instead, unless each one
-is substantial enough to stand as its own independent unit.
+Every chapter, and every section long enough to branch, opens by telling the reader what
+it covers before the content starts. Example: "In this chapter we explain the concepts
+this work builds on and define the terms used throughout."
 
-## 5. Abbreviations must be defined before use
+Keep the roadmap to one or two sentences and describe scope, not outcomes — §12 keeps
+results and interpretation out of the setup.
+
+## 5. Subsection granularity depends on chapter role
+
+In **Background / Fundamentals**, give each concept its own numbered subsection: one
+focused idea per subsection, ordered so each builds on the previous. A multi-step
+mechanism is split step by step rather than delivered as one long block — e.g. graph
+construction as parcellation, correlation, thresholding, node features, each its own
+short subsection.
+
+In **Methods, Results, and Discussion**, favor fewer, longer `\subsection`s developed
+across multiple paragraphs over branching into many small subsections. If a subsection
+is about to spawn several `\subsubsection`s, merge them into a single coherent
+subsection instead, unless each one is substantial enough to stand as its own
+independent unit.
+
+## 6. Define every term, abbreviation, and symbol before use
+
+Introduce every term, abbreviation, and symbol with a plain-language definition at its
+first mention, then use only the short form afterwards.
+
+- **Symbols** — "$c$ is the concordance index, the fraction of comparable subject pairs
+  whose predicted risk ordering matches the observed event ordering."
+- **Domain terms** — define "converter" the first time it appears, then use it bare.
+- **Abbreviations** — see the acronym-table contract below.
 
 Every abbreviation is defined once, in the acronym table
 (`\begin{acronym}...\end{acronym}` in `THESIS/main.tex`), and referenced in prose with
@@ -69,13 +103,38 @@ Every abbreviation is defined once, in the acronym table
   entry in the acronym table and still get its one `\ac{KEY}` expansion at its first
   use in body prose.
 
-## 6. Compile after every change
+## 7. Equations: state the formula, then walk through every symbol
 
-After any edit inside `THESIS/`, compile the PDF: from `THESIS/`, run `make pdf`
-(`latexmk`, output at `THESIS/build/main.pdf`). If compilation fails, fix the LaTeX error
-before handing the change off. Never leave the tree in a non-compiling state.
+Anchor a definition in its equation, then immediately explain each variable in the
+running text — not in a separate nomenclature block, and never leaving a symbol
+unexplained. Example, after the Cox partial-likelihood equation: "Where $h_0(t)$ is the
+baseline hazard shared by all subjects, $x_i$ is the covariate vector for subject $i$,
+and $\beta$ are the coefficients estimated by maximizing the partial likelihood."
 
-## 7. Attribute prior work explicitly
+Every symbol that appears in the equation gets a clause. A symbol reused later is
+defined only at its first occurrence (§6).
+
+## 8. Follow an abstract mechanism with a worked numeric example
+
+After describing an algorithm or a metric, run it once with concrete numbers so the
+reader can trace the logic. Example: "Consider a validation fold of 40 subjects, 8 of
+whom convert. A classifier predicting the majority class reaches 80% accuracy while its
+balanced accuracy is 50%, which is why balanced accuracy is reported throughout."
+
+The numbers may be illustrative rather than drawn from a results file, but if they are
+presented as results they fall under §2 and must be checked against the source. Keep the
+register of §1: write "Consider ..." rather than "Let's ...".
+
+## 9. Compile after every change
+
+After any edit inside `THESIS/`, compile the PDF using the virtual environment's `tectonic` compiler (output at `THESIS/build/main.pdf`):
+- `tectonic` is available once the project `.venv` is activated (`source .venv/bin/activate`).
+- From repository root: `source .venv/bin/activate && cd THESIS && tectonic -o build main.tex`
+- From `THESIS/`: `tectonic -o build main.tex` (with `.venv` active) or `make pdf`
+
+`tectonic` handles multi-pass compilation and `biber` automatically without requiring a system TeX Live / `latexmk` installation. If compilation fails, fix the LaTeX error before handing the change off. Never leave the tree in a non-compiling state.
+
+## 10. Attribute prior work explicitly
 
 This thesis extends a pre-existing methodological/software framework (fMRI
 preprocessing, functional-connectivity analysis, subject-level graph construction,
@@ -91,7 +150,7 @@ don't let a reader infer a pre-existing component was introduced by this work.
   "rather than an inherited convention" for the spatial-first pipeline — say the design
   predates the thesis and is tested here via ablation).
 
-## 8. Causal claims require an isolating experiment
+## 11. Causal claims require an isolating experiment
 
 A probe or decodability result (e.g. cohort identity decodable from an embedding) shows
 association/representation, not causation. Never say such a result "explains why",
@@ -105,28 +164,28 @@ obtained under one protocol into a claim of generalisable representation, and do
 extend one model's instability finding into a generalization claim about a different
 model.
 
-## 9. Separate Methods, Results, and Discussion
+## 12. Separate Methods, Results, and Discussion
 
 Methods states what was done and why. Results states what happened. Discussion
 interprets why. Do not let Methods anticipate an outcome or interpretation — if a
 sentence describes an outcome, it belongs in Results; if it explains an outcome, it
 belongs in Discussion.
 
-## 10. "Pre-specified" vs. "pre-registered"
+## 13. "Pre-specified" vs. "pre-registered"
 
 Use "pre-specified" or "defined prior to running the experiment" for decisions or
 interpretation tables that were fixed internally before running an experiment. Reserve
 "pre-registered" strictly for a decision recorded in a time-stamped external registry
 before the experiment ran.
 
-## 11. Detail placement
+## 14. Detail placement
 
 Push exhaustive implementation detail (exact code paths, experiment/run IDs, registry
 entries, config variable names, debugging history) out of the main narrative into an
 "Implementation Details" subsection or appendix — keep in the main text only what is
 necessary to understand or reproduce the method.
 
-## 12. ShareLaTeX Git Synchronization & Credential Safety
+## 15. ShareLaTeX Git Synchronization & Credential Safety
 
 The thesis repository in `THESIS/` synchronizes with TUM ShareLaTeX / Overleaf via `.git-thesis`:
 - To check status: `git --git-dir=.git-thesis --work-tree=THESIS status`
