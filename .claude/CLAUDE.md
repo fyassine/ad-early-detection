@@ -35,6 +35,7 @@ yaml files, etc. — is project code and **must** be included in searches.
 @.claude/rules/evaluation.md
 @.claude/rules/gpu-dispatch.md
 @.claude/rules/ci.md
+@.claude/rules/thesis.md
 
 ## Reference docs (load on demand — do not embed)
 
