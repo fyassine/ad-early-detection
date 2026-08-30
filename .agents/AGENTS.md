@@ -28,3 +28,7 @@ is project code and **must** be included in all searches and file discovery.
 - Never commit secrets, API keys, tokens (e.g. Overleaf / ShareLaTeX `olp_*` PAT), or `.env*` files to Git.
 - Credentials must be stored in `~/.netrc` (mode 0600) or `.env` (gitignored).
 - Refer to `.claude/rules/credentials.md` and `.agents/rules/thesis.md` for full credential contracts and ShareLaTeX sync commands (`git --git-dir=.git-thesis --work-tree=THESIS ...`).
+
+## Agent-Specific Guidelines
+
+- **Gemini / Antigravity CLI**: Refer to `.agents/rules/gemini.md` for the SSH remote execution environment context and mandatory planning artifact storage/path reporting protocol.
