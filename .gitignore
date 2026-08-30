@@ -1,6 +1,9 @@
 **/__pycache__/
 *.py[cod]
 .env
+.env*
+*.key
+*.enc
 .venv/
 **/.venv/
 DATA/ADNI/.loni_profile/

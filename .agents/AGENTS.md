@@ -22,3 +22,9 @@ what is relevant code. When searching for files, scripts, or symbols, always inc
 
 Everything else (`.py`, `.ipynb`, `.json`, `.sh`, `.yaml`, `.md`, `.toml`, `.split`, etc.)
 is project code and **must** be included in all searches and file discovery.
+
+## Credentials and Thesis Synchronization
+
+- Never commit secrets, API keys, tokens (e.g. Overleaf / ShareLaTeX `olp_*` PAT), or `.env*` files to Git.
+- Credentials must be stored in `~/.netrc` (mode 0600) or `.env` (gitignored).
+- Refer to `.claude/rules/credentials.md` and `.agents/rules/thesis.md` for full credential contracts and ShareLaTeX sync commands (`git --git-dir=.git-thesis --work-tree=THESIS ...`).

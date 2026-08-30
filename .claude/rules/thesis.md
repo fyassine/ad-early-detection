@@ -125,3 +125,13 @@ Push exhaustive implementation detail (exact code paths, experiment/run IDs, reg
 entries, config variable names, debugging history) out of the main narrative into an
 "Implementation Details" subsection or appendix — keep in the main text only what is
 necessary to understand or reproduce the method.
+
+## 12. ShareLaTeX Git Synchronization & Credential Safety
+
+The thesis repository in `THESIS/` synchronizes with TUM ShareLaTeX / Overleaf via `.git-thesis`:
+- To check status: `git --git-dir=.git-thesis --work-tree=THESIS status`
+- To commit: `git --git-dir=.git-thesis --work-tree=THESIS add -A && git --git-dir=.git-thesis --work-tree=THESIS commit -m "<msg>"`
+- To push: `git --git-dir=.git-thesis --work-tree=THESIS push origin master`
+- To pull: `git --git-dir=.git-thesis --work-tree=THESIS pull --rebase origin master`
+- Authentication is handled via `~/.netrc` (mode 0600) and `SHARELATEX_GIT_TOKEN` in root `.env` (Overleaf PAT `olp_*`).
+- **Never commit secrets**: The PAT token must never be committed to Git, staged, or written into any file tracked by `THESIS/` or `ad-early-detection`. Both repositories must maintain `.env*`, `*.key`, `*.enc`, and `.git-thesis/` in their respective `.gitignore` files.
