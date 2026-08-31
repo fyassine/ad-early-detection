@@ -51,6 +51,11 @@ procedure applied to every other configuration in \autoref{sec:protocol}.
 
 \section*{Gradient-Control Modification for Encoder Ablation}
 
+The four encoder configurations named in prose throughout \autoref{ch:methodology} and
+\autoref{ch:results} correspond to the configuration values used in the code as follows:
+no encoder is \texttt{none}, randomly initialised is \texttt{random}, pretrained frozen is
+\texttt{pretrained\_frozen}, and pretrained fine-tuned is \texttt{pretrained\_finetuned}.
+
 The inherited implementation embedded every visit inside \texttt{torch.no\_grad()} with
 forced evaluation mode, so the pre-existing \texttt{freeze\_encoder: false} configuration
 could not fine-tune the encoder regardless of what \texttt{requires\_grad} indicated. A

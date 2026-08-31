@@ -64,11 +64,12 @@ carried over without changing the computation it performs. Two changes were nece
 run it under the protocol used here: generalising a hardcoded region count and sequence
 length to the values used on \ac{DELCODE}, and removing a hardcoded assignment of tensors
 to a specific device. Neither changes what the model computes at the authors' original
-configuration, which is confirmed by a regression test that copies the authors' released
-weights into this implementation parameter for parameter and asserts that the two forward
-passes agree at that configuration. The released training script trains on a single subject
-with no held-out split, so training and evaluation for Brain-TokenGT use the same
-cross-validation and held-out test harness applied to every other configuration in this thesis. This
+configuration, which is confirmed by copying the authors' released
+weights into this implementation parameter for parameter and checking that the two forward
+passes agree at that configuration. The released training procedure trains on a single
+subject with no held-out split, so training and evaluation for Brain-TokenGT use the same
+cross-validation and held-out test protocol applied to every other configuration in this
+thesis. This
 does not amount to reproducing the authors' reported result, which was obtained on a
 different cohort, a different brain parcellation and the authors' own code path rather than
 this one; no such reproduction is claimed here.

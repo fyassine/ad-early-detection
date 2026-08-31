@@ -463,7 +463,7 @@ architecture transfers where. Also discusses what the delayed reading of the esc
 threshold says about the check as a process.
 `was:` 8.3 and 8.4 merged
 
-**7.5 Threats to validity**
+**7.5 Limitations**
 Cohort size as the dominant constraint, the conversion label as a censored observation,
 informative attrition, single-site development, and the limits of a negative result.
 `was:` 8.5

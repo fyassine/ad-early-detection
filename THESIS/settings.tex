@@ -21,17 +21,20 @@
   giveninits,
   uniquename=init]{biblatex} % TODO: adapt citation style
 \usepackage{graphicx}
+\usepackage{rotating}
 \graphicspath{{figures/}}
 \usepackage{scrhack} % necessary for listings package
 \usepackage{listings}
 \usepackage{lstautogobble}
 \usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc,fit,backgrounds}
 \usepackage{pgfplots}
 \usepackage{pgfplotstable}
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage[final]{microtype}
 \usepackage{caption}
+\KOMAoptions{numbers=noenddot} % disables trailing dot in section and figure numbers (prevents "Figure 4.1.:")
 \usepackage[printonlyused]{acronym}
 \usepackage{ifthen}
 

@@ -151,7 +151,7 @@ Encoder initialisation & Test \ac{AUC} & \ac{CV} \ac{AUC} & Trainable params.\ \
 None & $0.8313 \pm 0.0529$ & $0.8932 \pm 0.0073$ & 31{,}169 \\
 Reconstruction-pretrained, frozen & $0.7812 \pm 0.0122$ & $0.9211 \pm 0.0087$ & 520{,}905 \\
 Randomly init., trained end to end & $0.7312 \pm 0.1113$ & $0.7676 \pm 0.0514$ & 965{,}897 \\
-Reconstruction-pretrained, fine-tuned & $0.6924 \pm 0.2000$ & $0.8196 \pm 0.0213$ & 965{,}897 \\
+Reconstruction-pretrained, fine-tuned & $0.6924 \pm 0.2000$ & $0.8183 \pm 0.0222$ & 965{,}897 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -175,19 +175,24 @@ representation, only that it stabilises optimisation relative to a random start.
 
 \paragraph{Fine-tuning instability.} When fine-tuning the encoder on the small downstream dataset, the test performance swing across seeds is substantial:
 \begin{itemize}
-  \item \textbf{Seeds 44 and 45} score high, reaching held-out test \ac{AUC} values of $0.8375$ (two repeats) and $0.8535$ (one run), respectively.
-  \item \textbf{Seed 42} yields a mediocre test \ac{AUC} of $0.6535$ (mean of three repeats).
-  \item \textbf{Seed 43} completely collapses to a test \ac{AUC} of $0.4250$ (two repeats, an exact replicate), performing worse than chance.
+  \item \textbf{Seeds 44 and 45} reach held-out test \ac{AUC} values of $0.8375$ (two repeats) and $0.8535$ (one run), respectively.
+  \item \textbf{Seed 42} yields a test \ac{AUC} of $0.6535$ (mean of three repeats).
+  \item \textbf{Seed 43} falls to a test \ac{AUC} of $0.4250$ (two repeats, an exact replicate), below the chance value of $0.50$.
 \end{itemize}
-Unlike Brain-TokenGT, where running the same seed produces substantial run-to-run scatter due to hardware-level non-determinism (\autoref{sec:reproducibility-audit}), this fine-tuning collapse is 100\% bit-reproducible: repeating seed 43 yields the exact same test \ac{AUC} of $0.4250$ across independent runs and across distinct code commits. This demonstrates that the instability is a reproducible seed effect where specific data split initialisations cause the optimisation landscape to deteriorate, rather than run-to-run execution noise.
+Unlike Brain-TokenGT, where running the same seed produces substantial run-to-run scatter due to hardware-level non-determinism (\autoref{sec:reproducibility-audit}), this fine-tuning collapse is 100\% bit-reproducible: repeating seed 43 yields the exact same test \ac{AUC} of $0.4250$ across independent runs and across distinct code commits. The spread across seeds is therefore a reproducible property of the seed rather than run-to-run execution noise. We illustrate the fold-level cross-validation and seed-level held-out test distributions for both \ac{GELSTM} and Brain-TokenGT on the matched longitudinal window ($T \in [2, 3]$) in \autoref{fig:rq2-cv-test-distributions}, showing the cross-validation spread alongside the seed-to-seed test variability.
 
-Three ranked, non-exclusive mechanisms are candidate explanations for this instability:
-\begin{enumerate}
-  \item \textbf{Uniform learning rate (primary suspect):} The training configuration applies a single learning rate across the entire architecture, so the large unfrozen pretrained encoder receives the same step size as the freshly initialised classification head. Without learning-rate damping on the encoder backbone, large initial gradient updates from the untrained head can catastrophically overwrite pretrained representations early in training.
-  \item \textbf{High capacity-to-sample-size ratio:} Unfreezing the encoder increases the number of trainable parameters to approximately $966{,}000$ for only roughly $76$ training subjects per fold, introducing severe overfitting risk.
-  \item \textbf{Objective mismatch:} The encoder is pretrained on self-supervised connectivity reconstruction (mean squared error and binary cross-entropy), while downstream fine-tuning optimises for binary classification cross-entropy.
-\end{enumerate}
-The observed collapse is consistent with a uniform learning rate destabilising optimisation at unfavourable split initialisations; it does not imply that fine-tuning is inherently unviable, as no configuration in this ablation tests a discriminatively scaled learning rate for the encoder.
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=\textwidth]{fig1_cv_and_test_distributions}
+  \caption{Cross-validation and held-out test metric distributions across seeds on the matched longitudinal window ($T \in [2, 3]$). (A) Five-fold cross-validation \ac{AUC} distribution ($n=20$ folds) for \ac{GELSTM} with a frozen pretrained encoder and Brain-TokenGT. (B) Held-out test \ac{AUC} across the four evaluated seeds (42, 43, 44, and 45) with dashed lines connecting seed-matched pairs. (C) Held-out test F1 scores across the same four seeds.}
+  \label{fig:rq2-cv-test-distributions}
+\end{figure}
+
+Unfreezing the encoder raises the number of trainable parameters to approximately
+$966{,}000$ against roughly $106$ training subjects per fold, and the training
+configuration applies a single learning rate across the entire architecture. Candidate explanations for
+the spread are discussed in \autoref{sec:ssl-contribution}; no configuration in this ablation
+sequence isolates any of them.
 
 \paragraph{Reconstruction fidelity.} The reconstruction-fidelity measurement quantifies what
 each encoder's decoder reproduces, using the scale-free Pearson correlation between the
@@ -239,9 +244,9 @@ statistical characterisation of the raw connectivity matrices found that within-
 between-patient variation exceeds between-cohort variation by a wide margin, so a
 reconstruction objective evaluated at this cohort size spends its capacity on subject
 idiosyncrasy rather than on the disease-relevant signal the encoder ablation above tests
-directly. This observation, not a \ac{GEC} classification score, is what motivated moving
-from an encoder-centred evaluation to the embed-then-classify comparison reported in this
-section.
+directly. This observation is what motivated moving from an encoder-centred evaluation to the
+embed-then-classify comparison reported in this section; it was the connectivity statistics
+themselves, rather than any \ac{GEC} classification score, that prompted the change.
 
 \section{RQ3: Does Temporal-First Modelling Improve over Spatial-First Modelling?}\label{sec:rq3}
 
@@ -249,6 +254,8 @@ This section reports the temporal-first ablation sequence of \autoref{sec:protoc
 pooled protocol: the scorecard across every configuration, the Tier-2 keep-or-drop verdict for each
 configuration against S1, the parameter-count comparison motivating why the result cannot be
 attributed to capacity, and the matched-window comparison against the short-window comparator.
+
+\subsection{Scorecard and Keep-or-Drop Verdicts}\label{sec:rq3-scorecard-verdicts}
 
 \paragraph{Scorecard.} \autoref{tab:rq3-scorecard} reports pooled out-of-fold \ac{AUC} for
 every configuration defined in \autoref{sec:protocol}. All values are mean $\pm$ standard deviation
@@ -264,7 +271,7 @@ across seeds 42 to 45, except where noted.
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}lcccc@{}}
 \toprule
-Configuration & $n$ & Pooled \ac{OOF} \ac{AUC} & Balanced acc.\ & Static $N{=}1$ \\
+Configuration & $n$ & Pooled out-of-fold \ac{AUC} & Balanced acc.\ & Static $N{=}1$ \\
 \midrule
 S0-demo (age, sex) & 248 & $0.5296 \pm 0.0000$ & 0.5139 & 0.5296 \\
 S0c \ac{GELSTM}, random encoder & 248 & $0.5625 \pm 0.0292$ & 0.5631 & 0.5140 \\
@@ -278,7 +285,7 @@ S2, temporal gate & 248 & $0.7308 \pm 0.0160$ & 0.6811 & 0.4969 \\
 S3, residual fusion (structurally inert) & 248 & $0.7488 \pm 0.0033$ & 0.7093 & 0.4919 \\
 S4, attentive pooling & 248 & $0.6490 \pm 0.0144$ & 0.6111 & 0.5197 \\
 S5, dual-score head & 248 & $0.7331 \pm 0.0173$ & 0.6885 & 0.5010 \\
-SENS ($\text{min\_visits}=3$) & 140 & $0.7413 \pm 0.0137$ & 0.6907 & 0.5469 \\
+SENS (minimum three visits) & 140 & $0.7413 \pm 0.0137$ & 0.6907 & 0.5469 \\
 \bottomrule
 \end{tabular}%
 }
@@ -299,31 +306,32 @@ thresholds mean.
 \label{tab:rq3-col-guide}
 \begin{tabularx}{\textwidth}{@{}p{3.0cm}Xp{2.6cm}p{2.6cm}@{}}
 \toprule
-Column & What it measures & Challenger beats S1 if & S1 wins if \\
+Column & What it measures & Candidate kept if & S1 retained if \\
 \midrule
-Fold-matched $\Delta \pm$ SE (ratio) &
-  Mean paired per-fold AUC difference within each seed --- pairing cancels fold
-  difficulty, so the SE is tiny and even small gains look significant &
+Fold-matched $\Delta \pm$ standard error (ratio) &
+  Mean paired per-fold \ac{AUC} difference within each seed. Pairing cancels fold
+  difficulty, so the standard error is small and a small difference reaches a large ratio &
   Positive $\Delta$ with ratio $\gtrsim +2$ &
   Ratio $\lesssim -2$, or the pooled check below fails \\[4pt]
-Pooled $\Delta \pm$ SE (ratio) &
-  Per-seed difference of pooled OOF AUC, unpaired --- larger SE, so it is the
-  conservative reading &
+Pooled $\Delta \pm$ standard error (ratio) &
+  Per-seed difference of pooled out-of-fold \ac{AUC}, unpaired. The standard error is
+  larger, so this is the conservative reading &
   Positive $\Delta$ with ratio $\gtrsim +2$ &
   Ratio $\lesssim -2$, or disagreement + tie-breaker \\[4pt]
-Why S1 wins &
-  The pre-registered combination of both &
-  Both statistics significantly positive $\to$ challenger kept &
-  Any significant negative $\to$ dropped; disagreement $\to$ one-SE tie-breaker
-  favours the simpler model \\
+Keep-or-drop reading &
+  The pre-specified combination of both &
+  Both statistics positive beyond twice their standard error $\to$ candidate kept &
+  Either statistic negative beyond twice its standard error $\to$ dropped; disagreement
+  $\to$ the one-standard-error tie-breaker retains the simpler model \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
 \noindent
 The two statistics measure the same quantity at different sensitivity: S1b's
-fold-matched SE is $0.0019$ while its pooled SE is $0.0074$, which is why the same
-tiny gain ($+0.012$ vs.\ $+0.0014$) can pass one threshold and fail the other.
+fold-matched standard error is $0.0019$ while its pooled standard error is $0.0074$, which
+is why the same small difference ($+0.012$ against $+0.0014$) passes one threshold and
+fails the other.
 
 \begin{table}[htb]
 \centering
@@ -333,26 +341,28 @@ tiny gain ($+0.012$ vs.\ $+0.0014$) can pass one threshold and fail the other.
 \label{tab:rq3-verdicts}
 \begin{tabularx}{\textwidth}{@{}lccX@{}}
 \toprule
-Contrast & Fold-matched $\Delta \pm$ SE (ratio) & Pooled $\Delta \pm$ SE (ratio) & Why S1 wins \\
+Contrast & Fold-matched $\Delta \pm$ standard error (ratio) & Pooled $\Delta \pm$ standard error (ratio) & Keep-or-drop reading \\
 \midrule
 S1b vs.\ S1 & $+0.0120 \pm 0.0019$ (+6.46) & $+0.0014 \pm 0.0074$ (+0.19) &
-  Statistics disagree $\to$ one-SE tie-breaker: gain of $0.0014 \ll$ one SE $(0.0074)$ $\to$ keep simpler S1 \\[3pt]
+  Statistics disagree $\to$ one-standard-error tie-breaker: a difference of $0.0014 \ll$ one standard error $(0.0074)$ $\to$ keep the simpler S1 \\[3pt]
 S1c vs.\ S1 & $-0.1587 \pm 0.0099$ (--15.98) & $-0.2055 \pm 0.0150$ (--13.72) &
-  Significant loss on both $\to$ dropped \\[3pt]
+  Negative on both readings $\to$ dropped \\[3pt]
 S2 vs.\ S1 & $-0.0064 \pm 0.0075$ (--0.85) & $-0.0180 \pm 0.0086$ (--2.08) &
-  Pooled reading is significantly negative $\to$ dropped \\[3pt]
+  Pooled reading is negative beyond twice its standard error $\to$ dropped \\[3pt]
 S3 vs.\ S1 & $0.0000 \pm 0.0000$ & $0.0000 \pm 0.0000$ &
   Bit-identical to S1; structurally inert, no result \\[3pt]
 S4 vs.\ S1 & $-0.0558 \pm 0.0058$ (--9.60) & $-0.0999 \pm 0.0083$ (--11.96) &
-  Significant loss on both $\to$ dropped \\[3pt]
+  Negative on both readings $\to$ dropped \\[3pt]
 S5 vs.\ S1 & $-0.0046 \pm 0.0067$ (--0.68) & $-0.0158 \pm 0.0101$ (--1.56) &
   Classification-neutral; kept only as an interpretability tool, not on performance \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-No variant beats S1; the reasoning for each configuration is recorded in \autoref{tab:rq3-verdicts}, so S1 is the configuration carried forward.
+No variant improves on S1; the reasoning for each configuration is recorded in \autoref{tab:rq3-verdicts}, so S1 is the configuration carried forward.
 
+
+\subsection{Parameter Count of the Selected Configuration}\label{sec:rq3-capacity}
 
 \paragraph{The selected configuration is not explained by capacity.}
 \autoref{tab:rq3-capacity} reports total trainable parameters for the selected configuration
@@ -371,7 +381,7 @@ Configuration & Trainable parameters & Pooled out-of-fold \ac{AUC} \\
 \textbf{S1 (selected)} & \textbf{68{,}417} & \textbf{0.7488} \\
 S5, dual-score head & 68{,}482 & 0.7331 \\
 S2, temporal gate & 72{,}642 & 0.7308 \\
-S0b, frozen pretrained spatial-first & 965{,}897 & 0.7186 \\
+S0b, frozen pretrained spatial-first & 520{,}905 & 0.7186 \\
 S0c, randomly initialised spatial-first & 965{,}897 & 0.5625 \\
 \bottomrule
 \end{tabular}
@@ -383,10 +393,16 @@ a node-shared \ac{LSTM} over per-region trajectories, mean-pooled, followed by a
 classification head. It exceeds the randomly initialised spatial-first floor, which shares
 no pretraining, by 0.186 \ac{AUC} at 14.1 times fewer parameters, and exceeds the pretrained
 spatial-first floor by 0.030 \ac{AUC} at 7.6 times fewer trainable parameters, so the
-advantage over both floors cannot be attributed to model capacity. The same table addresses
-the opposite direction: S2 and S5 each add parameters on top of S1's own configuration and
-both score lower, so additional capacity on top of the selected configuration does not
-improve it either.
+advantage over both floors cannot be attributed to model capacity. The same table addresses the opposite direction: S2 and S5 each add parameters on top of S1's own configuration and both score lower, so additional capacity on top of the selected configuration does not improve it either. We plot the parameter-count against out-of-fold \ac{AUC} frontier and the corresponding multi-metric comparison in \autoref{fig:rq3-param-efficiency}, which places the temporal-first configurations at or above the discriminability of the spatial-first and graph-transformer baselines at a smaller parameter count.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.92\textwidth]{fig5_param_efficiency_frontier}
+  \caption{Parameter efficiency frontier and multi-metric performance profile. (A) Trainable parameter count on a logarithmic scale against held-out test \ac{AUC} across model configurations, highlighting the efficiency frontier achieved by the compact temporal-first architectures (S1, S2, S5) relative to the overparameterised spatial-first and graph-transformer baselines. (B) Multi-metric radar profile comparing \ac{AUC}, F1 score, balanced accuracy, specificity, sensitivity, and parameter efficiency across representative architectures.}
+  \label{fig:rq3-param-efficiency}
+\end{figure}
+
+\subsection{Matched-Window Comparison with Brain-TokenGT}\label{sec:rq3-matched-window}
 
 \paragraph{Matched-window comparison.} \autoref{tab:rq3-w3} restricts the trajectory models
 and Brain-TokenGT to the two-to-three-visit window Brain-TokenGT is architecturally
@@ -401,7 +417,7 @@ models as set up in \autoref{sec:comparability}.
 \label{tab:rq3-w3}
 \begin{tabular}{@{}lc@{}}
 \toprule
-Configuration (matched window) & Pooled \ac{OOF} \ac{AUC} \\
+Configuration (matched window) & Pooled out-of-fold \ac{AUC} \\
 \midrule
 Brain-TokenGT & $0.6207 \pm 0.0338$ \\
 \ac{GELSTM}, random encoder & $0.5885 \pm 0.0304$ \\
@@ -437,12 +453,14 @@ Selected temporal-first configuration & 0.7488 & 0.7318 & $-0.0170$ \\
 \end{table}
 
 Truncation moves the two architecture families in opposite directions: the spatial-first
-models gain from truncation while the temporal-first configuration loses performance. Within this ablation sequence, the
-temporal-first advantage over spatial-first is observed only in the long-trajectory regime,
-and the spatial-first advantage is observed only in the regime truncated to the window a
-competing published architecture requires; a comparison that discards the additional visits
-the temporal-first design exists to exploit is reported here as a secondary comparison, not
-as the primary evidence for or against the flip in pooling order.
+models gain from truncation while the temporal-first configuration loses performance. Within this ablation sequence, the temporal-first advantage over spatial-first is observed only in the long-trajectory regime, and the spatial-first advantage is observed only in the regime truncated to the window a competing published architecture requires; a comparison that discards the additional visits the temporal-first design exists to exploit is reported here as a secondary comparison, and the primary evidence on the flip in pooling order remains the untruncated comparison. We report threshold-free evaluation across the full operating range in \autoref{fig:rq4-roc-pr}, comparing the multi-seed \ac{ROC} and \ac{PR} curves with their empirical standard deviation envelopes.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.88\textwidth]{fig2_roc_and_pr_curves}
+  \caption{Multi-seed \ac{ROC} and \ac{PR} curves on the held-out test cohort across four seeds ($n=4$). (A) \ac{ROC} curves for \ac{GELSTM} with a frozen encoder and Brain-TokenGT, with solid lines indicating the seed-averaged curve, shaded bands showing $\pm 1$ standard deviation, and individual seeds plotted in semi-transparent lines alongside the chance floor ($0.50$). (B) Corresponding \ac{PR} curves evaluated against the converter prevalence baseline ($0.44$).}
+  \label{fig:rq4-roc-pr}
+\end{figure}
 
 
 \section{RQ4: Cross-Cohort Transfer}\label{sec:rq4}
@@ -476,7 +494,7 @@ S2, temporal gate & 0.6266 & 0.8700 \\
 S3, residual fusion (structurally inert) & 0.6526 & 0.8741 \\
 S4, attentive pooling & 0.5415 & 0.8022 \\
 S5, dual-score head & 0.6460 & 0.8530 \\
-SENS ($\text{min\_visits}=3$) & 0.6328 & 0.8986 \\
+SENS (minimum three visits) & 0.6328 & 0.8986 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -501,7 +519,7 @@ configuration and its two pre-specified secondary variants, confirmed unspent im
 \label{tab:rq4-tier4}
 \begin{tabular}{@{}llccc@{}}
 \toprule
-Configuration & Role & In-domain test & \ac{OASIS} & \ac{OOF} (reference) \\
+Configuration & Role & In-domain test & \ac{OASIS} & Out-of-fold (reference) \\
 \midrule
 \textbf{S1} & primary & $\mathbf{0.7909 \pm 0.0162}$ & $\mathbf{0.4892 \pm 0.0224}$ & $0.7488 \pm 0.0033$ \\
 S1b & secondary & $0.7760 \pm 0.0568$ & $0.4602 \pm 0.0274$ & $0.7502 \pm 0.0125$ \\
@@ -510,12 +528,14 @@ S5 & secondary & $0.7870 \pm 0.0139$ & $0.5070 \pm 0.0109$ & $0.7331 \pm 0.0173$
 \end{tabular}
 \end{table}
 
-The in-domain test \ac{AUC} for S1 and S5 lands above the prediction interval implied by
-their own out-of-fold scores. This is reported as a fact about this single 64-subject read
-rather than as a second, independent win: the plan's own noise floor at this sample size is
-approximately 0.08 \ac{AUC}, which covers the gap, and the 248-subject out-of-fold pool
-remains the better-powered point estimate; no headline claim in this thesis is updated on
-the in-domain test read alone.
+The in-domain test \ac{AUC} for S1 and S5 lands above the prediction interval implied by their own out-of-fold scores. This is reported as a fact about this single 64-subject read rather than as a second, independent win: the plan's own noise floor at this sample size is approximately 0.08 \ac{AUC}, which covers the gap, and the 248-subject out-of-fold pool remains the better-powered point estimate; no headline claim in this thesis is updated on the in-domain test read alone. We report the exact cell-level classification breakdown across seeds in \autoref{fig:rq4-confusion-matrices}, displaying the 2-by-4 confusion matrix grid at the respective operating thresholds.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=\textwidth]{fig3_confusion_matrices}
+  \caption{Multi-seed confusion matrices grid on the held-out test cohort ($n=25$) across seeds 42, 43, 44, and 45. Top row: \ac{GELSTM} with a frozen encoder across operating thresholds selected via out-of-fold F1 optimisation. Bottom row: Brain-TokenGT across the same four seeds. True stable \ac{MCI} ($n=14$) and converters ($n=11$) are enumerated per cell.}
+  \label{fig:rq4-confusion-matrices}
+\end{figure}
 
 The \ac{OASIS} result is the load-bearing external-transfer read. All three models sit within
 noise of chance: the per-seed standard error at $n \approx 60$ is approximately 0.075, and
@@ -524,7 +544,14 @@ each model's four-seed mean is within about one standard error of 0.5 (S1 ranges
 Cross-cohort transfer to \ac{OASIS} was at chance under the evaluated protocol, against
 0.77 to 0.79 in-domain \ac{AUC} for the same three models; this is reported as no evidence of
 transfer to an unseen cohort, not as evidence of below-chance failure, which the data do not
-show.
+show. We evaluate the probabilistic fidelity of these test predictions in \autoref{fig:rq4-calibration} via reliability curves and Brier score loss, verifying that in-domain baseline predictions maintain calibrated risk scores across seeds prior to external domain shift.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig4_probability_calibration}
+  \caption{Probability calibration and Brier score evaluation on the held-out test set. (A) Reliability diagram comparing predicted conversion probabilities against observed empirical conversion frequencies for \ac{GELSTM} and Brain-TokenGT relative to perfect calibration. (B) Brier score loss across seeds 42 to 45, measuring the mean squared difference between predicted probabilities and observed binary outcomes.}
+  \label{fig:rq4-calibration}
+\end{figure}
 
 \paragraph{Cohort-identity probe.} A logistic probe is fitted on the pooled patient latent
 to decode cohort of origin (\ac{ADNI} against \ac{DELCODE}), with a pre-specified escalation
@@ -537,7 +564,7 @@ out-of-fold decoding \ac{AUC} for every configuration.
 \caption{Cohort-identity probe out-of-fold \ac{AUC} against the pre-specified escalation
   threshold of 0.75.}
 \label{tab:rq4-probe}
-\begin{tabular}{@{}lcp{4.2cm}@{}}
+\begin{tabularx}{\textwidth}{@{}lcX@{}}
 \toprule
 Configuration & Cohort-probe \ac{AUC} & Exceeds threshold \\
 \midrule
@@ -548,9 +575,9 @@ S2 & $0.869$ & yes \\
 S3 & $0.860$ (identical to S1) & yes \\
 S4 & $0.847$ & yes \\
 S5 & $0.863$ & yes \\
-SENS & $0.742$ & no, just under the threshold at a smaller pool \\
+SENS & $0.742$ & no, just under threshold at a smaller pool \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 Every full-pool configuration decodes cohort of origin at approximately 0.86 \ac{AUC} despite no
@@ -590,9 +617,9 @@ S1 with gradient-reversal mitigation & $0.7066 \pm 0.0075$ & $0.9411 \pm 0.0131$
 \end{tabular}
 \end{table}
 
-\paragraph{Intended behavior.} The adversarial head was meant to remove cohort information from the shared embedding, 
-lowering the cohort-probe AUC while keeping classification performance close to S1.
-However, this intended behavior was not matched in practice, as pooled out-of-fold \ac{AUC} degraded substantially.
+\paragraph{Intended behaviour.} The adversarial head was designed to remove cohort information from the shared embedding,
+lowering the cohort-probe \ac{AUC} while keeping classification performance close to S1.
+Neither held: the cohort-probe \ac{AUC} rose from $0.8600$ to $0.9411$ and the pooled out-of-fold \ac{AUC} fell from $0.7488$ to $0.7066$.
 
 \paragraph{Summary statement.} Cross-cohort transfer to \ac{OASIS} was at chance under the
 evaluated protocol ($\ac{AUC} = 0.4892 \pm 0.0224$, indistinguishable from chance),
@@ -697,11 +724,11 @@ Comparing the full diagnostic metrics reveals the underlying failure mechanism: 
 \begin{figure}[htb]
   \centering
   \includegraphics[width=0.88\textwidth]{fig_scanner_drift_vs_real_transfer}
-  \caption{Simulated scanner drift versus real empirical cross-cohort transfer for recurrent architectures. (A) Comparison of held-out \ac{AUC} across in-domain baseline, metadata-calibrated simulated drift, and real cross-cohort transfer to \ac{ADNI} and \ac{OASIS}, relative to the chance floor ($0.50$). (B) The underlying failure mechanism: input variance compresses the model's mean output probabilities from $0.511$ down to $0.268\text{--}0.301$, pushing predictions below the decision threshold, which causes specificity to saturate at $1.000$ while converter sensitivity collapses to $0.000\text{--}0.071$.}
+  \caption{Simulated scanner drift versus real empirical cross-cohort transfer for recurrent architectures. (A) Comparison of held-out \ac{AUC} across in-domain baseline, metadata-calibrated simulated drift, and real cross-cohort transfer to \ac{ADNI} and \ac{OASIS}, relative to the chance floor ($0.50$). (B) The accompanying shift in the predicted probabilities: under increasing input variance the model's mean output probability falls from $0.511$ to $0.268\text{--}0.301$, and over the same sweep specificity rises to $1.000$ while converter sensitivity falls to $0.000\text{--}0.071$.}
   \label{fig:rq7-drift-transfer}
 \end{figure}
 
-This comparison confirms that while acquisition parameter dispersion ($c_v$) captures the primary directional degradation mechanism, unmodelled physical domain shifts (such as site-specific B1 field inhomogeneities, gradient non-linearities, and motion profiles) further compound the transfer gap on real external scans.
+The simulated sweep and the real cross-cohort evaluation degrade in the same direction, and the real transfer gap is the larger of the two. The simulation is calibrated on acquisition-parameter dispersion ($c_v$) alone, so the residual gap is consistent with additional sources of domain shift that the simulation does not model, such as site-specific field inhomogeneities, gradient non-linearities and motion profiles. No experiment here separates those sources.
 
 \section{Ablations Not Run}\label{sec:ablations-not-run}
 

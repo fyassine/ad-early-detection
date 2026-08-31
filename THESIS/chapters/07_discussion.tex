@@ -59,8 +59,9 @@ saliency gate and a dual-score head, both score lower than the configuration the
 The fourth comparison is external to this thesis's own architectures: the published
 competitor evaluated in \autoref{sec:braintokengt} processes on the order of one thousand
 four hundred tokens per subject through six hundred thousand trainable parameters, against
-roughly eighty training subjects per fold, and scores below every configuration in the
-temporal-first ablation sequence that exceeds Tier 1.
+roughly eighty training subjects per fold in the matched-window comparison of that section.
+On the pooled protocol it scores below every configuration in the temporal-first ablation
+sequence that exceeds Tier 1.
 
 Four independent comparisons that each add capacity find no corresponding gain, and one
 that removes capacity relative to two established baselines finds a gain instead. This
@@ -123,22 +124,26 @@ signal, an auxiliary reconstruction stage attached to the selected configuration
 classification performance substantially. Because the matched comparator for this
 contrast under a self-supervised encoder on both sides also failed to train usefully, the
 pre-specified pooling-order contrast that this second attempt was meant to answer remains
-untested rather than answered in the negative, a point \autoref{sec:threats} returns to.
+untested rather than answered in the negative, a point \autoref{sec:limitations} returns to.
 
 The fine-tuning configuration of \autoref{sec:rq2}, in which the pretrained encoder is unfrozen and
 trained jointly with the classification head, shows a further property of this pretraining
 regime: its held-out test performance varies sharply across seeds, and this variation is
 bit-reproducible rather than a symptom of run-to-run execution noise, which
-\autoref{sec:threats} discusses further as a reproducibility question in its own right.
-\autoref{sec:rq2} ranks three non-exclusive mechanisms consistent with this instability, a
-shared learning rate across the unfrozen encoder and the freshly initialised head, the
-capacity-to-sample ratio once the encoder is unfrozen, and a mismatch between the
-reconstruction objective the encoder was pretrained on and the classification objective it
-is fine-tuned on. No experiment in this ablation sequence isolates any one of these three
-from the other two, since the configuration that would test the leading candidate directly, a
+\autoref{sec:limitations} discusses further as a reproducibility question in its own right.
+Three non-exclusive mechanisms are consistent with this instability, ranked here by how
+directly the observed configuration bears on them. The first is a shared learning rate
+across the unfrozen encoder and the freshly initialised classification head: the encoder
+receives the same step size as an untrained head, so early updates driven by that head can
+overwrite the pretrained representation. The second is the capacity-to-sample ratio once
+the encoder is unfrozen, at approximately $966{,}000$ trainable parameters against roughly
+$106$ training subjects per fold. The third is a mismatch between the reconstruction
+objective the encoder was pretrained on and the classification objective it is fine-tuned
+on. No experiment in this ablation sequence isolates any one of these three from the other
+two, since the configuration that would test the leading candidate directly, a
 discriminatively scaled learning rate for the unfrozen encoder, was not run before the
-writing deadline. The three mechanisms are therefore reported here as they were reported in
-\autoref{sec:rq2}, as ranked candidates rather than as an established cause.
+writing deadline. We therefore report them as ranked candidates rather than as an
+established cause.
 
 A qualitative finding reported in \autoref{sec:rq2} offers a mechanism for why a
 reconstruction objective struggles to contribute at this cohort size: a statistical
@@ -189,7 +194,7 @@ the category of unseen cohort such a dependence would be expected to fail on; we
 draw a causal conclusion from the probe result alone, because no experiment in this
 ablation sequence isolates the probe's contribution from the many other differences between
 the cohorts, among them site, acquisition protocol and inter-visit interval structure, that
-\autoref{sec:threats} discusses separately. We equally draw no conclusion from these
+\autoref{sec:limitations} discusses separately. We equally draw no conclusion from these
 results about which architecture evaluated in this thesis, or the published competitor
 characterised in \autoref{sec:braintokengt}, would transfer better to an external cohort;
 \autoref{sec:comparability} states directly that the comparison between them is not
@@ -231,9 +236,9 @@ single seed, it is offered here only as a second, independently obtained signal 
 the same direction as the \ac{OASIS} result, not as corroborating evidence in the technical
 sense.
 
-\section{Threats to Validity}\label{sec:threats}
+\section{Limitations}\label{sec:limitations}
 
-In this section we discuss five threats to the validity of the results reported in
+In this section we discuss five limitations of the results reported in
 \autoref{ch:results}: cohort size, the conversion label as a censored observation,
 informative attrition, single-site development, and the limits of a negative result.
 
@@ -245,7 +250,7 @@ screening heuristic at four seeds, not a significance test, and the asymmetry th
 matters for how the results are read: a configuration that fails to clear its comparator is
 reported as undetectable at this sample size, never as shown to be harmful, while a
 configuration that clears it is reported as worth carrying forward, never as proven
-superior. Cohort size is the constraint underlying most of the remaining threats in this
+superior. Cohort size is the constraint underlying most of the remaining limitations in this
 section, since a larger cohort would narrow the resolvability floor that makes several of
 them binding in the first place.
 
@@ -256,7 +261,7 @@ convert later than the window captures. Widening the window would reduce this ce
 the cost of a smaller cohort, since fewer subjects have sufficiently long follow-up to
 qualify, so the window length in \autoref{ch:data} reflects a trade-off between cohort size
 and label precision rather than a setting free of consequence. \ac{OASIS} carries a further,
-more direct form of this threat: nine subjects in the external cohort have their conversion
+more direct form of this limitation: nine subjects in the external cohort have their conversion
 label unresolved at the time of the evaluation reported in \autoref{sec:rq4}.
 
 \paragraph{Informative attrition.} Converters and stable \ac{MCI} subjects do not have the
@@ -281,7 +286,7 @@ motivated in part by conditioning on the interval between visits, described in
 development cohort; \autoref{sec:ablations-not-run} records that a dedicated ablation of
 this input was not re-reported for this reason, and that a cohort with more irregular
 spacing would be needed to isolate the interval input's contribution directly. Development
-on a single, temporally regular site is therefore a threat not only to how well a result
+on a single, temporally regular site is therefore a limitation not only to how well a result
 transfers to a more heterogeneous cohort, addressed in \autoref{sec:cohort-dependence}, but
 to whether a design decision motivated by temporal irregularity has been exercised by the
 cohort it was tuned on at all.
@@ -303,15 +308,15 @@ budget relative to the architectures introduced in this thesis, both described i
 \autoref{sec:comparability}; neither axis is resolved by the results reported here, and both
 limit how much weight that comparison alone can carry.
 
-\paragraph{Two further threats.} The reproducibility split reported in
+\paragraph{Two further limitations.} The reproducibility split reported in
 \autoref{sec:reproducibility-audit} is itself a validity consideration for any comparison
 that relies on it: the temporal-first implementation evaluated in this thesis reproduces to
 the last recorded digit under a fixed seed, while the published competitor's same-seed
-runs scatter by an amount comparable to the margins several comparisons in
-\autoref{sec:rq3} turn on. This scatter is consistent with unengaged global determinism in
-scatter-gather operations inside the competitor's own released implementation, stated as a
-plausible mechanism rather than as a demonstrated one, since no experiment here holds the
-scheduling fixed while varying the algorithm path. Finally, the attrition reported in
+runs exhibit run-to-run variation comparable in magnitude to the performance margins
+distinguishing several configurations in \autoref{sec:rq3}. This scatter is consistent with
+unengaged global determinism in scatter-gather operations inside the competitor's own
+released implementation, stated as a plausible mechanism rather than as a demonstrated one,
+since no experiment here holds the scheduling fixed while varying the algorithm path. Finally, the attrition reported in
 \autoref{tab:attrition} shows that the two external cohorts do not lose sessions to motion
 quality control at comparable rates: \ac{ADNI} loses a modest fraction of its sessions at
 this stage, while \ac{OASIS} loses a substantially larger fraction of its already smaller
@@ -324,7 +329,7 @@ the difficulty external evaluation poses, alongside the representation-level acc
 In this section we discuss what the results of \autoref{ch:results} say about the clinical
 value of the signal this thesis studies, rather than about the readiness of any evaluated
 configuration for clinical deployment; \autoref{sec:cohort-dependence} and
-\autoref{sec:threats} already state the transfer and sample-size limits that stand between
+\autoref{sec:limitations} already state the transfer and sample-size limits that stand between
 these results and a deployment claim, and this section does not restate them.
 
 The floor comparison of \autoref{sec:rq1} shows that essentially all of the signal
@@ -377,7 +382,7 @@ Taken together, these results support the value of longitudinal functional-conne
 signal, and of a linear or near-linear summary of its change over time, as a research
 instrument for locating where conversion-relevant information resides in this modality.
 They do not, on their own, support a claim of clinical deployment readiness: the cohort
-sizes evaluated here, the sample-size floor of \autoref{sec:threats} and the transfer result
+sizes evaluated here, the sample-size floor of \autoref{sec:limitations} and the transfer result
 of \autoref{sec:cohort-dependence} are what would need to change before a claim of that kind
 could be made. We accordingly restrict the claims of this section to what the evaluated
 protocol licenses, in keeping with the scope stated in \autoref{sec:scope-of-claims}, rather

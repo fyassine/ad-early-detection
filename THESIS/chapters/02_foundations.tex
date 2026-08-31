@@ -2,43 +2,396 @@
 
 \chapter{Foundations and Related Work}\label{ch:foundations}
 
+This chapter defines the concepts this thesis builds on and situates them in the
+literature. \autoref{sec:parcellation} explains how a continuous brain scan becomes a
+region-level graph. \autoref{sec:graph-learning} introduces graph representation learning
+as applied to neuroimaging: message passing, attention, autoencoders and pooling.
+\autoref{sec:longitudinal-modelling} extends this to sequences of visits, from
+time-aware recurrent models to spatiotemporal graph transformers. \autoref{sec:open-problems}
+closes the chapter by naming four open problems in this literature, each mapped to one of
+the research questions stated in \autoref{sec:research-questions}.
+
 \section{Brain Connectivity and Parcellation Schemes}\label{sec:parcellation}
-\outlinenote{Atlases, connectivity estimation, the 200-region choice and what it commits
-to.}
+
+\subsection{Parcellation and Atlas Choice}\label{sec:parcellation-atlas}
+
+A resting-state functional \ac{MRI} scan measures a signal at every voxel in the brain,
+far too many units to treat individually as nodes in a graph. Parcellation is the step
+that reduces this to a manageable number of regions: a fixed atlas partitions the brain
+volume or cortical surface into a finite set of regions, each a \ac{ROI}, and every
+voxel's signal is subsequently summarised by the \ac{ROI} it falls into. Atlases fall into
+two broad families.
+Anatomical atlases place region boundaries at macroanatomical landmarks, identifiable on a
+structural scan independently of any functional data; the Automated Anatomical Labelling
+atlas, which divides the cortex and subcortex into ninety regions and is the atlas the
+Brain-TokenGT competitor evaluated in this thesis uses \parencite{dong2023braintokengt}, is
+of this kind. Functional atlases instead place boundaries where the intrinsic, resting-state
+organisation of the cortex itself changes, on the reasoning that a region defined by a
+shared functional signal is a more natural unit for a functional-connectivity analysis than
+one defined by anatomy alone. The canonical seven-network partition of the cerebral cortex
+into large-scale systems such as the default mode, sensorimotor and visual networks, derived
+from the clustering structure of resting-state connectivity across a large cohort, is one
+such functional atlas \parencite{yeo2011organization}. The Schaefer parcellation refines
+this idea to a chosen number of finer-grained regions at that resolution by combining a local measure of
+where the functional signal changes most sharply with a global measure of how well the
+resulting regions align with the seven-network partition, and is offered at several
+resolutions so that a given study can trade the number of regions against how much data
+supports estimating each one \parencite{schaefer2018parcellation}. Because a cortical
+atlas does not cover subcortical structures, a separate atlas is needed wherever those
+structures are the object of analysis; one such atlas maps subcortical organisation using
+functional-connectivity gradients rather than the anatomical boundaries a structural atlas
+would use \parencite{tian2020subcortex}. \autoref{ch:data} states which atlas and which
+resolution this thesis uses and why.
+
+\subsection{Estimating Functional Connectivity}\label{sec:fc-estimation}
+
+Once a scan is parcellated, every region contributes one time series, obtained by
+averaging the blood-oxygen-level-dependent signal across the voxels the region contains.
+Functional connectivity between two regions is a measure of how similarly their time
+series behave. Pearson correlation between each pair of regional time series is the most
+widely used such measure: it is symmetric, bounded, and directly interpretable as the
+degree to which two regions' spontaneous activity rises and falls together. Applying it to
+every pair of regions in a $|V|$-region atlas yields one $|V| \times |V|$ connectivity
+matrix per scan, a dense, fully populated description of how strongly every region is
+coupled to every other. Because a correlation coefficient is bounded and its sampling
+variance depends on its own magnitude, this matrix is conventionally transformed before
+any downstream analysis treats its entries as numerically comparable, so that a given
+change in coupling strength is represented consistently regardless of where in the bounded
+range it occurs. \autoref{ch:data} states the specific transform applied throughout this
+thesis. Partial correlation and coherence are alternative similarity measures reported
+elsewhere in this literature, controlling for the influence of other regions or capturing
+frequency-specific coupling respectively, but the connectivity matrices this thesis works
+with throughout are built from the same measure Pearson correlation provides.
+
+\subsection{From a Connectivity Matrix to a Graph}\label{sec:graph-construction-background}
+
+A dense connectivity matrix is not yet a graph in the sense a graph neural network
+consumes: every region is connected to every other region with some non-zero weight, so
+treating the matrix directly as an adjacency structure gives every node the same,
+maximally dense neighbourhood, in which the specific pattern of which connections matter
+is lost inside a uniform weighting. Converting a connectivity matrix into a graph
+therefore requires a sparsification step that decides which entries become edges. Several
+conventions exist. A proportional threshold retains a fixed fraction of the strongest
+connections across the whole matrix; an absolute threshold retains every connection above
+a fixed strength regardless of how many that leaves per region; a minimum spanning tree
+keeps only the edges needed to keep the graph connected at minimum total edge weight; and a
+per-region $k$-nearest-neighbour rule retains, for each region, its $k$ strongest
+connections independently of how strong or weak the rest of the matrix is elsewhere. Each
+convention encodes a different assumption about what should count as a meaningful
+connection, and a benchmark study of graph neural networks for brain-network analysis
+treats this construction step as a first-class design choice on the same footing as the
+network architecture itself, rather than as a fixed preprocessing detail
+\parencite{cui2023braingb}. \autoref{ch:methodology} states which of these conventions this
+thesis applies and at what resolution.
+
+\subsection{Node Features}\label{sec:node-features-background}
+
+A graph neural network additionally requires a feature vector attached to every node, not
+only an edge structure. Several conventions are used for a connectome graph. The
+region's own row of the connectivity matrix, its full profile of pairwise coupling with
+every other region, is one common choice, and has the property that a node's features and
+the graph's own edges are built from the same underlying measurement rather than from two
+independent modalities. Graph-theoretic summary statistics computed per region, such as
+its degree or clustering coefficient, are a lower-dimensional alternative that discards the
+pairwise profile in favour of a small number of topological descriptors. A fixed positional
+or identity encoding, carrying no information about that scan's connectivity at all, is a
+third option used when a model is meant to learn purely from graph structure. The
+benchmark of \autoref{sec:graph-construction-background} catalogues this choice alongside
+the edge-construction convention as a second design axis for the same reason
+\parencite{cui2023braingb}.
+
+\subsection{What a 200-Region Resolution Commits To}\label{sec:resolution-tradeoff}
+
+Choosing how many regions an atlas divides the cortex into trades two properties against
+each other. A finer parcellation captures functional boundaries at a smaller spatial scale,
+following the same local-boundary rationale that motivates the Schaefer parcellation's own
+construction \parencite{schaefer2018parcellation}, and gives a graph neural network more
+nodes over which to represent that structure. The number of possible pairwise connections
+grows quadratically with the number of regions, however, so a finer atlas also multiplies
+the number of edges a sparsification rule must select from and the number of entries a
+node's connectivity-profile feature vector carries. Against a labelled cohort that stays
+fixed in size, a finer atlas therefore raises feature dimensionality without raising the
+information available to estimate it from, which is exactly the small-sample difficulty
+named in \autoref{sec:dl-neurodegeneration} and returned to as an open problem in
+\autoref{sec:gap-evidence}. A coarser atlas, such as the ninety-region Automated Anatomical
+Labelling atlas the Brain-TokenGT competitor uses \parencite{dong2023braintokengt}, sits at
+the opposite end of this tradeoff, exchanging spatial specificity for a smaller feature
+space relative to cohort size. \autoref{ch:data} and \autoref{ch:methodology} state which
+resolution this thesis selects and \autoref{sec:capacity} returns to what that choice
+implies once weighed against the trainable-parameter counts of the classifiers built on it.
 
 \section{Graph Representation Learning in Neuroimaging}\label{sec:graph-learning}
-\outlinenote{Graph neural networks on connectomes, graph autoencoders, and pooling
-operators.}
+
+\subsection{Message Passing on Connectomes}\label{sec:message-passing}
+
+A graph neural network learns a representation for each node by repeatedly updating that
+node's own feature vector with information drawn from its neighbours, a mechanism known as
+message passing. In one layer of a graph convolutional network, a node's new
+representation is a learned, weighted combination of its own current features and those of
+every node it is connected to, so that after $L$ layers a node's representation reflects
+information from every other node within $L$ hops of it in the graph
+\parencite{kipf2017gcn}. Applied to a connectome graph, this lets a region's learned
+representation depend not only on its own connectivity profile but on the profiles of the
+regions it is connected to, which is the property that distinguishes a graph neural network
+from a model that treats every region independently. An inductive variant of this idea
+learns a fixed aggregation function that samples and combines a node's neighbourhood on the
+fly, rather than a fixed set of per-node weights tied to one specific graph, which matters
+for a connectome dataset in which every subject's graph has the same node set but a
+subject-specific edge structure \parencite{hamilton2017graphsage}.
+
+\subsection{Graph Attention}\label{sec:graph-attention}
+
+The message-passing update of \autoref{sec:message-passing} treats every neighbour's
+contribution according to a weight the graph structure alone determines, such as the
+inverse of a node's degree. Not every connection is equally informative for a given task,
+however, and a graph attention network instead learns a weight for each edge as a function
+of the two nodes' own features, so that during training the network can learn to emphasise
+some neighbours' contributions over others rather than treating the graph structure as
+fixed evidence about how much attention each edge deserves \parencite{velickovic2018gat}.
+A later analysis showed that the original formulation's attention weights do not depend on
+the query node in the way the mechanism was intended to allow, and proposed a corrected
+variant that restores this dependence \parencite{brody2022gatv2}; \autoref{sec:static-representation}
+states where this corrected variant is used in this thesis's own encoder.
+
+\subsection{Graph Autoencoders and the Reconstruction Pretext}\label{sec:graph-autoencoders-background}
+
+A graph autoencoder learns a node-level or graph-level representation without using any
+task label, by training an encoder to compress a graph into a lower-dimensional latent
+representation and a decoder to reconstruct the original graph from that representation
+alone; the reconstruction error is the only training signal. A variational graph
+autoencoder extends this idea by having the encoder output a distribution over the latent
+representation rather than a single point, regularised toward a fixed prior, and
+reconstructing the graph's edge structure from a sample of that distribution through an
+inner-product decoder \parencite{kipf2016vgae}. The appeal of this approach for a
+neuroimaging setting with far more unlabelled scans than labelled subjects is that the
+encoder can, in principle, be trained on every available scan regardless of whether that
+scan carries a diagnostic label, and only afterward paired with a small classification head
+trained on the labelled subset. \autoref{sec:static-representation} describes the
+graph-attention and variational autoencoders this thesis builds on and extends, and
+\autoref{sec:gap-ssl} states what remains open about whether this pretext objective
+actually yields a representation a downstream classifier can use.
+
+\subsection{Pooling Operators}\label{sec:pooling-background}
+
+A classifier that predicts one label per subject, rather than one label per region, needs
+a further step that reduces a graph's set of per-node representations to a single
+graph-level vector. The simplest such operator is a fixed aggregation, such as taking the
+elementwise mean or sum of every node's representation, which is permutation-invariant to
+how the nodes happen to be ordered but treats every node as equally relevant to the final
+prediction. An attention-weighted alternative instead learns a per-node relevance score and
+pools nodes according to that learned weighting rather than uniformly; a sparse variant of
+the function typically used to normalise such weights forces the least relevant nodes'
+scores to exactly zero rather than merely small, which changes which nodes are excluded
+from the pooled representation rather than only how much they contribute to it
+\parencite{martins2016sparsemax}. A third family of pooling operators learns a hierarchical
+cluster assignment for the graph's nodes and coarsens the graph layer by layer, producing a
+sequence of progressively smaller graphs rather than reducing directly from every node to
+one vector \parencite{ying2018diffpool}. \autoref{sec:static-representation} compares mean
+and attention pooling directly for this thesis's own static classifiers.
+
+\subsection{Contrastive Self-Supervision and the Foundation-Model Frontier}\label{sec:contrastive-and-foundation}
+
+Reconstruction is not the only pretext task proposed for connectome data without labels.
+A contrastive alternative instead trains an encoder so that two differently augmented
+views of the same subject's connectivity graph are pulled together in representation space
+while views drawn from different subjects are pushed apart, without ever reconstructing the
+input matrix itself; this has been applied within a single cohort
+\parencite{wang2023ucgl} and, using a learned graph-diffusion augmentation, across sites and
+disorders \parencite{wang2025gcda}. At a substantially larger scale than any single-site
+clinical cohort can reach, foundation models pretrained on tens of thousands of scans have
+begun to establish what large-scale self-supervised pretraining can buy for downstream
+diagnosis and prognosis tasks, predicting a representation of a masked portion of the input
+directly in latent space rather than reconstructing it in input space
+\parencite{dong2024brainjepa}. Whether any of this pretraining machinery, contrastive or
+generative, contributes a representation that improves on the absence of a learned encoder
+altogether is itself contested: a re-examination of graph deep learning against classical
+machine learning across four large-scale neuroimaging studies found that the message-passing
+mechanism central to a graph neural network does not help predictive performance as usually
+assumed, and consistently degrades it \parencite{han2026rethinking}, and a separate study
+found that graph transformers offer no advantage over conventional graph neural networks on
+a standard connectome benchmark, with accuracy maintained even when every edge is removed
+\parencite{lararangel2025limits}. Both studies evaluate cross-sectional cohorts at a scale
+this thesis's single-site, longitudinal cohort does not reach; \autoref{sec:gap-ssl} states
+how this thesis's own encoder ablation relates to their finding.
 
 \section{Longitudinal and Spatiotemporal Modelling}\label{sec:longitudinal-modelling}
-\outlinenote{Recurrent approaches and spatiotemporal graph transformers, including
-Brain-TokenGT as the published comparator introduced in \autoref{ch:baselines}.}
+
+\subsection{Recurrent Models over Visit Sequences}\label{sec:recurrent-background}
+
+A subject followed over several clinical visits contributes a sequence of representations,
+one per visit, rather than a single one, and a recurrent neural network is the standard
+architecture for consuming such a sequence: it maintains a hidden state that is updated at
+every step by combining the current input with the state carried forward from the previous
+step, so that the final hidden state, after every visit has been processed, is a
+fixed-size summary of the whole sequence a classification head can act on. The long
+short-term memory unit augments this basic recurrence with a set of learned gates that
+control what is written to, kept in, and read from the hidden state at each step, which
+addresses the tendency of a plain recurrent update to lose information from early in a long
+sequence \parencite{hochreiter1997lstm}. A gated recurrent unit simplifies this gating
+mechanism to fewer parameters while retaining the same basic property
+\parencite{cho2014gru}. Both units assume, in their original form, that consecutive steps
+of the sequence are equally spaced in time, an assumption clinical visit sequences do not
+satisfy.
+
+\subsection{Conditioning on Irregular Time}\label{sec:time-conditioning-background}
+
+Clinical visits are not evenly spaced, and a recurrent unit that treats every step
+identically regardless of the elapsed time since the last one discards information a
+model could otherwise use. Outside the neuroimaging literature, this problem has been
+addressed directly: a time-aware long short-term memory unit decays the carried-forward
+cell state by an amount that depends on the elapsed time since the previous visit, so that
+information from a distant past visit contributes less than information from a recent one
+\parencite{baytas2017tlstm}, and a related architecture instead learns an attention
+weighting over every prior visit, again as a function of elapsed time, so that the model
+can attend selectively to earlier visits rather than relying only on how recently they
+occurred \parencite{zhang2019attain}. Neither mechanism is specific to graph-structured
+data; both were developed and evaluated on vectorised electronic health record sequences,
+and this thesis claims no novelty for the mechanism of conditioning a recurrent update on
+elapsed time. \autoref{ch:methodology} states the specific time-conditioning representation
+this thesis's own recurrent classifiers use.
+
+\subsection{Dynamic and Spatiotemporal Graph Networks}\label{sec:dynamic-graph-background}
+
+A separate line of work keeps the graph structure of \autoref{sec:graph-learning}
+explicit at every timestep rather than collapsing it to a fixed-size vector before any
+temporal model is applied. One such architecture fuses a dynamic functional-connectivity
+sequence with a separately estimated dynamic effective-connectivity sequence inside a
+spatiotemporal graph neural network, using the directional effective-connectivity stream to
+guide how the two are combined \parencite{chen2024knosys}. A second applies a
+spatiotemporal graph convolutional network with a gradient-based class-activation mapping
+head to a large, multi-site, cross-sectional cohort, reporting both the diagnostic
+performance of the resulting model and an interpretability map of which functional networks
+drive its predictions \parencite{zhang2024stgcgcam}. A third combines a dynamic
+heterogeneous graph over multiple modalities, imaging, genetic and electronic-health-record
+data among them, with a temporal-importance weighting loss that lets the model learn which
+timepoints carry the most information for predicting both a continuous cognitive score and
+a time-to-conversion outcome jointly \parencite{hassan2025magnetad}. These architectures
+keep spatial and temporal information more tightly coupled than the pool-then-recur pattern
+of \autoref{sec:recurrent-background}, but each couples them by applying a spatial graph
+operation at every timestep before any temporal aggregation, rather than by letting a
+temporal model see each region's own trajectory directly; \autoref{sec:gap-aggregation}
+returns to what specifically remains open about this ordering.
+
+\subsection{Spatiotemporal Graph Transformers and Brain-TokenGT}\label{sec:spatiotemporal-transformers-background}
+
+A further architectural family replaces the recurrent core of
+\autoref{sec:recurrent-background} with a transformer applied across both space and time
+jointly. Brain TokenGT tokenises a subject's whole visit sequence at once: each region at
+each timepoint, and each spatial and temporal edge connecting them, becomes a token with a
+learned type identifier, and a transformer with orthogonal node identifiers reads out a
+prediction from the full set of tokens rather than from a single terminal hidden state
+\parencite{dong2023braintokengt}. Because it is evaluated on longitudinal, functional
+connectome data with an explicit \ac{MCI}-to-\ac{AD} conversion task among its reported
+results, it is the closest published match to the problem this thesis addresses, and its
+publicly released implementation is audited directly as a comparator in this thesis, rather
+than only cited. \autoref{ch:baselines} introduces this comparator in full and states how it
+is evaluated under the protocol of \autoref{ch:methodology}.
 
 \section{Open Problems Addressed in This Thesis}\label{sec:open-problems}
-\outlinenote{Four open problems, each mapped to one research question. Closes with a short
-paragraph stating the position this thesis takes on each.}
+
+This section names four open problems in the literature surveyed above, each mapped to one
+of the research questions of \autoref{sec:research-questions}, and closes by stating the
+position this thesis takes on each.
 
 \subsection{Where Spatial Aggregation Belongs in a Longitudinal Pipeline}\label{sec:gap-aggregation}
-\outlinenote{Published longitudinal connectome classifiers aggregate a visit's graph to a
-single vector before the temporal model sees it, so region identity is discarded before any
-trajectory is modelled. Whether that ordering is necessary, and whether the graph topology
-carries signal beyond the connectivity matrix it is built from, are open. This is the gap
-RQ3 addresses.}
+
+The recurrent and spatiotemporal architectures surveyed in
+\autoref{sec:longitudinal-modelling} agree on where, in the pipeline, spatial information
+is reduced to a fixed-size representation, even where they disagree on how. The time-aware
+recurrent mechanisms of \autoref{sec:time-conditioning-background} operate on
+already-vectorised per-visit inputs by construction, since they were developed outside the
+graph setting entirely. The dynamic and spatiotemporal graph networks of
+\autoref{sec:dynamic-graph-background} keep a graph operation at every timestep, but each
+still applies that operation, and the pooling step that follows it, before any temporal
+model sees the result, so that a region's own trajectory across visits is never directly
+available to the recurrence; only the trajectory of an already-pooled, subject-level
+summary is. Whether this ordering, spatial aggregation first and temporal modelling second,
+is necessary, or whether letting a temporal model see each region's own trajectory before
+any pooling occurs preserves signal the conventional ordering discards, is open. This is
+the gap RQ3 addresses (\autoref{sec:rq3}).
 
 \subsection{What Self-Supervision on Connectomes Learns}\label{sec:gap-ssl}
-\outlinenote{Reconstruction is the default pretext task for connectome autoencoders, but
-the objective rewards subject idiosyncrasy, and between-patient variation within a cohort
-can exceed between-group variation. Whether a reconstruction-pretrained encoder yields
-features useful for a downstream group contrast is open. This is the gap RQ2 addresses.}
+
+Reconstruction, described in \autoref{sec:graph-autoencoders-background}, is the default
+pretext task for a connectome autoencoder, on the reasoning that a representation able to
+reconstruct a subject's connectivity has captured that connectivity's structure. This
+reasoning does not, by itself, guarantee that the captured structure is the structure a
+downstream group classifier needs: a reconstruction objective is free to spend its
+representational capacity on whatever varies most in the input, and if between-patient
+variation within a cohort exceeds between-group variation, as is plausible at the cohort
+sizes this thesis works with, that objective has every incentive to represent subject
+idiosyncrasy rather than the disease-relevant contrast a classifier is trained to find. A
+re-examination of graph deep learning across large cross-sectional neuroimaging cohorts
+found that the graph message-passing mechanism itself does not improve predictive
+performance over a comparable model without it, and consistently degrades it
+\parencite{han2026rethinking}; a related study found that a connectome graph's own edges
+contribute little to classification accuracy on a standard benchmark
+\parencite{lararangel2025limits}. Neither study evaluates a longitudinal cohort or ablates
+the pretext objective itself, so whether a reconstruction-pretrained encoder yields features
+useful for a downstream group contrast, at the smaller, longitudinal, single-site scale this
+thesis works at, and with the pretext objective itself varied rather than held fixed,
+remains open. This is the gap RQ2 addresses (\autoref{sec:rq2}), and where it does, it is
+best read as an extension of the finding above into that smaller-sample, longitudinal
+regime rather than as an independent discovery of the same result.
 
 \subsection{Evidence Standards Under Small Samples}\label{sec:gap-evidence}
-\outlinenote{At cohort sizes in the low hundreds, three practices are unsettled: which
-floor a model must clear before an architectural claim is admissible, whether same-seed
-replicate variance is reported at all, and how longitudinal evaluation is protocolised.
-Treated here as one question about what a claim must survive.}
+
+At the cohort sizes in the low hundreds this literature works with, three practices remain
+unsettled. First, which floor a candidate architecture must clear before a claim about its
+value is admissible is rarely stated in advance: a model is compared against whichever prior
+result the authors selected, rather than against a pre-specified capacity or performance
+floor computed on the same data. Second, whether a reported result is stable under the same
+random seed, as opposed to varying across cross-validation folds or independent training
+runs, is rarely reported at all; a review of graph-based neuroimaging benchmarks names the
+absence of a standardised evaluation protocol as a barrier to comparing designs in the first
+place \parencite{cui2023braingb}, and several documented forms of leakage, discussed in
+\autoref{sec:dl-neurodegeneration}, show how readily an unstated evaluation choice can
+inflate a reported figure without being visible in the report itself
+\parencite{shim2021leakage,yagis2021leakage,rosenblatt2024leakage}. Third, how a
+longitudinal evaluation is protocolised, including how many visits a subject must
+contribute to be included and how a variable-length sequence is handled, differs across
+studies in ways that make a reported accuracy difficult to attribute to the architecture
+alone. This thesis treats these three practices as one question about what a claim must
+survive before it is admitted, rather than as three separate methodological asides. This is
+the gap RQ1 addresses (\autoref{sec:rq1}).
 
 \subsection{Time and Cohort as Confounds}\label{sec:gap-confounds}
-\outlinenote{Follow-up duration correlates with the outcome and is rarely controlled;
-visit-time semantics differ between cohorts in ways that silently drop or misalign scans;
-and pooling cohorts to buy sample size introduces cohort identity as a decodable nuisance
-variable. This is the gap RQ4 addresses.}
+
+Pooling data across cohorts is an established route to a larger, more statistically
+powered sample, but it introduces two confounds of its own. Follow-up duration correlates
+with the outcome it is used to help predict, since a longer observation window gives a
+true conversion more opportunity to be captured before a label is assigned, and this
+correlation is rarely controlled for explicitly; \autoref{sec:motivation} states the
+resulting tradeoff between cohort size and label noise in the single-cohort case, and it
+compounds when cohorts with different follow-up conventions are pooled together. Visit-time
+semantics differ between cohorts in ways a shared model can silently mishandle: a nominal
+study timepoint on a fixed protocol grid and an elapsed time recorded in days since a
+cohort-specific baseline are not the same quantity, and treating them as interchangeable
+risks misaligning or dropping scans without the error being visible in a pooled summary
+statistic. Pooling cohorts to buy sample size additionally introduces cohort identity
+itself as a nuisance variable a model trained without any cohort label can nonetheless come
+to represent, since nothing in a pooled training objective penalises a representation for
+carrying that information. Whether a representation learned under a pooled protocol
+generalises to a cohort it was not trained on, or whether it has instead come to depend on
+properties specific to the cohorts it was pooled from, is open. This is the gap
+RQ4 addresses (\autoref{sec:rq4}).
+
+\bigskip
+
+Taken together, this thesis's position on these four open problems is that each is best
+resolved empirically at the specific cohort size and longitudinal setting this thesis
+works in, rather than assumed from results obtained at a different scale or on a
+cross-sectional cohort. \autoref{sec:gap-aggregation} is addressed by building a
+temporal-first architecture that lets each region's trajectory reach a recurrent model
+before any spatial pooling occurs, and comparing it directly against the conventional
+pool-then-recur ordering under a matched protocol. \autoref{sec:gap-ssl} is addressed by
+ablating the pretext objective itself, rather than only the architecture that consumes it,
+against a static, single-visit read of the same encoder. \autoref{sec:gap-evidence} is
+addressed by pre-specifying the floors, the keep-or-drop rule and the seeds a configuration
+is evaluated against before any result is read, and by reporting same-seed replicate
+variance throughout rather than only cross-validation spread. \autoref{sec:gap-confounds}
+is addressed by testing, rather than assuming, whether a pooled representation transfers to
+an unseen cohort, and by probing that representation directly for cohort identity rather
+than inferring cohort dependence from transfer performance alone. \autoref{ch:methodology}
+states how each of these four responses is implemented, and \autoref{ch:results} reports
+what each one found.

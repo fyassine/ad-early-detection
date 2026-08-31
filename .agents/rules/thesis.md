@@ -50,6 +50,7 @@ Applies only when writing or editing files under `THESIS/`.
   "configuration" / "configurations" instead.
 - Never use "ablation ladder" or bare "ladder" (as a structural metaphor for the ablation sequence);
   use "ablation sequence" instead. "The Baseline Ladder" section is now "Baselines for the Ablation Sequence".
+- Never use "Threats to Validity", "threats to validity", or bare "threats" to refer to methodological constraints, dataset limitations, or evaluation boundaries; always use "Limitations" / "limitations" instead (e.g., Chapter 7 Section 7.5 is titled "Limitations").
 
 ## 2. Verify before stating
 

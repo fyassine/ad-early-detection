@@ -142,20 +142,21 @@ irregularity into a cohort that would otherwise be sampled on a near-fixed sched
 
 \begin{table}[htb]
   \centering
+  \small
   \caption{Visit spacing by cohort. Scans per subject and inter-visit interval statistics
   are computed over subjects with at least two visits; \ac{DELCODE}'s scheduled grid makes
   a scans-per-subject range and an interval coefficient of variation uninformative for it,
   so only its modal-interval share is reported.}
   \label{tab:interval-structure}
-  \begin{tabular}{@{}lccccl@{}}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccccl@{}}
     \toprule
-    Cohort & Scans/subj.\ (range) & Median $\Delta t$ & IQR & CV & Modal interval \\
+    Cohort & Scans/subj.\ (range) & Median $\Delta t$ & Interquartile range & Coeff.\ of var.\ & Modal interval \\
     \midrule
     \ac{DELCODE} & --- & 12 mo & --- & --- & 90.0\% at 12 mo \\
     \ac{ADNI} & 3.11 (2--10) & 371 d & 207--419 d & 0.647 & 21.9\% at 12 mo \\
     \ac{OASIS} & 2.65 (2--6) & 1{,}012 d & 708--1{,}342 d & 0.574 & 8.1\% at 36 mo \\
     \bottomrule
-  \end{tabular}
+  \end{tabular*}
 \end{table}
 
 Within \ac{DELCODE} itself, the distribution of inter-visit intervals concentrates sharply
@@ -274,8 +275,10 @@ resulting split sizes.
 38 validation, 39 test; 65 converters, 33.9\% of the cohort) that was already stratified
 and seeded before pooling. \ac{DELCODE} contributes its own downstream split of 167
 subjects (99 stable \ac{MCI}, 68 converters; 99 train, 34 validation, 34 test subjects,
-covering 308, 100 and 99 scans respectively) together with a separate pretraining split of
-241, 115 and 116 subjects (371, 217 and 224 scans) used for the self-supervised encoder.
+covering 305, 100 and 99 scans respectively, of which 269, 84 and 83 fall before
+conversion and are therefore available to the classifier) together with a separate
+pretraining split of 241, 115 and 116 subjects (369, 216 and 224 scans) used for the
+self-supervised encoder.
 \ac{ADNI} had no pretraining split of its own; one was built for it during the thesis by
 re-applying \ac{DELCODE}'s own two-stage splitting procedure and seed policy to \ac{ADNI},
 so that the pretraining data for both cohorts follow one leakage-control rule rather than
@@ -294,21 +297,22 @@ split sizes.
 
 \begin{table}[htb]
   \centering
+  \small
   \caption{Pooled split composition. The cross-validation pool and in-domain test set
   combine \ac{ADNI} and \ac{DELCODE} at the two-visit minimum; the external test set is
   every \ac{OASIS} downstream subject, held out from every upstream stage including
   pretraining; the sensitivity pool raises the minimum to three visits.}
   \label{tab:pooled-splits}
-  \begin{tabular}{@{}lp{7cm}r@{}}
+  \begin{tabularx}{\textwidth}{@{}lXr@{}}
     \toprule
     Split & Composition & $n$ \\
     \midrule
     Cross-validation pool & \ac{ADNI} 153 + \ac{DELCODE} 95, $\geq 2$ visits & 248 \\
     In-domain test & \ac{ADNI} 39 + \ac{DELCODE} 25, $\geq 2$ visits (24 converters, 40 stable) & 64 \\
-    External test & every \ac{OASIS} downstream subject (31 converters, 29 stable) & 60 \\
-    Sensitivity pool & cross-validation pool at $\geq 3$ visits & 140 \\
+    External test & Every \ac{OASIS} downstream subject (31 converters, 29 stable) & 60 \\
+    Sensitivity pool & Cross-validation pool at $\geq 3$ visits & 140 \\
     \bottomrule
-  \end{tabular}
+  \end{tabularx}
 \end{table}
 
 \ac{OASIS} is excluded from every upstream stage, including self-supervised pretraining,
@@ -348,7 +352,7 @@ used to validate or test the downstream classifier can also have contributed to 
 the upstream encoder. \autoref{sec:leakage} discusses why the equivalent check failed to
 generalise to the pooled protocol on its first implementation.
 
-Because the two-visit minimum removes DELCODE's single-visit subjects but not \ac{ADNI}'s,
+Because the two-visit minimum removes \ac{DELCODE}'s single-visit subjects but not \ac{ADNI}'s,
 pooling reintroduces some of the follow-up irregularity that \autoref{sec:sampling}
 records \ac{DELCODE} alone as largely free of: the pooled cross-validation pool inherits
 \ac{ADNI}'s wider and less regular inter-visit intervals alongside \ac{DELCODE}'s
@@ -510,14 +514,15 @@ every metric considered here.
 
 \begin{table}[htb]
   \centering
+  \small
   \caption{Within-group and between-group edge variance, converters against pooled
   non-converters (stable \ac{MCI} and cognitively healthy visits combined), by connectivity
   metric. No metric reaches a between/within ratio above 1 on any of the 5{,}995 edges
   evaluated.}
   \label{tab:variance-ratio}
-  \begin{tabular}{@{}lrrrr@{}}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccc@{}}
     \toprule
-    Metric & $n$ converter / non-conv.\ & $\sigma^2_{\text{within}}$ & $\sigma^2_{\text{between}}$ & $\rho$ \\
+    Metric & $n$ (conv.\ / non-conv.) & $\sigma^2_{\text{within}}$ & $\sigma^2_{\text{between}}$ & $\rho$ \\
     \midrule
     Pearson & 60 / 734 & 0.03240 & 0.000523 & 0.0157 \\
     Kendall & 60 / 692 & 0.01773 & 0.000282 & 0.0154 \\
@@ -525,10 +530,10 @@ every metric considered here.
     Cross-correlation & 60 / 734 & 0.00600 & 0.0000865 & 0.0130 \\
     Riemannian & 60 / 734 & $5.589 \times 10^{11}$ & $4.342 \times 10^{9}$ & 0.0067 \\
     \bottomrule
-  \end{tabular}
+  \end{tabular*}
 \end{table}
 
-\paragraph{Converters against AD: distance-based group tests.} \ac{PERMANOVA} tests whether
+\paragraph{Converters against \ac{AD}: distance-based group tests.} \ac{PERMANOVA} tests whether
 two groups differ in their average pairwise distance in connectivity space by comparing an
 observed pseudo-$F$ statistic against a null distribution built by permuting group labels:
 \[
@@ -550,15 +555,17 @@ a 24-edge connected component reaching $p = 0.024$.
 
 \begin{table}[htb]
   \centering
+  \small
+  \setlength{\tabcolsep}{5.5pt}
   \caption{\ac{PERMANOVA} and \ac{NBS} results, converters against established \ac{AD}
   patients, by connectivity metric. $F$, $R^2$ and $p$ are the \ac{PERMANOVA} pseudo-$F$
   statistic, the fraction of total distance variance attributed to group, and its
-  permutation $p$-value; the last two columns give the largest \ac{NBS} connected component
+  permutation $p$-value; the last column gives the largest \ac{NBS} connected component
   and its permutation $p$-value.}
   \label{tab:permanova-nbs}
-  \begin{tabular}{@{}lrrrrr@{}}
+  \begin{tabular}{@{}lccccc@{}}
     \toprule
-    Metric & $n$ conv.\ / AD & $F$ & $R^2$ & $p$ (\ac{PERMANOVA}) & Largest \ac{NBS} component ($p$) \\
+    Metric & $n$ (conv.\ / \ac{AD}) & $F$ & $R^2$ & $p_{\text{PERM}}$ & Largest \ac{NBS} ($p$) \\
     \midrule
     Pearson & 60 / 104 & 0.938 & 0.0058 & 0.700 & 3 edges (0.878) \\
     Spearman & 60 / 93 & 0.903 & 0.0059 & 0.837 & 5 edges (0.610) \\
@@ -616,7 +623,7 @@ then used to score is a narrower version of the same problem a visit-level split
 information from evaluation data reaching a decision the evaluation is meant to be blind
 to.
 
-\paragraph{Pretraining and downstream split containment.} A prior split-generation script reserved the
+\paragraph{Pretraining and downstream split containment.} The pre-existing split generation reserved the
 downstream classifier's \emph{test} subjects out of the self-supervised encoder's training
 pool, but not its \emph{validation} subjects, which went undetected until a supervisor
 observed an unexplained 0.10 to 0.15 drop in downstream test \ac{AUC} between an older and

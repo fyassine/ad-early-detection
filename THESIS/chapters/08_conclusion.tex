@@ -2,7 +2,76 @@
 
 \chapter{Conclusion and Outlook}\label{ch:conclusion}
 
+This chapter summarises the answers to the four research questions posed in
+\autoref{sec:research-questions}, restates the scope those answers carry, and states the
+work this thesis leaves open.
+
 \section{Concluding Remarks}\label{sec:concluding-remarks}
+
+RQ1 asked whether longitudinal modelling adds information beyond static \ac{FC}
+representations. Under the evaluated protocol, neither age and sex alone nor a single
+visit's connectivity alone separates converters from stable \ac{MCI} above chance, while a
+linear model reading only the change in connectivity between two visits already reaches
+within 0.04 \ac{AUC} of the fully trained temporal-first configuration selected in
+\autoref{sec:rq3}. The change between visits, rather than any single visit's state,
+therefore carries essentially all of the classification signal available under this
+protocol. A subject-count-matched sensitivity check found that restricting a trained
+model's own predictions to subjects with three or more visits raises its score, while
+training a separate model on only that restricted subset lowers it; the loss from a
+smaller training pool outweighs the gain from longer visit histories at this cohort size,
+which establishes only that the two effects could not be separated here, not that longer
+visit histories carry no additional signal.
+
+RQ2 asked whether spatial-first graph representation learning adds value. On the
+\ac{DELCODE}-only protocol, a configuration with no graph encoder at all scores within
+fold-to-fold spread of a frozen, reconstruction-pretrained encoder while using
+approximately seventeen times fewer trainable parameters, and the pretrained encoder's own
+reconstruction fidelity falls in the band this thesis labels poor. Reconstruction
+pretraining does outperform training the same encoder from a random initialisation end to
+end, which is consistent with pretraining stabilising a difficult optimisation problem
+rather than supplying a representation that improves on the absence of any learned
+encoder. Fine-tuning the pretrained encoder jointly with the classification head introduces
+a further, bit-reproducible instability across seeds that three candidate mechanisms could
+explain, none of which is isolated by an experiment run for this thesis. Under the
+evaluated protocol, spatial-first graph representation learning does not add value over
+mean-pooled connectivity features at this cohort size.
+
+RQ3 asked whether temporal-first modelling improves over spatial-first modelling. On the
+pooled protocol, the selected temporal-first configuration reaches a pooled out-of-fold
+\ac{AUC} of $0.7488 \pm 0.0033$, exceeding the randomly initialised spatial-first floor by
+0.186 \ac{AUC} at fourteen times fewer trainable parameters and the frozen pretrained
+spatial-first floor by 0.030 \ac{AUC} at 7.6 times fewer trainable parameters. Two
+configurations that add parameters on top of the selected configuration, a temporal
+saliency gate and a dual-score head, both score lower than the configuration they extend,
+so this pattern is not explained by the selected configuration simply carrying more
+capacity than its comparators. Under the evaluated \ac{ADNI}-and-\ac{DELCODE} protocol,
+temporal-first modelling performs well relative to every spatial-first comparator
+evaluated, including the published Brain-TokenGT competitor, which under the evaluated
+configuration showed substantially greater run-to-run variability and scored below every
+temporal-first configuration that clears the pre-specified floor gates of
+\autoref{sec:protocol}.
+
+RQ4 asked whether these findings transfer to an independent cohort. The selected
+configuration and its two pre-specified secondaries all reach in-domain test \ac{AUC} in
+the high 0.7s, but cross-cohort transfer to \ac{OASIS} was at chance under the evaluated
+protocol, with every configuration's four-seed mean falling within one standard error of an
+\ac{AUC} of 0.5. A linear probe recovers cohort of origin from the pooled representation at
+approximately 0.86 \ac{AUC}, well above the pre-specified escalation threshold of 0.75,
+despite no cohort label ever entering the training objective; this strong decodability is
+consistent with substantial cohort dependence in the learned representation and may
+contribute to the absence of transfer, though no experiment in this thesis isolates that
+causal path. A pre-specified gradient-reversal mitigation, applied once this threshold was
+found exceeded, moved both the cohort-decodability score and pooled out-of-fold \ac{AUC} in
+the direction opposite to its design intent, so this particular mitigation, as configured,
+did not resolve the dependence it targeted.
+
+These four answers are scoped to the protocol under which they were obtained: an in-domain
+comparison of longitudinal architectures on a pooled \ac{ADNI}-and-\ac{DELCODE} cohort of
+248 subjects, evaluated out-of-fold across four seeds, together with a single one-shot read
+of a held-out in-domain test set and \ac{OASIS} for the selected configuration and its
+pre-specified secondaries. They do not license a claim of external validation, a
+time-to-event prediction, or a healthy-reference or individualized-deviation framework,
+none of which this protocol was designed to test.
 
 \section{Future Work}\label{sec:future-work}
 
@@ -10,7 +79,37 @@ Developing cohort-invariant models based on harmonised clinical target definitio
 individualized deviation from an appropriate reference population remains a topic for
 future work.
 
-\outlinenote{Then isolating the inter-visit-interval contribution on a genuinely irregular
-cohort, testing the graph construction rather than only the encoder, replacing the pretext
-objective, recovering full-power interpretability statistics, the parcellation ablation, the
-time-to-event head, multimodal fusion, and adopting same-seed replication as protocol.}
+Isolating the contribution of the inter-visit interval requires a cohort whose visit
+spacing is irregular enough to exercise it: over ninety percent of \ac{DELCODE}'s recorded
+intervals fall at twelve months (\autoref{sec:comparability}), so this contribution remains
+untested by the present evaluation, and a cohort with more irregular spacing, such as
+\ac{ADNI} or \ac{OASIS}, would be needed to test it directly. Whether the graph
+construction stage itself, rather than only the encoder that consumes it, contributes
+information beyond mean-pooled connectivity is a related open question the encoder
+ablation of \autoref{sec:rq2} does not answer, since it varies encoder initialisation
+without varying how the graph is built in the first place. Replacing the reconstruction
+pretext objective with one less prone to spending representational capacity on
+subject-specific idiosyncrasy, as the account in \autoref{sec:ssl-contribution} suggests,
+is a direct response to that account rather than a demonstration that any specific
+alternative objective would perform better.
+
+Recovering full statistical power for the interpretability analyses of
+\autoref{sec:interpretability-results} at a larger cohort size, and running the
+parcellation ablation left untested at the fixed 200-region resolution used throughout
+\autoref{sec:problem-formulation}, are each direct extensions of a specific gap this thesis
+identifies but does not close. Adding a time-to-event head that predicts the interval to
+conversion rather than only its binary outcome, an extension the protocol of this thesis
+explicitly does not license (\autoref{sec:scope-of-claims}), would require a survival model
+fit to the same cohorts under the same leakage controls used throughout
+\autoref{ch:methodology}.
+
+Fusing the functional-connectivity representation evaluated here with structural or
+fluid-biomarker measures was outside the scope of the present single-modality evaluation
+and remains open. Testing a domain-adaptation mitigation against the cross-cohort transfer
+question of \autoref{sec:cohort-dependence} directly, rather than only diagnosing the
+representation's cohort dependence as this thesis does, is a further extension. Finally,
+adopting same-seed replication as a reporting protocol, rather than as an audit applied
+after the fact to one published competitor, would let a future evaluation at this cohort
+size distinguish an architecture's own instability from ordinary run-to-run noise before a
+comparison is drawn, a distinction the reproducibility audit of \autoref{sec:limitations}
+shows cannot otherwise be assumed.

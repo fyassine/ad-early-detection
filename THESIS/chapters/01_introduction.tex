@@ -2,9 +2,46 @@
 
 \chapter{Introduction}\label{ch:introduction}
 
+This chapter states the clinical decision this thesis addresses, positions resting-state
+functional \ac{MRI} against the other modalities available for that decision, surveys what
+deep learning has contributed to neurodegenerative-disease prediction together with the
+difficulties that recur across that literature, and closes with the research questions
+this thesis answers, the contributions it makes toward answering them, and how the
+remaining chapters are organised.
+
 \section{Clinical Motivation and the Diagnostic Paradigm Shift}\label{sec:motivation}
-\outlinenote{Why prediction at the \ac{MCI} stage is the decision point of interest, and
-what a conversion label means clinically.}
+
+\ac{MCI} denotes a stage of measurable cognitive decline that does not yet impair a
+patient's activities of daily living \parencite{petersen2004mci}. It sits between normal
+cognitive ageing and dementia, and a diagnosis of \ac{MCI} carries no guarantee about what
+follows: within any given observation window, some \ac{MCI} patients progress to \ac{AD},
+some remain cognitively stable, and some revert toward normal cognition
+\parencite{petersen2004mci}. This heterogeneity is what makes \ac{MCI} the decision point
+of interest for a predictive model, rather than the point of diagnosis itself. A diagnosis
+of \ac{AD} dementia confirms a process that is already established and, at present,
+largely irreversible; the clinically actionable question is instead whether a patient
+currently diagnosed with \ac{MCI} will convert to \ac{AD}, since that is the point at which
+a change in monitoring frequency, an earlier referral, or a patient's own planning can
+still be acted on.
+
+The diagnostic framework this thesis inherits treats \ac{AD} as a biological process
+defined by its underlying pathology rather than by the clinical syndrome it eventually
+produces \parencite{jack2018niaaa}. Under this framework, cognitive symptoms are a late and
+variable readout of a process that can, in principle, be tracked through biomarkers years
+before a clinical diagnosis is made. The conversion label used as the prediction target
+throughout this thesis is a clinical operationalisation of that shift: a subject is
+labelled a converter if a later visit confirms a transition from \ac{MCI} to \ac{AD}, and
+labelled stable \ac{MCI} otherwise. \autoref{ch:data} describes how this label is
+constructed for each cohort used here.
+
+Whether a given subject is labelled a converter or stable depends on how long that subject
+is followed after their \ac{MCI} diagnosis. Extending the observation window increases the
+chance that a true, eventual conversion is captured before a label is assigned, which
+lowers label noise; the same extension shrinks the pool of subjects who have already
+completed the full window by the time a cohort is assembled, which lowers the usable
+cohort size. No choice of window removes this tradeoff, and it is resolved differently
+across the cohorts this thesis draws on. \autoref{ch:data} states which choice each cohort
+makes and why.
 
 The primary scope of this thesis is the methodological evaluation of supervised
 longitudinal classification approaches for \ac{MCI}-to-\ac{AD} conversion. It does not
@@ -12,18 +49,106 @@ claim to develop or validate a normative healthy-reference framework for individ
 abnormality detection.
 
 \section{Resting-State Functional MRI as a Non-Invasive Window}\label{sec:rsfmri}
-\outlinenote{Why \ac{FC} is the modality of choice, relative to \ac{CSF} markers,
-\ac{PET} and structural \ac{MRI}.}
+
+Three other modalities are established for tracking \ac{AD} pathology, and each carries a
+cost that resting-state \ac{fMRI} does not. Measuring \ac{CSF} biomarkers of amyloid and
+tau requires a lumbar puncture, an invasive procedure that limits how often and how widely
+it can be repeated in a longitudinal cohort. Imaging amyloid or tau load with \ac{PET}
+requires a radiotracer injection and a dedicated scanner, which raises cost and restricts
+availability outside specialised centres. Structural \ac{MRI} is non-invasive and widely
+available, but it detects atrophy, a late, largely irreversible marker that becomes
+measurable only after substantial neuronal loss has already occurred.
+
+Resting-state \ac{fMRI} measures spontaneous low-frequency fluctuations in the
+blood-oxygen-level-dependent signal while a subject lies at rest, requiring no radiotracer,
+no invasive sampling, and no task the subject must perform correctly to be useful. Because
+\ac{AD} pathology is understood to disrupt functional connectivity between brain regions
+before structural degradation is visible on a T1-weighted scan, resting-state \ac{fMRI}
+offers a window onto network-level change at a stage before atrophy-based measures become
+informative. This sensitivity is not confined to \ac{AD}: functional-connectivity
+alterations detected with resting-state \ac{fMRI} extend into brain tissue distant from a
+visible lesion and correlate with independently measured markers of disease severity in
+other neurological conditions, and the sequence itself adds no meaningful burden to a
+routine clinical scanning protocol \parencite{stoecklein2020glioma}. The same properties
+that make resting-state \ac{fMRI} attractive for tracking network disruption in general
+motivate its use here specifically for the \ac{MCI}-to-\ac{AD} conversion question:
+it is repeatable across a longitudinal cohort, it does not require an invasive procedure or
+a radiotracer, and it is sensitive to the connectivity change the disease model of
+\autoref{sec:motivation} places before symptom onset. A subject's diagnostic classification
+against this connectivity-change framework is itself defined jointly with cognitive and
+fluid-biomarker criteria, staged along a continuum from asymptomatic biomarker positivity
+through subjective cognitive decline to \ac{MCI} and dementia
+\parencite{jessen2023scd}; \ac{fMRI}-derived connectivity is one candidate marker within
+that staged framework, evaluated on its own throughout this thesis rather than fused with
+the cognitive or fluid measures that define the clinical stage.
 
 \section{Deep Learning in Neurodegenerative Disease}\label{sec:dl-neurodegeneration}
-\outlinenote{A short survey of what has been built for neurodegenerative prediction from
-imaging, paired with the recurring difficulties: small labelled cohorts relative to
-feature dimensionality, irregular follow-up, and multi-site heterogeneity. Points forward
-to \autoref{ch:foundations} for the detailed treatment.}
+
+Applying deep learning to functional-connectivity data for \ac{MCI}-to-\ac{AD} prediction
+has moved through several architectural families in a short span of years. Classifiers
+combining a convolutional feature extractor with a recurrent layer over successive visits
+report high in-sample discrimination between progressive and stable \ac{MCI}. Time-aware
+recurrent networks developed outside the neuroimaging literature address a closely related
+problem directly: standard recurrent units assume a constant elapsed time between steps,
+which does not hold for irregularly spaced clinical visits, and both a time-decayed cell
+state \parencite{baytas2017tlstm} and an attention mechanism over prior visits weighted by
+elapsed time \parencite{zhang2019attain} have been proposed to correct for it. Graph neural
+networks that treat each brain region as a node and each functional connection as an edge
+have been proposed as a more direct fit to connectome data than a convolutional or purely
+recurrent model, on the reasoning that functional connections encode topological rather
+than spatial relationships, and a dedicated benchmark now exists to standardise how such
+graph models are built and compared \parencite{cui2023braingb}. Self-supervised
+pretraining, contrasting differently augmented views of the same connectivity graph before
+any label is used, has been proposed as a way to make effective use of unlabelled scans
+across sites and disorders \parencite{wang2023ucgl,wang2025gcda}, and architectures that
+explicitly fuse dynamic functional and effective connectivity have been proposed for the
+same disorder-classification setting \parencite{chen2024knosys}. At the other end of the
+scale, foundation models pretrained on tens of thousands of scans have begun to establish
+what large-scale pretraining can buy for downstream diagnosis and prognosis tasks
+\parencite{dong2024brainjepa}, a regime unavailable to a single-site cohort of the size
+used in this thesis. Cost-sensitive objectives have separately been proposed to address the
+class imbalance inherent to staging tasks in which most patients do not progress within
+the observed window \parencite{hu2024cswcl}. Time-to-event models that predict a
+continuous risk of conversion rather than only its binary outcome have also been applied
+directly to functional-connectome data \parencite{kim2024prognostic}.
+
+Reported accuracies across this literature are not directly comparable, and this thesis
+does not treat them as a benchmark to be matched or exceeded. Studies differ in cohort,
+conversion window, parcellation, and validation scheme, and, independently of any of
+those choices, several forms of data leakage have been shown to inflate reported
+performance well beyond what a leakage-free protocol would support: feature selection
+performed before rather than within cross-validation inflates accuracy on neuropsychiatric
+biomarker tasks \parencite{shim2021leakage}, splitting three-dimensional scans at the
+slice level rather than the subject level inflates test accuracy by 30 to 55 percentage
+points on \ac{AD} and Parkinson's disease classification \parencite{yagis2021leakage}, and
+a systematic audit across four large connectome datasets finds that feature and subject
+leakage measurably inflate prediction performance in exactly this class of model
+\parencite{rosenblatt2024leakage}. Because the leakage status of a given published pipeline
+is often not verifiable from its report, this thesis competes on evaluation protocol
+rather than on a published accuracy figure, and does not place its own results in a table
+beside them.
+
+Three difficulties recur across this literature regardless of architecture. First, the
+number of usable functional-connectivity edges grows quadratically with the number of
+parcellated brain regions, while the number of labelled subjects in a single-site
+longitudinal cohort remains in the low hundreds at best; a model with enough capacity to
+fit that many features is correspondingly prone to fitting subject-specific noise rather
+than disease-relevant signal. Second, visits in a longitudinal cohort occur at uneven
+intervals with missing follow-ups, producing variable-length sequences that force a
+choice between padding, masking, or a time-aware modelling mechanism, and no standard
+protocol for evaluating longitudinal models under this irregularity has been established.
+Third, cohorts assembled from multiple sites differ in scanner field strength and
+acquisition protocol in ways that a single-site cohort does not, introducing site identity
+as a nuisance variable a model can inadvertently learn to exploit. \autoref{ch:foundations}
+treats each of these three difficulties in detail and states the specific open problem this
+thesis addresses within each.
 
 \section{Research Questions, Objectives and Contributions}\label{sec:research-questions}
-\outlinenote{The four research questions stated once, then the contribution list keyed to
-the chapters that deliver each.}
+
+This thesis is a methodological evaluation of graph-based longitudinal classification
+approaches for \ac{MCI}-to-\ac{AD} conversion, including cross-cohort transfer and
+reproducibility analyses. It is organised around four research questions, stated here and
+answered in \autoref{ch:results}.
 
 \begin{description}
   \item[RQ1] Does longitudinal modelling add information beyond static \ac{FC}
@@ -36,4 +161,75 @@ the chapters that deliver each.}
     Answered in \autoref{sec:rq4}.
 \end{description}
 
+Answering these questions builds on a pre-existing research programme: subject-level
+\ac{FC} graph modelling, a graph-attention autoencoder for static representation learning,
+and a recurrent trajectory classifier were already part of the project framework this
+thesis extends. \autoref{sec:preexisting} states this framework and its provenance in
+full. Within that framework, the contributions delivered by this thesis are the following.
+
+\begin{description}
+  \item[Temporal-first trajectory modelling.] Every longitudinal classifier inherited into
+    this project pools a visit's connectome graph to a single vector before the temporal
+    model sees it. This thesis inverts that order: each region's own trajectory is modelled
+    first, and the graph is pooled only afterward. The architecture, its implementation,
+    and the ablation sequence that tests it against the inherited spatial-first stack are
+    thesis work, described in \autoref{sec:tfgn} and evaluated in \autoref{sec:rq3}.
+  \item[Capacity accounting against the subject-level denominator.] An explicit analysis
+    of trainable parameters per subject, rather than per scan, motivating why a smaller
+    recurrent head was tested against the inherited spatial-first configuration.
+    \autoref{sec:capacity} interprets the resulting pattern.
+  \item[Characterising what reconstruction pretraining learns on this cohort size.] A
+    statistical comparison of within-cohort and between-cohort connectivity variance,
+    together with a scale-free reconstruction-fidelity measurement applied to both the
+    inherited graph-attention autoencoder and a variational encoder built during this
+    thesis, motivating the move from an encoder-centred evaluation to the embed-then-classify
+    comparison of \autoref{sec:rq2}. \autoref{sec:static-representation} and
+    \autoref{sec:ssl-contribution} report and interpret this respectively.
+  \item[A variational encoder with a non-standard free-bits objective.] Two variants of a
+    variational graph autoencoder, each with a hard-clamp-plus-quadratic-shortfall
+    free-bits loss designed to avoid the posterior collapse that a plain clamp or a
+    softplus relaxation produce. Described in \autoref{sec:static-representation} and
+    \autoref{ch:app-implementation}.
+  \item[A time-conditioned recurrent classification head.] A recurrent classifier
+    consuming a sequence of per-visit connectome embeddings, with gate updates conditioned
+    on the inter-visit interval, described in \autoref{sec:spatial-first} and serving
+    throughout \autoref{ch:results} as the spatial-first comparator against which
+    temporal-first modelling is tested.
+  \item[Latent-space and interpretability studies.] A linear disease axis extracted from
+    the classifier's decision boundary, a latent-steering validation that decodes points
+    along that axis back to connectivity space, and a per-dimension and per-region
+    separability analysis of the latent representation, reported in
+    \autoref{sec:interpretability-results}.
+  \item[Perturbation and robustness testing.] Four perturbation methods, each targeting a
+    distinct failure mode, together with a metadata-calibrated simulation of cross-cohort
+    scanner drift, reported in \autoref{sec:robustness-results}.
+  \item[Classical statistical characterisation before any model is fitted.] A
+    converter-versus-non-converter comparison of the connectivity matrices using
+    permutational multivariate analysis of variance, the network-based statistic, and
+    per-edge effect sizes under false-discovery-rate control, establishing whether a group
+    difference exists at all before a classifier is asked to find one.
+    \autoref{ch:data} and \autoref{sec:capacity} draw on this characterisation.
+\end{description}
+
 \section{Thesis Organisation}\label{sec:organisation}
+
+\autoref{ch:foundations} defines the concepts this thesis builds on: parcellation and
+connectivity graph construction, graph representation learning as applied to
+neuroimaging, longitudinal and spatiotemporal modelling, and the four open problems
+introduced in \autoref{sec:dl-neurodegeneration} that the research questions of this
+chapter address. \autoref{ch:data} describes the cohorts used, how the conversion label
+and the visit-timing representation are constructed for each, and the preprocessing
+pipeline they pass through. \autoref{ch:methodology} states the pre-existing framework
+this thesis extends, the graph construction and static representation-learning stage, the
+spatial-first and temporal-first trajectory models compared throughout, and the
+experimental protocol that governs every subsequent evaluation. \autoref{ch:baselines}
+introduces the published comparator audited against that protocol. \autoref{ch:results}
+reports what happened under the protocol of \autoref{ch:methodology}, organised by the
+four research questions of \autoref{sec:research-questions}, together with the
+interpretability and robustness results. \autoref{ch:discussion} interprets those results
+against the scope stated in \autoref{sec:motivation} and states the limitations of the
+evaluated protocol. \autoref{ch:conclusion} summarises the answers to the four research
+questions and states the work this thesis leaves open. The appendices collect
+mathematical derivations, implementation detail, the reproducibility and cross-validation
+tables, and the software and hardware environment, kept out of the main narrative so that
+it states only what is necessary to understand or reproduce the method.

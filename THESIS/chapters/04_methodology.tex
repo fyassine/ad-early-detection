@@ -54,7 +54,16 @@ yields a graph $G_i^{(t)} = (V, E_i^{(t)}, X_i^{(t)})$, where the node set $V$ i
 at $|V| = 200$ regions of interest under the Schaefer-200 parcellation,
 $E_i^{(t)} \subseteq V \times V$ is a binary edge set constructed from the visit's
 functional-connectivity matrix (described below), and $X_i^{(t)} \in \mathbb{R}^{200
-\times 200}$ is the matrix of node feature vectors. The prediction target is a single
+\times 200}$ is the matrix of node feature vectors. We illustrate the full graph construction pipeline from regional \ac{BOLD} signals to time-conditioned visit graphs in \autoref{fig:graph-construction-pipeline}.
+
+\begin{figure}[p]
+  \centering
+  \resizebox{!}{0.76\textheight}{\input{figures/fig_graph_construction_pipeline}}
+  \caption{Subject-level functional connectivity graph construction pipeline. (1) Resting-state four-dimensional \ac{BOLD} \ac{fMRI} scans are parcellated into $|V| = 200$ cortical \acp{ROI} using the Schaefer-200 atlas. (2) Mean BOLD time series ($\mathbf{T} \in \mathbb{R}^{200 \times L}$) are extracted per region. (3) Pairwise Pearson correlation followed by Fisher $z$-transformation yields the continuous functional connectivity matrix $C \in \mathbb{R}^{200 \times 200}$. (4a) Raw connectivity rows form 200-dimensional node feature vectors ($X = C$). (4b) Symmetrised $k$-nearest-neighbour sparsification over $|C|$ constructs the binary adjacency matrix $A$. (5) The resulting visit graph $\mathcal{G}_i^{(t)}$ is paired with normalized interval timing $[\Delta t_t]$ across the longitudinal sequence.}
+  \label{fig:graph-construction-pipeline}
+\end{figure}
+
+The prediction target is a single
 binary subject-level label $y_i \in \{0, 1\}$, with $y_i = 1$ for a converter and
 $y_i = 0$ for stable \ac{MCI}, as defined in \autoref{sec:delcode}. The effective sample
 size for any downstream classifier is therefore the number of subjects, not the number of
@@ -67,8 +76,7 @@ Each \ac{ROI} $j$ is represented by its own row from the $200 \times 200$
 Fisher-$z$-transformed functional-connectivity matrix that \autoref{sec:preprocessing}
 describes. The node-feature matrix $X_i^{(t)} \in \mathbb{R}^{200 \times 200}$ is
 therefore the full connectivity matrix, so that each node carries the profile of its
-pairwise coupling with every other region. The input feature dimensionality is consequently
-$\texttt{in\_features} = 200$.
+pairwise coupling with every other region. The input feature dimensionality is consequently 200.
 
 \paragraph{Edge construction.}
 The binary adjacency matrix $A_i^{(t)}$ is constructed by symmetrised $k$-nearest-neighbour
@@ -92,9 +100,9 @@ intervals are computed as
 \[
   \Delta t_t = \frac{\text{cum}_t - \text{cum}_{t-1}}{108},
 \]
-where $\text{cum}_t$ is the cumulative months elapsed since baseline and the normaliser
-(\texttt{MAX\_INTERVAL\_MONTHS} $= 108.0$) corresponds to nine years, the longest observed
-follow-up in the pooled cohort. This representation directly addresses the irregular
+where $\text{cum}_t$ is the cumulative months elapsed since baseline and the normaliser corresponds 
+to nine years, the longest observed follow-up in the pooled cohort. 
+This representation directly addresses the irregular
 longitudinal sampling challenge identified in \autoref{sec:sampling}: the model receives
 the actual inter-visit gap rather than assuming a fixed cadence. The \ac{TFGN} instead
 uses cumulative $\log(1 + \text{months})$ standardised with training-fold statistics,
@@ -162,11 +170,10 @@ phase is treated as a representation-learning step whose value is tested empiric
 than assumed; the results are reported in \autoref{sec:rq2}.
 
 \paragraph{GEC and GEP as static classification heads.}
-The \ac{GEC} adapter implements embed-then-classify: the frozen \ac{GAAE} encoder is
+The \ac{GEC} model implements embed-then-classify: the frozen \ac{GAAE} encoder is
 applied to a single visit's graph, the 200 node embeddings are mean-pooled to a
 64-dimensional graph embedding, and a multilayer perceptron maps this embedding to a
-classification logit. An attention-pooling variant (\texttt{GraphEncoderClassifierAttention})
-replaces mean pooling with a learned gate network. The \ac{GEP} adapter is a multi-visit extension: it encodes each of a subject's visits
+classification logit. An attention-pooling variant replaces mean pooling with a learned gate network. The \ac{GEP} model is a multi-visit extension: it encodes each of a subject's visits
 independently and mean-pools the resulting sequence of per-visit graph embeddings to a
 single subject-level vector before classification, so it is a static model that uses visit
 averaging rather than recurrence.
@@ -237,8 +244,8 @@ below.
 
 \paragraph{The recurrent core.}
 At each visit $t$, the shared encoder produces a visit embedding $z_t \in \mathbb{R}^{d}$,
-where $d = 64$ when an encoder is present and $d = 200$ when the \texttt{none} configuration
-bypasses the encoder entirely and mean-pools the raw node features. The time-augmented
+where $d = 64$ when an encoder is present and $d = 200$ when the no-encoder
+configuration bypasses the encoder entirely and mean-pools the raw node features. The time-augmented
 embedding $[z_t \,\|\, \Delta t_t]$ is consumed by a single-layer \ac{LSTM} with hidden
 dimensionality 32, which processes the visit sequence and reads out the terminal hidden
 state $h \in \mathbb{R}^{32}$. A classifier head of the form
@@ -251,8 +258,8 @@ equal hidden dimensionality.
 
 \paragraph{Regularisation and normalisation.}
 Per-visit embeddings are z-scored using persistent mean and variance buffers fitted on the
-training fold only, which is the recurrent analogue of the per-fold
-\texttt{StandardScaler} used by the multilayer perceptron classification heads. Additional
+training fold only, which is the recurrent analogue of the per-fold feature
+standardisation used by the multilayer perceptron classification heads. Additional
 regularisation includes dropout at probability 0.3, gradient clipping at a global norm of
 1.0, weight decay $10^{-4}$, and cost-sensitive class weighting to handle the converter
 minority, as described in \autoref{sec:protocol}. Early stopping terminates training when
@@ -279,75 +286,81 @@ applied at every visit and read out at the final step is exactly the function cl
 can memorise a small cohort.
 
 \paragraph{The four encoder configurations and the RQ2 ablation.}
-The value of reconstruction pretraining is tested by a single configuration knob,
-which selects one of four configurations:
+The value of reconstruction pretraining is tested by varying one design choice, the
+provenance and trainability of the encoder, across four configurations:
 
 \begin{center}
 \small
-\setlength{\tabcolsep}{4.5pt}
-\begin{tabular}{lcccp{0.36\linewidth}}
+\begin{tabularx}{\textwidth}{@{}lcccX@{}}
 \toprule
 Configuration & Built? & Loaded? & Trained? & Isolates \\
 \midrule
-\texttt{pretrained\_frozen} & yes & yes & no & Reference (pre-existing model) \\
-\texttt{pretrained\_finetuned} & yes & yes & yes & Value of task adaptation \\
-\texttt{random} & yes & no & yes & Value of reconstruction pretraining \\
-\texttt{none} & no & no & --- & Value of the graph encoder itself \\
+Pretrained, frozen & yes & yes & no & Reference (pre-existing model) \\
+Pretrained, fine-tuned & yes & yes & yes & Value of task adaptation \\
+Randomly initialised & yes & no & yes & Value of reconstruction pretraining \\
+No encoder & no & no & --- & Value of the graph encoder itself \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{center}
 
-The configurations form a chain of contrasts: \texttt{none} versus \texttt{random} isolates the
-encoder architecture, \texttt{random} versus \texttt{pretrained\_frozen} isolates
-reconstruction pretraining, and \texttt{pretrained\_frozen} versus
-\texttt{pretrained\_finetuned} isolates task adaptation. Under the \texttt{none} configuration, no
-encoder module is constructed; \texttt{encode\_visit} mean-pools the raw node features
-instead, so the per-visit embedding width becomes 200 and the recurrent input width is
-derived rather than hardcoded. These four configurations apply only to the \ac{GELSTM} and
-\ac{GEGRU} adapters, because the \ac{GEC} and \ac{GEP} adapters pre-compute embeddings
+The configurations form a chain of contrasts: no encoder versus randomly initialised
+isolates the encoder architecture, randomly initialised versus pretrained frozen isolates
+reconstruction pretraining, and pretrained frozen versus pretrained fine-tuned isolates
+task adaptation. Under the no-encoder configuration no encoder module is constructed and
+the raw node features are mean-pooled directly, so the per-visit embedding width becomes
+200 and the recurrent input width follows from the data rather than from a fixed
+setting. These four configurations apply only to the \ac{GELSTM} and
+\ac{GEGRU} models, because the \ac{GEC} and \ac{GEP} models pre-compute embeddings
 offline with a frozen encoder; end-to-end encoder training has no meaning for them without
-restructuring those adapters.
+restructuring those models.
 
 \paragraph{Pre-specified interpretation table.}
 The following interpretation table was written before any configuration was run, so that the reading
 of the results could not be fitted retrospectively. 
 
 \begin{center}
-\small
-\begin{tabular}{p{0.38\linewidth}p{0.27\linewidth}p{0.27\linewidth}}
+\footnotesize
+\begin{tabularx}{\textwidth}{@{}p{0.38\textwidth}XX@{}}
 \toprule
 Observation & Meaning & Consequence \\
 \midrule
-\texttt{random} $\approx$ \texttt{pretrained\_frozen} $\approx$ \texttt{pretrained\_finetuned} &
-  Reconstruction adds nothing beyond the architecture prior &
-  Keep as a compute-saving initialisation; report as a null finding \\
-\texttt{none} $\approx$ every other configuration &
+Randomly initialised $\approx$ pretrained frozen \newline $\approx$ pretrained fine-tuned &
+  Reconstruction adds nothing beyond architecture prior &
+  Keep as compute-saving initialisation; report as null finding \\[3pt]
+No encoder $\approx$ every other configuration &
   Graph encoder not earning its place &
-  Focus should be about the longitudinal head; \\
-\texttt{pretrained\_*} $>$ \texttt{random}, both clearly above \texttt{none} &
+  Focus on the longitudinal head \\[3pt]
+Both pretrained configurations $>$ randomly initialised, \newline both above no encoder &
   Pretraining contributes real transferable structure &
-  Keep the \ac{GAAE} stage; quantify the gain \\
-\texttt{pretrained\_finetuned} $>$ \texttt{pretrained\_frozen} &
+  Keep the \ac{GAAE} stage; quantify the gain \\[3pt]
+Pretrained fine-tuned $>$ pretrained frozen &
   Pretrained features under-adapted to conversion task &
-  Switch to finetuned configuration; monitor overfitting \\
-\texttt{pretrained\_finetuned} $<$ \texttt{pretrained\_frozen} &
+  Switch to the fine-tuned configuration; monitor overfitting \\[3pt]
+Pretrained fine-tuned $<$ pretrained frozen &
   Fine-tuning overfits the small converter cohort &
-  Justify freezing explicitly as a regularisation choice \\
-\texttt{random} $>$ \texttt{pretrained\_*} &
+  Justify freezing explicitly as regularisation choice \\[3pt]
+Randomly initialised $>$ both pretrained configurations &
   Reconstruction pretraining actively harmful &
-  Investigate pretext--downstream mismatch \\
+  Investigate pretext--downstream mismatch \\[3pt]
 All four configurations $\approx$ metadata floor &
   Imaging not contributing signal at this sample size &
   Escalate to sample size and label definition \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{center}
 
 The results of applying this table are in \autoref{sec:rq2}. The scope limit of this
-ablation is that it applies only to the \ac{GELSTM} and \ac{GEGRU} adapters; the
+ablation is that it applies only to the \ac{GELSTM} and \ac{GEGRU} models; the
 equivalent question for \ac{GEC} and \ac{GEP} is a separate follow-up.
 
 \section{Temporal-First Modelling: The TFGN Architecture}\label{sec:tfgn}
+
+In this section we state the hypothesis the temporal-first design tests, describe the
+architecture and the modules that the ablation sequence switches on and off, give the
+composite training objective, record the design decisions fixed before any run, and
+account for the resulting model capacity.
+
+\subsection{Hypothesis, Inputs and Switchable Stages}\label{sec:tfgn-architecture}
 
 \paragraph{Hypothesis.}
 Every longitudinal classifier described in \autoref{sec:spatial-first} pools a visit's
@@ -358,7 +371,14 @@ core operates on a compressed representation that mixes all regional signals tog
 regions' own connectivity-row trajectory independently, and pooling is applied only
 afterward, optionally after a graph propagation stage. If region-resolved temporal dynamics
 carry conversion-relevant signal that early pooling destroys, deferring pooling should
-improve prediction at matched or lower capacity. 
+improve prediction at matched or lower capacity. We contrast the dataflow and inductive biases of both paradigms in \autoref{fig:spatial-vs-temporal-paradigm}.
+
+\begin{sidewaysfigure}
+  \centering
+  \resizebox{0.92\linewidth}{!}{\input{figures/fig_spatial_vs_temporal_schematic}}
+  \caption{Architectural comparison between spatial-first and temporal-first longitudinal graph modelling paradigms. (a) In the spatial-first paradigm (\ac{GELSTM} and \ac{GEGRU}), each multi-region brain graph $\mathcal{G}_t$ is first compressed into a low-dimensional visit embedding $\mathbf{z}_t \in \mathbb{R}^{64}$ by a spatial graph encoder ($f_\theta$), collapsing fine-grained regional identities prior to sequence-level temporal modelling. (b) In the proposed temporal-first paradigm (\ac{TFGN}), a node-shared recurrent core ($g_\phi$) processes each brain region's longitudinal feature trajectory independently into regional representations $\mathbf{h}_v \in \mathbb{R}^{64}$, preserving region-resolved trajectory dynamics until whole-brain spatial aggregation.}
+  \label{fig:spatial-vs-temporal-paradigm}
+\end{sidewaysfigure}
 
 \paragraph{Inputs.}
 The per-subject input to \ac{TFGN} consists of the visit stack
@@ -371,8 +391,15 @@ strength centrality vector of $|A_0|$, and the rank-sigmoid drift anchor $\tilde
 
 \paragraph{Switchable stages.}
 The architecture is implemented as a sequence of seven independently switchable modules,
-controlled by a single \texttt{TFGNTrainConfig} object, so that the entire ablation sequence
-corresponds to toggling knobs on one model.
+controlled by a single training-configuration object, so that the entire ablation
+sequence corresponds to toggling switches on one model. \autoref{fig:tfgn-architecture} details the tensor flow across all seven modules, highlighting the core S1 pathway alongside switchable ablation components and auxiliary loss constraints.
+
+\begin{sidewaysfigure}
+  \centering
+  \resizebox{0.92\linewidth}{!}{\input{figures/fig_tfgn_architecture}}
+  \caption{Detailed architectural block diagram of the proposed \ac{TFGN}. The pipeline processes longitudinal regional connectivity trajectories ($X \in \mathbb{R}^{T \times 200 \times 200}$) with interval timing $\log(1+\Delta t)$ via a node-shared \ac{LSTM} (1). Regional hidden states are optionally modulated by a temporal saliency gate (2), fused with \ac{GVAE} graph autoencoder embeddings over baseline $A_0$ (3, 4), and aggregated across nodes via spatial mean or sparsemax pooling (5). The pooled patient embedding feeds the primary classification head alongside optional topological saliency scoring (6) and a gradient-reversal cohort-adversary head (7). Solid blue boxes denote the core S1 configuration; dashed orange boxes indicate switchable ablation modules.}
+  \label{fig:tfgn-architecture}
+\end{sidewaysfigure}
 
 \textbf{(1) Node-shared LSTM.} A single \ac{LSTM} with hidden dimensionality 64, one
 layer and dropout 0.3, applied with shared weights to each of the 200 nodes' own
@@ -394,13 +421,12 @@ regularised by a sparsity penalty described in the loss paragraph below.
 \textbf{(3) GVAE encoder.} When a reconstruction target is set, a \ac{GVAE} is constructed with GATv2
 heads for the mean $\mu$ and log-variance $\log\sigma^2$, hidden dimensionality 128,
 latent dimensionality 64 and two attention heads, operating over $A_0$. FiLM conditioning
-of $\mu$ on $[\text{age},\, \text{sex}]$ is applied before reparameterised sampling. Under
-\texttt{recon\_target: none} this stage is absent entirely.
+of $\mu$ on $[\text{age},\, \text{sex}]$ is applied before reparameterised sampling. When no reconstruction target is set, this stage is absent entirely.
 
 \textbf{(4) Fusion.} When a \ac{GVAE} is present, the temporal hidden state $h_i$ and
 the graph latent $z_i$ are combined by either
-$\operatorname{LayerNorm}(W_u[h_i \,\|\, z_i])$ (\texttt{concat\_residual}) or by
-passing $z_i$ alone (\texttt{z\_only}).
+$\operatorname{LayerNorm}(W_u[h_i \,\|\, z_i])$, the concatenate-and-project fusion, or by
+passing $z_i$ alone, the latent-only fusion.
 
 \textbf{(5) Readout.} The 200 node representations are reduced to a single subject
 embedding by mean pooling or by attentive pooling using exact sparsemax
@@ -416,8 +442,10 @@ $\lambda_{\text{cent}}$. This stage is the interpretability layer; see
 \textbf{(7) Cohort-adversary head.} Used only by the escalation configuration. A gradient-reversal
 layer, which applies the identity in the forward pass and negates and scales gradients in
 the backward pass, connects the pooled subject embedding to a binary
-ADNI-versus-DELCODE classification head, training the encoder to be uninformative about
+\ac{ADNI}-versus-\ac{DELCODE} classification head, training the encoder to be uninformative about
 cohort identity.
+
+\subsection{The Composite Training Objective}\label{sec:tfgn-loss-section}
 
 \paragraph{Composite loss.}
 The training objective is
@@ -445,13 +473,15 @@ that the conditioning shift is not penalised by the prior. The drift anchor weig
 as $\lambda_{\text{drift}} = 0.1\,\lambda_{\text{sparse}}$, so the sparsity prior
 dominates at the margin.
 
+\subsection{Pre-Specified Design Decisions}\label{sec:tfgn-decisions}
+
 \paragraph{Pre-specified design decisions.}
 The following decisions were fixed prior to any run.
 
 \textbf{Reconstruction target.} The inner-product output $\sigma(ZZ^\top) \in (0,1)$
 cannot be trained with binary cross-entropy against a raw connectivity-change matrix
-$\Delta A \in [-2,2]$. The pre-specified default reconstruction target is
-\texttt{delta\_a\_topk}: a per-subject binary change mask $M_{ij} = \mathbb{1}[|\Delta
+$\Delta A \in [-2,2]$. The pre-specified default reconstruction target is the top-$k$ connectivity-change
+mask: a per-subject binary change mask $M_{ij} = \mathbb{1}[|\Delta
 A_{ij}| \geq q_{1-\kappa}]$ with $\kappa = 0.10$, so the top 10\% of changed edges are
 positive. The loss uses binary cross-entropy with a positive-edge weight of
 $(1 - \kappa)/\kappa = 9$ to compensate for the strong class imbalance. Construction
@@ -496,6 +526,8 @@ configuration, the pre-specified response is to re-run that configuration with t
 cohort-adversary head and report both alongside each other. The outcome of this check is
 reported in \autoref{sec:rq4}.
 
+\subsection{Pretraining and Capacity Accounting}\label{sec:tfgn-pretraining}
+
 \paragraph{Self-supervised pretraining.}
 Two pretraining runs are conducted, both on pooled \ac{ADNI} plus \ac{DELCODE} only;
 \ac{OASIS} is excluded from everything upstream so that it remains genuinely external.
@@ -534,14 +566,13 @@ the inverse class frequencies in the training fold and recomputed per fold. Resa
 methods are not used because they add no information about the minority class at these
 sample sizes. The decision threshold is selected as the value maximising F1 on out-of-fold
 predictions, stored in the model checkpoint, and reused on the test set without any
-re-thresholding. One point on nomenclature: the legacy configuration dataclass defaults the threshold mode to Youden's J,
-but every runner configuration and every experiment reported in this thesis uses the
-best-F1 mode. The best-F1 selection is the protocol default.
+re-thresholding. The inherited default for threshold selection is Youden's J, but every experiment
+reported in this thesis uses the best-F1 selection, which is the protocol default here.
 
 \paragraph{Cross-validation.}
 All supervised experiments use five-fold stratified group cross-validation, stratified on
 the binary label and grouped on subject identifier so that no subject's visits appear in
-more than one fold. The per-fold \texttt{StandardScaler} for embeddings is fitted on the
+more than one fold. The per-fold feature standardisation for embeddings is fitted on the
 training fold only and applied to validation and test embeddings. The log inter-visit
 interval and strength centrality statistics for \ac{TFGN} configurations are fitted on the training
 fold and carried inside the saved model state. All experiments use seeds 42, 43, 44 and 45
@@ -550,18 +581,27 @@ to support seed-level variance estimation.
 \paragraph{Training.}
 The optimiser is Adam with learning rate $10^{-3}$, batch size 16, and gradient clipping
 at a global norm of 1.0. Training runs for up to 100 epochs with early stopping at patience
-20. A \texttt{ReduceLROnPlateau} scheduler halves the learning rate when validation loss
+20. A plateau-triggered scheduler halves the learning rate when validation loss
 fails to improve for five consecutive epochs, down to a floor of $10^{-6}$. Cost-sensitive
 class weighting applies to the binary cross-entropy throughout.
 
 \paragraph{Ablation sequence as a design.}
 The ablation sequence is a sequential architecture search in which each configuration inherits the
-kept configuration of all preceding configurations and changes exactly one knob from the last
-surviving state. A configuration that fails the keep-or-drop criterion has its knob reverted and
-the next configuration branches from the last surviving configuration. The two design contrasts of
+kept state of all preceding configurations and changes exactly one architectural
+component from the last surviving state. A configuration that fails the keep-or-drop
+criterion has that change reverted, and the next configuration branches from the last
+surviving state. The two design contrasts of
 primary interest are stated in advance: S0c against S1, in which neither encoder is
 pretrained, isolates the pooling-order inversion; S0b against S1c, in which both encoders
-are self-supervised, isolates the inversion against a matched pretraining baseline. The
+are self-supervised, isolates the inversion against a matched pretraining baseline. We illustrate the overall decision tree, branching configurations, and primary methodological contrasts in \autoref{fig:ablation-sequence-diagram}.
+
+\begin{figure}[p]
+  \centering
+  \resizebox{!}{0.80\textheight}{\input{figures/fig_ablation_sequence}}
+  \caption{Structural overview of the sequential ablation search. Level~0 holds the empirical baselines and screening floors, Level~1 the selected temporal-first model (S1), Level~2 the branching configurations screened under the Tier-2 keep-or-drop rule, and Level~3 the protocol sensitivity and mitigation probes. The dashed connectors mark the two contrasts that isolate the pooling-order inversion without pretraining (S0c versus S1) and under matched self-supervision (S0b versus S1c).}
+  \label{fig:ablation-sequence-diagram}
+\end{figure}
+
 The ablation configurations are as follows.
 
 \textbf{S0a} is a logistic regression over principal components of the flattened
@@ -582,7 +622,7 @@ its same-seed test \ac{AUC} has been observed to vary substantially across runs;
 reported with that caveat rather than as a controlled baseline.
 
 \textbf{S1} uses a randomly initialised node-shared \ac{LSTM} with the gate disabled, no
-reconstruction target, \texttt{fusion: z\_only} and mean readout. The S0c-against-S1
+reconstruction target, latent-only fusion and mean readout. The S0c-against-S1
 comparison isolates the architectural flip with no other confound.
 
 \textbf{S1b} repeats S1 with the node-shared \ac{LSTM} initialised from the P2
@@ -597,10 +637,11 @@ self-supervised.
 $\lambda_{\text{drift}} = 0.01$ and $\rho = 0.15$. It tests whether suppressing
 temporally static regions is beneficial.
 
-\textbf{S3} changes the fusion mode to \texttt{concat\_residual}. Under S1's configuration there is no \ac{GVAE} stage and therefore no
-graph latent $z_i$ to fuse with the temporal hidden state $h_i$. The fusion knob
-consequently has no gradient path to any new parameters under this configuration and the
-configuration is structurally inert, a property of the architecture under that knob setting.
+\textbf{S3} changes the fusion mode to concatenate-and-project. Under S1's configuration there is no \ac{GVAE} stage and therefore no
+graph latent $z_i$ to fuse with the temporal hidden state $h_i$. The change in fusion
+mode consequently has no gradient path to any new parameters under this configuration, and
+the configuration is structurally inert, which is a property of the architecture under that
+setting.
 
 \textbf{S4} replaces mean readout with sparsemax attentive pooling. It tests whether
 learned node weighting improves over uniform pooling.
@@ -608,14 +649,14 @@ learned node weighting improves over uniform pooling.
 \textbf{S5} adds the dual-score head with $\lambda_{\text{cent}} = 0.1$. This configuration is
 pre-specified as kept regardless of its contribution to \ac{AUC}: a saliency map that does
 not improve classification accuracy can still be a valid or invalid interpretability
-artefact, and the question must not be dropped if the AUC result is neutral. The
+artefact, and the question must not be dropped if the \ac{AUC} result is neutral. The
 interpretability validation is described in \autoref{sec:instrumentation}.
 
-\textbf{SENS} repeats the selected configuration at \texttt{min\_visits=3}, reducing the pool to
-140 subjects. It tests whether longer sequences confer a larger advantage.
+\textbf{SENS} repeats the selected configuration with a minimum of three visits per
+subject, reducing the pool to 140 subjects. It tests whether longer sequences confer a larger advantage.
 
 \textbf{W3} re-runs the \ac{GELSTM} and the \ac{TFGN} selected configuration with
-\texttt{max\_visits=3} to create a matched comparison with Brain-TokenGT, which is
+at most three visits per subject, to create a matched comparison with Brain-TokenGT, which is
 architecturally constrained to at most three visits.
 
 \paragraph{The four-tier evaluation protocol.}
@@ -623,8 +664,8 @@ This protocol was fixed in its entirety prior to reading any result.
 
 \textbf{Tier 1 (floor gates).} Every configuration must exceed two pre-computed baselines: the
 demographics-only logistic regression (age and sex only), and the static single-visit
-classifier evaluated per fold via a \texttt{fold\_probe} hook inside the cross-validation
-runner, so that neither baseline requires reading the held-out test set.
+classifier evaluated per fold from inside the cross-validation loop itself, so that
+neither baseline requires reading the held-out test set.
 
 \textbf{Tier 2 (selection rule).} The independent unit is the seed ($n = 4$), not the
 fold, because folds within a seed share a model class and are not independent draws. For
@@ -646,7 +687,7 @@ Consider a configuration evaluated at four seeds, with seed-level mean $\Delta$\
 $+0.031$, $+0.008$, $+0.024$ and $-0.005$. The mean of the four values is
 $(0.031 + 0.008 + 0.024 - 0.005)/4 = 0.0145$. The standard deviation is approximately
 $0.0147$ and the standard error is $0.0147/\sqrt{4} \approx 0.0074$. Since
-$0.0145 > 0.0074$, the configuration passes and its knob is carried forward. Had the fourth value
+$0.0145 > 0.0074$, the configuration passes and its change is carried forward. Had the fourth value
 been $-0.025$ instead, the mean would be $0.0095$ and the standard error $0.0209$, giving
 a failure; the result would be stated as ``undetectable at this sample size,'' not as
 evidence that the mechanism is harmful.
@@ -663,36 +704,38 @@ the cohort probe \ac{AUC} exceeds 0.75.
 \textbf{Tier 4 (held-out estimation).} The 64-subject in-domain test set and the
 60-subject \ac{OASIS} set are read exactly once, on the selected configuration and its pre-specified
 secondary configurations, at the out-of-fold-derived threshold with no retraining.
-\texttt{common/frozen\_read.py} reconstructs each configuration's adapter from its saved summary and
-checkpoint and refuses to score a split whose result keys already exist unless an explicit
-overwrite is provided, so the one-shot read cannot be spent a second time.
+The reading procedure reconstructs each configuration's model from its saved summary
+and stored parameters, and refuses to score a split whose results already exist unless an
+explicit overwrite is requested, so the one-shot read cannot be spent a second time.
 
 \paragraph{Scope table.}
 Spending the one-shot held-out splits on every configuration would turn the external
-evaluation into a selection set. The following table states which configurations were eligible for
+evaluation into a selection set. \autoref{tab:protocol-scope} states which configurations were eligible for
 which tier.
 
-\begin{center}
+\begin{table}[htb]
+\centering
 \small
-\begin{tabular}{lccc}
+\caption{Scope of evaluation across model configurations and evaluation tiers.}
+\label{tab:protocol-scope}
+\begin{tabularx}{\textwidth}{@{}Xccc@{}}
 \toprule
-Configuration & OOF & In-domain test & External (OASIS-3) \\
- & ($n=248$) & ($n=64$) & ($n=60$) \\
+Configuration & Out-of-fold ($n=248$) & In-domain test ($n=64$) & External \ac{OASIS} ($n=60$) \\
 \midrule
 S0-demo, S0a, S0b, S0c & yes & no & no \\
-S0d Brain-TokenGT & yes & ad hoc, post hoc & ad hoc, post hoc \\
+S0d Brain-TokenGT & yes & post hoc & post hoc \\
 S1 (primary) & yes & yes & yes \\
 S1b (secondary) & yes & yes & yes \\
-S1c both versions & yes & no & no \\
+S1c (both versions) & yes & no & no \\
 S2, S3, S4 & yes & no & no \\
 S5 (secondary, interpretability) & yes & yes & yes \\
 SENS, W3 configurations & yes & no & no \\
 \bottomrule
-\end{tabular}
-\end{center}
+\end{tabularx}
+\end{table}
 
 \paragraph{Resolvability statement.}
-At the in-domain test size of $n = 64$ and the external size of $n = 60$, the empirical standard error of the \ac{AUC} is $\text{SE} \approx 0.04\text{--}0.045$, producing a 95\% confidence interval half-width ($1.96 \times \text{SE}$) of approximately $0.08\text{--}0.09$. Consequently, \ac{AUC} differences below approximately $0.08$ fall entirely within the sampling noise margin and are not resolvable with bootstrap confidence intervals. Because sample error scales with $1/\sqrt{N}$, the four-fold larger out-of-fold pool ($n = 248$) cuts the standard error and confidence interval width in half, establishing a resolvable floor of approximately $0.04$. Every keep-or-drop verdict is therefore a screening heuristic at four seeds, stating whether an effect is detectable at this sample size, never a significance test and never a claim that an undetected effect is absent. Configuration knob values and run identifiers are tabulated in \autoref{ch:app-reproducibility}.
+At the in-domain test size of $n = 64$ and the external size of $n = 60$, the empirical standard error of the \ac{AUC} is $\text{SE} \approx 0.04\text{--}0.045$, producing a 95\% confidence interval half-width ($1.96 \times \text{SE}$) of approximately $0.08\text{--}0.09$. Consequently, \ac{AUC} differences below approximately $0.08$ fall entirely within the sampling noise margin and are not resolvable with bootstrap confidence intervals. Because sample error scales with $1/\sqrt{N}$, the four-fold larger out-of-fold pool ($n = 248$) cuts the standard error and confidence interval width in half, establishing a resolvable floor of approximately $0.04$. Every keep-or-drop verdict is therefore a screening heuristic at four seeds, stating whether an effect is detectable at this sample size, never a significance test and never a claim that an undetected effect is absent. The per-configuration settings and run identifiers are tabulated in \autoref{ch:app-reproducibility}.
 
 \section{Interpretability and Robustness Instrumentation}\label{sec:instrumentation}
 
@@ -782,8 +825,8 @@ a different connectivity graph.
 \textbf{Edge perturbation} leaves the node features unchanged and modifies only the graph
 topology. A fraction $\lambda$ of existing edges is dropped and an equal number of random
 $(u,v)$ pairs is added, with self-loops excluded. The retained and added edges are
-deduplicated via \texttt{torch.unique} to prevent duplicate columns from violating the
-binary adjacency assumption. This tests stability to connectivity graph scaffold changes
+deduplicated to prevent duplicate entries from violating the binary adjacency
+assumption. This tests stability to connectivity graph scaffold changes
 without any feature modification.
 
 \textbf{Conditioning noise} perturbs the covariate vector: noise

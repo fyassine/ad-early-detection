@@ -1,0 +1,162 @@
+% TikZ diagram: Step-by-Step Functional Connectivity Graph Construction Pipeline
+% Lengthwise (Vertical) Flowchart for Chapter 4 (Section 4.2)
+% Compatible with both Light and Dark thesis themes
+
+\begin{tikzpicture}[
+    font=\small\sffamily,
+    >=Latex,
+    every node/.style={align=center},
+    card1/.style={
+        draw=TUMSecondaryBlue2!90,
+        fill=white,
+        rounded corners=5pt,
+        line width=0.85pt,
+        inner sep=5pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    card2/.style={
+        draw=TUMBlue!90,
+        fill=TUMBlue!10,
+        rounded corners=5pt,
+        line width=0.85pt,
+        inner sep=5pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    card3/.style={
+        draw=TUMAccentOrange!90,
+        fill=TUMAccentOrange!12,
+        rounded corners=5pt,
+        line width=0.85pt,
+        inner sep=5pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    card4a/.style={
+        draw=TUMBlue!90,
+        fill=TUMBlue!10,
+        rounded corners=5pt,
+        line width=0.85pt,
+        inner sep=5pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    card4b/.style={
+        draw=TUMAccentGreen!90,
+        fill=TUMAccentGreen!15,
+        rounded corners=5pt,
+        line width=0.85pt,
+        inner sep=5pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    card5/.style={
+        draw=TUMSecondaryBlue2!90,
+        fill=TUMSecondaryBlue2!12,
+        rounded corners=5pt,
+        line width=0.95pt,
+        inner sep=5pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    card6/.style={
+        draw=TUMBlue!90,
+        fill=TUMBlue!12,
+        rounded corners=5pt,
+        line width=0.85pt,
+        inner sep=5pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    flowline/.style={
+        ->,
+        line width=1.0pt,
+        draw=\fg!85,
+        shorten >=1.5pt,
+        shorten <=1.5pt
+    },
+    flowlabel/.style={
+        font=\scriptsize\bfseries,
+        text=\fg!95
+    }
+]
+
+% -------------------------------------------------------------
+% STAGE 1: 4D fMRI ACQUISITION & SCHAEFER-200 PARCELLATION
+% -------------------------------------------------------------
+\node[card1, text width=12.2cm] (card1) at (0, 0) {
+    \textbf{1. 4D Resting-State BOLD fMRI Acquisition \& Atlas Parcellation}\\[2pt]
+    \textnormal{\footnotesize Preprocessed functional volumes $(X, Y, Z, t)$ aligned to standard MNI152 space.}\\
+    \textnormal{\footnotesize Parcellated into $|V| = 200$ cortical Regions of Interest (ROIs) using the Schaefer-200 atlas (7 canonical functional networks: Visual, Somatomotor, Dorsal Attention, Ventral Attention, Limbic, Frontoparietal Control, Default Mode).}
+};
+
+% -------------------------------------------------------------
+% STAGE 2: BOLD TIME SERIES EXTRACTION
+% -------------------------------------------------------------
+\node[card2, text width=12.2cm, below=0.75cm of card1] (card2) {
+    \textbf{2. Regional BOLD Signal Averaging}\\[2pt]
+    \textnormal{\footnotesize Mean timecourses computed across all voxels within each parcel $j \in \{1, \dots, 200\}$:}\\
+    $\mathbf{T} = \begin{bmatrix} \mathbf{t}_1^\top \\ \mathbf{t}_2^\top \\ \vdots \\ \mathbf{t}_{200}^\top \end{bmatrix} \in \mathbb{R}^{200 \times L}, \quad \text{where } L \text{ is the number of temporal frames per scan.}$
+};
+\draw[flowline] (card1.south) -- (card2.north) node[midway, right=4pt, flowlabel] {Voxel-wise spatial averaging};
+
+% -------------------------------------------------------------
+% STAGE 3: FUNCTIONAL CONNECTIVITY & FISHER-Z
+% -------------------------------------------------------------
+\node[card3, text width=12.2cm, below=0.75cm of card2] (card3) {
+    \textbf{3. Pairwise Functional Connectivity Matrix \& Fisher $z$-Transformation}\\[2pt]
+    \textnormal{\footnotesize Pairwise Pearson correlation $r_{ij} = \operatorname{corr}(\mathbf{t}_i, \mathbf{t}_j) \in [-1, 1]$ followed by variance-stabilising Fisher transformation:}\\
+    $z_{ij} = \operatorname{arctanh}(r_{ij}) = \frac{1}{2}\ln\left(\frac{1+r_{ij}}{1-r_{ij}}\right) \implies C \in \mathbb{R}^{200 \times 200} \text{ (Symmetric, continuous, zero-diagonal)}$
+};
+\draw[flowline] (card2.south) -- (card3.north) node[midway, right=4pt, flowlabel] {Pairwise temporal coupling};
+
+% -------------------------------------------------------------
+% STAGE 4: DUAL GRAPH REPRESENTATION (SPLIT BRANCHES)
+% -------------------------------------------------------------
+% Branch 4a (Left): Node Features
+\node[card4a, text width=5.6cm, minimum height=2.1cm, below left=1.0cm and 0.3cm of card3.south] (card4a) {
+    \textbf{4a. Regional Node Features}\\[2pt]
+    \textnormal{\footnotesize Each region carries its full cross-brain coupling profile:}\\
+    $\mathbf{x}_j = C_{j,:} \in \mathbb{R}^{200}$\\[2pt]
+    \textnormal{\footnotesize Node Feature Matrix:}\\
+    $X = C \in \mathbb{R}^{200 \times 200}$
+};
+
+% Branch 4b (Right): Topological Adjacency
+\node[card4b, text width=5.6cm, minimum height=2.1cm, below right=1.0cm and 0.3cm of card3.south] (card4b) {
+    \textbf{4b. Symmetrised $k$-NN Adjacency}\\[2pt]
+    \textnormal{\footnotesize Symmetrised top-$k$ over absolute values $|C_{ij}|$ (preserving anti-correlations):}\\
+    $A = \max(A_{\text{top-}k}, A_{\text{top-}k}^\top) \in \{0, 1\}^{200 \times 200}$\\[2pt]
+    \textnormal{\scriptsize $k = 16$ (Pretraining) $\;\big|\; k = 8$ (Supervised)}
+};
+
+\draw[flowline] (card4a.north |- card3.south) -- (card4a.north) node[midway, left=3pt, flowlabel] {Raw FC rows};
+\draw[flowline] (card4b.north |- card3.south) -- (card4b.north) node[midway, right=3pt, flowlabel] {Topological sparsification};
+
+% -------------------------------------------------------------
+% STAGE 5: TIME-AUGMENTED LONGITUDINAL GRAPH SERIES
+% -------------------------------------------------------------
+\node[card5, text width=12.2cm, anchor=north] (card5) at ($(card3.south |- card4a.south)+(0, -1.0)$) {
+    \textbf{5. Time-Augmented Longitudinal Graph Sequence}\\[2pt]
+    \textnormal{\footnotesize For subject $i$ with $T_i$ visits, each visit $t \in \{1, \dots, T_i\}$ yields an attributed graph:}\\
+    $\mathcal{G}_i^{(t)} = \bigl(V, A_i^{(t)}, X_i^{(t)}\bigr), \quad |V| = 200 \text{ nodes}, \quad X_i^{(t)} \in \mathbb{R}^{200 \times 200}, \quad A_i^{(t)} \in \{0, 1\}^{200 \times 200}$\\[2pt]
+    \textnormal{\footnotesize Time Cadence: Normalized interval $\Delta t_t = \frac{\text{cum}_t - \text{cum}_{t-1}}{108}$ or cumulative log spacing $\log(1 + \text{months})$.}\\[2pt]
+    $\mathcal{S}_i = \Bigl( \bigl(\mathcal{G}_i^{(1)}, \Delta t_1\bigr),\, \bigl(\mathcal{G}_i^{(2)}, \Delta t_2\bigr),\, \dots,\, \bigl(\mathcal{G}_i^{(T_i)}, \Delta t_{T_i}\bigr) \Bigr)$
+};
+
+\draw[flowline] (card4a.south) -- (card4a.south |- card5.north);
+\draw[flowline] (card4b.south) -- (card4b.south |- card5.north);
+
+% -------------------------------------------------------------
+% STAGE 6: DOWNSTREAM SUBJECT-LEVEL TARGET
+% -------------------------------------------------------------
+\node[card6, text width=12.2cm, below=0.75cm of card5] (card6) {
+    \textbf{6. Downstream Subject-Level Conversion Target}\\[2pt]
+    \textnormal{\footnotesize Single binary classification label per patient trajectory:}\\
+    $y_i \in \{0, 1\} \quad (y_i = 0 \text{ for Stable \ac{MCI}}, \quad y_i = 1 \text{ for Converter \ac{MCI}})$\\[2pt]
+    \textnormal{\scriptsize Effective sample size is bounded by subject count $N$ (DELCODE $n=167$, Pooled $n=248$), not scan count.}
+};
+\draw[flowline] (card5.south) -- (card6.north) node[midway, right=4pt, flowlabel] {Sequence-to-label mapping};
+
+\end{tikzpicture}

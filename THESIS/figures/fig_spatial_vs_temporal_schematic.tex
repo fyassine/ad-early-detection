@@ -1,0 +1,221 @@
+% TikZ diagram: Spatial-First vs. Temporal-First Paradigm Comparison
+% For inclusion in Chapter 4 (Methodology)
+% Compatible with both Light and Dark thesis themes
+
+\begin{tikzpicture}[
+    font=\small\sffamily,
+    >=Latex,
+    every node/.style={align=center},
+    panelboxA/.style={
+        draw=TUMBlue!80,
+        fill=none,
+        rounded corners=6pt,
+        line width=0.9pt,
+        inner sep=10pt
+    },
+    panelboxB/.style={
+        draw=TUMAccentOrange!80,
+        fill=none,
+        rounded corners=6pt,
+        line width=0.9pt,
+        inner sep=10pt
+    },
+    databox/.style={
+        draw=black!60,
+        fill=white,
+        rounded corners=4pt,
+        line width=0.75pt,
+        minimum height=0.9cm,
+        minimum width=2.2cm,
+        inner sep=3pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    spatialbox/.style={
+        draw=TUMBlue!90,
+        fill=TUMBlue!12,
+        rounded corners=4pt,
+        line width=0.85pt,
+        minimum height=1.0cm,
+        minimum width=3.0cm,
+        inner sep=4pt,
+        font=\footnotesize\bfseries,
+        text=black!90
+    },
+    temporalbox/.style={
+        draw=TUMAccentOrange!90,
+        fill=TUMAccentOrange!15,
+        rounded corners=4pt,
+        line width=0.85pt,
+        minimum height=1.0cm,
+        minimum width=3.0cm,
+        inner sep=4pt,
+        font=\footnotesize\bfseries,
+        text=black!90
+    },
+    poolingbox/.style={
+        draw=TUMAccentGreen!90,
+        fill=TUMAccentGreen!15,
+        rounded corners=4pt,
+        line width=0.85pt,
+        minimum height=1.0cm,
+        minimum width=3.0cm,
+        inner sep=4pt,
+        font=\footnotesize\bfseries,
+        text=black!90
+    },
+    headbox/.style={
+        draw=black!75,
+        fill=white,
+        rounded corners=4pt,
+        line width=0.8pt,
+        minimum height=1.0cm,
+        minimum width=2.2cm,
+        inner sep=4pt,
+        font=\footnotesize\bfseries,
+        text=black!90
+    },
+    outbox/.style={
+        draw=TUMSecondaryBlue2!90,
+        fill=white,
+        circle,
+        line width=0.85pt,
+        minimum size=0.8cm,
+        inner sep=1pt,
+        font=\footnotesize\bfseries,
+        text=black!90
+    },
+    flowline/.style={
+        ->,
+        line width=0.95pt,
+        draw=\fg!85,
+        shorten >=1.5pt,
+        shorten <=1.5pt
+    }
+]
+
+% =============================================================
+% PANEL A: SPATIAL-FIRST (Graph-Embed-then-Recur)
+% =============================================================
+\begin{scope}[local bounding box=panelA]
+    % Inputs
+    \node[databox] (g1) at (-11.0, 0.4) {Visit 1\\$\mathcal{G}_1 = (A_1, X_1)$};
+    \node[databox] (g2) at (-11.0, -0.6) {Visit $T$\\$\mathcal{G}_T = (A_T, X_T)$};
+    \path (g1) -- (g2) node[midway, font=\footnotesize, text=\fg!90] {$\vdots$};
+
+    % Step 1: Spatial Graph Encoder
+    \node[spatialbox] (sp_enc) at (-6.3, 0) {
+        Spatial Graph Encoder\\
+        \textnormal{\scriptsize GAAE / GAT / Mean Pool}\\
+        \textnormal{\scriptsize (Shared weights $f_\theta$)}
+    };
+
+    % Intermediate: Visit embeddings — pushed right for label space
+    \node[databox] (z_seq) at (0.8, 0) {
+        Visit Embeddings\\
+        $\mathbf{z}_1, \dots, \mathbf{z}_T \in \mathbb{R}^{64}$\\
+        \textnormal{\scriptsize $[\mathbf{z}_t \,\|\, \Delta t_t]$}
+    };
+
+    % Step 2: Temporal recurrence
+    \node[temporalbox] (temp_lstm) at (5.4, 0) {
+        Visit-Level Recurrence\\
+        \textnormal{\scriptsize Sequence LSTM / GRU}\\
+        \textnormal{\scriptsize ($\mathbf{h} \in \mathbb{R}^{32}$)}
+    };
+
+    % Step 3: Head & output
+    \node[headbox] (head_a) at (10.3, 0) {
+        Classifier Head\\
+        \textnormal{\scriptsize MLP + Dropout}
+    };
+    \node[outbox] (out_a) at (12.1, 0) {$\hat{y}$};
+
+    % Arrows
+    \draw[flowline] (g1.east) -- ++(0.4,0) |- (sp_enc.west);
+    \draw[flowline] (g2.east) -- ++(0.4,0) |- (sp_enc.west);
+    \draw[flowline] (sp_enc.east)    -- (z_seq.west)     node[midway, fill=\bg, inner sep=2pt, font=\scriptsize\bfseries, text=\fg!95] {early compression};
+    \draw[flowline] (z_seq.east)     -- (temp_lstm.west);
+    \draw[flowline] (temp_lstm.east) -- (head_a.west)    node[midway, fill=\bg, inner sep=2pt, font=\scriptsize\bfseries, text=\fg!95] {$\mathbf{h}_T$};
+    \draw[flowline] (head_a)    -- (out_a);
+
+    % Callout badge
+    \node[fill=red!10, draw=red!70, text=red!80!black,
+          rounded corners=4pt, font=\footnotesize\bfseries, inner sep=4pt]
+        (note_a) at (0.8, -1.5) {
+        \textbf{\texttimes\quad Regional identity collapsed \emph{before} temporal sequence modelling}
+    };
+\end{scope}
+
+% Panel A bounding box
+\node[panelboxA, fit=(panelA)] (boxA) {};
+% Panel A title badge — smaller font for vertical space
+\node[font=\bfseries\scriptsize, fill=TUMBlue!12, draw=TUMBlue!90,
+      text=black!90, rounded corners=3pt, inner sep=3pt]
+    at (boxA.north) {%
+    (a) Spatial-First Paradigm (GE-LSTM\,/\,GE-GRU): Graph-Embed-then-Recur%
+};
+
+% =============================================================
+% PANEL B: TEMPORAL-FIRST (TFGN: Recur-then-Aggregate)
+% =============================================================
+\begin{scope}[yshift=-5.0cm, local bounding box=panelB]
+    % Inputs
+    \node[databox] (r1) at (-11.0, 0.4) {Region $v_1$\\$(\mathbf{x}_{1,1}, \dots, \mathbf{x}_{1,T})$};
+    \node[databox] (r2) at (-11.0, -0.6) {Region $v_V$\\$(\mathbf{x}_{V,1}, \dots, \mathbf{x}_{V,T})$};
+    \path (r1) -- (r2) node[midway, font=\footnotesize, text=\fg!90] {$\vdots$};
+
+    % Step 1: Node-shared temporal core
+    \node[temporalbox] (node_lstm) at (-6.3, 0) {
+        Node-Shared Recurrence\\
+        \textnormal{\scriptsize Regional Node-LSTM}\\
+        \textnormal{\scriptsize (Shared weights $g_\phi$)}
+    };
+
+    % Intermediate: Regional trajectory representations — pushed right
+    \node[databox] (h_nodes) at (0.8, 0) {
+        Regional Trajectories\\
+        $\mathbf{h}_1, \dots, \mathbf{h}_V \in \mathbb{R}^{64}$\\
+        \textnormal{\scriptsize ($V = 200$ regions)}
+    };
+
+    % Step 2: Spatial aggregation
+    \node[poolingbox] (sp_pool) at (5.4, 0) {
+        Spatial Aggregation\\
+        \textnormal{\scriptsize Mean / Attentive Pool}\\
+        \textnormal{\scriptsize $\mathbf{z}_{\text{patient}} = \bigoplus_{v=1}^V \mathbf{h}_v$}
+    };
+
+    % Step 3: Head & output
+    \node[headbox] (head_b) at (10.3, 0) {
+        Classifier Head\\
+        \textnormal{\scriptsize Linear / MLP}
+    };
+    \node[outbox] (out_b) at (12.1, 0) {$\hat{y}$};
+
+    % Arrows
+    \draw[flowline] (r1.east) -- ++(0.4,0) |- (node_lstm.west);
+    \draw[flowline] (r2.east) -- ++(0.4,0) |- (node_lstm.west);
+    \draw[flowline] (node_lstm.east) -- (h_nodes.west)  node[midway, fill=\bg, inner sep=2pt, font=\scriptsize\bfseries, text=\fg!95] {dynamics preserved};
+    \draw[flowline] (h_nodes.east)   -- (sp_pool.west);
+    \draw[flowline] (sp_pool.east)   -- (head_b.west)   node[midway, fill=\bg, inner sep=2pt, font=\scriptsize\bfseries, text=\fg!95] {$\mathbf{z}_{\text{pat}}$};
+    \draw[flowline] (head_b)    -- (out_b);
+
+    % Callout badge
+    \node[fill=TUMAccentGreen!15, draw=TUMAccentGreen!80, text=TUMAccentGreen!80!black,
+          rounded corners=4pt, font=\footnotesize\bfseries, inner sep=4pt]
+        (note_b) at (0.8, -1.5) {
+        \textbf{\checkmark\quad Region-resolved trajectories encoded \emph{prior} to whole-brain spatial aggregation}
+    };
+\end{scope}
+
+% Panel B bounding box
+\node[panelboxB, fit=(panelB)] (boxB) {};
+% Panel B title badge — smaller font
+\node[font=\bfseries\scriptsize, fill=TUMAccentOrange!15, draw=TUMAccentOrange!90,
+      text=black!90, rounded corners=3pt, inner sep=3pt]
+    at (boxB.north) {%
+    (b) Temporal-First Paradigm (TFGN, Proposed): Recur-then-Aggregate%
+};
+
+\end{tikzpicture}
