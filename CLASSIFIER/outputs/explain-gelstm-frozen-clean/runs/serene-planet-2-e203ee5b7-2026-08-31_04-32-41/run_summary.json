@@ -1,0 +1,15 @@
+{
+  "experiment_id": "explain-gelstm-frozen-clean",
+  "run_name": "serene-planet-2-e203ee5b7-2026-08-31_04-32-41",
+  "state": "failed",
+  "status": "failed",
+  "error": "SyntaxError: invalid syntax (2276322979.py, line 14)",
+  "duration_seconds": 154.7,
+  "started_at": "2026-08-31T04:32:46",
+  "finished_at": "2026-08-31T04:35:21",
+  "git": {
+    "short_commit": "e203ee5b7",
+    "dirty": true
+  },
+  "metrics": {}
+}

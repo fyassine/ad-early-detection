@@ -16,11 +16,30 @@ foundation and applies and extends it toward longitudinal \ac{MCI}-to-\ac{AD} co
 prediction, cross-cohort evaluation, and the longitudinal modelling and benchmarking
 experiments described below.
 
-\outlinenote{RQ1 to RQ4 are restated here, each with a pointer to where it is answered in
-\autoref{ch:results}.}
+This chapter states what was built and how it would be judged.
+\autoref{sec:problem-formulation} defines the formal prediction task and the graph
+constructed on top of the connectivity matrix \autoref{ch:data} describes.
+\autoref{sec:static-representation} covers static representation learning via the
+\ac{GAAE} and \ac{VGAE}. \autoref{sec:spatial-first} describes the spatial-first
+trajectory models that build on those representations. \autoref{sec:tfgn} introduces the
+temporal-first alternative and its design rationale. \autoref{sec:protocol} specifies the
+experimental protocol that judges all arms. \autoref{sec:instrumentation} describes the
+interpretability and robustness instrumentation.
+
+The four research questions that organise the experimental programme are as follows.
+\textbf{RQ1}: does longitudinal modelling add information beyond static
+functional-connectivity representations, answered in \autoref{sec:rq1}?
+\textbf{RQ2}: does spatial-first graph representation learning add value, answered in
+\autoref{sec:rq2}?
+\textbf{RQ3}: does temporal-first modelling improve over spatial-first modelling, answered
+in \autoref{sec:rq3}?
+\textbf{RQ4}: do the findings transfer to an independent cohort, answered in
+\autoref{sec:rq4}?
+RQ4 is framed as transfer rather than as validation: \ac{OASIS} is an independent
+external cohort, not a held-out sample from the same distribution as the training data,
+so its results inform cross-cohort generalisability rather than a classical validation claim.
 
 \section{Problem Formulation and Graph Construction}\label{sec:problem-formulation}
-\outlinenote{The formal problem statement, node features and edge construction.}
 
 Subject-level functional-connectivity graph modelling was already part of the pre-existing
 project framework. The present analyses use this representation for the longitudinal
@@ -29,23 +48,186 @@ pre-existing modelling framework. In this thesis, the consequences of this desig
 treated as an explicit hypothesis and tested through controlled ablations and comparison
 with the temporal-first alternative.
 
-\section{Static Representation Learning: GAAE and VGAE}\label{sec:static-representation}
-\outlinenote{Covers the \ac{VGAE} variants and the free-bits objective at the level needed
-to understand them, with the loss variants and their failure modes in
-\autoref{ch:app-implementation}. Defines the reconstruction-fidelity measure, a scale-free
-Pearson correlation between input and reconstruction, as a method; its value is reported in
-\autoref{sec:rq2}.}
+\paragraph{Formal statement.}
+A subject $i$ contributes a variable-length sequence of $T_i$ visits. Each visit $t$
+yields a graph $G_i^{(t)} = (V, E_i^{(t)}, X_i^{(t)})$, where the node set $V$ is fixed
+at $|V| = 200$ regions of interest under the Schaefer-200 parcellation,
+$E_i^{(t)} \subseteq V \times V$ is a binary edge set constructed from the visit's
+functional-connectivity matrix (described below), and $X_i^{(t)} \in \mathbb{R}^{200
+\times 200}$ is the matrix of node feature vectors. The prediction target is a single
+binary subject-level label $y_i \in \{0, 1\}$, with $y_i = 1$ for a converter and
+$y_i = 0$ for stable \ac{MCI}, as defined in \autoref{sec:delcode}. The effective sample
+size for any downstream classifier is therefore the number of subjects, not the number of
+scans, because the head produces one prediction per subject from the full visit sequence.
+This constraint on the denominator is the primary motivation for the capacity arguments in
+\autoref{sec:spatial-first} and \autoref{sec:tfgn}.
 
-The \ac{GAAE} stage builds on a graph-attention-autoencoder implementation available in the
-pre-existing project codebase. The configuration and modifications used for the experiments
-reported in this thesis are described below. For the pooled \ac{GAAE}, the change concerns
-the training cohort and experimental setting rather than the graph-autoencoder concept
-itself.
+\paragraph{Node features.}
+Each \ac{ROI} $j$ is represented by its own row from the $200 \times 200$
+Fisher-$z$-transformed functional-connectivity matrix that \autoref{sec:preprocessing}
+describes. The node-feature matrix $X_i^{(t)} \in \mathbb{R}^{200 \times 200}$ is
+therefore the full connectivity matrix, so that each node carries the profile of its
+pairwise coupling with every other region. The input feature dimensionality is consequently
+$\texttt{in\_features} = 200$.
+
+\paragraph{Edge construction.}
+The binary adjacency matrix $A_i^{(t)}$ is constructed by symmetrised $k$-nearest-neighbour
+sparsification over the absolute values of the functional-connectivity matrix. For each
+\ac{ROI} $j$, the $k$ largest absolute entries of its connectivity row are retained and
+the diagonal is excluded. The result is then symmetrised as $A \leftarrow \max(A, A^\top)$,
+so that if \ac{ROI} $j$ is among \ac{ROI} $l$'s top-$k$ neighbours then the edge $(j, l)$
+is present regardless of whether the converse holds. Taking absolute values retains strongly
+anti-correlated pairs as connected nodes, which avoids discarding the negatively coupled
+region pairs that are known to be functionally meaningful in resting-state data. Edge
+attributes are binary. The value of $k$ differs by stage: $k = 16$ during \ac{GAAE} and
+\ac{VGAE} pretraining, and $k = 8$ for \ac{GEC}, \ac{GEP}, \ac{GELSTM}, \ac{GEGRU} and
+\ac{TFGN} supervised training.
+
+\paragraph{Time conditioning.}
+The three cohorts encode visit time differently: \ac{DELCODE} stores protocol months along
+a nominal six-month-to-annual grid, while \ac{ADNI} and \ac{OASIS} store elapsed days from
+each subject's baseline session. Both representations are converted to a common inter-visit
+interval in months. The first visit always receives $\Delta t_1 = 0$, and subsequent
+intervals are computed as
+\[
+  \Delta t_t = \frac{\text{cum}_t - \text{cum}_{t-1}}{108},
+\]
+where $\text{cum}_t$ is the cumulative months elapsed since baseline and the normaliser
+(\texttt{MAX\_INTERVAL\_MONTHS} $= 108.0$) corresponds to nine years, the longest observed
+follow-up in the pooled cohort. This representation directly addresses the irregular
+longitudinal sampling challenge identified in \autoref{sec:sampling}: the model receives
+the actual inter-visit gap rather than assuming a fixed cadence. The \ac{TFGN} instead
+uses cumulative $\log(1 + \text{months})$ standardised with training-fold statistics,
+because the logarithmic compression reduces the dynamic range of the temporal input without
+losing the ordering information.
+
+\paragraph{Worked example.}
+Consider a subject with three visits at 0, 12 and 30 months from baseline. The first visit
+produces a graph $G^{(1)}$ with $\Delta t_1 = 0$, a $200 \times 200$ node-feature matrix
+$X^{(1)}$ drawn from that session's Fisher-$z$ connectivity matrix, and a binary adjacency
+$A^{(1)}$ retaining the eight largest absolute connections per \ac{ROI}. The second visit
+yields $\Delta t_2 = (12 - 0)/108 \approx 0.111$, with its own $X^{(2)}$ and $A^{(2)}$.
+The third visit yields $\Delta t_3 = (30 - 12)/108 \approx 0.167$. The recurrent models
+receive the sequence $\bigl[(X^{(1)}, A^{(1)}, 0),\, (X^{(2)}, A^{(2)}, 0.111),\,
+(X^{(3)}, A^{(3)}, 0.167)\bigr]$ and produce a single binary prediction from the terminal
+hidden state.
+
+\section{Static Representation Learning: GAAE and VGAE}\label{sec:static-representation}
+
+The \ac{GAAE} stage builds on a graph-attention-autoencoder implementation available in
+the pre-existing project codebase. The configuration and modifications used for the
+experiments reported in this thesis are described below. For the pooled \ac{GAAE}, the
+change concerns the training cohort and experimental setting rather than the
+graph-autoencoder concept itself.
+
+\paragraph{GAAE architecture.}
+The \ac{GAAE} encoder consists of three GATv2Conv layers \parencite{brody2022gatv2} with
+two-dimensional edge features and residual connections, reducing the 200-dimensional input
+to a 64-dimensional latent vector. The three layers have hidden dimensionalities
+$200 \to 128 \to 128$ with two attention heads each, followed by batch normalisation,
+ReLU activation and dropout at probability 0.3. The latent vector is then modulated by a
+Feature-wise Linear Modulation (FiLM) layer conditioned on a two-dimensional covariate
+vector of normalised age and binary sex encoding, so the encoder can adjust its per-dimension
+scale and shift to account for demographic variation without requiring separate model
+instances. A mirrored three-layer GATv2 decoder reconstructs the node-feature matrix, and a
+separate inner-product adjacency decoder reconstructs the edge structure as
+$\hat{A} = \sigma(ZZ^\top)$, where $Z \in \mathbb{R}^{200 \times 64}$ is the
+node-level latent matrix and $\sigma$ denotes the logistic function applied element-wise.
+The training loss is
+\begin{equation}
+  \mathcal{L}_{\text{GAAE}}
+  = \operatorname{MSE}(\hat{X}, X)
+  + \lambda_{\text{adj}}\,\operatorname{BCE}(\hat{A}, A),
+  \label{eq:gaae-loss}
+\end{equation}
+where $\hat{X}$ is the reconstructed node-feature matrix, $X$ is the input, $\hat{A}$ is
+the reconstructed adjacency, $A$ is the true binary adjacency, $\operatorname{MSE}$ is the
+mean squared error over node features, $\operatorname{BCE}$ is the binary cross-entropy
+over adjacency entries, and $\lambda_{\text{adj}} = 0.2$ weights the adjacency term. The
+loss is masked so that block-diagonal batch padding does not contribute. Key
+hyperparameters: latent
+dimensionality 64, hidden dimensionality 128, two attention heads, dropout 0.3, learning
+rate $10^{-3}$, weight decay $10^{-3}$, up to 500 training epochs, early-stopping patience
+25 on validation loss, and $k = 16$ for the $k$-nearest-neighbour graph. The encoder has
+952,136 parameters.
+
+\paragraph{The pivot from reconstruction to classification.}
+Because within-cohort between-subject variation in functional connectivity can exceed
+between-group variation at the available sample sizes, as \autoref{sec:statistics}
+quantifies, a reconstruction objective is not guaranteed to allocate encoder capacity to
+the group contrast. The pipeline therefore separates pretext learning from the group
+decision: the encoder is pretrained to reconstruct graph structure and then frozen, and a
+separate classification head is trained on the resulting embeddings. The reconstruction
+phase is treated as a representation-learning step whose value is tested empirically rather
+than assumed; the results are reported in \autoref{sec:rq2}.
+
+\paragraph{GEC and GEP as static classification heads.}
+The \ac{GEC} adapter implements embed-then-classify: the frozen \ac{GAAE} encoder is
+applied to a single visit's graph, the 200 node embeddings are mean-pooled to a
+64-dimensional graph embedding, and a multilayer perceptron maps this embedding to a
+classification logit. An attention-pooling variant (\texttt{GraphEncoderClassifierAttention})
+replaces mean pooling with a learned gate network. The \ac{GEP} adapter is a multi-visit extension: it encodes each of a subject's visits
+independently and mean-pools the resulting sequence of per-visit graph embeddings to a
+single subject-level vector before classification, so it is a static model that uses visit
+averaging rather than recurrence.
+
+\paragraph{VGAE architecture and the free-bits objective.}
+The \ac{VGAE} shares the GATv2 backbone of the \ac{GAAE} encoder but replaces the
+deterministic output with two parallel convolution heads emitting a mean vector
+$\mu \in \mathbb{R}^{64}$ and a log-variance vector $\log\sigma^2 \in \mathbb{R}^{64}$.
+During training, a latent sample is drawn by the reparameterisation trick,
+$z = \mu + \sigma \odot \varepsilon$ with $\varepsilon \sim \mathcal{N}(0, I)$; during
+evaluation the mean $\mu$ is used directly. The FiLM conditioning is applied to $\mu$
+after sampling, so that the conditioning shift is not penalised by the Kullback--Leibler
+divergence term. An
+optional feature decoder adds an auxiliary node-feature reconstruction head alongside the
+inner-product adjacency decoder. The standard Kullback--Leibler term can drive individual
+latent dimensions to collapse to the prior, producing a representation where those
+dimensions carry no information. The \ac{VGAE} therefore uses a free-bits objective: for
+each dimension $d$ independently,
+\begin{equation}
+  \mathcal{L}_{\text{KL},d}
+  = \max(\operatorname{KL}_d,\, b)
+    + \max\!\bigl(b - \operatorname{KL}_d,\, 0\bigr)^2,
+  \label{eq:free-bits}
+\end{equation}
+where $\operatorname{KL}_d$ is the per-dimension Kullback--Leibler divergence and $b$ is a
+floor threshold. At or above the floor, \autoref{eq:free-bits} reduces to the ordinary
+Kullback--Leibler term and has the same gradient. Below the floor, the first term is the
+constant $b$ with zero gradient; the second term is positive with a negative gradient with
+respect to $\operatorname{KL}_d$, which pushes the divergence back toward the floor rather
+than allowing the dimension to remain collapsed. A plain clamp alternative sets the loss to
+$b$ below the floor with zero gradient and therefore cannot pull a collapsed dimension
+back into use; a softplus relaxation is also implemented and its behaviour is described in
+\autoref{ch:app-implementation}. The anti-collapse hyperparameters are as follows: free-bits floor 1.23 and 1.44, $\beta$ weighting 0.00111 and 0.0005,
+warmup over 41 and 43 epochs, optional feature-loss weight 2.93 and 0.5 for the two
+final configurations.
+
+\paragraph{Reconstruction fidelity as a method-level metric.}
+We define reconstruction fidelity as the Pearson correlation coefficient between the
+flattened input matrix and its flattened reconstruction, computed by a single canonical
+function. Given input
+$X$ and reconstruction $\hat{X}$, both are flattened to one-dimensional vectors
+$\mathbf{a}$ and $\mathbf{b}$, and the correlation is
+\begin{equation}
+  r = \frac{\sum_i (a_i - \bar{a})(b_i - \bar{b})}
+           {\sqrt{\sum_i (a_i - \bar{a})^2}
+            \cdot \sqrt{\sum_i (b_i - \bar{b})^2}},
+  \label{eq:pearson-r}
+\end{equation}
+where $\bar{a}$ and $\bar{b}$ are the means of the flattened vectors and the sum runs over
+every matrix element. We use correlation rather than mean squared error because the
+Fisher-$z$ connectivity scale is dataset-specific, so a scale-free correlation is
+comparable across cohorts where an absolute reconstruction error is not. Fidelity is
+reported as a cohort median with interquartile range computed over per-subject values. The
+reconstruction targets differ by model: for the \ac{GAAE}, $X$ is the continuous
+node-feature matrix and $\hat{X}$ is the feature decoder's output; for the \ac{VGAE},
+$X$ is the binary adjacency matrix and $\hat{X}$ is the continuous edge-probability output
+$\sigma(ZZ^\top)$. These two correlation values measure different reconstruction targets
+and are not interchangeable as statements about which model reconstructs connectivity
+better. The values are reported in \autoref{sec:rq2}.
 
 \section{Spatial-First Trajectory Modelling}\label{sec:spatial-first}
-\outlinenote{The \ac{GELSTM} and \ac{GEGRU} recurrent core with gate updates conditioned on
-the inter-visit interval, the regularisation scheme, and the four encoder arms that
-constitute the RQ2 ablation.}
 
 This part builds on the pre-existing spatial-first graph-learning and graph-autoencoder
 framework available at the start of the thesis and is applied here to longitudinal \ac{MCI}
@@ -53,24 +235,621 @@ conversion prediction. The encoder handling inherited from the pre-existing impl
 was modified during the thesis to enable the controlled fine-tuning ablation described
 below.
 
+\paragraph{The recurrent core.}
+At each visit $t$, the shared encoder produces a visit embedding $z_t \in \mathbb{R}^{d}$,
+where $d = 64$ when an encoder is present and $d = 200$ when the \texttt{none} arm
+bypasses the encoder entirely and mean-pools the raw node features. The time-augmented
+embedding $[z_t \,\|\, \Delta t_t]$ is consumed by a single-layer \ac{LSTM} with hidden
+dimensionality 32, which processes the visit sequence and reads out the terminal hidden
+state $h \in \mathbb{R}^{32}$. A classifier head of the form
+$\text{Linear}(32) \to \text{ReLU} \to \text{Dropout}(0.3) \to \text{Linear}(1)$
+maps $h$ to a classification logit. LayerNorm is applied before the head, so
+variable-length evaluation at batch size one is numerically stable. The \ac{GEGRU} uses the
+same architecture; a gated recurrent unit has three gates
+against the \ac{LSTM}'s four, which gives approximately 25\% fewer recurrent parameters at
+equal hidden dimensionality.
+
+\paragraph{Regularisation and normalisation.}
+Per-visit embeddings are z-scored using persistent mean and variance buffers fitted on the
+training fold only, which is the recurrent analogue of the per-fold
+\texttt{StandardScaler} used by the multilayer perceptron classification heads. Additional
+regularisation includes dropout at probability 0.3, gradient clipping at a global norm of
+1.0, weight decay $10^{-4}$, and cost-sensitive class weighting to handle the converter
+minority, as described in \autoref{sec:protocol}. Early stopping terminates training when
+validation loss fails to improve for 15 consecutive epochs.
+
+\paragraph{Capacity argument.}
+The effective sample size for the downstream heads is the number of subjects, not the
+number of scans, because a single binary label is fitted per subject. In the \ac{DELCODE}
+cross-validation pool there are 133 subjects, with approximately 100 in each training
+fold. A hidden-128, two-layer \ac{LSTM} configuration accumulates 240,257 trainable
+parameters in the recurrent and classifier components, corresponding to approximately 1,806
+parameters per cross-validation subject. The breakdown is: \ac{LSTM} layer 1,
+$4 \times 128 \times (65 + 128)$ plus biases $= 99{,}840$ parameters; layer 2,
+$4 \times 128 \times (128 + 128)$ plus biases $= 132{,}096$ parameters; classifier head
+$\approx 8{,}321$ parameters. The \ac{LSTM} component alone exceeds the entire multilayer
+perceptron baseline in parameter count. The deployed configuration uses hidden
+dimensionality 32 and one layer, reducing the recurrent-plus-head parameter count to
+approximately 13,761 (roughly 103 per cross-validation subject). A \ac{GEGRU} variant at
+the same hidden size reduces recurrent parameters by approximately 25\% further. These
+figures are the design
+rationale for the chosen specification: the recurrent inductive bias, not parameter count
+alone, is the leading overfitting risk at this sample size, because a carried hidden state
+applied at every visit and read out at the final step is exactly the function class that
+can memorise a small cohort.
+
+\paragraph{The four encoder arms and the RQ2 ablation.}
+The value of reconstruction pretraining is tested by a single configuration knob,
+which selects one of four arms:
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{lcccp{0.36\linewidth}}
+\toprule
+Arm & Built? & Loaded? & Trained? & Isolates \\
+\midrule
+\texttt{pretrained\_frozen} & yes & yes & no & Reference (pre-existing model) \\
+\texttt{pretrained\_finetuned} & yes & yes & yes & Value of task adaptation \\
+\texttt{random} & yes & no & yes & Value of reconstruction pretraining \\
+\texttt{none} & no & no & --- & Value of the graph encoder itself \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The arms form a chain of contrasts: \texttt{none} versus \texttt{random} isolates the
+encoder architecture, \texttt{random} versus \texttt{pretrained\_frozen} isolates
+reconstruction pretraining, and \texttt{pretrained\_frozen} versus
+\texttt{pretrained\_finetuned} isolates task adaptation. Under the \texttt{none} arm, no
+encoder module is constructed; \texttt{encode\_visit} mean-pools the raw node features
+instead, so the per-visit embedding width becomes 200 and the recurrent input width is
+derived rather than hardcoded. These four arms apply only to the \ac{GELSTM} and
+\ac{GEGRU} adapters, because the \ac{GEC} and \ac{GEP} adapters pre-compute embeddings
+offline with a frozen encoder; end-to-end encoder training has no meaning for them without
+restructuring those adapters.
+
+\paragraph{Pre-specified interpretation table.}
+The following interpretation table was written before any arm was run, so that the reading
+of the results could not be fitted retrospectively. 
+
+\begin{center}
+\small
+\begin{tabular}{p{0.38\linewidth}p{0.27\linewidth}p{0.27\linewidth}}
+\toprule
+Observation & Meaning & Consequence \\
+\midrule
+\texttt{random} $\approx$ \texttt{pretrained\_frozen} $\approx$ \texttt{pretrained\_finetuned} &
+  Reconstruction adds nothing beyond the architecture prior &
+  Keep as a compute-saving initialisation; report as a null finding \\
+\texttt{none} $\approx$ every other arm &
+  Graph encoder not earning its place &
+  Focus should be about the longitudinal head; \\
+\texttt{pretrained\_*} $>$ \texttt{random}, both clearly above \texttt{none} &
+  Pretraining contributes real transferable structure &
+  Keep the \ac{GAAE} stage; quantify the gain \\
+\texttt{pretrained\_finetuned} $>$ \texttt{pretrained\_frozen} &
+  Pretrained features under-adapted to conversion task &
+  Switch to finetuned arm; monitor overfitting \\
+\texttt{pretrained\_finetuned} $<$ \texttt{pretrained\_frozen} &
+  Fine-tuning overfits the small converter cohort &
+  Justify freezing explicitly as a regularisation choice \\
+\texttt{random} $>$ \texttt{pretrained\_*} &
+  Reconstruction pretraining actively harmful &
+  Investigate pretext--downstream mismatch \\
+All four arms $\approx$ metadata floor &
+  Imaging not contributing signal at this sample size &
+  Escalate to sample size and label definition \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The results of applying this table are in \autoref{sec:rq2}. The scope limit of this
+ablation is that it applies only to the \ac{GELSTM} and \ac{GEGRU} adapters; the
+equivalent question for \ac{GEC} and \ac{GEP} is a separate follow-up.
+
 \section{Temporal-First Modelling: The TFGN Architecture}\label{sec:tfgn}
-\outlinenote{The hypothesis behind inverting the pooling order, the per-region recurrent
-core, the optional graph stage, fusion, readout and the dual-score head. Capacity
-accounting against the subject-level denominator is stated here as a design argument.
-Selection outcomes are reported in \autoref{sec:rq3}.}
+
+\paragraph{Hypothesis.}
+Every longitudinal classifier described in \autoref{sec:spatial-first} pools a visit's
+whole-brain graph to a single 64-dimensional vector before any temporal model sees it.
+Region identity is consequently discarded before any trajectory is modelled: the recurrent
+core operates on a compressed representation that mixes all regional signals together.
+\ac{TFGN} defers this pooling. A node-shared recurrent core first encodes each of the 200
+regions' own connectivity-row trajectory independently, and pooling is applied only
+afterward, optionally after a graph propagation stage. If region-resolved temporal dynamics
+carry conversion-relevant signal that early pooling destroys, deferring pooling should
+improve prediction at matched or lower capacity. 
+
+\paragraph{Inputs.}
+The per-subject input to \ac{TFGN} consists of the visit stack
+$X \in \mathbb{R}^{T \times 200 \times 200}$, the cumulative log inter-visit interval
+$\log(1 + \text{months})$ standardised with training-fold statistics, the baseline
+adjacency $A_0$ constructed as a binary $k$-nearest-neighbour graph with $k = 8$ on the
+absolute baseline connectivity matrix, a covariate vector $[\text{age},\, \text{sex}]$,
+and, for arms that use them, the per-subject binary connectivity-change mask $M$, the
+strength centrality vector of $|A_0|$, and the rank-sigmoid drift anchor $\tilde{d}$.
+
+\paragraph{Switchable stages.}
+The architecture is implemented as a sequence of seven independently switchable modules,
+controlled by a single \texttt{TFGNTrainConfig} object, so that the entire ablation ladder
+corresponds to toggling knobs on one model.
+
+\textbf{(1) Node-shared LSTM.} A single \ac{LSTM} with hidden dimensionality 64, one
+layer and dropout 0.3, applied with shared weights to each of the 200 nodes' own
+connectivity-row sequence. Each node $i$ has its own trajectory of 200-dimensional
+feature vectors (the rows of $X^{(t)}$), and the shared \ac{LSTM} produces a
+node-specific terminal hidden state $h_i^{(T)} \in \mathbb{R}^{64}$. The log
+inter-visit interval is optionally concatenated to the node input at each step.
+
+\textbf{(2) Temporal saliency gate.} A per-node scalar gate
+\[
+  s_i = \sigma\!\bigl(w^\top \operatorname{LeakyReLU}(W_s h_i)\bigr)
+\]
+is applied as residual scaling $(1 + s_i)\,h_i$, where $W_s \in \mathbb{R}^{d_s \times
+64}$ and $w \in \mathbb{R}^{d_s}$ are learned parameters and $\sigma$ is the logistic
+function. A gate value of zero passes the hidden state unchanged; values above zero amplify
+the contribution of regions whose temporal trajectory is more informative. The gate is
+regularised by a sparsity penalty described in the loss paragraph below.
+
+\textbf{(3) GVAE encoder.} When a reconstruction target is set, a \ac{GVAE} is constructed with GATv2
+heads for the mean $\mu$ and log-variance $\log\sigma^2$, hidden dimensionality 128,
+latent dimensionality 64 and two attention heads, operating over $A_0$. FiLM conditioning
+of $\mu$ on $[\text{age},\, \text{sex}]$ is applied before reparameterised sampling. Under
+\texttt{recon\_target: none} this stage is absent entirely.
+
+\textbf{(4) Fusion.} When a \ac{GVAE} is present, the temporal hidden state $h_i$ and
+the graph latent $z_i$ are combined by either
+$\operatorname{LayerNorm}(W_u[h_i \,\|\, z_i])$ (\texttt{concat\_residual}) or by
+passing $z_i$ alone (\texttt{z\_only}).
+
+\textbf{(5) Readout.} The 200 node representations are reduced to a single subject
+embedding by mean pooling or by attentive pooling using exact sparsemax
+\parencite{martins2016sparsemax}. Sparsemax produces true zeros rather than a dense soft
+distribution, so nodes assigned zero weight contribute nothing to the subject embedding.
+
+\textbf{(6) Dual-score head.} The classification head emits both a binary classification
+logit and a per-node topological saliency score $s_{\text{topo}}$, anchored to the
+strength centrality of $|A_0|$ by an auxiliary mean-squared-error term weighted by
+$\lambda_{\text{cent}}$. This stage is the interpretability layer; see
+\autoref{sec:instrumentation}.
+
+\textbf{(7) Cohort-adversary head.} Used only by the escalation arm. A gradient-reversal
+layer, which applies the identity in the forward pass and negates and scales gradients in
+the backward pass, connects the pooled subject embedding to a binary
+ADNI-versus-DELCODE classification head, training the encoder to be uninformative about
+cohort identity.
+
+\paragraph{Composite loss.}
+The training objective is
+\begin{equation}
+  \mathcal{L}
+  = \mathcal{L}_{\text{BCE}}
+  + \lambda_{\text{sparse}}\,\operatorname{KL}(\bar{s} \,\|\, \rho)
+  + \lambda_{\text{drift}}\,\operatorname{MSE}(\bar{s},\, \tilde{d})
+  + \lambda_{\text{cent}}\,\operatorname{MSE}(s_{\text{topo}},\, c)
+  + \mathcal{L}_{\text{recon}}
+  + \beta\,\mathcal{L}_{\text{KL}},
+  \label{eq:tfgn-loss}
+\end{equation}
+where $\mathcal{L}_{\text{BCE}}$ is the cost-weighted binary cross-entropy on the
+classification logit; $\operatorname{KL}(\bar{s} \,\|\, \rho)$ is the
+Kullback--Leibler divergence of the mean gate activation $\bar{s}$ from the target
+sparsity $\rho = 0.15$, which encourages at most 15\% of nodes to have above-baseline
+activations; $\operatorname{MSE}(\bar{s},\, \tilde{d})$ anchors the mean gate activation
+to the rank-sigmoid drift anchor $\tilde{d}$; $\operatorname{MSE}(s_{\text{topo}},\, c)$
+anchors the topological saliency score to the strength centrality $c$ of $|A_0|$;
+$\mathcal{L}_{\text{recon}}$ is the reconstruction loss on the change mask (when active);
+and $\beta\,\mathcal{L}_{\text{KL}}$ is the warmed-up \ac{GVAE} Kullback--Leibler term,
+computed on pre-FiLM $\mu$ using the same free-bits function as \autoref{eq:free-bits} so
+that the conditioning shift is not penalised by the prior. The drift anchor weight is set
+as $\lambda_{\text{drift}} = 0.1\,\lambda_{\text{sparse}}$, so the sparsity prior
+dominates at the margin.
+
+\paragraph{Pre-specified design decisions.}
+The following decisions were fixed prior to any run.
+
+\textbf{Reconstruction target.} The inner-product output $\sigma(ZZ^\top) \in (0,1)$
+cannot be trained with binary cross-entropy against a raw connectivity-change matrix
+$\Delta A \in [-2,2]$. The pre-specified default reconstruction target is
+\texttt{delta\_a\_topk}: a per-subject binary change mask $M_{ij} = \mathbb{1}[|\Delta
+A_{ij}| \geq q_{1-\kappa}]$ with $\kappa = 0.10$, so the top 10\% of changed edges are
+positive. The loss uses binary cross-entropy with a positive-edge weight of
+$(1 - \kappa)/\kappa = 9$ to compensate for the strong class imbalance. Construction
+raises an error rather than proceeding silently when any subject's positive-edge density
+falls outside $[0.01,\, 0.5]$.
+
+\textbf{Topological anchor.} Eigenvector centrality is ill-defined on signed connectivity
+matrices because negative weights violate the Perron--Frobenius conditions that guarantee
+a unique dominant eigenvector. The anchor is therefore the strength centrality of $|A_0|$,
+computed as the column sum of the absolute-value adjacency and z-scored with training-fold
+statistics.
+
+\textbf{Drift anchor.} A raw drift magnitude $\|x_i^{(T)} - x_i^{(1)}\|_2$ is a dense
+positive scalar that would conflict with the sparsity Kullback--Leibler term. The anchor
+is instead a rank-sigmoid transformation of the within-subject drift:
+\begin{equation}
+  q_i = \frac{\operatorname{rank}(d_i)}{N - 1},
+  \quad
+  \tilde{d}_i = \sigma\!\left(\frac{q_i - (1 - \rho)}{\tau_d}\right),
+  \quad \tau_d = 0.05,
+  \label{eq:drift-anchor}
+\end{equation}
+where $d_i = \|x_i^{(T)} - x_i^{(1)}\|_2$, $N$ is the number of subjects in the
+current batch, $\rho = 0.15$ is the target sparsity, and $\sigma$ is the logistic
+function. By construction $\operatorname{mean}(\tilde{d}) \approx \rho$, so the drift
+anchor and the sparsity Kullback--Leibler target agree on the expected gate activation
+level. The rank transformation also makes the anchor scale-free across cohorts with
+different connectivity amplitudes.
+
+\textbf{Strict determinism.} The GATv2 scatter-based aggregation and the sparsemax
+backward pass have non-deterministic GPU kernels. Without forcing determinism, the
+seed-level standard error of cross-validation results would partially measure GPU
+scheduling noise rather than model behaviour.
+
+\paragraph{Cohort-shift control as a design decision.}
+Cohort identity is deliberately withheld from the model: a FiLM cohort covariate would
+make \ac{OASIS} an untrained one-hot category at inference time and its behaviour would
+be unspecified. Instead, every pooled run computes a mandatory cohort probe: a logistic
+regression decodes cohort identity from the out-of-fold subject latents, and its \ac{AUC}
+is recorded. If this probe exceeds 0.75 on the selected
+arm, the pre-specified response is to re-run that arm with the gradient-reversal
+cohort-adversary head and report both alongside each other. The outcome of this check is
+reported in \autoref{sec:rq4}.
+
+\paragraph{Self-supervised pretraining.}
+Two pretraining runs are conducted, both on pooled \ac{ADNI} plus \ac{DELCODE} only;
+\ac{OASIS} is excluded from everything upstream so that it remains genuinely external.
+
+The first run (P1) retrains the \ac{GAAE} on the pooled unlabelled graph collection
+(approximately 3,700 scans), using an architecture identical to the existing
+\ac{DELCODE}-only checkpoint (hidden 128, latent 64, two attention heads, $k = 16$,
+adjacency-loss weight 0.2, 500 epochs). Keeping the architecture identical ensures that
+downstream arms using this checkpoint remain comparable to arms using the \ac{DELCODE}-only
+checkpoint.
+
+The second run (P2) trains the node-shared \ac{LSTM} on a self-supervised next-visit
+forecasting task: given each of the 200 nodes' connectivity-row history up to visit $t$,
+the model predicts the connectivity row $x_i^{(t+1)}$ at the next visit, trained with mean
+squared error loss over every subject with at least two visits in the pooled pretraining
+split. A persistence baseline, predicting $x^{(t+1)} = x^{(t)}$, is defined as the method
+comparison; its mean squared error is reported alongside the trained model's in
+\autoref{sec:rq3}.
+
+\paragraph{Capacity accounting.}
+The same subject-level denominator applies here. In the pooled cross-validation pool there
+are 248 subjects. The \ac{TFGN} node-shared \ac{LSTM} at hidden 64 and one layer has the
+recurrent parameter footprint of a single \ac{LSTM} at those dimensions, since weights are
+shared across all 200 nodes. The architecture is kept at a capacity level comparable to
+the spatial-first models at hidden 32, so that differences in performance can be attributed
+to the pooling-order inversion rather than to capacity differences. No parameter-count
+comparison that identifies a configuration as superior is made here; those comparisons are
+in \autoref{sec:rq3}.
 
 \section{Experimental Protocol}\label{sec:protocol}
-\outlinenote{The pre-specified design decisions and the ablation ladder presented as a
-design: what each rung tests and what its keep-or-drop criterion is. The four-tier
-evaluation protocol: floor gates, the selection rule, robustness checks, and the one-pass
-held-out estimation, with the scope table stating which arms were eligible for which tier.
-Class-imbalance handling by cost-sensitive weighting, and the threshold policy. Run
-identifiers and registry entries are tabulated in \autoref{ch:app-reproducibility}.}
+
+\paragraph{Class imbalance and threshold policy.}
+Converters are a minority of the cohort in all three datasets. We address this by
+cost-sensitive class weighting of the binary cross-entropy loss: class weights are set to
+the inverse class frequencies in the training fold and recomputed per fold. Resampling
+methods are not used because they add no information about the minority class at these
+sample sizes. The decision threshold is selected as the value maximising F1 on out-of-fold
+predictions, stored in the model checkpoint, and reused on the test set without any
+re-thresholding. One point on nomenclature: the legacy configuration dataclass defaults the threshold mode to Youden's J,
+but every runner configuration and every experiment reported in this thesis uses the
+best-F1 mode. The best-F1 selection is the protocol default.
+
+\paragraph{Cross-validation.}
+All supervised experiments use five-fold stratified group cross-validation, stratified on
+the binary label and grouped on subject identifier so that no subject's visits appear in
+more than one fold. The per-fold \texttt{StandardScaler} for embeddings is fitted on the
+training fold only and applied to validation and test embeddings. The log inter-visit
+interval and strength centrality statistics for \ac{TFGN} arms are fitted on the training
+fold and carried inside the saved model state. All experiments use seeds 42, 43, 44 and 45
+to support seed-level variance estimation.
+
+\paragraph{Training.}
+The optimiser is Adam with learning rate $10^{-3}$, batch size 16, and gradient clipping
+at a global norm of 1.0. Training runs for up to 100 epochs with early stopping at patience
+20. A \texttt{ReduceLROnPlateau} scheduler halves the learning rate when validation loss
+fails to improve for five consecutive epochs, down to a floor of $10^{-6}$. Cost-sensitive
+class weighting applies to the binary cross-entropy throughout.
+
+\paragraph{Ablation ladder as a design.}
+The ablation ladder is a sequential architecture search in which each rung inherits the
+kept configuration of all preceding rungs and changes exactly one knob from the last
+surviving state. A rung that fails the keep-or-drop criterion has its knob reverted and
+the next rung branches from the last surviving configuration. The two design contrasts of
+primary interest are stated in advance: S0c against S1, in which neither encoder is
+pretrained, isolates the pooling-order inversion; S0b against S1c, in which both encoders
+are self-supervised, isolates the inversion against a matched pretraining baseline. The
+ladder arms are as follows.
+
+\textbf{S0a} is a logistic regression over principal components of the flattened
+connectivity-change matrix concatenated with visit count, total follow-up months, age and
+sex. It is a linear floor testing whether signal exists in raw connectivity change.
+
+\textbf{S0b} is the spatial-first \ac{GELSTM} with the pooled \ac{GAAE} checkpoint frozen.
+It is the matched comparator for S1c: both S0b and S1c use a self-supervised encoder.
+
+\textbf{S0c} is the same spatial-first \ac{GELSTM} with random encoder initialisation,
+trained end-to-end. It is the matched comparator for S1: neither S0c nor S1 uses
+self-supervised pretraining.
+
+\textbf{S0d} reproduces the Brain-TokenGT competitor arm \parencite{dong2023braintokengt}
+as a reference point, characterised in \autoref{sec:braintokengt}. Its scatter-gather
+operations do not engage deterministic algorithms, so
+its same-seed test \ac{AUC} has been observed to vary substantially across runs; it is
+reported with that caveat rather than as a controlled baseline.
+
+\textbf{S1} uses a randomly initialised node-shared \ac{LSTM} with the gate disabled, no
+reconstruction target, \texttt{fusion: z\_only} and mean readout. The S0c-against-S1
+comparison isolates the architectural flip with no other confound.
+
+\textbf{S1b} repeats S1 with the node-shared \ac{LSTM} initialised from the P2
+self-supervised checkpoint. It tests whether node-level forecasting pretraining is
+beneficial.
+
+\textbf{S1c} adds a \ac{GVAE} reconstruction stage on top of S1's carried-forward configuration. The
+S0b-against-S1c comparison tests the pooling-order inversion when both encoders are
+self-supervised.
+
+\textbf{S2} uses gate with $\lambda_{\text{sparse}} = 0.1$,
+$\lambda_{\text{drift}} = 0.01$ and $\rho = 0.15$. It tests whether suppressing
+temporally static regions is beneficial.
+
+\textbf{S3} changes the fusion mode to \texttt{concat\_residual}. Under S1's configuration there is no \ac{GVAE} stage and therefore no
+graph latent $z_i$ to fuse with the temporal hidden state $h_i$. The fusion knob
+consequently has no gradient path to any new parameters under this configuration and the
+rung is structurally inert, a property of the architecture under that knob setting.
+
+\textbf{S4} replaces mean readout with sparsemax attentive pooling. It tests whether
+learned node weighting improves over uniform pooling.
+
+\textbf{S5} adds the dual-score head with $\lambda_{\text{cent}} = 0.1$. This rung is
+pre-specified as kept regardless of its contribution to \ac{AUC}: a saliency map that does
+not improve classification accuracy can still be a valid or invalid interpretability
+artefact, and the question must not be dropped if the AUC result is neutral. The
+interpretability validation is described in \autoref{sec:instrumentation}.
+
+\textbf{SENS} repeats the selected arm at \texttt{min\_visits=3}, reducing the pool to
+140 subjects. It tests whether longer sequences confer a larger advantage.
+
+\textbf{W3} re-runs the \ac{GELSTM} and the \ac{TFGN} selected arm with
+\texttt{max\_visits=3} to create a matched comparison with Brain-TokenGT, which is
+architecturally constrained to at most three visits.
+
+\paragraph{The four-tier evaluation protocol.}
+This protocol was fixed in its entirety prior to reading any ladder result.
+
+\textbf{Tier 1 (floor gates).} Every arm must exceed two pre-computed baselines: the
+demographics-only logistic regression (age and sex only), and the static single-visit
+classifier evaluated per fold via a \texttt{fold\_probe} hook inside the cross-validation
+runner, so that neither baseline requires reading the held-out test set.
+
+\textbf{Tier 2 (selection rule).} The independent unit is the seed ($n = 4$), not the
+fold, because folds within a seed share a model class and are not independent draws. For
+each seed, the mean paired per-fold change in \ac{AUC} is computed (rung $k$ minus its
+parent, matched fold for fold). A rung is kept if and only if the mean of the four
+seed-level means exceeds their standard error:
+$\operatorname{mean}(\Delta) > \operatorname{SE}(\Delta)$.
+The two possible outcomes are asymmetric by construction: a failure means the effect is
+undetectable at this sample size, never that it is harmful; a pass means the rung is worth
+carrying forward, never that the effect is statistically significant. When the fold-matched
+and pooled formulations of the criterion disagree, the pre-specified one-standard-error
+tie-breaker applies: among kept arms, the simplest configuration within one standard error
+of the best is preferred. This increases the evaluation sample size from 64 (in-domain test) to 248 (cross-validation pool),
+reducing the minimum detectable effect from approximately 0.08 to approximately 0.04
+\ac{AUC} units, and removes the risk of selecting on the held-out test data.
+
+\paragraph{Worked example.}
+Consider a rung evaluated at four seeds, with seed-level mean $\Delta$\ac{AUC} values of
+$+0.031$, $+0.008$, $+0.024$ and $-0.005$. The mean of the four values is
+$(0.031 + 0.008 + 0.024 - 0.005)/4 = 0.0145$. The standard deviation is approximately
+$0.0147$ and the standard error is $0.0147/\sqrt{4} \approx 0.0074$. Since
+$0.0145 > 0.0074$, the rung passes and its knob is carried forward. Had the fourth value
+been $-0.025$ instead, the mean would be $0.0095$ and the standard error $0.0209$, giving
+a failure; the result would be stated as ``undetectable at this sample size,'' not as
+evidence that the mechanism is harmful.
+
+\textbf{Tier 3 (robustness vetoes).} After a rung passes Tier 2, five checks with
+pre-specified thresholds are applied. A rung fails if any of the following conditions
+holds: (i) per-cohort out-of-fold \ac{AUC} falls to or below the demographics-only floor
+for any cohort; (ii) the standard deviation of the decision threshold across the 20
+fold-seed combinations exceeds 0.15; (iii) the expected calibration error after temperature
+scaling fitted on out-of-fold predictions exceeds 0.10; (iv) the Spearman correlation
+between scan count and classification score within stable subjects exceeds 0.30; or (v)
+the cohort probe \ac{AUC} exceeds 0.75.
+
+\textbf{Tier 4 (held-out estimation).} The 64-subject in-domain test set and the
+60-subject \ac{OASIS} set are read exactly once, on the selected arm and its pre-specified
+secondary arms, at the out-of-fold-derived threshold with no retraining.
+\texttt{common/frozen\_read.py} reconstructs each arm's adapter from its saved summary and
+checkpoint and refuses to score a split whose result keys already exist unless an explicit
+overwrite is provided, so the one-shot read cannot be spent a second time.
+
+\paragraph{Scope table.}
+Spending the one-shot held-out splits on every ladder rung would turn the external
+evaluation into a selection set. The following table states which arms were eligible for
+which tier.
+
+\begin{center}
+\small
+\begin{tabular}{lccc}
+\toprule
+Arm & OOF & In-domain test & External (OASIS-3) \\
+ & ($n=248$) & ($n=64$) & ($n=60$) \\
+\midrule
+S0-demo, S0a, S0b, S0c & yes & no & no \\
+S0d Brain-TokenGT & yes & ad hoc, post hoc & ad hoc, post hoc \\
+S1 (primary) & yes & yes & yes \\
+S1b (secondary) & yes & yes & yes \\
+S1c both versions & yes & no & no \\
+S2, S3, S4 & yes & no & no \\
+S5 (secondary, interpretability) & yes & yes & yes \\
+SENS, W3 arms & yes & no & no \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Resolvability statement.}
+At the in-domain test size of $n = 64$ and the external size of $n = 60$, the empirical standard error of the \ac{AUC} is $\text{SE} \approx 0.04\text{--}0.045$, producing a 95\% confidence interval half-width ($1.96 \times \text{SE}$) of approximately $0.08\text{--}0.09$. Consequently, \ac{AUC} differences below approximately $0.08$ fall entirely within the sampling noise margin and are not resolvable with bootstrap confidence intervals. Because sample error scales with $1/\sqrt{N}$, the four-fold larger out-of-fold pool ($n = 248$) cuts the standard error and confidence interval width in half, establishing a resolvable floor of approximately $0.04$. Every keep-or-drop verdict is therefore a screening heuristic at four seeds, stating whether an effect is detectable at this sample size, never a significance test and never a claim that an undetected effect is absent. Configuration knob values and run identifiers are tabulated in \autoref{ch:app-reproducibility}.
 
 \section{Interpretability and Robustness Instrumentation}\label{sec:instrumentation}
-\outlinenote{The disease axis and per-scan disease score, the orthogonal-residual \ac{PCA}
-trajectory space, latent steering back to connectivity, the per-dimension and per-region
-Fisher discriminant ratio, mean against attention pooling, and the four perturbation methods
-separated by failure mode. The scanner-drift simulation and its calibration to a measured
-heterogeneity inventory, stated as a simulation rather than a validation. The cohort
-stability rate as the robustness metric.}
+
+This section describes the instrumentation used to assess the trained models. All
+findings from applying this instrumentation are reported in the corresponding subsections
+of \autoref{ch:results}.
+
+\paragraph{The disease axis and per-scan disease score.}
+We construct a linear direction in the encoder's 64-dimensional latent space that separates
+converters from stable \ac{MCI} subjects. Every training-plus-validation scan is encoded
+with the frozen encoder and the resulting node-level embeddings are mean-pooled to a
+single graph-level vector $z_i \in \mathbb{R}^{64}$. These are z-standardised per
+dimension to obtain $Z_{\text{std}} \in \mathbb{R}^{N \times 64}$. An L2-regularised
+logistic regression is then fitted on $(Z_{\text{std}},\, y)$, where $y \in \{0,1\}^N$ is
+the subject-level label vector and $N$ is the number of training scans. The weight vector
+$\tilde{w} \in \mathbb{R}^{64}$ is the normal to the decision hyperplane. Its unit
+normalisation $\hat{w} = \tilde{w}/\|\tilde{w}\|_2$ is the disease axis. The per-scan
+disease score is
+\begin{equation}
+  s_i = z_i \cdot \hat{w},
+  \label{eq:disease-score}
+\end{equation}
+where $z_i$ is the standardised embedding of scan $i$. A score $s_i > 0$ places scan $i$
+on the converter side of the decision boundary $s = 0$; $s_i < 0$ places it on the
+stable-\ac{MCI} side. The disease score compresses the classifier's decision function to a
+single number per scan, comparable to a continuous biomarker readout. The leakage contract:
+the axis is supervised feature selection computed on training data only and is never
+re-fitted on test or external data.
+
+\paragraph{The orthogonal-residual trajectory space.}
+Subtracting the disease-axis component from each embedding gives an axis-orthogonal
+residual $R_i = z_i - s_i\,\hat{w}$. Principal component analysis applied to the residual
+matrix yields two components $(\mathrm{PC}_1, \mathrm{PC}_2)$ capturing the largest
+sources of within-class variation. A subject's visit-to-visit trajectory can be drawn in
+the three-dimensional space $(s, \mathrm{PC}_1, \mathrm{PC}_2)$ against the decision
+boundary at $s = 0$, giving a geometrically grounded visualisation of longitudinal change
+that separates the conversion-relevant direction from orthogonal within-class variation.
+
+\paragraph{Latent steering.}
+A probe embedding $z_0$ is traversed along the disease axis in steps:
+$z(\alpha) = z_0 + \alpha\,\hat{w}$ for $\alpha \in \{-3\sigma, -2\sigma, -1\sigma, 0,
++1\sigma, +2\sigma, +3\sigma\}$, where $\sigma$ is the standard deviation of the
+disease scores across the training set. Each steered point is decoded back to a
+connectivity matrix via the \ac{GAAE} decoder, and the difference map
+$\text{FC}(\alpha) - \text{FC}(0)$ is computed for each step. The purpose is
+methodological: a disease axis that is purely a discriminative artefact with no grounding
+in connectivity structure would produce structureless difference maps; a direction that
+captures connectivity change relevant to conversion would produce anatomically structured
+maps, which are inspected as a post-hoc plausibility check. No inference is drawn from
+this experiment alone.
+
+\paragraph{Fisher discriminant ratio.}
+The Fisher discriminant ratio per latent dimension $j$ is
+\begin{equation}
+  \operatorname{FDR}_j
+  = \frac{(\mu_{1j} - \mu_{0j})^2}
+         {\sigma_{1j}^2 + \sigma_{0j}^2 + \varepsilon},
+  \label{eq:fdr}
+\end{equation}
+where $\mu_{1j}$ and $\mu_{0j}$ are the class means and $\sigma_{1j}^2$ and $\sigma_{0j}^2$
+are the class variances of dimension $j$ over the training subjects, and $\varepsilon$ is a
+small constant for numerical stability. The same statistic is mapped back to regions by
+computing it over the 200-dimensional node-level embeddings before pooling, yielding a
+per-region discriminability score. This is supervised feature selection computed on
+training data only; the resulting maps are descriptive and do not influence any
+classification decision.
+
+\paragraph{Latent visualisation.}
+\ac{UMAP} projections of the 64-dimensional graph embeddings described above, with the
+disease-axis decision boundary overlaid, assess whether the two group clusters are
+geometrically separated in the reduced space.
+
+\paragraph{Four perturbation methods.}
+Four strategies perturb held-out samples to measure decision stability, each targeting a
+different failure mode.
+
+\textbf{Feature noise} adds Gaussian noise
+$\boldsymbol{\epsilon} \sim \mathcal{N}(\mathbf{0},\, (\sigma_X \cdot \lambda)^2 I)$
+to the node-feature matrix $X$, where $\sigma_X$ is the empirical standard deviation over
+all elements of $X$ and $\lambda \in [0,1]$ is the noise level. The graph topology is
+held fixed. This tests sensitivity to measurement noise in the connectivity features.
+
+\textbf{Matrix noise with graph rebuild} applies the same Gaussian perturbation to $X$ and
+then recomputes the $k$-nearest-neighbour adjacency from the corrupted features, so the
+graph topology changes as a consequence of feature corruption. This is the most
+structurally disruptive strategy, simulating the scenario where noisy measurements produce
+a different connectivity graph.
+
+\textbf{Edge perturbation} leaves the node features unchanged and modifies only the graph
+topology. A fraction $\lambda$ of existing edges is dropped and an equal number of random
+$(u,v)$ pairs is added, with self-loops excluded. The retained and added edges are
+deduplicated via \texttt{torch.unique} to prevent duplicate columns from violating the
+binary adjacency assumption. This tests stability to connectivity graph scaffold changes
+without any feature modification.
+
+\textbf{Conditioning noise} perturbs the covariate vector: noise
+$\delta_a \sim \mathcal{N}(0,\, (0.05\,\lambda)^2)$ is added to the normalised age $a$,
+and $\delta_s \sim \mathcal{N}(0,\, (0.10\,\lambda)^2)$ is added to the encoded sex $s$,
+with sex clipped to $[0,1]$ after perturbation. The graph and features are held fixed.
+The scale factors (0.05 for age, 0.10 for sex) are smaller than the feature-noise scale
+because these are normalised scalar conditioning inputs. This method tests whether the
+decision is driven by the graph representation or by demographic covariates.
+
+The sweep applies noise levels 0, 5, 10, 20 and 30\% with ten independent trials per
+(subject, method, level) combination. The edge-perturbation deduplication fix and the
+tests pinning it are described in \autoref{ch:app-implementation}.
+
+\paragraph{Cohort stability rate.}
+The reported robustness metric is the fraction of perturbation trials in which a subject's
+classification decision survives intact, scored against a per-cohort one-versus-rest
+threshold derived on the validation fold. Subjects are selected by their margin beyond that
+threshold, so the test asks whether the most confident predictions are also the most stable
+under perturbation. Mean error drift across perturbation trials is reported alongside the
+stability rate.
+
+\paragraph{Scanner-drift simulation.}
+We simulate cross-cohort acquisition drift by perturbing \ac{DELCODE} test trajectories at
+calibrated noise levels. This is stated as a simulation and not as a validation.
+
+The calibration anchor is the standard deviation of edge-wise functional-connectivity
+differences between consecutive same-subject \ac{DELCODE} visits, which represents the
+level of variation the model already tolerates from normal longitudinal change. Each target
+cohort's noise level is set as this base value multiplied by $(1 + c_v)$, where $c_v$ is
+the coefficient of variation of the repetition time across that cohort's resting-state
+acquisition records, computed from metadata. This translates a qualitative description of
+scanner heterogeneity into a quantitative perturbation magnitude without picking a noise
+level by hand. Two profiles are evaluated: an \ac{ADNI}-like profile using both feature
+noise and edge perturbation at the calibrated level (reflecting multi-vendor, multi-model
+heterogeneity), and an \ac{OASIS}-like profile using feature noise at the calibrated level
+and edge perturbation at half that level (single-vendor but spanning materially different
+scanner generations, so structural drift is plausible but expected to be smaller).
+
+The scope of this simulation is explicitly bounded. It was designed before external
+cross-cohort connectivity matrices existed, so it estimates rather than measures
+cross-cohort degradation. The Gaussian and edge-rewiring perturbation is a proxy for
+acquisition heterogeneity rather than a physical acquisition model, and it does not capture
+systematic bias, geometric distortion or motion artefacts specific to any scanner. The
+repetition-time coefficient of variation may mix resting-state protocol variants within a
+cohort even after filtering. The simulation is reported as an estimate of the direction and
+approximate magnitude of the degradation.
+
+\paragraph{Interpretability validation design.}
+An independent validation of the interpretability instrumentation is fixed prior to any
+run. The validation has three components: a permutation null on the region map's overlap
+with the \ac{DMN}, computed from 1,000 random reassignments of which 46 nodes carry the
+\ac{DMN} label (preserving the true count) and reported as a percentile rank of the
+observed overlap; Spearman correlation of the region map across seeds, as a measure of
+reproducibility; and both statistics computed separately per cohort, so that a map
+tracking cohort identity rather than disease is identified as such.
+
+Three design constraints are recorded as method constraints rather than as results. First,
+stability is measured cross-seed rather than cross-fold because only the best fold's map is
+persisted per run, giving four maps per rung rather than twenty; this reduces the power of
+the stability claim. Second, the overlap statistic is restricted to the 46 default-mode
+regions of the Schaefer-200 cortical atlas, which contains no subcortical regions; the
+hippocampal network is not assessable with this atlas. Third, the null hypothesis is a network-label
+spin test rather than a subject-label permutation: because \ac{DMN} membership is an
+anatomical label, no subject permutation changes which nodes belong to the \ac{DMN}, so
+the null instead shuffles the label assignment across the 200 nodes while preserving the
+count of 46 \ac{DMN} nodes.

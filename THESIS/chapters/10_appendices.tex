@@ -3,14 +3,78 @@
 \chapter{Mathematical Derivations and Loss Formulations}\label{ch:app-derivations}
 
 \chapter{Implementation Details}\label{ch:app-implementation}
-\outlinenote{The Brain-TokenGT stabilisation configuration; the \ac{VGAE} free-bits
-objective, its two variants and why the obvious alternatives fail; the edge-perturbation
-deduplication fix and the tests pinning it; determinism and seeding settings, stated per
-protocol; and the complete hyperparameter tables.}
+
+\section*{Brain-TokenGT: Released-Code Behaviours and the Stabilisation Configuration}
+
+\autoref{sec:braintokengt} characterises the recurrent core of the Brain-TokenGT
+comparator across three configurations. This section states the remaining configuration
+changes present in the version of the released code evaluated here, and the exact numeric
+settings of the three configurations named in \autoref{sec:braintokengt}.
+
+Four behaviours of the released implementation contradict statements made in the published
+architecture description. Each is controlled by a configuration flag whose default value
+reproduces the released behaviour, so a run at every flag's default is the faithful
+reproduction of the released code:
+
+\begin{itemize}
+  \item The released code discards the connectivity-derived edge weights before they reach
+  the model's hypergraph convolution, so that layer receives a vector of ones regardless of
+  the underlying connectivity strength. A configuration flag controls whether edge weights
+  are forwarded; its default reproduces the released behaviour.
+  \item The released code reads out the graph-level representation by averaging every
+  token in the sequence, whereas the architecture description reads out a single dedicated
+  graph token. A configuration flag selects between the two; its default reproduces the
+  released behaviour.
+  \item The released code sets the number of attention heads and then immediately
+  overwrites it with a single head, discarding the configured head count. A configuration
+  flag controls whether this override is applied; its default reproduces the released
+  behaviour.
+  \item The released code's parameter-registration mechanism for the recurrent core returns
+  a plain tensor rather than a registered parameter, so the recurrent weights are never
+  visible to the optimiser and remain at their random initialisation regardless of what
+  training is requested. A configuration flag controls whether the recurrent weights are
+  registered with the optimiser; its default reproduces the released behaviour.
+\end{itemize}
+
+The three recurrent-core configurations described in \autoref{sec:braintokengt} are, in the
+numeric settings of the shared configuration file: the released configuration leaves all
+four flags above at their default; the second and third configurations both set every flag
+above to its non-default value, so that the recurrent weights are registered with the
+optimiser and the released implementation's other three departures from the published
+architecture are corrected at the same time. The third configuration additionally places
+the recurrent parameters in a separate optimiser group with a learning-rate multiplier of
+0.1 and a weight decay of $10^{-3}$, while every other trainable parameter keeps the base
+learning rate of $10^{-3}$ and zero weight decay. Every configuration uses the Adam
+optimiser, a batch size of 8, gradient-norm clipping at 1.0, up to 50 epochs with early
+stopping at patience 15, and cost-sensitive class weighting, matching the training
+procedure applied to every other arm in \autoref{sec:protocol}.
+
+\section*{Gradient-Control Modification for Encoder Ablation}
+
+The inherited implementation embedded every visit inside \texttt{torch.no\_grad()} with
+forced evaluation mode, so the pre-existing \texttt{freeze\_encoder: false} configuration
+could not fine-tune the encoder regardless of what \texttt{requires\_grad} indicated. A
+new \texttt{EvalConfig.encoder\_grad} flag, defaulting to \texttt{False}, opens that
+context for the training pass of the \texttt{pretrained\_finetuned} and \texttt{random}
+arms only. Evaluation always embeds under no-grad with the encoder in evaluation mode. An automated unit test in the test suite pins that this flag is what makes the \texttt{random} arm meaningful: without it, the arm
+builds a randomly initialised encoder but cannot update its weights.
+
 
 \chapter{Reproducibility Table}\label{ch:app-reproducibility}
 \outlinenote{Experiment identifiers, run identifiers, registry entries and code paths, so
 the main text cites one table instead of interrupting the narrative.}
+
+\section*{A recorded metadata defect}
+
+For every run completed through 22 August 2026, the persisted training-configuration
+record's seed field reads 42 regardless of the seed the run was actually launched with,
+affecting approximately sixty saved run artefacts across the experiments reported in
+\autoref{ch:results}. The four-seed identity of each such run is recovered from its
+experiment identifier (for example, the \texttt{-seed43} suffix on a registry entry) rather
+than from this field. The defect was identified after these runs completed and was
+deliberately not corrected retroactively in the saved artefacts, to avoid rewriting a
+persisted record after the fact; every seed-level statistic in \autoref{ch:results} is
+computed from the experiment identifier's seed rather than from this field.
 
 \chapter{Split Integrity and Overlap Verification Logs}\label{ch:app-splits}
 
@@ -91,5 +155,29 @@ split file, grouped by what they check:
 \end{itemize}
 
 \chapter{Complete Cross-Validation Metrics}\label{ch:app-metrics}
+
+\section*{Supplementary matched-cohort figures}
+
+\autoref{sec:rq3} reports the \ac{DELCODE}-only matched-cohort head-to-head between the
+frozen pretrained \ac{GELSTM} and Brain-TokenGT (\autoref{tab:rq3-matched-cohort}) using two
+figures in the main text. \autoref{fig:app-confusion} and \autoref{fig:app-calibration}
+report the confusion matrices and calibration diagnostics for the same comparison.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=\textwidth]{fig3_confusion_matrices}
+  \caption{Held-out test confusion matrices for the matched-cohort head-to-head of
+  \autoref{tab:rq3-matched-cohort}, one panel per seed for \ac{GELSTM} and pooled repeats
+  per seed for Brain-TokenGT.}
+  \label{fig:app-confusion}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=\textwidth]{fig4_probability_calibration}
+  \caption{Reliability diagram and per-seed Brier score for the matched-cohort head-to-head
+  of \autoref{tab:rq3-matched-cohort}.}
+  \label{fig:app-calibration}
+\end{figure}
 
 \chapter{Software Dependencies and Hardware Environment}\label{ch:app-environment}

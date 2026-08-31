@@ -313,7 +313,29 @@ split sizes.
 
 \ac{OASIS} is excluded from every upstream stage, including self-supervised pretraining,
 so that it remains a genuinely external test rather than a held-out fold of data the
-pipeline has otherwise seen.
+pipeline has otherwise seen. \autoref{fig:pooled-distribution} illustrates the resulting
+partition and class distribution of the pooled \ac{ADNI} and \ac{DELCODE} cohort, and
+\autoref{fig:heldout-pooled-vs-oasis3} compares the class balance of the pooled in-domain test
+set directly against the external \ac{OASIS} test set.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.75\textwidth]{fig_pooled_adni_delcode_distribution}
+  \caption{Class balance of the pooled \ac{ADNI} and \ac{DELCODE} cohort restricted to
+  subjects with at least two visits ($n = 312$ total). The cross-validation pool ($n = 248$)
+  combines 159 stable \ac{MCI} and 89 converters; the held-out in-domain test set ($n = 64$)
+  contains 40 stable \ac{MCI} and 24 converters.}
+  \label{fig:pooled-distribution}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.75\textwidth]{fig_heldout_pooled_vs_oasis3}
+  \caption{Class distribution of the evaluation test sets: the in-domain pooled test set
+  (\ac{ADNI} plus \ac{DELCODE}, $n = 64$: 40 stable \ac{MCI}, 24 converters) and the external
+  \ac{OASIS} test set ($n = 60$: 29 stable \ac{MCI}, 31 converters).}
+  \label{fig:heldout-pooled-vs-oasis3}
+\end{figure}
 
 \paragraph{Disjointness and containment.} Three groups of assertions enforce
 \autoref{sec:leakage}'s split-integrity contract across the pooling step itself. Within the

@@ -169,43 +169,101 @@ cells.append(nbf.v4.new_markdown_cell(c2_md))
 # ==========================================
 c3_code = """# Cohort Composition & Demographics Summary
 cohort_summary = {
-    "Partition": ["CV Pool (Training/Val)", "CV Pool (Training/Val)", "Held-Out Test", "Held-Out Test"],
+    "Partition": ["CV Pool (Train/Val)", "CV Pool (Train/Val)", "Held-Out Test", "Held-Out Test"],
     "Cohort Group": ["Stable MCI", "MCI-to-AD Converter", "Stable MCI", "MCI-to-AD Converter"],
     "Subject Count (N)": [58, 37, 14, 11],
     "Percentage (%)": [61.1, 38.9, 56.0, 44.0],
-    "Visit Window": ["2 ≤ T ≤ 3", "2 ≤ T ≤ 3", "2 ≤ T ≤ 3", "2 ≤ T ≤ 3"]
 }
 df_cohort = pd.DataFrame(cohort_summary)
 
-# Plot Cohort Class Balance
-fig, ax = plt.subplots(figsize=(7.5, 4))
-sns.barplot(
-    data=df_cohort,
-    x="Partition",
-    y="Subject Count (N)",
-    hue="Cohort Group",
-    palette=["#2b5c8f", "#e26d5c"],
-    ax=ax
+# Publication style configuration
+plt.rcParams.update({
+    'font.family': 'sans-serif',
+    'font.sans-serif': ['Arial', 'Helvetica', 'DejaVu Sans'],
+    'font.size': 8,
+    'axes.labelsize': 8.5,
+    'xtick.labelsize': 8,
+    'ytick.labelsize': 8,
+    'legend.fontsize': 8,
+    'axes.linewidth': 0.8,
+    'xtick.direction': 'in',
+    'ytick.direction': 'in',
+    'xtick.major.size': 3.5,
+    'ytick.major.size': 3.5,
+    'legend.frameon': False,
+    'pdf.fonttype': 42,
+    'svg.fonttype': 'none',
+})
+
+MM = 1 / 25.4
+fig, ax = plt.subplots(figsize=(108 * MM, 64 * MM))
+
+partitions = ['CV Pool (Train/Val)', 'Held-Out Test']
+x = np.arange(len(partitions))
+width = 0.28
+
+stable_mci = [58, 14]
+converters = [37, 11]
+totals = [95, 25]
+
+# BeautifulFigures Teal / Purple palette
+TEAL_FILL, TEAL_EDGE = '#2ba099', '#14605b'
+PURPLE_FILL, PURPLE_EDGE = '#873397', '#50165b'
+
+rects1 = ax.bar(
+    x - width/2 - 0.015, stable_mci, width,
+    label='Stable MCI',
+    color=TEAL_FILL, edgecolor=TEAL_EDGE, linewidth=0.8, alpha=0.85
+)
+rects2 = ax.bar(
+    x + width/2 + 0.015, converters, width,
+    label='MCI-to-AD Converter',
+    color=PURPLE_FILL, edgecolor=PURPLE_EDGE, linewidth=0.8, alpha=0.85
 )
 
-for p in ax.patches:
-    h = p.get_height()
-    if h > 0:
-        total = 95 if p.get_x() < 0.5 else 25
-        ax.annotate(f"N = {int(h)}\\n({h/total*100:.1f}%)",
-                    (p.get_x() + p.get_width() / 2., h / 2),
-                    ha='center', va='center', color='white', fontweight='bold', fontsize=9.5)
+for i, rect in enumerate(rects1):
+    h = rect.get_height()
+    pct = h / totals[i] * 100
+    ax.annotate(f'{int(h)} ({pct:.1f}%)',
+                xy=(rect.get_x() + rect.get_width() / 2, h + 1.2),
+                ha='center', va='bottom', color='#222222', fontsize=7.5)
 
-ax.set_title("DELCODE Matched Cohort Partition & Class Balance (2 ≤ T ≤ 3 Visits)", pad=12, fontweight="bold")
-ax.set_ylabel("Number of Subjects (N)")
-ax.set_xlabel("Dataset Partition")
-ax.legend(title="Clinical Trajectory", frameon=True)
-sns.despine(top=True, right=True)
+for i, rect in enumerate(rects2):
+    h = rect.get_height()
+    pct = h / totals[i] * 100
+    ax.annotate(f'{int(h)} ({pct:.1f}%)',
+                xy=(rect.get_x() + rect.get_width() / 2, h + 1.2),
+                ha='center', va='bottom', color='#222222', fontsize=7.5)
+
+ax.set_ylabel('Number of subjects')
+ax.set_xticks(x)
+ax.set_xticklabels(partitions)
+ax.set_ylim(0, 68)
+
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['left'].set_linewidth(0.8)
+ax.spines['bottom'].set_linewidth(0.8)
+ax.spines['left'].set_color('#222222')
+ax.spines['bottom'].set_color('#222222')
+
+ax.grid(axis='y', linestyle='-', alpha=0.15, color='#888888', linewidth=0.5)
+ax.set_axisbelow(True)
+
+ax.legend(
+    loc='upper right',
+    bbox_to_anchor=(0.98, 0.98),
+    frameon=False,
+    handlelength=1.2,
+    handletextpad=0.5
+)
+
+fig.tight_layout(pad=0.4)
 
 # Save figure
 fig_path = os.path.join(FIGURES_DIR, "fig0_cohort_design_and_distribution.pdf")
 plt.savefig(fig_path)
-plt.savefig(fig_path.replace(".pdf", ".png"))
+plt.savefig(fig_path.replace(".pdf", ".png"), dpi=600)
 plt.show()
 
 print("✓ Figure 0 generated and saved.")

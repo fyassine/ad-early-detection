@@ -4,8 +4,13 @@ OUT  := build
 .PHONY: pdf
 pdf:
 	@mkdir -p $(OUT)
-	@if command -v tectonic >/dev/null 2>&1; then \
-		tectonic -o "$(OUT)" $(FILE).tex; \
+	@if [ "$(jobname)" = "dark" ]; then \
+		TARGET="dark.tex"; \
+	else \
+		TARGET="$(FILE).tex"; \
+	fi; \
+	if command -v tectonic >/dev/null 2>&1; then \
+		tectonic -o "$(OUT)" $$TARGET; \
 	elif command -v latexmk >/dev/null 2>&1; then \
 		latexmk -interaction=nonstopmode -outdir="$(OUT)" -pdf -halt-on-error -jobname="$(jobname)" $(FILE); \
 	else \

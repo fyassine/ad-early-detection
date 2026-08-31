@@ -1,0 +1,151 @@
+{
+  "experiment_id": "explain-gelstm-frozen-clean",
+  "adapter": "gelstm",
+  "figures": [
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/latent_space.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/latent_space.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/latent_dim_distributions.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/latent_dim_distributions.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/logreg_probe_roc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/logreg_probe_roc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/latent_space_3d.html",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/disease_axis.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/disease_axis.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/disease_axis_3d.html",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/diagnostics.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/diagnostics.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/journey_1_brain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/journey_1_brain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/journey_2_timeseries.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/journey_2_timeseries.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/journey_3_fc.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/journey_3_fc.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/journey_4_graph.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/journey_4_graph.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/journey_5_layers.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/journey_5_layers.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/journey_6_prediction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/journey_6_prediction.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/region_glassbrain.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/region_glassbrain.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/region_bars.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/region_bars.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_reconstruction.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_reconstruction.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_gnnexplainer.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_gnnexplainer.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_latent_ig.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_latent_ig.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_trajectory.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_trajectory.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_early_detection.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_early_detection.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_hidden_state.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_hidden_state.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_visit_occlusion.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_visit_occlusion.pdf",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_temporal_ablation.png",
+    "/mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/explain-gelstm-frozen-clean/runs/absurd-field-3-e203ee5b7-2026-08-31_04-39-08/figures/extra_temporal_ablation.pdf"
+  ],
+  "latent_separability": {
+    "silhouette": 0.08603361787072523,
+    "top5_dims": [
+      2,
+      29,
+      12,
+      22,
+      10
+    ]
+  },
+  "logreg_probe": {
+    "mean_auc": 0.8587738577212262,
+    "oof_auc": 0.8490790255496138
+  },
+  "diagnostics": {
+    "auc": 0.7821428571428571,
+    "sensitivity": 0.6428571428571429,
+    "specificity": 0.7,
+    "f1": 0.6206896551724138,
+    "ece": 0.18600806856856628,
+    "threshold": 0.4708157479763031,
+    "saved_auc": 0.7821428571428571
+  },
+  "walkthrough": {
+    "prob": 0.5035089254379272,
+    "pred": 1,
+    "true": 1,
+    "threshold": 0.4708157479763031,
+    "subject_id": "b2f42b7ff"
+  },
+  "region_importance_by_network": {
+    "Vis": 0.7620730728938662,
+    "SomMot": 0.7768151479107993,
+    "DorsAttn": 0.7851392500675641,
+    "SalVentAttn": 0.7827028036117554,
+    "Limbic": 0.8882875690857569,
+    "Cont": 0.8570395956436793,
+    "Default": 0.7546252763789633
+  },
+  "early_detection": [
+    {
+      "n_visits": 1,
+      "n_subjects": 34,
+      "auc": 0.5178571428571429,
+      "sensitivity": 0.7142857142857143,
+      "specificity": 0.2
+    },
+    {
+      "n_visits": 2,
+      "n_subjects": 25,
+      "auc": 0.8701298701298701,
+      "sensitivity": 0.8181818181818182,
+      "specificity": 0.7142857142857143
+    },
+    {
+      "n_visits": 3,
+      "n_subjects": 14,
+      "auc": 0.9791666666666666,
+      "sensitivity": 0.5,
+      "specificity": 1.0
+    },
+    {
+      "n_visits": 4,
+      "n_subjects": 8,
+      "auc": 1.0,
+      "sensitivity": 1.0,
+      "specificity": 1.0
+    }
+  ],
+  "visit_occlusion": [
+    {
+      "dropped_visit_month": 0,
+      "prob_without": 0.5035841464996338,
+      "delta": -7.522106170654297e-05
+    },
+    {
+      "dropped_visit_month": 12,
+      "prob_without": 0.503409206867218,
+      "delta": 9.971857070922852e-05
+    },
+    {
+      "dropped_visit_month": 36,
+      "prob_without": 0.4961753785610199,
+      "delta": 0.007333546876907349
+    },
+    {
+      "dropped_visit_month": 48,
+      "prob_without": 0.4990484416484833,
+      "delta": 0.00446048378944397
+    },
+    {
+      "dropped_visit_month": 60,
+      "prob_without": 0.4899579882621765,
+      "delta": 0.013550937175750732
+    }
+  ],
+  "temporal_ablation": {
+    "auc_full": 0.7821428571428571,
+    "auc_zero_dt": 0.7821428571428571,
+    "auc_shuffled": 0.7892857142857144
+  }
+}

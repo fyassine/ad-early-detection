@@ -32,6 +32,25 @@ experiments:
     source_experiment: gelstm-trajectory-whole-brain
     notes: Diagnose + explain the latest GELSTM trajectory run (hidden states, occlusion, ablations).
 
+  # gelstm-trajectory-whole-brain's `latest` still points at the pre-fix June-era
+  # checkpoint (encoder swap + downstream hyperparameter shrink bundled into one
+  # commit, see DOCS/meetings/seventh-meeting/gaae-downstream-leakage-investigation.md).
+  # This entry reloads the clean, seeded August recon-ablation frozen-encoder run
+  # already reported in Ch.6 RQ2 instead, so the latent-space instrumentation
+  # (disease axis, latent steering, Fisher discriminant, logreg probe) has the same
+  # provenance standard as the rest of the thesis.
+  - id: explain-gelstm-frozen-clean
+    mode: explain
+    model: GELSTM
+    dataset: DELCODE_WHOLE_BRAIN
+    seed: 42
+    notebook: notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb
+    adapter: gelstm
+    source_experiment: recon-ablation-gelstm-pretrained-frozen
+    notes: >-
+      Diagnose + explain the clean, seed-42, commit-20b595788 frozen-encoder GELSTM
+      run (thesis Ch.6 RQ2), not the June-era gelstm-trajectory-whole-brain checkpoint.
+
   - id: explain-gegru
     mode: explain
     model: GELSTM

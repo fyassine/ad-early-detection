@@ -18,7 +18,7 @@ Chapter 3 text.
 | Ch. 1 Introduction | ⬜ scaffold — `\outlinenote{}` placeholders only |
 | Ch. 2 Foundations and Related Work | ⬜ scaffold |
 | Ch. 3 Data, Cohorts and Preprocessing | ✅ written 2026-08-30 — all seven sections (§3.1–§3.7) drafted and compiling; every `\outlinenote{}` removed |
-| Ch. 4 Methodology | ⬜ scaffold |
+| Ch. 4 Methodology | ✅ written 2026-08-30 — all seven sections (§4.1–§4.7) drafted and compiling; every `\outlinenote{}` removed; phrase-migration table written to `DOCS/flipped/METHODS_PHRASE_MIGRATION.md`; two acronyms (GEP, GVAE) added to `main.tex` |
 | Ch. 5 Baselines | ⬜ scaffold |
 | Ch. 6 Experimental Results and Ablations | ⬜ scaffold — gated on every number being verified against a results file (`.claude/rules/thesis.md` §2) |
 | Ch. 7 Discussion and Limitations | ⬜ scaffold |
@@ -43,7 +43,7 @@ Chapter 3 text.
 | Wave | Chapter | Start condition |
 |---|---|---|
 | 1 | Ch. 3 Data, Cohorts and Preprocessing | Done 2026-08-30 |
-| 2 | Ch. 4 Methodology | First half ready; second half gated on the `DOCS/flipped/METHODS.md` phrase-migration pass (31 occurrences of "pre-registered"/"pre-registration" and several banned tone phrasings still present in that source document) |
+| 2 | Ch. 4 Methodology | Done 2026-08-30 |
 | 3 | Ch. 5 Baselines | Ready; wording constrained by `THESIS/OUTLINE.md` claims-register rows 4–6 |
 | 4 | Ch. 6 Experimental Results and Ablations | Gated: every number verified against a results file |
 | 5 | Ch. 7 Discussion and Limitations | After Ch. 6 settles |

@@ -6,48 +6,982 @@
 % Interpretation belongs in Chapter 7.
 
 \section{Reporting Rules}\label{sec:reporting-rules}
-\outlinenote{Which metric is primary, what the independent unit is, what resolution the
-sample size supports, and the statement that every keep-or-drop verdict is a screening
-heuristic at four seeds rather than a significance test.}
+
+This chapter reports what happened, organised by the four research questions stated in
+\autoref{sec:research-questions}; interpretation of why a result occurred is deferred to
+\autoref{ch:discussion}. This section fixes the conventions that every later section
+relies on rather than restating them at each occurrence.
+
+\paragraph{Two evaluation universes.} \autoref{sec:rq1}, \autoref{sec:rq3} and
+\autoref{sec:rq4} report the temporal-first ablation ladder introduced in
+\autoref{sec:tfgn}, evaluated on the pooled \ac{ADNI}-and-\ac{DELCODE} protocol of
+\autoref{sec:pooled-protocol} at $n=248$ subjects. \autoref{sec:rq2} reports the
+spatial-first encoder ablation, evaluated on the \ac{DELCODE}-only protocol with its own
+independent test split. The two are never read as like-for-like rows against one another;
+where a number from one case is mentioned in the other, its source protocol is named
+explicitly.
+
+\paragraph{Primary metric and independent unit.} The primary metric is the pooled
+out-of-fold \ac{AUC} over the full cross-validation pool, reported as the mean and
+standard deviation across the four seeds 42, 43, 44 and 45. The independent unit for any
+seed-level statistic is the seed, not the fold: folds drawn from one seed share a trained
+model and are not independent draws, so a comparison across the twenty folds produced by
+five-fold cross-validation at four seeds is never treated as twenty independent
+observations. Balanced accuracy and the per-cohort \ac{AUC} for \ac{ADNI} and \ac{DELCODE}
+separately accompany every headline row, since \autoref{sec:rq2} and \autoref{sec:rq4}
+both report configurations whose two cohorts differ substantially in difficulty, and a pooled number
+alone would average over that difference rather than expose it.
+
+\paragraph{Class imbalance and threshold policy.} Converters are a minority of the cohort
+in all three datasets, which is why cost-sensitive class weighting is applied to the
+training loss rather than resampling, and why the decision threshold is selected by
+maximising F1 on out-of-fold predictions and reused unchanged on the test set, as fixed in
+\autoref{sec:protocol}.
+
+\paragraph{Resolvability.} At the in-domain test size of $n=64$ and the external size of $n=60$, the empirical standard error of the \ac{AUC} is $\text{SE} \approx 0.04\text{--}0.045$, giving a 95\% confidence interval half-width ($1.96 \times \text{SE}$) of approximately $0.08\text{--}0.09$. Consequently, \ac{AUC} differences below approximately $0.08$ fall entirely inside the random sampling noise margin and cannot be resolved with bootstrap confidence intervals. On the four-fold larger out-of-fold pool ($n=248$), where sample error scales with $1/\sqrt{N}$, the standard error and confidence interval width are halved to approximately $0.04$, as derived in \autoref{sec:protocol}. Every keep-or-drop verdict reported below is therefore a screening heuristic at four seeds, stating whether an effect is detectable at this sample size, never a significance test and never a claim that an undetected effect is absent.
+
+\paragraph{Seed identity.} Every seed-level statistic in this chapter is computed against
+the seed named in its experiment identifier. \autoref{ch:app-reproducibility} records a
+metadata defect affecting a subset of the underlying run artefacts.
 
 \section{RQ1: Does Longitudinal Modelling Add Information Beyond Static Representations?}\label{sec:rq1}
-\outlinenote{The demographics-only and static single-visit floors, the logistic-on-drift
-linear floor, and the sequence-length sensitivity analysis decomposing how performance
-depends on the minimum visit count.}
+
+\autoref{tab:rq1-floors} reports the three floors from \autoref{sec:baseline-ladder} on the
+pooled protocol, alongside the selected temporal-first configuration S1 introduced in
+\autoref{sec:protocol}. The demographics-only floor sits at 0.5296, indistinguishable from
+chance, confirming that age and sex alone carry no separable signal in this pooled cohort.
+The static single-visit floor, evaluated per fold on S1's own configuration without a
+trajectory, scores 0.4919, likewise indistinguishable from chance. The linear
+logistic-on-drift floor, which reads the flattened connectivity-change matrix directly with
+no learned representation, reaches 0.7053, already close to the fully trained temporal-first
+configuration's 0.7488.
+
+\begin{table}[htb]
+\centering
+\caption{Pooled out-of-fold \ac{AUC} (mean $\pm$ standard deviation across four seeds) for
+  the three floors and the selected temporal-first configuration S1.}
+\label{tab:rq1-floors}
+\begin{tabular}{@{}lc@{}}
+\toprule
+Configuration & Pooled out-of-fold \ac{AUC} \\
+\midrule
+Demographics only (age, sex) & $0.5296 \pm 0.0000$ \\
+Static single visit (S1 configuration, per-fold probe) & $0.4919$ \\
+Linear logistic regression on connectivity drift & $0.7053 \pm 0.0000$ \\
+S1 (full trajectory) & $0.7488 \pm 0.0033$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two readings follow directly from this table. First, all of the signal available to the
+selected configuration is longitudinal: its own single-visit evaluation is at chance,
+against 0.7488 on full trajectories, a gap of 0.257 \ac{AUC} that cannot be attributed to
+age, sex or any single-scan connectivity pattern. Second, the linear floor already recovers
+most of the fully trained configuration's advantage over the single-visit floor, which
+constrains how much of the remaining gap a nonlinear temporal model can plausibly be
+credited with; \autoref{ch:discussion} returns to this comparison alongside the capacity
+accounting for S1.
+
+\paragraph{Sequence-length decomposition.} \autoref{tab:rq1-sens} restricts S1's own
+out-of-fold predictions to the 140 subjects with at least three visits, the same subset the
+SENS configuration of \autoref{sec:protocol} trains on, and reports this restricted score
+alongside SENS's own out-of-fold \ac{AUC} at each seed. Because SENS's 140
+subjects are a strict subset of S1's 248, the two rows separate two effects that a
+single SENS number alone would conflate.
+
+\begin{table}[htb]
+\centering
+\caption{Sequence-length decomposition: S1's own out-of-fold predictions restricted to
+  the 140 subjects with at least three visits, against SENS, trained only on that
+  140-subject pool. Both are out-of-fold \ac{AUC}.}
+\label{tab:rq1-sens}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Seed & 42 & 43 & 44 & 45 \\
+\midrule
+S1 restricted to $\geq 3$ visits & 0.7762 & 0.7656 & 0.7603 & 0.7825 \\
+SENS (trained on $\geq 3$ visits only) & 0.7385 & 0.7499 & 0.7230 & 0.7535 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Restricting S1's own predictions to the 140-subject subgroup raises its mean
+out-of-fold \ac{AUC} from 0.7488 to 0.7712, a difference of $+0.022$: subjects with three or
+more visits are easier to classify than the full pool, which is the sequence-length signal
+the SENS configuration was designed to probe. However, training exclusively on these 140 subjects
+yields 0.7412 (a difference of $-0.030$). The performance penalty from smaller training data
+exceeds the gain from longer visit histories. As a result, SENS and the full-cohort baseline
+are not directly comparable due to differences in sample size, subject inclusion, and fold splits.
 
 \section{RQ2: Does Spatial-First Graph Representation Learning Add Value?}\label{sec:rq2}
-\outlinenote{The encoder ablation across the four arms, the reconstruction-fidelity
-measurement, and the \ac{GAAE} against \ac{GEC} contrast. Reports the pooling comparison,
-mean against attention, for the graph encoder classifier.}
+
+This section reports the \ac{DELCODE}-only encoder ablation on the spatial-first
+\ac{GELSTM}, introduced as an instance of \autoref{sec:spatial-first}, together with the
+reconstruction-fidelity measurement that quantifies what the pretraining objective actually
+reconstructs. It is the only section of this chapter that departs from the pooled protocol
+named in \autoref{sec:reporting-rules}: it uses the \ac{DELCODE}-only downstream split of
+167 subjects, with a fixed 34-subject held-out test set at the configuration's own
+best-F1-derived threshold. We evaluate mean versus attentive pooling in \autoref{sec:rq3}
+(configuration S4) under the pooled protocol rather than here, as the static graph-embedding classifier
+is excluded due to configuration confounds and high run-to-run instability (detailed at the
+end of this section).
+
+\paragraph{Encoder ablation.} \autoref{tab:rq2-encoder} reports four initialisations of the
+same \ac{GELSTM} architecture, differing only in how the encoder is initialised: no encoder
+at all, with the pooled node features passed directly to the recurrent core; a
+reconstruction-pretrained encoder held frozen; a randomly initialised encoder trained end to
+end with the classification gradient; and the same reconstruction-pretrained encoder
+unfrozen and fine-tuned jointly with the classification gradient.
+
+\begin{table}[htb]
+\centering
+\small
+\caption{\ac{DELCODE}-only encoder ablation for the spatial-first \ac{GELSTM}. Held-out
+  test \ac{AUC} is the mean across four seeds (sample standard deviation, $n-1$
+  denominator); cross-validation \ac{AUC} pools every completed run. Trainable parameter
+  counts are architecture-derived, not sample statistics.}
+\label{tab:rq2-encoder}
+\begin{tabular}{@{}p{4.3cm}ccc@{}}
+\toprule
+Encoder initialisation & Test \ac{AUC} & \ac{CV} \ac{AUC} & Trainable params.\ \\
+\midrule
+None & $0.8313 \pm 0.0529$ & $0.8932 \pm 0.0073$ & 31{,}169 \\
+Reconstruction-pretrained, frozen & $0.7812 \pm 0.0122$ & $0.9211 \pm 0.0087$ & 520{,}905 \\
+Randomly init., trained end to end & $0.7312 \pm 0.1113$ & $0.7676 \pm 0.0514$ & 965{,}897 \\
+Reconstruction-pretrained, fine-tuned & $0.6924 \pm 0.2000$ & $0.8196 \pm 0.0213$ & 965{,}897 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A metadata-only floor (age, sex and visit timing, gradient-boosted trees) scores
+$0.6157 \pm 0.0653$ cross-validation \ac{AUC} and $0.4929$ test \ac{AUC} on this same split;
+every configuration in \autoref{tab:rq2-encoder} clears it by a wide margin on cross-validation
+\ac{AUC}, so all four are reading imaging information rather than demographics alone.
+
+Two comparisons follow directly from this table. First, the no-encoder variant reaches the
+highest test \ac{AUC} and the highest cross-validation \ac{AUC} within fold-to-fold spread
+of the frozen pretrained model ($0.8932$ against $0.9211$), while using approximately
+seventeen times fewer trainable parameters ($31{,}169$ against $520{,}905$): on this cohort
+size, the graph encoder is not adding value over mean-pooled raw connectivity features for
+this architecture. Second, the randomly initialised model scores lowest on cross-validation
+\ac{AUC} of the four and carries the largest spread, so reconstruction pretraining does
+outperform training the same encoder from a random initialisation when it is trained end to
+end; since the no-encoder variant also outperforms the randomly initialised one, this does not
+by itself support a claim that the reconstruction objective transfers a generally useful
+representation, only that it stabilises optimisation relative to a random start.
+
+\paragraph{Fine-tuning instability.} When fine-tuning the encoder on the small downstream dataset, the test performance swing across seeds is substantial:
+\begin{itemize}
+  \item \textbf{Seeds 44 and 45} score high, reaching held-out test \ac{AUC} values of $0.8375$ (two repeats) and $0.8535$ (one run), respectively.
+  \item \textbf{Seed 42} yields a mediocre test \ac{AUC} of $0.6535$ (mean of three repeats).
+  \item \textbf{Seed 43} completely collapses to a test \ac{AUC} of $0.4250$ (two repeats, an exact replicate), performing worse than chance.
+\end{itemize}
+Unlike Brain-TokenGT, where running the same seed produces substantial run-to-run scatter due to hardware-level non-determinism (\autoref{sec:reproducibility-audit}), this fine-tuning collapse is 100\% bit-reproducible: repeating seed 43 yields the exact same test \ac{AUC} of $0.4250$ across independent runs and across distinct code commits. This demonstrates that the instability is a reproducible seed effect where specific data split initialisations cause the optimisation landscape to deteriorate, rather than run-to-run execution noise.
+
+Three ranked, non-exclusive mechanisms are candidate explanations for this instability:
+\begin{enumerate}
+  \item \textbf{Uniform learning rate (primary suspect):} The training configuration applies a single learning rate across the entire architecture, so the large unfrozen pretrained encoder receives the same step size as the freshly initialised classification head. Without learning-rate damping on the encoder backbone, large initial gradient updates from the untrained head can catastrophically overwrite pretrained representations early in training.
+  \item \textbf{High capacity-to-sample-size ratio:} Unfreezing the encoder increases the number of trainable parameters to approximately $966{,}000$ for only roughly $76$ training subjects per fold, introducing severe overfitting risk.
+  \item \textbf{Objective mismatch:} The encoder is pretrained on self-supervised connectivity reconstruction (mean squared error and binary cross-entropy), while downstream fine-tuning optimises for binary classification cross-entropy.
+\end{enumerate}
+The observed collapse is consistent with a uniform learning rate destabilising optimisation at unfavourable split initialisations; it does not imply that fine-tuning is inherently unviable, as no arm in this ablation tests a discriminatively scaled learning rate for the encoder.
+
+\paragraph{Reconstruction fidelity.} The reconstruction-fidelity measurement quantifies what
+each encoder's decoder reproduces, using the scale-free Pearson correlation between the
+input and its reconstruction, computed over every flattened element rather than averaged
+per row. For the \ac{GAAE} encoder the target is the continuous, Fisher z-transformed
+connectivity feature matrix; for two anticollapse-regularised \ac{VGAE} variants
+(convolutional and attention-based graph encoders) the same statistic is reported for both
+the binary adjacency reconstruction and, when the model has a feature decoder, the same
+continuous feature target used for \ac{GAAE}. Because the adjacency and feature targets
+differ in difficulty, only the feature-reconstruction numbers are comparable across the two
+architectures.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Reconstruction-fidelity Pearson correlation on \ac{DELCODE} whole-brain data,
+  reported as median [25th, 75th percentile].}
+\label{tab:rq2-fidelity}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+& \multicolumn{2}{c}{Feature fidelity} & \multicolumn{2}{c}{Adjacency fidelity} \\
+Encoder & Train+val & Test & Train+val & Test \\
+\midrule
+\ac{GAAE} & $0.061\ [0.014,\,0.109]$ & $0.046\ [0.026,\,0.109]$ & $-0.121\ [-0.151,\,-0.087]$ & $-0.116\ [-0.140,\,-0.079]$ \\
+\ac{VGAE}, graph conv.\ & $-0.088\ [-0.181,\,0.014]$ & $-0.008\ [-0.090,\,0.121]$ & $0.341\ [0.316,\,0.357]$ & $0.319\ [0.302,\,0.338]$ \\
+\ac{VGAE}, graph attn.\ & $-0.028\ [-0.127,\,0.066]$ & $0.028\ [-0.072,\,0.103]$ & $0.336\ [0.303,\,0.364]$ & $0.331\ [0.306,\,0.347]$ \\
+\bottomrule
+\end{tabular}%
+}
+\vspace{0.75em}
+\end{table}
+
+On the comparable feature-reconstruction target, \ac{GAAE}'s reconstruction is weakly
+positive while both \ac{VGAE} variants' feature reconstruction is at or below zero,
+qualifying as poor by the reconstruction-quality convention adopted throughout, under which
+a correlation at or above 0.90 is labelled excellent and below 0.60 is labelled poor. On adjacency reconstruction, the results of \ac{VGAE} are better than those of \ac{GAAE}, where \ac{GAAE}'s inner-product decoder achieves a negative correlation ($-0.12$). The adjacency-reconstruction correlation reported for \ac{VGAE} is substantially higher
+(0.32 to 0.34) but is not evidence of a better connectivity reconstruction, since a sparse
+binary adjacency is an easier target for a decoder that predicts the majority class for most
+entries; it is reported here only because it is the target the \ac{VGAE} decoder head used
+in \autoref{sec:instrumentation}'s pretraining actually optimises.
+
+\paragraph{Why the graph-embedding classifiers are not reported.} An initial characterisation
+of the \ac{GAAE} encoder used a static, single-visit graph-embedding classifier
+(\ac{GEC}) rather than the trajectory-based \ac{GELSTM} ablation above. This comparison is
+excluded from this thesis: what this line of investigation established
+before being set aside is a qualitative finding rather than a classification number:
+statistical characterisation of the raw connectivity matrices found that within-cohort
+between-patient variation exceeds between-cohort variation by a wide margin, so a
+reconstruction objective evaluated at this cohort size spends its capacity on subject
+idiosyncrasy rather than on the disease-relevant signal the encoder ablation above tests
+directly. This observation, not a \ac{GEC} classification score, is what motivated moving
+from an encoder-centred evaluation to the embed-then-classify comparison reported in this
+section.
 
 \section{RQ3: Does Temporal-First Modelling Improve over Spatial-First Modelling?}\label{sec:rq3}
-\outlinenote{The ablation-ladder scorecard, the per-rung verdicts including the rungs that
-were void for lack of a gradient path and the rung kept by design independently of \ac{AUC},
-the selected configuration and the capacity comparison, the matched-window head-to-head
-against the short-window comparator, and the direct \ac{GELSTM} against Brain-TokenGT
-comparison. Reports the reconciliation of the two delta-\ac{AUC} statistics.}
+
+This section reports the temporal-first ablation ladder of \autoref{sec:protocol} on the
+pooled protocol: the scorecard across every configuration, the Tier-2 keep-or-drop verdict for each
+rung against S1, the parameter-count comparison motivating why the result cannot be
+attributed to capacity, the matched-window comparison against the short-window comparator
+and a direct head-to-head against Brain-TokenGT on a matched cohort, and the reconciliation
+of two statistics that appear to disagree about the size of that head-to-head margin.
+
+\paragraph{Scorecard.} \autoref{tab:rq3-scorecard} reports pooled out-of-fold \ac{AUC} for
+every configuration defined in \autoref{sec:protocol}. All values are mean $\pm$ standard deviation
+across seeds 42 to 45, except where noted.
+
+\begin{table}[htb]
+\centering
+\footnotesize
+\caption{Pooled out-of-fold \ac{AUC} across the temporal-first ablation ladder. Balanced
+  accuracy and the static single-visit probe are reported at the seed-averaged out-of-fold
+  threshold.}
+\label{tab:rq3-scorecard}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Configuration & $n$ & Pooled \ac{OOF} \ac{AUC} & Balanced acc.\ & Static $N{=}1$ \\
+\midrule
+S0-demo (age, sex) & 248 & $0.5296 \pm 0.0000$ & 0.5139 & 0.5296 \\
+S0c \ac{GELSTM}, random encoder & 248 & $0.5625 \pm 0.0292$ & 0.5631 & 0.5140 \\
+S0d Brain-TokenGT & 248 & $0.6207 \pm 0.0338$ & 0.5889 & 0.5353 \\
+S0a logistic regression on drift & 248 & $0.7053 \pm 0.0000$ & 0.6776 & 0.5653 \\
+S0b \ac{GELSTM}, frozen pretrained encoder & 248 & $0.7186 \pm 0.0334$ & 0.6505 & 0.4699 \\
+\textbf{S1 (selected)} & 248 & $\mathbf{0.7488 \pm 0.0033}$ & 0.7093 & 0.4919 \\
+S1b, node-\ac{LSTM} self-supervised init. & 248 & $0.7502 \pm 0.0125$ & 0.7037 & 0.5072 \\
+S1c, graph reconstruction auxiliary loss & 248 & $0.5433 \pm 0.0311$ & 0.5477 & 0.5213 \\
+S2, temporal gate & 248 & $0.7308 \pm 0.0160$ & 0.6811 & 0.4969 \\
+S3, residual fusion (structurally inert) & 248 & $0.7488 \pm 0.0033$ & 0.7093 & 0.4919 \\
+S4, attentive pooling & 248 & $0.6490 \pm 0.0144$ & 0.6111 & 0.5197 \\
+S5, dual-score head & 248 & $0.7331 \pm 0.0173$ & 0.6885 & 0.5010 \\
+SENS ($\text{min\_visits}=3$) & 140 & $0.7413 \pm 0.0137$ & 0.6907 & 0.5469 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\paragraph{Tier-2 verdicts.} \autoref{tab:rq3-verdicts} applies the keep-or-drop rule of
+\autoref{sec:protocol} to each rung against S1, reporting both the fold-matched statistic
+(mean paired per-fold difference within each seed) and the pooled statistic (per-seed pooled
+mean difference), with standard errors.
+
+\begin{table}[htb]
+\centering
+\footnotesize
+\caption{Tier-2 keep-or-drop statistics for each rung against S1. Ratio is the mean
+  difference divided by its standard error.}
+\label{tab:rq3-verdicts}
+\begin{tabular}{@{}lccp{3.1cm}@{}}
+\toprule
+Contrast & Fold-matched $\Delta \pm$ SE (ratio) & Pooled $\Delta \pm$ SE (ratio) & Verdict \\
+\midrule
+S1b vs.\ S1 & $+0.0120 \pm 0.0019$ (+6.46) & $+0.0014 \pm 0.0074$ (+0.19) & disagree; one-SE tie-breaker selects S1 \\
+S1c vs.\ S1 & $-0.1587 \pm 0.0099$ (--15.98) & $-0.2055 \pm 0.0150$ (--13.72) & dropped \\
+S2 vs.\ S1 & $-0.0064 \pm 0.0075$ (--0.85) & $-0.0180 \pm 0.0086$ (--2.08) & dropped \\
+S3 vs.\ S1 & $0.0000 \pm 0.0000$ & $0.0000 \pm 0.0000$ & structurally inert, not a Tier-2 result \\
+S4 vs.\ S1 & $-0.0558 \pm 0.0058$ (--9.60) & $-0.0999 \pm 0.0083$ (--11.96) & dropped \\
+S5 vs.\ S1 & $-0.0046 \pm 0.0067$ (--0.68) & $-0.0158 \pm 0.0101$ (--1.56) & kept by pre-specification \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+S1b is the only contrast where the two formulations disagree: the fold-matched statistic
+passes at a ratio of 6.46, while the pooled statistic fails at 0.19. The pre-specified
+one-standard-error tie-breaker of \autoref{sec:protocol} resolves this: S1b's pooled
+out-of-fold \ac{AUC} of 0.7502 is only 0.0014 above S1's 0.7488, well inside one
+standard error (0.0074), so S1 --- the simpler configuration with no self-supervised
+checkpoint dependency --- is carried forward. S1b is retained as a documented sensitivity
+variant.
+
+S1c scores $0.5433 \pm 0.0311$, approximately 0.20 \ac{AUC} below S1, so adding a graph
+reconstruction auxiliary loss on top of S1's configuration degrades classification
+substantially. A post-hoc sweep over the reconstruction loss weight was not run: searching
+a hyperparameter after observing a result it might rescue is exactly what the specification
+exists to prevent. This is recorded as a deferred ablation in \autoref{sec:ablations-not-run}.
+
+Under S1's configuration no graph latent exists, so S3's fusion setting has no gradient
+path to any parameter. This is verified rather than assumed: S3's out-of-fold predictions
+are bit-identical to S1's across all four seeds (maximum absolute probability difference
+$0.0$). The fusion question is consequently untestable within this ladder.
+
+S5 adds an interpretability-oriented dual-score head; its fold-matched difference from S1
+is $-0.0046 \pm 0.0067$ --- smaller in magnitude than its own standard error. This
+classification-neutral outcome is precisely what the pre-specification keeps S5 under:
+a saliency map that does not improve \ac{AUC} can still be evaluated as an interpretability
+instrument on its own merits. The interpretability results are reported in
+\autoref{sec:interpretability-results}.
+
+\paragraph{The selected configuration is not explained by capacity.}
+\autoref{tab:rq3-capacity} reports total trainable parameters for the selected configuration
+alongside the two configurations above it in \ac{AUC} that inherit S1's node-shared recurrent core
+without a graph-propagation stage, and the two spatial-first floors it is compared against.
+
+\begin{table}[htb]
+\centering
+\caption{Total trainable parameters against pooled out-of-fold \ac{AUC} for the selected
+  configuration, the two rungs closest to it in \ac{AUC}, and the two spatial-first floors.}
+\label{tab:rq3-capacity}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Configuration & Trainable parameters & Pooled out-of-fold \ac{AUC} \\
+\midrule
+\textbf{S1 (selected)} & \textbf{68{,}417} & \textbf{0.7488} \\
+S5, dual-score head & 68{,}482 & 0.7331 \\
+S2, temporal gate & 72{,}642 & 0.7308 \\
+S0b, frozen pretrained spatial-first & 965{,}897 & 0.7186 \\
+S0c, randomly initialised spatial-first & 965{,}897 & 0.5625 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Under S1's configuration, no reconstruction target is set, so no graph autoencoder module is
+constructed and the selected configuration contains no graph-propagation stage at all: it is
+a node-shared \ac{LSTM} over per-region trajectories, mean-pooled, followed by a linear
+classification head. It exceeds the randomly initialised spatial-first floor, which shares
+no pretraining, by 0.186 \ac{AUC} at 14.1 times fewer parameters, and exceeds the pretrained
+spatial-first floor by 0.030 \ac{AUC} at 7.6 times fewer trainable parameters, so the
+advantage over both floors cannot be attributed to model capacity. The same table addresses
+the opposite direction: S2 and S5 each add parameters on top of S1's own configuration and
+both score lower, so additional capacity on top of the selected configuration does not
+improve it either.
+
+\paragraph{Matched-window comparison.} \autoref{tab:rq3-w3} restricts the trajectory models
+and Brain-TokenGT to the two-to-three-visit window Brain-TokenGT is architecturally
+constrained to, on the pooled protocol, holding the subject pool fixed across all three
+models as set up in \autoref{sec:comparability}.
+
+\begin{table}[htb]
+\centering
+\small
+\caption{Pooled out-of-fold \ac{AUC} restricted to the two-to-three-visit window ($T \in
+  [2,3]$), pooled protocol.}
+\label{tab:rq3-w3}
+\begin{tabular}{@{}lc@{}}
+\toprule
+Configuration (matched window) & Pooled \ac{OOF} \ac{AUC} \\
+\midrule
+Brain-TokenGT & $0.6207 \pm 0.0338$ \\
+\ac{GELSTM}, random encoder & $0.5885 \pm 0.0304$ \\
+\ac{GELSTM}, frozen pretrained encoder & $0.7500 \pm 0.0138$ \\
+Selected temporal-first configuration & $0.7318 \pm 0.0348$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Fold-matched against the frozen pretrained spatial-first model at the same window, the
+selected configuration scores $-0.0244 \pm 0.0027$ (ratio --8.94), a consistent loss across
+all four seeds; against Brain-TokenGT at the same window it scores $+0.0999 \pm 0.0162$
+(ratio +6.17). \autoref{tab:rq3-truncation} isolates what truncation itself does to each
+architecture by comparing each model's full-trajectory score from \autoref{tab:rq3-scorecard}
+against its matched-window score.
+
+\begin{table}[htb]
+\centering
+\caption{Change in pooled out-of-fold \ac{AUC} from truncating to the two-to-three-visit
+  window.}
+\label{tab:rq3-truncation}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Configuration & Full trajectory & Matched window & Change \\
+\midrule
+\ac{GELSTM}, frozen pretrained (spatial-first) & 0.7186 & 0.7500 & $+0.0314$ \\
+Selected temporal-first configuration & 0.7488 & 0.7318 & $-0.0170$ \\
+\ac{GELSTM}, random encoder & 0.5625 & 0.5885 & $+0.0260$ \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+Truncation moves the two architecture families in opposite directions: the spatial-first
+models gain from truncation while the temporal-first configuration loses performance. Within this ladder, the
+temporal-first advantage over spatial-first is observed only in the long-trajectory regime,
+and the spatial-first advantage is observed only in the regime truncated to the window a
+competing published architecture requires; a comparison that discards the additional visits
+the temporal-first design exists to exploit is reported here as a secondary comparison, not
+as the primary evidence for or against the flip in pooling order.
+
+\paragraph{A direct head-to-head on a matched \ac{DELCODE}-only cohort.} A second, more
+tightly matched comparison holds the cohort fixed exactly, using the \ac{DELCODE}-only
+windowed cohort characterised in \autoref{fig:cohort-design} (95 cross-validation subjects,
+25 held-out test subjects), rather than the pooled protocol's own matched-window
+restriction above. This is the head-to-head prepared by \autoref{sec:comparability}: the
+frozen pretrained \ac{GELSTM}, restricted to the same two-to-three-visit window, against the
+stabilised Brain-TokenGT configuration characterised in \autoref{sec:reproducibility-audit}.
+
+\begin{table}[htb]
+\centering
+\caption{\ac{DELCODE}-only matched-cohort held-out test \ac{AUC}. \ac{GELSTM} is one run per
+  seed; Brain-TokenGT pools eighteen repeat runs across the same four seeds, filtered to a
+  single commit, four to six repeats per seed.}
+\label{tab:rq3-matched-cohort}
+\begin{tabular}{@{}lc@{}}
+\toprule
+Configuration & Held-out test \ac{AUC} \\
+\midrule
+\ac{GELSTM}, frozen pretrained, matched window & $0.8782 \pm 0.0256$ \\
+Brain-TokenGT, stabilised & $0.6163 \pm 0.0679$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htb]
+\centering
+\caption{Held-out test \ac{AUC} across nineteen repeat runs of the stabilised
+  Brain-TokenGT configuration, four to seven runs per seed with no other setting
+  changed.}
+\label{tab:btgt-seed-variability}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+Seed & Repeats & Mean test \ac{AUC} & Standard deviation \\
+\midrule
+42 & 7 & 0.5779 & 0.1167 \\
+43 & 4 & 0.6802 & 0.1024 \\
+44 & 4 & 0.5227 & 0.0849 \\
+45 & 4 & 0.6477 & 0.1002 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The mean standard deviation within a seed for Brain-TokenGT, 0.1011, exceeds the standard
+deviation of the four seed means, 0.0706 (\autoref{tab:btgt-seed-variability}). Since the
+spread among repeats sharing one seed is larger than the spread among the seeds themselves,
+individual values obtained by running this configuration once per seed cannot be read as pure
+seed effects; they are draws from the within-seed run-to-run scatter. Across all nineteen runs
+the test \ac{AUC} averages 0.6025 with a standard deviation of 0.1123, and individual runs at
+a shared seed range from 0.357 to 0.708.
+
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=\textwidth]{fig5_param_efficiency_frontier}
+  \caption{Held-out test \ac{AUC} against trainable parameters (left) and a multi-metric
+  comparison profile (right) for the matched-cohort head-to-head of
+  \autoref{tab:rq3-matched-cohort}.}
+  \label{fig:rq3-param-efficiency}
+\end{figure}
+
+The margin is $+0.2619$ \ac{AUC}. Because folds within a seed are not independent, the
+independent unit is again the seed, of which four are available; a Wilcoxon signed-rank
+test on the seed-paired margin floors at $p=0.125$, the smallest attainable value at this
+sample size, so it is reported as underpowered rather than as a significance result, with
+the descriptive fact that the frozen \ac{GELSTM} exceeds Brain-TokenGT's seed mean at all
+four seeds. A seed-cluster bootstrap 95\% confidence interval on the margin, which
+propagates Brain-TokenGT's within-seed repeat variability rather than discarding it, is
+$[+0.158, +0.375]$ and excludes zero. \autoref{fig:rq3-cv-test} additionally reports the
+underlying cross-validation and held-out distributions this margin is drawn from.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=\textwidth]{fig1_cv_and_test_distributions}
+  \caption{Cross-validation \ac{AUC} (descriptive only, folds not independent), held-out
+  test \ac{AUC} and held-out test F1 for the matched-cohort head-to-head of
+  \autoref{tab:rq3-matched-cohort}, with the seed-paired Wilcoxon statistic and the
+  bootstrap margin confidence interval annotated.}
+  \label{fig:rq3-cv-test}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig2_roc_and_pr_curves}
+  \caption{Multi-seed Receiver Operating Characteristic (ROC) and Precision-Recall (PR) curves
+  for the head-to-head comparison on the matched cohort window across four seeds. Solid lines
+  denote mean trajectories, shaded ribbons depict $\pm 1$ standard deviation bands, and the
+  dotted line on the PR plot marks baseline converter prevalence ($P = 0.44$).}
+  \label{fig:rq3-roc-pr}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=\textwidth]{fig3_confusion_matrices}
+  \caption{Multi-seed confusion matrices for the held-out test set ($N=25$ subjects) comparing
+  \ac{GELSTM} and Brain-TokenGT across the four random seeds at optimal validation thresholds.}
+  \label{fig:rq3-confusion-matrices}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig4_probability_calibration}
+  \caption{Probability calibration analysis on the held-out test cohort: reliability diagram
+  (left) comparing empirical conversion fraction against predicted conversion probability, and
+  Brier score loss (right) across the four seeds.}
+  \label{fig:rq3-calibration}
+\end{figure}
+
+\autoref{fig:rq3-roc-pr} presents the underlying multi-seed \ac{ROC} and Precision-Recall
+trajectories, \autoref{fig:rq3-confusion-matrices} shows the detailed test set confusion
+matrices across all four seeds, and \autoref{fig:rq3-calibration} illustrates the corresponding
+probability calibration and Brier score losses.
+
+This matched-cohort margin and the pooled-protocol matched-window margin of
+\autoref{tab:rq3-w3} answer related but distinct questions over different populations and
+different held-out sets, consistent with the convention of \autoref{sec:reporting-rules};
+neither supersedes the other, and neither is pooled with the other into a single figure.
+Following \autoref{sec:comparability}, no conclusion is drawn from either comparison about
+which architecture would transfer to a cohort outside its development set; that question is
+addressed directly in \autoref{sec:rq4}.
+
+\paragraph{Attentive pooling.} S4 in \autoref{tab:rq3-scorecard} replaces mean readout with
+sparsemax attentive pooling on top of S1's configuration. Its fold-matched difference from
+S1 is $-0.0558 \pm 0.0058$ (ratio --9.60), a consistent loss across all four seeds: on this
+ladder, learned attentive pooling does not improve over uniform mean pooling, and the rung
+is dropped by the same Tier-2 rule applied to every other rung in
+\autoref{tab:rq3-verdicts}.
 
 \section{RQ4: Cross-Cohort Transfer}\label{sec:rq4}
-\outlinenote{The one-pass held-out reads, the \ac{OASIS} transfer result, the per-cohort
-split between \ac{ADNI} and \ac{DELCODE} for every arm, the cohort-identity probe and its
-decoding performance against the pre-specified escalation threshold, and the
-cohort-conditioning escalation that was run as specified together with its outcome on both
-axes it targeted. Records that the threshold was exceeded from the first ladder runs and was
-not read against its own rule until the final pass, and that in-domain results are
-\ac{OOF} quantities unaffected by it.}
+
+This section reports the one-pass held-out reads permitted under the four-tier evaluation
+protocol of \autoref{sec:protocol}, the per-cohort split between \ac{ADNI} and \ac{DELCODE}
+for every ladder configuration, and the cohort-identity probe together with the pre-specified
+mitigation that was run once the probe's threshold was found to have been exceeded.
+
+\paragraph{Per-cohort split.} \autoref{tab:rq4-percohort} reports out-of-fold \ac{AUC}
+separately for the two pooled cohorts, for every configuration in \autoref{tab:rq3-scorecard}.
+
+\begin{table}[htb]
+\centering
+\small
+\caption{Pooled out-of-fold \ac{AUC}, split by cohort.}
+\label{tab:rq4-percohort}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Configuration & \ac{ADNI} & \ac{DELCODE} \\
+\midrule
+S0-demo (age, sex) & 0.5162 & 0.5186 \\
+S0c \ac{GELSTM}, random encoder & 0.5348 & 0.6067 \\
+S0d Brain-TokenGT & 0.6194 & 0.6217 \\
+S0a logistic regression on drift & 0.5564 & 0.9129 \\
+S0b \ac{GELSTM}, frozen pretrained encoder & 0.4971 & 0.9178 \\
+\textbf{S1 (selected)} & \textbf{0.6526} & \textbf{0.8741} \\
+S1b, node-\ac{LSTM} self-supervised init. & 0.6624 & 0.8707 \\
+S1c (corrected re-run, random encoder) & 0.5335 & 0.5589 \\
+S2, temporal gate & 0.6266 & 0.8700 \\
+S3, residual fusion (structurally inert) & 0.6526 & 0.8741 \\
+S4, attentive pooling & 0.5415 & 0.8022 \\
+S5, dual-score head & 0.6460 & 0.8530 \\
+SENS ($\text{min\_visits}=3$) & 0.6328 & 0.8986 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Every model scores substantially higher on \ac{DELCODE} than on \ac{ADNI}, and the gap is
+widest for the two spatial-first baselines: S0b scores near chance on \ac{ADNI} (0.4971)
+and strongly on \ac{DELCODE} (0.9178), so its pooled number of 0.7186 in
+\autoref{tab:rq3-scorecard} averages two markedly different regimes rather than describing
+either one. This asymmetry is the reason per-cohort columns are reported for every configuration in
+this chapter's headline tables rather than the pooled column alone.
+
+\paragraph{Held-out reads.} \autoref{tab:rq4-tier4} reports the single permitted read of the
+64-subject in-domain test set and the 60-subject \ac{OASIS} set, spent once on the selected
+configuration and its two pre-specified secondary variants, confirmed unspent immediately beforehand.
+
+\begin{table}[htb]
+\centering
+\small
+\caption{Held-out reads for the selected configuration and its pre-specified secondaries. In-domain
+  test $n=64$; \ac{OASIS} $n=60$. The out-of-fold column is the same pooled figure as
+  \autoref{tab:rq3-scorecard}, repeated here as the better-powered reference point.}
+\label{tab:rq4-tier4}
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Configuration & Role & In-domain test & \ac{OASIS} & \ac{OOF} (reference) \\
+\midrule
+\textbf{S1} & primary & $\mathbf{0.7909 \pm 0.0162}$ & $\mathbf{0.4892 \pm 0.0224}$ & $0.7488 \pm 0.0033$ \\
+S1b & secondary & $0.7760 \pm 0.0568$ & $0.4602 \pm 0.0274$ & $0.7502 \pm 0.0125$ \\
+S5 & secondary & $0.7870 \pm 0.0139$ & $0.5070 \pm 0.0109$ & $0.7331 \pm 0.0173$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The in-domain test \ac{AUC} for S1 and S5 lands above the prediction interval implied by
+their own out-of-fold scores. This is reported as a fact about this single 64-subject read
+rather than as a second, independent win: the plan's own noise floor at this sample size is
+approximately 0.08 \ac{AUC}, which covers the gap, and the 248-subject out-of-fold pool
+remains the better-powered point estimate; no headline claim in this thesis is updated on
+the in-domain test read alone.
+
+The \ac{OASIS} result is the load-bearing external-transfer read. All three models sit within
+noise of chance: the per-seed standard error at $n \approx 60$ is approximately 0.075, and
+each model's four-seed mean is within about one standard error of 0.5 (S1 ranges 0.4705 to
+0.5217 across its four seeds; S1b ranges 0.4416 to 0.5006; S5 ranges 0.4972 to 0.5217).
+Cross-cohort transfer to \ac{OASIS} was at chance under the evaluated protocol, against
+0.77 to 0.79 in-domain \ac{AUC} for the same three models; this is reported as no evidence of
+transfer to an unseen cohort, not as evidence of below-chance failure, which the data do not
+show.
+
+\paragraph{Cohort-identity probe.} A logistic probe is fitted on the pooled patient latent
+to decode cohort of origin (\ac{ADNI} against \ac{DELCODE}), with a pre-specified escalation
+threshold of $0.75$ fixed in \autoref{sec:protocol}. \autoref{tab:rq4-probe} reports its
+out-of-fold decoding \ac{AUC} for every configuration.
+
+\begin{table}[htb]
+\centering
+\small
+\caption{Cohort-identity probe out-of-fold \ac{AUC} against the pre-specified escalation
+  threshold of 0.75.}
+\label{tab:rq4-probe}
+\begin{tabular}{@{}lcp{4.2cm}@{}}
+\toprule
+Configuration & Cohort-probe \ac{AUC} & Exceeds threshold \\
+\midrule
+S1 (selected) & $0.860 \pm 0.010$ & yes \\
+S1b & $0.890$ & yes \\
+S1c, corrected re-run & $0.860$ (identical to S1) & yes \\
+S2 & $0.869$ & yes \\
+S3 & $0.860$ (identical to S1) & yes \\
+S4 & $0.847$ & yes \\
+S5 & $0.863$ & yes \\
+SENS & $0.742$ & no, just under the threshold at a smaller pool \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Every full-pool configuration decodes cohort of origin at approximately 0.86 \ac{AUC} despite no
+cohort-conditioning term in the training objective, meaning the model encodes cohort
+identity as a side effect of learning to classify rather than as an intended input. The
+strong decodability of cohort identity from the learned representation is consistent with
+substantial cohort dependence and may contribute to the poor transfer to \ac{OASIS} reported
+above; \ac{OASIS} is exactly the unseen cohort category such a dependence would be expected
+to fail on. No causal claim is drawn from the probe result alone, since no experiment in
+this ladder isolates the probe's contribution from other differences between the cohorts.
+
+\paragraph{A missed escalation, and the mitigation run once it was found.} The pre-specified
+escalation trigger had been exceeded from the first ladder runs onward and was not read
+against its own $0.75$ threshold until the Tier-4 pass assembled every configuration's probe value
+together. The probe value itself was computed and persisted correctly throughout, so no data
+was lost; the rule was simply not applied at the point it should have been. This is recorded
+as a process gap: every in-domain out-of-fold result reported in this chapter is unaffected
+by it, since these are out-of-fold quantities that do not depend on cross-cohort transfer and
+were not selected using the probe.
+
+Once found, the pre-specified remedy was run exactly as specified: a gradient-reversal
+cohort-adversarial head attached to the same pooled embedding the probe scores, every other
+setting identical to S1, across all four seeds. \autoref{tab:rq4-adversarial} reports the
+outcome on both axes the mitigation targets.
+
+\begin{table}[htb]
+\centering
+\caption{Pre-specified gradient-reversal mitigation, against the S1 baseline it modifies.}
+\label{tab:rq4-adversarial}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Configuration & Pooled out-of-fold \ac{AUC} & Cohort-probe \ac{AUC} \\
+\midrule
+S1 (baseline) & $0.7488 \pm 0.0033$ & $0.8600 \pm 0.0074$ \\
+S1 with gradient-reversal mitigation & $0.7066 \pm 0.0075$ & $0.9411 \pm 0.0131$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The mitigation fails on both axes it was intended to address. Fold-matched against S1, its
+classification difference is $-0.0193 \pm 0.0022$ (ratio --8.68) and its pooled difference is
+$-0.0422 \pm 0.0051$ (ratio --8.31), consistent across all four seeds; this is a larger drop
+in classification performance than any single rung's loss in \autoref{tab:rq3-verdicts}. The
+diagnostic the mitigation exists to suppress rose from $0.860$ to $0.941$ rather than
+falling. A short two-epoch check before the full run had shown the probe at $0.74$ and
+appeared encouraging; in hindsight, that check measured how much the network had encoded of
+anything yet, this early in training, rather than the phenomenon under test, which is
+recorded as a caution against reading early-stopped smoke checks in this codebase as
+informative about the fully trained outcome.
+
+One candidate mechanism, not demonstrated by an isolating experiment, is that the mitigation
+scales the reversed gradient without a separately weighted cohort loss term, so a weak,
+losing adversarial game can raise observed cohort separability relative to running no
+adversarial term at all. No gradient-magnitude comparison was run to test this, and no
+further sweep over the mitigation's weighting was run after seeing this result, for the same
+reason a reconstruction-weight sweep was not run after S1c's collapse: retrying quietly after
+observing an unwanted result is the undocumented re-run the specification exists to prevent.
+This is recorded as a deferred ablation in \autoref{sec:ablations-not-run}.
+
+\paragraph{Summary statement.} Cross-cohort transfer to \ac{OASIS} was at chance under the
+evaluated protocol ($\ac{AUC} = 0.4892 \pm 0.0224$, indistinguishable from chance),
+consistent with an unescalated cohort-identity shortcut (cohort-probe \ac{AUC}
+$\approx 0.86 \gg 0.75$); a pre-specified gradient-reversal mitigation was run and did not
+recover transfer on either axis it targeted. Learning a cohort-invariant representation
+under this pooling protocol remains an open problem rather than a solved one; it is neither
+a clean external-validation result nor an unexamined trigger.
 
 \section{Interpretability and Latent-Space Results}\label{sec:interpretability-results}
-\outlinenote{Seed stability of the saliency map and its correlation with the independent
-model-free drift measure, the pre-specified network-enrichment test and its outcome, the
-disease axis and the per-scan disease score, latent steering decoded back to connectivity,
-the Fisher discriminant ratio per latent dimension and per region, and the \ac{UMAP}
-projections with decision overlays. States the reduced statistical power of the map analysis
-and the cortical-only limitation of the enrichment statistic.}
+
+This section reports two sets of results built on the instrumentation of
+\autoref{sec:instrumentation}: the pooled-protocol saliency-map validation attached to the
+temporal-first ladder's interpretability rungs, and the \ac{DELCODE}-only disease-axis and
+latent-separability results built on the spatial-first frozen encoder reported in
+\autoref{sec:rq2}. The two use different protocols and different models, consistent with
+\autoref{sec:reporting-rules}, and are reported separately.
+
+\paragraph{Saliency-map validation (pooled protocol).} The topology score produced by S5's
+dual-score head and the model-free drift anchor $\tilde{d}$ are validated against the
+pre-specified permutation test on \ac{DMN} overlap and against cross-seed reproducibility,
+as defined in \autoref{sec:instrumentation}. \autoref{tab:rq6-interpretability} reports both
+statistics for $s_{\text{topo}}$ (from S5, the primary interpretability configuration), for
+$\tilde{d}$ (the offline, model-free anchor), and for S2's gate map as a supporting, dropped
+comparator.
+
+\begin{table}[htb]
+\centering
+\footnotesize
+\caption{Saliency-map validation on the pooled protocol. \ac{DMN} overlap counts are out of
+  30 regions (of 200), with percentile rank against 1{,}000 label-spin permutations and the
+  associated $p$-value; cross-seed Spearman is the mean [range] over the four seeds.}
+\label{tab:rq6-interpretability}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Statistic & $s_{\text{topo}}$ (S5) & $\tilde{d}$ (offline) & Gate map (S2) \\
+\midrule
+\ac{DMN} overlap (count) & 8/30 & 6/30 & 0/30 \\
+\ac{DMN} overlap (percentile, $p$) & $77.9$, $p=0.351$ & $41.6$, $p=0.739$ & $0.0$, $p=1.000$ \\
+Cross-seed Spearman & $0.928\ [0.898,0.968]$ & $1.000\ [1.000,1.000]$ & $0.823\ [0.676,0.923]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Neither $s_{\text{topo}}$ nor $\tilde{d}$ clears the pre-specified permutation test on
+\ac{DMN} overlap: the claim that the learned topology score preferentially targets
+\ac{DMN} and hippocampal regions is not supported on the atlas available for this thesis.
+What the data do support is that $s_{\text{topo}}$ is stable across seeds (mean Spearman
+0.928, both cohorts individually above 0.91 when computed separately) and correlates with
+the independent, model-free drift anchor at $r = 0.456$ ($p = 1.2 \times 10^{-11}$) in a
+cross-seed-averaged, median-split quadrant analysis (high-high 66 subjects, high-low 34,
+low-high 34, low-low 66). $\tilde{d}$'s cross-seed Spearman of exactly 1.000 follows from
+its being a deterministic function of each subject's own data; where a seed selects a
+different best fold it drops to 0.633, tracking the subject-set change rather than an
+instability in the statistic itself. The dropped gate's map is markedly less stable
+(0.823) and shows the same absence of \ac{DMN} enrichment in every fold and both cohorts,
+reported for completeness rather than relied upon. Since every ladder rung above S1 was
+dropped by the Tier-2 rule in \autoref{sec:rq3}, this is the entire saliency-map
+contribution of the pooled ladder: a negative result on the pre-specified enrichment claim
+alongside a positive result on cross-seed reproducibility and correlation with an
+independent drift measure.
+
+Two limitations of this validation are properties of the design rather than of the result.
+Stability is measured cross-seed rather than cross-fold, because only the best fold's map is
+persisted per run, yielding four maps per rung rather than twenty; this reduces the
+statistical power of the reproducibility claim relative to a full cross-fold comparison. The
+overlap statistic is restricted to the 46 default-mode regions of the Schaefer-200 cortical
+atlas, which carries no subcortical regions, so the hippocampal component of the
+pre-specified claim is not assessable with this atlas at all.
+
+\paragraph{Disease axis, latent separability and the logistic probe (\ac{DELCODE}-only).}
+The disease axis and per-scan disease score, the Fisher discriminant ratio and the
+\ac{UMAP} projection defined in \autoref{sec:instrumentation} are reported here for the
+frozen spatial-first \ac{GELSTM} of \autoref{sec:rq2}, evaluated at seed 42 on the full
+167-subject \ac{DELCODE} downstream cohort (99 stable \ac{MCI}, 68 converters, pooling the
+cross-validation and held-out subjects for this descriptive projection). \autoref{fig:rq6-umap}
+shows the resulting projection with the disease axis overlaid.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.75\textwidth]{latent_space}
+  \caption{\ac{UMAP} projection of the 64-dimensional pooled graph embeddings for the full
+  \ac{DELCODE} downstream cohort, with the disease axis drawn between the two group
+  centroids.}
+  \label{fig:rq6-umap}
+\end{figure}
+
+The two groups are only partially separated in the reduced two-dimensional projection, with
+substantial overlap between converter and stable-\ac{MCI} subjects; the group centroids sit
+at a visible distance along the labelled conversion axis, consistent with the classifier
+recovering separable, if overlapping, structure rather than perfectly disjoint clusters. A
+logistic-regression probe fitted on the pooled 64-dimensional embeddings, evaluated by
+stratified group cross-validation, scores a mean per-fold \ac{AUC} of $0.859$ and an
+out-of-fold \ac{AUC} of $0.849$: the disease axis is a substantially separable direction in
+this latent space, though not perfectly so. The pooled-embedding silhouette score under the
+converter/stable split is $0.086$, a small positive value consistent with two
+overlapping rather than tightly separated clusters, matching the visual impression of
+\autoref{fig:rq6-umap}.
+
+The Fisher discriminant ratio, computed per latent dimension over the same pooled
+embeddings, identifies dimensions 2, 29, 12, 22 and 10 (zero-indexed) as the five most
+discriminative of the 64. Signal is therefore concentrated in a minority of latent
+dimensions rather than smeared evenly across all 64, which is the practical distinction
+behind any claim that the encoder has learned a disease-relevant direction as opposed to a
+diffuse one. Latent steering along the fitted disease axis, decoding each steered point back
+to a connectivity matrix through the \ac{GAAE} decoder, and visit-occlusion, removing each
+visit from a single subject's trajectory and measuring the resulting change in predicted
+probability, are both part of the instrumentation defined in \autoref{sec:instrumentation};
+neither is used here to support a numerical claim, since each is designed as a per-subject
+plausibility check rather than a cohort-level statistic, and no inference beyond the single
+walkthrough subject is drawn from either alone.
 
 \section{Robustness and Perturbation Results}\label{sec:robustness-results}
-\outlinenote{Results for the four perturbation methods, reported by failure mode, and the
-cohort stability rate. The demographic-conditioning result is reported as the direct test of
-whether the decision rides on the graph or on age and sex. The scanner-drift simulation is
-reported with its stated non-validation caveat.}
+
+This section reports the four perturbation methods and the cohort stability rate defined in
+\autoref{sec:instrumentation}, applied to the \ac{GAAE} encoder's reconstruction-error-based
+cohort decision described in \autoref{sec:rq2}, and the scanner-drift simulation applied to
+the \ac{DELCODE} \ac{GEGRU} trajectory model. Both are single, unseeded evaluations of an
+already-trained model rather than a seed-swept ablation, and are reported as such.
+
+\paragraph{Four perturbation methods.} For each of the four cohorts (healthy, \ac{AD},
+\ac{MCI}, converter), the five subjects with the largest margin beyond that cohort's
+validation-derived one-versus-rest reconstruction-error threshold are selected, and each is
+perturbed by all four methods at five noise levels (0, 5, 10, 20 and 30\%) across ten
+independent trials. \autoref{tab:rq7-perturbation} reports the cohort stability rate, the
+fraction of trials in which the perturbed sample remains on the same side of the threshold
+as the unperturbed one, at the two extreme noise levels for every cohort-method pair; the
+mean reconstruction error at every level in between changes monotonically and is not
+tabulated separately.
+
+\begin{table}[htb]
+\centering
+\footnotesize
+\caption{Cohort stability rate (fraction of ten trials preserving the original decision) at
+  0\% and 30\% noise, for each perturbation method and cohort. The validation one-versus-rest
+  \ac{AUC} for each cohort's own reconstruction-error threshold is given for context.}
+\label{tab:rq7-perturbation}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+Cohort (threshold \ac{AUC}) & \multicolumn{2}{c}{Feature noise} & \multicolumn{2}{c}{Matrix rebuild} & \multicolumn{2}{c}{Edge / conditioning} \\
+ & 0\% & 30\% & 0\% & 30\% & 0\% & 30\% \\
+\midrule
+Healthy (0.610) & 1.00 & 0.20 & 1.00 & 0.20 & 1.00 & 1.00 \\
+\ac{AD} (0.541) & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+\ac{MCI} (0.600) & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+Converter (0.550) & 1.00 & 0.80 & 1.00 & 0.62 & 1.00 & 1.00 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Edge perturbation and conditioning noise leave every cohort's stability rate at 1.00 across
+every noise level tested, with mean reconstruction error moving by less than one part in a
+thousand for conditioning noise and only slightly more for edge perturbation. Since
+conditioning noise perturbs only age and sex with the graph and features held fixed, this is
+the direct test of whether the reconstruction-error decision rides on the graph or on
+demographic covariates: at every noise level tested, it rides entirely on the graph.
+Feature noise and matrix-noise-with-graph-rebuild, the two methods that perturb the node
+features directly, are the only ones that move the stability rate below 1.00, and only at
+the highest noise level tested (30\%, except matrix rebuild's effect on the healthy cohort,
+which is also visible at 20\%, where its rate is 0.80). Matrix rebuild is the more disruptive
+of the two wherever both move a cohort's rate, consistent with it being feature noise plus a
+consequent change in graph topology rather than a feature perturbation alone.
+
+The instability is confined to the healthy and converter cohorts; \ac{AD} and \ac{MCI} stay
+at 1.00 under every method and noise level. This asymmetry follows from how each cohort's
+decision direction is defined: healthy and converter are classified by a low reconstruction
+error, so noise that raises the error, as both feature-based methods do on average, pushes a
+borderline subject toward the opposite side of the threshold; \ac{AD} and \ac{MCI} are
+classified by a high reconstruction error, so the same upward-biased noise reinforces rather
+than reverses their classification. The four cohorts' own threshold \ac{AUC} values (0.541
+to 0.610) are themselves modest, consistent with \autoref{sec:rq2}'s finding that
+reconstruction error is a weak cohort separator at this cohort size; a stability rate near
+1.00 at a threshold this close to chance reflects how far a selected subject's margin sits
+from that threshold, not a claim about the discriminative quality of the threshold itself.
+
+\paragraph{Scanner-drift simulation.} The simulated cross-cohort acquisition-drift sweep of
+\autoref{sec:instrumentation} is applied to the \ac{DELCODE} \ac{GEGRU} trajectory model's
+held-out test predictions, at a calibrated noise level derived from each target cohort's own
+scanner-heterogeneity metadata rather than chosen by hand.
+\autoref{tab:rq7-drift} reports the result.
+
+\begin{table}[htb]
+\centering
+\caption{Simulated scanner-drift sweep, \ac{DELCODE} held-out test predictions. Calibrated
+  noise level is the base \ac{DELCODE} inter-visit drift scaled by $(1+c_v)$, where $c_v$ is
+  each target cohort's own repetition-time coefficient of variation.}
+\label{tab:rq7-drift}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Profile & Noise level & \ac{AUC} & Sensitivity \\
+\midrule
+Baseline (no perturbation) & 0.000 & 0.793 & 0.643 \\
+\ac{ADNI}-like (feature $+$ edge noise) & 1.371 (calibrated) & 0.682 & 0.000 \\
+\ac{OASIS}-like (feature noise, half edge noise) & 1.348 (calibrated) & 0.700 & 0.071 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At low to moderate noise levels (0.1 to 0.5, not tabulated), \ac{AUC} stays flat or moves
+slightly above baseline, within the noise of a 34-subject test set. At the calibrated level,
+approximately 1.35 times \ac{DELCODE}'s own natural inter-visit drift, \ac{AUC} falls by
+roughly 0.09 to 0.11 and sensitivity collapses toward zero, meaning the model's converter
+predictions revert toward the majority stable-\ac{MCI} class once acquisition drift exceeds
+what it saw during training. This simulation is reported as an estimate of the direction and
+approximate magnitude of cross-cohort degradation, not as a validation: it was designed and
+calibrated before real \ac{ADNI} and \ac{OASIS} connectivity matrices were available to this
+model, the Gaussian and edge-rewiring perturbation is a proxy for acquisition heterogeneity
+rather than a physical acquisition model, and it does not capture systematic scanner bias,
+geometric distortion or motion artefacts. It is a single run at one seed rather than a
+seed-swept result, consistent with its role as a bounded, pre-specified estimate rather than
+a headline claim.
 
 \section{Ablations Not Run}\label{sec:ablations-not-run}
+
+This section records ablations that were considered and deliberately not run, so that a
+deferred experiment is not mistaken for one that was overlooked.
+
+\paragraph{Scaling gate closed.} The pre-specified gate for a scaled second block of
+experiments required a cumulative gain, from S1c through S5, exceeding the standard error
+of the seed-level differences. \autoref{tab:rq3-verdicts} shows the outcome: $-0.1587$
+(S1c), $-0.0064$ (S2), structurally inert (S3), $-0.0558$ (S4) and $-0.0046$ (S5); no rung
+above S1 was kept. The scaled block does not run. Read together with the parameter counts
+of \autoref{tab:rq3-capacity}, the conclusion the gate itself specified is that signal
+quality and sample size, rather than model capacity, are the limiting factor at this cohort
+size, and a configuration 14 times smaller than the baseline it exceeds is the evidence for
+that conclusion rather than merely consistent with it.
+
+\paragraph{A reconstruction-weight sweep for S1c.} S1c's corrected re-run collapses
+classification performance by approximately 0.20 \ac{AUC} relative to S1
+(\autoref{sec:rq3}). A sweep over the reconstruction loss weight might recover some of this
+loss, but was not run: searching a hyperparameter after observing the result it might rescue
+is exactly the undocumented re-run the pre-specification exists to prevent.
+
+\paragraph{An encoder-learning-rate-scale configuration for the fine-tuned encoder ablation.} The
+fine-tuned model of \autoref{tab:rq2-encoder} trains the unfrozen pretrained encoder at the
+same learning rate as the freshly initialised classification head. A variant that applies a
+reduced, discriminative learning rate to the encoder, analogous to the tenfold-reduced scale
+Brain-TokenGT applies to its own newly unfrozen parameters in \autoref{sec:braintokengt},
+would test the leading candidate mechanism for this model's instability directly. It was not
+run before the writing deadline and remains a falsifiable, deferred test of that mechanism.
+
+\paragraph{A gradient-magnitude comparison for the cohort-adversarial mitigation.} The
+gradient-reversal mitigation of \autoref{sec:rq4} raised the cohort-identity probe's
+decodability rather than lowering it. A comparison of gradient magnitudes between the
+classification and adversarial objectives would test the leading candidate explanation, that
+the reversed gradient is unweighted relative to the classification loss, but was not run.
+
+\paragraph{A second held-out read for the cohort-adversarial mitigation.} The
+gradient-reversal mitigation was scored only on the out-of-fold pool. Spending the one-shot
+held-out test or \ac{OASIS} read on a configuration the Tier-2 stopping rule already rejects on
+out-of-fold evidence was deliberately not done, consistent with the scope table of
+\autoref{sec:protocol} restricting the held-out reads to models that pass Tier 2.
+
+\paragraph{The fusion contrast.} S3's fusion setting is structurally inert under S1's
+configuration, and its only available parent under a self-supervised reconstruction target,
+S1c, collapses. Branching a fusion variant from a parent configuration that does not itself
+train usefully would answer nothing about whether fusion helps; the fusion question
+consequently remains untestable within this ladder rather than answered in the negative.
+
+\paragraph{A model-side inter-visit-interval ablation.} A dedicated ablation of the
+inter-visit-interval input (holding it fixed against shuffling visit order, as a test of
+whether the recurrence uses timing as well as sequence) was previously run under a
+configuration that has since been identified as sharing an encoder swap and a downstream
+hyperparameter change with other results excluded from this thesis. It is not re-reported
+here. The cohort-level fact this ablation would have tested against remains available
+without any model in the loop: \ac{DELCODE}'s recorded inter-visit intervals are 90.0\% at
+twelve months, 7.1\% at twenty-four, 2.6\% at thirty-six and 0.4\% at forty-eight
+(\autoref{sec:comparability}), so there is little timing variation on this cohort for such
+an ablation to isolate in the first place; a cohort with more irregular spacing, such as
+\ac{ADNI} or \ac{OASIS}, would be needed to test the interval input's contribution directly.

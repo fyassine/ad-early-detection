@@ -385,9 +385,12 @@ minimum visit count.
 `RQ:` 1
 
 **6.3 RQ2: does spatial-first graph representation learning add value?**
-The encoder ablation across the four arms, the reconstruction-fidelity measurement, and the
-GAAE-against-GEC contrast. Reports the pooling comparison (mean against attention) for the
-graph encoder classifier.
+The encoder ablation across the four arms and the reconstruction-fidelity measurement.
+GEC and GEP results are excluded from this thesis: the only available GEC/GEP runs bundle
+an encoder swap and a downstream hyperparameter change into the same commit, and the same
+configuration scores both 0.8785 and 0.9642 test AUC with no setting changed, so no
+GEC/GEP number is reportable. The mean-against-attention pooling question is answered
+instead by the pooled ladder's S4 rung in \autoref{sec:rq3}.
 `was:` 6.11 and parts of 6.8
 `RQ:` 2
 
@@ -608,7 +611,7 @@ Every entry in `DOCS/critical_points/contributions.md`, with its single home.
 | Disease axis and per-scan disease score | §4.7 | §6.6 |
 | Latent steering decoded back to connectivity | §4.7 | §6.6 |
 | Fisher discriminant ratio per dimension and per region | §4.7 | §6.6 |
-| Pooling comparison and latent visualisation | §4.7 | §6.3 and §6.6 |
+| Latent visualisation (UMAP over the disease-axis embeddings) | §4.7 | §6.6 |
 | Four perturbation methods by failure mode | §4.7 | §6.7 |
 | Edge-perturbation deduplication fix | App. B | pinned by tests, §7.3 |
 | Scanner-drift simulation anchored to a measured inventory | §4.7 | §6.7 |

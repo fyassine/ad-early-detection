@@ -1,0 +1,15 @@
+{
+  "experiment_id": "explain-gelstm-frozen-clean",
+  "run_name": "exalted-mountain-1-e203ee5b7-2026-08-31_04-31-32",
+  "state": "failed",
+  "status": "failed",
+  "error": "FileNotFoundError: No latest run for source_experiment='recon-ablation-gelstm-pretrained-frozen-seed42' under /mnt/e/fyassine/ad-early-detection/CLASSIFIER/outputs/recon-ablation-gelstm-pretrained-frozen-seed42. Run the base experiment first (e.g. run_experiment.py --id <id>).",
+  "duration_seconds": 23.2,
+  "started_at": "2026-08-31T04:31:36",
+  "finished_at": "2026-08-31T04:32:00",
+  "git": {
+    "short_commit": "e203ee5b7",
+    "dirty": true
+  },
+  "metrics": {}
+}

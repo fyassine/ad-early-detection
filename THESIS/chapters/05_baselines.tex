@@ -6,28 +6,212 @@
 % published comparator, and the reproducibility audit. Results ordered by research
 % question belong in Chapter 6; interpretation belongs in Chapter 7.
 
+This chapter states which floors and comparators the ladder in
+\autoref{sec:protocol} is judged against, characterises the published comparator this
+thesis reproduces, reports a reproducibility audit of that comparator alongside the
+reproducibility properties of the implementation evaluated in this thesis, and states what
+can and cannot be equalised in a head-to-head comparison between the two.
+
 \section{The Baseline Ladder}\label{sec:baseline-ladder}
-\outlinenote{Each floor and why it is included: demographics only, the static single-visit
-baseline, logistic regression on connectivity drift, spatial-first \ac{GELSTM} with and
-without a pretrained encoder, and Brain-TokenGT. States which contrast each pair isolates.}
+
+Six floors and comparators are read against every rung of the ladder described in
+\autoref{sec:protocol}. Each is chosen to isolate a specific contrast rather than to
+provide a single omnibus comparison.
+
+The first floor uses age and sex alone, with no imaging information. Any arm that does not
+exceed it is not using the graph at all. The second floor truncates each fold's own
+validation subjects to their first visit and scores them at that fold's threshold; it
+therefore never requires reading the held-out test set and asks whether a single scan
+already carries the signal a trajectory model is meant to add. The third floor is a
+logistic regression fitted on the principal components of the flattened connectivity-change
+matrix, concatenated with visit count, total follow-up months, age and sex. It is a linear
+floor: since it operates directly on raw connectivity change with no learned graph
+representation, a longitudinal graph model that fails to exceed it is not adding
+information beyond a linear read of the same change.
+
+The fourth and fifth floors are both instances of the spatial-first \ac{GELSTM}
+architecture introduced in \autoref{sec:spatial-first}, differing only in how the graph
+encoder is initialised. One uses the pooled \ac{GAAE} checkpoint frozen, so the encoder
+carries reconstruction pretraining over 3{,}700 unlabelled graphs before any classification
+gradient reaches it. The other uses a randomly initialised encoder trained end to end
+together with the recurrent head, so it learns only from the classification gradient on
+248 labelled subjects. Comparing the pretrained-frozen \ac{GELSTM} against the
+temporal-first arm that also uses a self-supervised encoder isolates the pooling-order
+inversion under matched pretraining; comparing the randomly initialised \ac{GELSTM} against
+the temporal-first arm with no pretraining on either side isolates the same inversion with
+no pretraining confound. Reading either contrast alone would confound the architectural
+inversion with the presence or absence of pretraining, which is why both floors are
+carried through the ladder rather than one.
+
+The sixth comparator is Brain-TokenGT, a published architecture evaluated here as a
+reference point rather than as a controlled baseline; \autoref{sec:braintokengt}
+characterises it and \autoref{sec:comparability} states why it cannot be equalised with the
+other floors on every axis.
 
 \section{Brain-TokenGT as a Published Comparator}\label{sec:braintokengt}
-\outlinenote{The published architecture, its reproduction here, and its behaviour under the
-evaluated configuration, including the recurrent core as released and its behaviour when
-enabled. The stabilisation configuration is summarised in one paragraph; the knob-level
-settings are given in \autoref{ch:app-implementation}.}
+
+Brain-TokenGT \parencite{dong2023braintokengt} tokenises each visit's connectivity graph
+into a sequence of node and edge tokens and applies cross-visit self-attention over the
+resulting sequence, with a recurrent core that evolves the graph-convolution weights from
+one visit to the next. This section characterises that recurrent core as released and under
+the configuration used to obtain a trainable baseline in this thesis; the four other
+respects in which the released implementation departs from the published architecture are
+enumerated in \autoref{ch:app-implementation} together with the numeric settings of the
+configuration adopted here.
+
+The model definition evaluated in this thesis is the authors' released implementation,
+carried over without changing the computation it performs. Two changes were necessary to
+run it under the protocol used here: generalising a hardcoded region count and sequence
+length to the values used on \ac{DELCODE}, and removing a hardcoded assignment of tensors
+to a specific device. Neither changes what the model computes at the authors' original
+configuration, which is confirmed by a regression test that copies the authors' released
+weights into this implementation parameter for parameter and asserts that the two forward
+passes agree at that configuration. The released training script trains on a single subject
+with no held-out split, so training and evaluation for Brain-TokenGT use the same
+cross-validation and held-out test harness applied to every other arm in this thesis. This
+does not amount to reproducing the authors' reported result, which was obtained on a
+different cohort, a different brain parcellation and the authors' own code path rather than
+this one; no such reproduction is claimed here.
+
+The recurrent core exhibits three distinct behaviours across the configurations evaluated
+in this thesis. As released, the recurrent module's weights are never registered with the
+optimiser, so they remain at their random initialisation throughout training. Under that
+configuration the decision rule collapses to predicting conversion for every test subject,
+which is an uninformative classifier rather than a trained one. A second configuration
+registers the recurrent weights with the optimiser and trains them end to end, combined
+with the other changes to the released implementation described in
+\autoref{ch:app-implementation}; under it, training produces non-finite scores inside the
+model's pooling layer and terminates within approximately ten epochs. A third configuration
+retains those same changes and additionally applies a reduced learning rate and an added
+weight-decay term to the recurrent parameters specifically; under it, training completes
+without producing non-finite values, and this is the only one of the three configurations
+for which a held-out evaluation is reported anywhere in this thesis. That a run completes
+without diverging is a statement about training stability and is addressed by this
+configuration; \autoref{sec:reproducibility-audit} addresses a separate question, namely
+whether repeated runs of this same configuration agree with one another.
 
 \section{Run-to-Run Variability and Reproducibility}\label{sec:reproducibility-audit}
-\outlinenote{The same-seed replicate audit: design, result, and the mechanism, namely
-nondeterministic scatter and gather operations that do not engage deterministic algorithms.
-Records that the same behaviour persists under the pooled protocol.}
+
+This section reports the reproducibility audit design of the Brain-TokenGT arm
+characterised in \autoref{sec:braintokengt}, then states the reproducibility property of
+the specific implementation evaluated for this thesis's own architecture.
+
+A single seed and a single run cannot distinguish a seed effect from ordinary run-to-run
+scatter, so the stabilised Brain-TokenGT configuration was audited across nineteen repeat
+runs without changing any setting, four to seven repeats at each of four seeds. The empirical
+held-out test \ac{AUC} distributions, within-seed standard deviations, and head-to-head
+comparisons are reported in \autoref{sec:rq3} (\autoref{tab:btgt-seed-variability}).
+
+A run-to-run difference in non-deterministic models corresponds to a large number of pairwise
+disagreements in the ranking the \ac{AUC} statistic summarises: at the test-set size used
+for this comparator, a change of one hundredth of an \ac{AUC} point corresponds to
+inverting the relative ranking of a handful of converter and stable-\ac{MCI} pairs, so a
+difference on the order of 0.10 reflects dozens of such inversions between two runs that
+share every setting, including the seed.
+
+The mechanism consistent with this scatter is that determinism is enforced only at the
+level of convolution algorithm selection, while the global deterministic-algorithm mode
+that would additionally fix the order of floating-point reduction is never engaged.
+Consequently, the scatter-and-gather operations inside the model's top-k pooling layer and
+inside the recurrent core's node-embedding gather remain order-dependent on the graphics
+processing unit, and their backward pass can accumulate floating-point error differently
+between two runs that differ only in scheduling. This mechanism is consistent with the
+observed scatter rather than demonstrated by an isolating experiment; no experiment in this
+thesis holds the scheduling fixed while varying only the algorithm path. Engaging the
+global deterministic-algorithm mode for this comparator was considered and set aside: doing
+so raises an error inside operations that are part of the authors' released implementation
+and would require rewriting them, which falls outside the scope of reproducing a published
+architecture as released. The same pattern of held-out spread appears when the comparator
+is evaluated on the pooled protocol described in \autoref{sec:pooled-protocol}, so the
+scatter observed under the \ac{DELCODE}-only protocol is not specific to that cohort.
 
 \subsection{The Trajectory Implementation Used in This Thesis Is Bit-Reproducible}\label{sec:bit-reproducible}
-\outlinenote{The \ac{GELSTM} none-arm implementation evaluated here re-runs byte-identically
-at a fixed seed.}
+
+The temporal-first ladder introduced in \autoref{sec:tfgn} runs under the global
+deterministic-algorithm mode by construction, the setting that \autoref{sec:reproducibility-audit}
+identifies as absent from the Brain-TokenGT code path. Under that setting, repeating a run
+of the \ac{GELSTM} none-arm implementation evaluated in this thesis at a fixed seed
+reproduces its held-out test \ac{AUC} and cross-validation \ac{AUC} to the last recorded
+digit. This was checked twice: once immediately after implementing the arm, and again after
+a later change to how visit sequences are constructed for the pooled cohort, which
+reproduced the earlier run's metrics exactly and confirmed that the change had not
+introduced any nondeterminism of its own. This bit-reproducibility is a property of the
+\ac{GELSTM} none-arm implementation evaluated here under this protocol; it is not stated of
+any other arm or of an inherited pipeline, and it does not extend to the fine-tuned
+spatial-first arm, whose seed-level reproducibility properties are reported alongside the
+encoder ablation in \autoref{sec:rq2}.
 
 \section{Comparability of the Head-to-Head}\label{sec:comparability}
-\outlinenote{What can and cannot be equalised: cohort windowing, resolved by the
-matched-window arm; capacity and tokenisation overhead, which cannot be equalised; tuning budget
-asymmetry; and temporal representation. States the consequences for the statistical
-comparison, including which comparisons survive.}
+
+Several elements of the comparison between Brain-TokenGT and the models introduced in this
+thesis are held identical by construction. Both are built from the same
+subject-level dataset object, so they see the same connectivity matrices for the same
+subject set; both use the same split definitions and the same grouped five-fold
+cross-validation; both select a decision threshold from out-of-fold predictions under the
+same policy and apply it unchanged to the held-out test set; both are scored with the same
+metric definitions; and both write their results into the same run-artefact schema. Four
+further axes cannot be equalised in the same way, and each has a distinct consequence for
+which comparisons the data support.
+
+\textbf{The first axis is cohort windowing}. Brain-TokenGT is architecturally constrained to
+sequences of two or three visits, since its published design targets cohorts with a fixed
+number of acquisitions, whereas the trajectory models introduced in this thesis consume
+sequences of one to six visits. Restricting to the two-to-three-visit window required by
+Brain-TokenGT drops every subject with a single scan entirely, so a comparison that reads
+one model at its full window and the other at the restricted window is reading the two
+models on different subject counts as well as different architectures. This axis is
+resolvable: \autoref{sec:rq3} reports a matched-window arm in which the trajectory models
+are re-run restricted to the same two-to-three-visit window, holding the subject pool fixed
+across both architectures. Brain-TokenGT itself is not re-run for this comparison, since it
+already operates at exactly that window by construction, and restricting the trajectory
+models to the same window was verified to remove visits without removing any subject from
+the pool.
+
+\textbf{The second axis is model capacity and tokenisation overhead}, which is not resolvable
+without changing the published architecture. At two hundred regions and three visits,
+Brain-TokenGT's token sequence is on the order of one thousand four hundred tokens per
+subject, processed by a model with 603{,}849 trainable parameters, against a cross-validation
+pool on the order of eighty training subjects per fold. The \ac{GELSTM} none arm processes
+one pooled vector per visit with 31{,}169 trainable parameters, and its frozen-encoder
+counterpart processes a sixty-four-dimensional latent vector per visit with 520{,}905
+trainable parameters. This difference is a property of each published method rather than a
+setting chosen for this comparison, so it cannot be equalised without evaluating a
+different architecture than the one being compared. Where Brain-TokenGT's cross-validation
+performance exceeds its held-out test performance by a wide margin, the observed
+validation-to-test decrease is consistent with overfitting in this sample-size regime,
+without asserting that overfitting is the only mechanism a token count this large relative
+to the sample size could produce.
+
+\textbf{The third axis is tuning budget.} The trajectory models introduced in this thesis were
+developed and refined across the ablation ladder described in \autoref{sec:protocol},
+whereas Brain-TokenGT was trained at its author-recommended configuration, adjusted only by
+the learning-rate and weight-decay change described in \autoref{sec:braintokengt} that was
+needed to obtain a configuration that trains to convergence at all. The published
+architecture was originally tuned over two hundred trials by its authors; no comparably
+sized search was run for either architecture under this protocol. This asymmetry is stated
+without attributing any specific part of the observed performance difference to it, since
+no experiment here isolates the tuning budget from the other three axes.
+
+\textbf{The fourth axis is temporal representation.} The trajectory models introduced in this thesis
+consume the interval between consecutive visits directly, whereas Brain-TokenGT treats
+consecutive visits as uniform discrete steps with no notion of elapsed time. On
+\ac{DELCODE}, this axis carries little weight in practice, since ninety percent of recorded
+inter-visit intervals are twelve months apart; it is relevant chiefly on cohorts with
+irregular intervals between visits.
+
+Two consequences follow for which statistical comparisons are reported in
+\autoref{sec:rq3}. First, because cohort windowing is the only one of the four axes that
+can be equalised, the matched-window comparison is reported as a secondary comparison
+rather than as the primary result: restricting both models to a window that discards the
+visits the trajectory models exist to exploit cannot substitute for a comparison run at
+each model's intended operating point. Second, because folds drawn from one seed share a
+trained model and are not independent of one another, a comparison across the twenty folds
+produced by five-fold cross-validation at four seeds is not treated as twenty independent
+observations; the independent unit for any comparison against Brain-TokenGT is the seed, of
+which four are available, and a rank-based test at that sample size is reported together
+with its attainable significance floor rather than as a conventional significance test. No
+conclusion is drawn from this comparison, or from any other result in this thesis, about
+which of the two architectures would transfer to an external cohort: the run-to-run
+variability documented in \autoref{sec:reproducibility-audit} is too large to support such
+a conclusion, and the cross-cohort transfer results in \autoref{sec:rq4} are reported
+without reference to it.

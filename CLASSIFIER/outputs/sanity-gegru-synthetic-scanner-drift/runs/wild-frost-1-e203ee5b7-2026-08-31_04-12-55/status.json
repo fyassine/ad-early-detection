@@ -1,0 +1,14 @@
+{
+  "experiment_id": "sanity-gegru-synthetic-scanner-drift",
+  "run_name": "wild-frost-1-e203ee5b7-2026-08-31_04-12-55",
+  "state": "done",
+  "pid": 1870737,
+  "host": "fritz",
+  "started_at": "2026-08-31T04:13:00",
+  "git_commit": "e203ee5b7",
+  "git_dirty": true,
+  "notebook": "notebooks/SANITY/SANITY_GEGRU_SYNTHETIC_SCANNER_DRIFT.ipynb",
+  "finished_at": "2026-08-31T04:14:17",
+  "exit_code": 0,
+  "duration_seconds": 76.1
+}

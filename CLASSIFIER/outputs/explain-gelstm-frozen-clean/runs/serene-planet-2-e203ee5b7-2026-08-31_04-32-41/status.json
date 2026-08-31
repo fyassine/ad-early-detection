@@ -1,0 +1,16 @@
+{
+  "experiment_id": "explain-gelstm-frozen-clean",
+  "run_name": "serene-planet-2-e203ee5b7-2026-08-31_04-32-41",
+  "state": "failed",
+  "pid": 1880607,
+  "host": "fritz",
+  "started_at": "2026-08-31T04:32:46",
+  "git_commit": "e203ee5b7",
+  "git_dirty": true,
+  "notebook": "notebooks/EXPLAIN/EXPLAIN_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-31T04:35:21",
+  "duration_seconds": 154.7,
+  "error": "SyntaxError: invalid syntax (2276322979.py, line 14)",
+  "notebook_traceback": "\u001b[0;36m  Cell \u001b[0;32mIn[20], line 14\u001b[0;36m\u001b[0m\n\u001b[0;31m    else:\u001b[0m\n\u001b[0m    ^\u001b[0m\n\u001b[0;31mSyntaxError\u001b[0m\u001b[0;31m:\u001b[0m invalid syntax\n",
+  "cell": "In [20]"
+}

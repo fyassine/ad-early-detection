@@ -1,0 +1,14 @@
+{
+  "experiment_id": "gaae-static",
+  "run_name": "azure-waterfall-2-e203ee5b7-2026-08-31_04-18-49",
+  "state": "done",
+  "pid": 1873295,
+  "host": "fritz",
+  "started_at": "2026-08-31T04:18:53",
+  "git_commit": "e203ee5b7",
+  "git_dirty": true,
+  "notebook": "notebooks/STATIC/STATIC_COMMON_DELCODE.ipynb",
+  "finished_at": "2026-08-31T05:37:53",
+  "exit_code": 0,
+  "duration_seconds": 4739.5
+}

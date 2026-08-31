@@ -41,8 +41,11 @@ Applies only when writing or editing files under `THESIS/`.
   overclaiming label (e.g. not "Methodology: Spatiotemporal Graph Modelling" if the
   chapter is really about baselines — call it "Baselines").
 - Never say "this thesis's own pipeline" / "our pipeline" when components predate the
-  thesis (see §10) — name the specific model/arm instead, e.g. "the GELSTM none-arm
-  implementation evaluated here re-runs byte-identically at a fixed seed."
+  thesis (see §10) — name the specific model or configuration instead, e.g. "the GELSTM no-encoder
+  configuration evaluated here re-runs byte-identically at a fixed seed."
+- Avoid clinical trial jargon: do not use "arm" or "arms" to refer to ablation rungs, model variants,
+  or baseline configurations. Use "configuration", "model variant", "model", or "baseline" instead
+  in both prose and table column headers (e.g., "Configuration", not "Arm").
 
 ## 2. Verify before stating
 
@@ -128,12 +131,18 @@ register of §1: write "Consider ..." rather than "Let's ...".
 
 ## 9. Compile after every change
 
-After any edit inside `THESIS/`, compile the PDF using the virtual environment's `tectonic` compiler (output at `THESIS/build/main.pdf`):
+After any edit inside `THESIS/`, compile both the standard and dark theme PDFs (`main.pdf` and `dark.pdf`) using the virtual environment's `tectonic` compiler (output at `THESIS/build/main.pdf` and `THESIS/build/dark.pdf`):
 - `tectonic` is available once the project `.venv` is activated (`source .venv/bin/activate`).
-- From repository root: `source .venv/bin/activate && cd THESIS && tectonic -o build main.tex`
-- From `THESIS/`: `tectonic -o build main.tex` (with `.venv` active) or `make pdf`
+- From repository root: `source .venv/bin/activate && cd THESIS && tectonic -o build main.tex && tectonic -o build dark.tex`
+- From `THESIS/`: `tectonic -o build main.tex && tectonic -o build dark.tex` (with `.venv` active) or `make pdf && make pdf jobname=dark`
+- **Output Directory Discipline**: Always specify the output directory explicitly (`-o build` or `-outdir=build`). Never let compilers or auxiliary packages dump build artifacts (`*.aux`, `*.toc`, `*.lot`, `*.lof`, `*.bbl`, `*.bcf`, `*.run.xml`, `*.xmpi`, `creationdate.lua`, or root-level PDFs) directly into the `THESIS/` root.
+- **Build Hygiene and Cleanup**:
+  - `THESIS/build/` is the sole designated target for all compiled PDFs and intermediate files.
+  - If auxiliary files (`*.aux`, `*.toc`, `*.lot`, `*.lof`, `*.bbl`, `*.bcf`, `*.run.xml`, `*.xmpi`, `creationdate.lua`) or root PDFs (`main.pdf`, `dark.pdf`) are ever generated in `THESIS/`, delete them immediately.
+  - `THESIS/.gitignore` must maintain ignore patterns for `build/*`, `!build/*.pdf`, `*.aux`, `*.bcf`, `*.blg`, `*.bbl`, `*.fdb_latexmk`, `*.fls`, `*.lof`, `*.log`, `*.lot`, `*.out`, `*.run.xml`, `*.synctex.gz`, `*.toc`, `*.xmpi`, `creationdate.lua`, `/main.pdf`, and `/dark.pdf`.
+  - Always verify that `git --git-dir=.git-thesis --work-tree=THESIS status` remains clean after compilation.
 
-`tectonic` handles multi-pass compilation and `biber` automatically without requiring a system TeX Live / `latexmk` installation. If compilation fails, fix the LaTeX error before handing the change off. Never leave the tree in a non-compiling state.
+`tectonic` handles multi-pass compilation and `biber` automatically without requiring a system TeX Live / `latexmk` installation. If compilation fails for either target, fix the LaTeX error before handing the change off. Never leave the tree in a non-compiling state.
 
 ## 10. Attribute prior work explicitly
 
@@ -183,8 +192,14 @@ before the experiment ran.
 
 Push exhaustive implementation detail (exact code paths, experiment/run IDs, registry
 entries, config variable names, debugging history) out of the main narrative into an
-"Implementation Details" subsection or appendix — keep in the main text only what is
+"Implementation Details" subsection or appendix; keep in the main text only what is
 necessary to understand or reproduce the method.
+
+Avoid at all costs mentioning a variable name, function argument, configuration flag, or
+code identifier in the main narrative. Instead, explain the underlying concept, mathematical
+formulation, or mechanism in plain scientific prose so that the main text remains completely
+code-free. Code symbols, parameter names, and software-level constructs belong strictly
+in the "Implementation Details" subsection or appendix.
 
 ## 15. ShareLaTeX Git Synchronization & Credential Safety
 
