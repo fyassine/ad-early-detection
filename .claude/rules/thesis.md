@@ -43,9 +43,13 @@ Applies only when writing or editing files under `THESIS/`.
 - Never say "this thesis's own pipeline" / "our pipeline" when components predate the
   thesis (see §10) — name the specific model or configuration instead, e.g. "the GELSTM no-encoder
   configuration evaluated here re-runs byte-identically at a fixed seed."
-- Avoid clinical trial jargon: do not use "arm" or "arms" to refer to ablation rungs, model variants,
+- Avoid clinical trial jargon: do not use "arm" or "arms" to refer to ablation configurations, model variants,
   or baseline configurations. Use "configuration", "model variant", "model", or "baseline" instead
   in both prose and table column headers (e.g., "Configuration", not "Arm").
+- Never use "rung" or "rungs" to refer to an ablation configuration or model variant; always use
+  "configuration" / "configurations" instead.
+- Never use "ablation ladder" or bare "ladder" (as a structural metaphor for the ablation sequence);
+  use "ablation sequence" instead. "The Baseline Ladder" section is now "Baselines for the Ablation Sequence".
 
 ## 2. Verify before stating
 

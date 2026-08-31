@@ -47,7 +47,7 @@ the recurrent parameters in a separate optimiser group with a learning-rate mult
 learning rate of $10^{-3}$ and zero weight decay. Every configuration uses the Adam
 optimiser, a batch size of 8, gradient-norm clipping at 1.0, up to 50 epochs with early
 stopping at patience 15, and cost-sensitive class weighting, matching the training
-procedure applied to every other arm in \autoref{sec:protocol}.
+procedure applied to every other configuration in \autoref{sec:protocol}.
 
 \section*{Gradient-Control Modification for Encoder Ablation}
 
@@ -56,7 +56,7 @@ forced evaluation mode, so the pre-existing \texttt{freeze\_encoder: false} conf
 could not fine-tune the encoder regardless of what \texttt{requires\_grad} indicated. A
 new \texttt{EvalConfig.encoder\_grad} flag, defaulting to \texttt{False}, opens that
 context for the training pass of the \texttt{pretrained\_finetuned} and \texttt{random}
-arms only. Evaluation always embeds under no-grad with the encoder in evaluation mode. An automated unit test in the test suite pins that this flag is what makes the \texttt{random} arm meaningful: without it, the arm
+configurations only. Evaluation always embeds under no-grad with the encoder in evaluation mode. An automated unit test in the test suite pins that this flag is what makes the \texttt{random} configuration meaningful: without it, the model
 builds a randomly initialised encoder but cannot update its weights.
 
 
@@ -155,29 +155,5 @@ split file, grouped by what they check:
 \end{itemize}
 
 \chapter{Complete Cross-Validation Metrics}\label{ch:app-metrics}
-
-\section*{Supplementary matched-cohort figures}
-
-\autoref{sec:rq3} reports the \ac{DELCODE}-only matched-cohort head-to-head between the
-frozen pretrained \ac{GELSTM} and Brain-TokenGT (\autoref{tab:rq3-matched-cohort}) using two
-figures in the main text. \autoref{fig:app-confusion} and \autoref{fig:app-calibration}
-report the confusion matrices and calibration diagnostics for the same comparison.
-
-\begin{figure}[htb]
-  \centering
-  \includegraphics[width=\textwidth]{fig3_confusion_matrices}
-  \caption{Held-out test confusion matrices for the matched-cohort head-to-head of
-  \autoref{tab:rq3-matched-cohort}, one panel per seed for \ac{GELSTM} and pooled repeats
-  per seed for Brain-TokenGT.}
-  \label{fig:app-confusion}
-\end{figure}
-
-\begin{figure}[htb]
-  \centering
-  \includegraphics[width=\textwidth]{fig4_probability_calibration}
-  \caption{Reliability diagram and per-seed Brier score for the matched-cohort head-to-head
-  of \autoref{tab:rq3-matched-cohort}.}
-  \label{fig:app-calibration}
-\end{figure}
 
 \chapter{Software Dependencies and Hardware Environment}\label{ch:app-environment}

@@ -3,7 +3,7 @@
 \chapter{Methodology}\label{ch:methodology}
 
 % Scope rule for this chapter: state what was built and how it would be judged.
-% Every outcome, verdict and void rung belongs in Chapter 6.
+% Every outcome, verdict and void configuration belongs in Chapter 6.
 
 \section{Pre-Existing Framework, Research Questions and Scope}\label{sec:preexisting}
 
@@ -23,7 +23,7 @@ constructed on top of the connectivity matrix \autoref{ch:data} describes.
 \ac{GAAE} and \ac{VGAE}. \autoref{sec:spatial-first} describes the spatial-first
 trajectory models that build on those representations. \autoref{sec:tfgn} introduces the
 temporal-first alternative and its design rationale. \autoref{sec:protocol} specifies the
-experimental protocol that judges all arms. \autoref{sec:instrumentation} describes the
+experimental protocol that judges all configurations. \autoref{sec:instrumentation} describes the
 interpretability and robustness instrumentation.
 
 The four research questions that organise the experimental programme are as follows.
@@ -153,7 +153,7 @@ rate $10^{-3}$, weight decay $10^{-3}$, up to 500 training epochs, early-stoppin
 
 \paragraph{The pivot from reconstruction to classification.}
 Because within-cohort between-subject variation in functional connectivity can exceed
-between-group variation at the available sample sizes, as \autoref{sec:statistics}
+between-group variation at the available sample sizes, as \autoref{sec:group-stats}
 quantifies, a reconstruction objective is not guaranteed to allocate encoder capacity to
 the group contrast. The pipeline therefore separates pretext learning from the group
 decision: the encoder is pretrained to reconstruct graph structure and then frozen, and a
@@ -237,7 +237,7 @@ below.
 
 \paragraph{The recurrent core.}
 At each visit $t$, the shared encoder produces a visit embedding $z_t \in \mathbb{R}^{d}$,
-where $d = 64$ when an encoder is present and $d = 200$ when the \texttt{none} arm
+where $d = 64$ when an encoder is present and $d = 200$ when the \texttt{none} configuration
 bypasses the encoder entirely and mean-pools the raw node features. The time-augmented
 embedding $[z_t \,\|\, \Delta t_t]$ is consumed by a single-layer \ac{LSTM} with hidden
 dimensionality 32, which processes the visit sequence and reads out the terminal hidden
@@ -278,16 +278,16 @@ alone, is the leading overfitting risk at this sample size, because a carried hi
 applied at every visit and read out at the final step is exactly the function class that
 can memorise a small cohort.
 
-\paragraph{The four encoder arms and the RQ2 ablation.}
+\paragraph{The four encoder configurations and the RQ2 ablation.}
 The value of reconstruction pretraining is tested by a single configuration knob,
-which selects one of four arms:
+which selects one of four configurations:
 
 \begin{center}
 \small
 \setlength{\tabcolsep}{4.5pt}
 \begin{tabular}{lcccp{0.36\linewidth}}
 \toprule
-Arm & Built? & Loaded? & Trained? & Isolates \\
+Configuration & Built? & Loaded? & Trained? & Isolates \\
 \midrule
 \texttt{pretrained\_frozen} & yes & yes & no & Reference (pre-existing model) \\
 \texttt{pretrained\_finetuned} & yes & yes & yes & Value of task adaptation \\
@@ -297,19 +297,19 @@ Arm & Built? & Loaded? & Trained? & Isolates \\
 \end{tabular}
 \end{center}
 
-The arms form a chain of contrasts: \texttt{none} versus \texttt{random} isolates the
+The configurations form a chain of contrasts: \texttt{none} versus \texttt{random} isolates the
 encoder architecture, \texttt{random} versus \texttt{pretrained\_frozen} isolates
 reconstruction pretraining, and \texttt{pretrained\_frozen} versus
-\texttt{pretrained\_finetuned} isolates task adaptation. Under the \texttt{none} arm, no
+\texttt{pretrained\_finetuned} isolates task adaptation. Under the \texttt{none} configuration, no
 encoder module is constructed; \texttt{encode\_visit} mean-pools the raw node features
 instead, so the per-visit embedding width becomes 200 and the recurrent input width is
-derived rather than hardcoded. These four arms apply only to the \ac{GELSTM} and
+derived rather than hardcoded. These four configurations apply only to the \ac{GELSTM} and
 \ac{GEGRU} adapters, because the \ac{GEC} and \ac{GEP} adapters pre-compute embeddings
 offline with a frozen encoder; end-to-end encoder training has no meaning for them without
 restructuring those adapters.
 
 \paragraph{Pre-specified interpretation table.}
-The following interpretation table was written before any arm was run, so that the reading
+The following interpretation table was written before any configuration was run, so that the reading
 of the results could not be fitted retrospectively. 
 
 \begin{center}
@@ -321,7 +321,7 @@ Observation & Meaning & Consequence \\
 \texttt{random} $\approx$ \texttt{pretrained\_frozen} $\approx$ \texttt{pretrained\_finetuned} &
   Reconstruction adds nothing beyond the architecture prior &
   Keep as a compute-saving initialisation; report as a null finding \\
-\texttt{none} $\approx$ every other arm &
+\texttt{none} $\approx$ every other configuration &
   Graph encoder not earning its place &
   Focus should be about the longitudinal head; \\
 \texttt{pretrained\_*} $>$ \texttt{random}, both clearly above \texttt{none} &
@@ -329,14 +329,14 @@ Observation & Meaning & Consequence \\
   Keep the \ac{GAAE} stage; quantify the gain \\
 \texttt{pretrained\_finetuned} $>$ \texttt{pretrained\_frozen} &
   Pretrained features under-adapted to conversion task &
-  Switch to finetuned arm; monitor overfitting \\
+  Switch to finetuned configuration; monitor overfitting \\
 \texttt{pretrained\_finetuned} $<$ \texttt{pretrained\_frozen} &
   Fine-tuning overfits the small converter cohort &
   Justify freezing explicitly as a regularisation choice \\
 \texttt{random} $>$ \texttt{pretrained\_*} &
   Reconstruction pretraining actively harmful &
   Investigate pretext--downstream mismatch \\
-All four arms $\approx$ metadata floor &
+All four configurations $\approx$ metadata floor &
   Imaging not contributing signal at this sample size &
   Escalate to sample size and label definition \\
 \bottomrule
@@ -366,12 +366,12 @@ $X \in \mathbb{R}^{T \times 200 \times 200}$, the cumulative log inter-visit int
 $\log(1 + \text{months})$ standardised with training-fold statistics, the baseline
 adjacency $A_0$ constructed as a binary $k$-nearest-neighbour graph with $k = 8$ on the
 absolute baseline connectivity matrix, a covariate vector $[\text{age},\, \text{sex}]$,
-and, for arms that use them, the per-subject binary connectivity-change mask $M$, the
+and, for configurations that use them, the per-subject binary connectivity-change mask $M$, the
 strength centrality vector of $|A_0|$, and the rank-sigmoid drift anchor $\tilde{d}$.
 
 \paragraph{Switchable stages.}
 The architecture is implemented as a sequence of seven independently switchable modules,
-controlled by a single \texttt{TFGNTrainConfig} object, so that the entire ablation ladder
+controlled by a single \texttt{TFGNTrainConfig} object, so that the entire ablation sequence
 corresponds to toggling knobs on one model.
 
 \textbf{(1) Node-shared LSTM.} A single \ac{LSTM} with hidden dimensionality 64, one
@@ -413,7 +413,7 @@ strength centrality of $|A_0|$ by an auxiliary mean-squared-error term weighted 
 $\lambda_{\text{cent}}$. This stage is the interpretability layer; see
 \autoref{sec:instrumentation}.
 
-\textbf{(7) Cohort-adversary head.} Used only by the escalation arm. A gradient-reversal
+\textbf{(7) Cohort-adversary head.} Used only by the escalation configuration. A gradient-reversal
 layer, which applies the identity in the forward pass and negates and scales gradients in
 the backward pass, connects the pooled subject embedding to a binary
 ADNI-versus-DELCODE classification head, training the encoder to be uninformative about
@@ -492,7 +492,7 @@ make \ac{OASIS} an untrained one-hot category at inference time and its behaviou
 be unspecified. Instead, every pooled run computes a mandatory cohort probe: a logistic
 regression decodes cohort identity from the out-of-fold subject latents, and its \ac{AUC}
 is recorded. If this probe exceeds 0.75 on the selected
-arm, the pre-specified response is to re-run that arm with the gradient-reversal
+configuration, the pre-specified response is to re-run that configuration with the gradient-reversal
 cohort-adversary head and report both alongside each other. The outcome of this check is
 reported in \autoref{sec:rq4}.
 
@@ -504,7 +504,7 @@ The first run (P1) retrains the \ac{GAAE} on the pooled unlabelled graph collect
 (approximately 3,700 scans), using an architecture identical to the existing
 \ac{DELCODE}-only checkpoint (hidden 128, latent 64, two attention heads, $k = 16$,
 adjacency-loss weight 0.2, 500 epochs). Keeping the architecture identical ensures that
-downstream arms using this checkpoint remain comparable to arms using the \ac{DELCODE}-only
+downstream configurations using this checkpoint remain comparable to configurations using the \ac{DELCODE}-only
 checkpoint.
 
 The second run (P2) trains the node-shared \ac{LSTM} on a self-supervised next-visit
@@ -543,7 +543,7 @@ All supervised experiments use five-fold stratified group cross-validation, stra
 the binary label and grouped on subject identifier so that no subject's visits appear in
 more than one fold. The per-fold \texttt{StandardScaler} for embeddings is fitted on the
 training fold only and applied to validation and test embeddings. The log inter-visit
-interval and strength centrality statistics for \ac{TFGN} arms are fitted on the training
+interval and strength centrality statistics for \ac{TFGN} configurations are fitted on the training
 fold and carried inside the saved model state. All experiments use seeds 42, 43, 44 and 45
 to support seed-level variance estimation.
 
@@ -554,15 +554,15 @@ at a global norm of 1.0. Training runs for up to 100 epochs with early stopping 
 fails to improve for five consecutive epochs, down to a floor of $10^{-6}$. Cost-sensitive
 class weighting applies to the binary cross-entropy throughout.
 
-\paragraph{Ablation ladder as a design.}
-The ablation ladder is a sequential architecture search in which each rung inherits the
-kept configuration of all preceding rungs and changes exactly one knob from the last
-surviving state. A rung that fails the keep-or-drop criterion has its knob reverted and
-the next rung branches from the last surviving configuration. The two design contrasts of
+\paragraph{Ablation sequence as a design.}
+The ablation sequence is a sequential architecture search in which each configuration inherits the
+kept configuration of all preceding configurations and changes exactly one knob from the last
+surviving state. A configuration that fails the keep-or-drop criterion has its knob reverted and
+the next configuration branches from the last surviving configuration. The two design contrasts of
 primary interest are stated in advance: S0c against S1, in which neither encoder is
 pretrained, isolates the pooling-order inversion; S0b against S1c, in which both encoders
 are self-supervised, isolates the inversion against a matched pretraining baseline. The
-ladder arms are as follows.
+The ablation configurations are as follows.
 
 \textbf{S0a} is a logistic regression over principal components of the flattened
 connectivity-change matrix concatenated with visit count, total follow-up months, age and
@@ -575,7 +575,7 @@ It is the matched comparator for S1c: both S0b and S1c use a self-supervised enc
 trained end-to-end. It is the matched comparator for S1: neither S0c nor S1 uses
 self-supervised pretraining.
 
-\textbf{S0d} reproduces the Brain-TokenGT competitor arm \parencite{dong2023braintokengt}
+\textbf{S0d} reproduces the Brain-TokenGT competitor baseline \parencite{dong2023braintokengt}
 as a reference point, characterised in \autoref{sec:braintokengt}. Its scatter-gather
 operations do not engage deterministic algorithms, so
 its same-seed test \ac{AUC} has been observed to vary substantially across runs; it is
@@ -600,59 +600,59 @@ temporally static regions is beneficial.
 \textbf{S3} changes the fusion mode to \texttt{concat\_residual}. Under S1's configuration there is no \ac{GVAE} stage and therefore no
 graph latent $z_i$ to fuse with the temporal hidden state $h_i$. The fusion knob
 consequently has no gradient path to any new parameters under this configuration and the
-rung is structurally inert, a property of the architecture under that knob setting.
+configuration is structurally inert, a property of the architecture under that knob setting.
 
 \textbf{S4} replaces mean readout with sparsemax attentive pooling. It tests whether
 learned node weighting improves over uniform pooling.
 
-\textbf{S5} adds the dual-score head with $\lambda_{\text{cent}} = 0.1$. This rung is
+\textbf{S5} adds the dual-score head with $\lambda_{\text{cent}} = 0.1$. This configuration is
 pre-specified as kept regardless of its contribution to \ac{AUC}: a saliency map that does
 not improve classification accuracy can still be a valid or invalid interpretability
 artefact, and the question must not be dropped if the AUC result is neutral. The
 interpretability validation is described in \autoref{sec:instrumentation}.
 
-\textbf{SENS} repeats the selected arm at \texttt{min\_visits=3}, reducing the pool to
+\textbf{SENS} repeats the selected configuration at \texttt{min\_visits=3}, reducing the pool to
 140 subjects. It tests whether longer sequences confer a larger advantage.
 
-\textbf{W3} re-runs the \ac{GELSTM} and the \ac{TFGN} selected arm with
+\textbf{W3} re-runs the \ac{GELSTM} and the \ac{TFGN} selected configuration with
 \texttt{max\_visits=3} to create a matched comparison with Brain-TokenGT, which is
 architecturally constrained to at most three visits.
 
 \paragraph{The four-tier evaluation protocol.}
-This protocol was fixed in its entirety prior to reading any ladder result.
+This protocol was fixed in its entirety prior to reading any result.
 
-\textbf{Tier 1 (floor gates).} Every arm must exceed two pre-computed baselines: the
+\textbf{Tier 1 (floor gates).} Every configuration must exceed two pre-computed baselines: the
 demographics-only logistic regression (age and sex only), and the static single-visit
 classifier evaluated per fold via a \texttt{fold\_probe} hook inside the cross-validation
 runner, so that neither baseline requires reading the held-out test set.
 
 \textbf{Tier 2 (selection rule).} The independent unit is the seed ($n = 4$), not the
 fold, because folds within a seed share a model class and are not independent draws. For
-each seed, the mean paired per-fold change in \ac{AUC} is computed (rung $k$ minus its
-parent, matched fold for fold). A rung is kept if and only if the mean of the four
+each seed, the mean paired per-fold change in \ac{AUC} is computed (configuration $k$ minus its
+parent, matched fold for fold). A configuration is kept if and only if the mean of the four
 seed-level means exceeds their standard error:
 $\operatorname{mean}(\Delta) > \operatorname{SE}(\Delta)$.
 The two possible outcomes are asymmetric by construction: a failure means the effect is
-undetectable at this sample size, never that it is harmful; a pass means the rung is worth
+undetectable at this sample size, never that it is harmful; a pass means the configuration is worth
 carrying forward, never that the effect is statistically significant. When the fold-matched
 and pooled formulations of the criterion disagree, the pre-specified one-standard-error
-tie-breaker applies: among kept arms, the simplest configuration within one standard error
+tie-breaker applies: among kept configurations, the simplest configuration within one standard error
 of the best is preferred. This increases the evaluation sample size from 64 (in-domain test) to 248 (cross-validation pool),
 reducing the minimum detectable effect from approximately 0.08 to approximately 0.04
 \ac{AUC} units, and removes the risk of selecting on the held-out test data.
 
 \paragraph{Worked example.}
-Consider a rung evaluated at four seeds, with seed-level mean $\Delta$\ac{AUC} values of
+Consider a configuration evaluated at four seeds, with seed-level mean $\Delta$\ac{AUC} values of
 $+0.031$, $+0.008$, $+0.024$ and $-0.005$. The mean of the four values is
 $(0.031 + 0.008 + 0.024 - 0.005)/4 = 0.0145$. The standard deviation is approximately
 $0.0147$ and the standard error is $0.0147/\sqrt{4} \approx 0.0074$. Since
-$0.0145 > 0.0074$, the rung passes and its knob is carried forward. Had the fourth value
+$0.0145 > 0.0074$, the configuration passes and its knob is carried forward. Had the fourth value
 been $-0.025$ instead, the mean would be $0.0095$ and the standard error $0.0209$, giving
 a failure; the result would be stated as ``undetectable at this sample size,'' not as
 evidence that the mechanism is harmful.
 
-\textbf{Tier 3 (robustness vetoes).} After a rung passes Tier 2, five checks with
-pre-specified thresholds are applied. A rung fails if any of the following conditions
+\textbf{Tier 3 (robustness vetoes).} After a configuration passes Tier 2, five checks with
+pre-specified thresholds are applied. A configuration fails if any of the following conditions
 holds: (i) per-cohort out-of-fold \ac{AUC} falls to or below the demographics-only floor
 for any cohort; (ii) the standard deviation of the decision threshold across the 20
 fold-seed combinations exceeds 0.15; (iii) the expected calibration error after temperature
@@ -661,22 +661,22 @@ between scan count and classification score within stable subjects exceeds 0.30;
 the cohort probe \ac{AUC} exceeds 0.75.
 
 \textbf{Tier 4 (held-out estimation).} The 64-subject in-domain test set and the
-60-subject \ac{OASIS} set are read exactly once, on the selected arm and its pre-specified
-secondary arms, at the out-of-fold-derived threshold with no retraining.
-\texttt{common/frozen\_read.py} reconstructs each arm's adapter from its saved summary and
+60-subject \ac{OASIS} set are read exactly once, on the selected configuration and its pre-specified
+secondary configurations, at the out-of-fold-derived threshold with no retraining.
+\texttt{common/frozen\_read.py} reconstructs each configuration's adapter from its saved summary and
 checkpoint and refuses to score a split whose result keys already exist unless an explicit
 overwrite is provided, so the one-shot read cannot be spent a second time.
 
 \paragraph{Scope table.}
-Spending the one-shot held-out splits on every ladder rung would turn the external
-evaluation into a selection set. The following table states which arms were eligible for
+Spending the one-shot held-out splits on every configuration would turn the external
+evaluation into a selection set. The following table states which configurations were eligible for
 which tier.
 
 \begin{center}
 \small
 \begin{tabular}{lccc}
 \toprule
-Arm & OOF & In-domain test & External (OASIS-3) \\
+Configuration & OOF & In-domain test & External (OASIS-3) \\
  & ($n=248$) & ($n=64$) & ($n=60$) \\
 \midrule
 S0-demo, S0a, S0b, S0c & yes & no & no \\
@@ -686,7 +686,7 @@ S1b (secondary) & yes & yes & yes \\
 S1c both versions & yes & no & no \\
 S2, S3, S4 & yes & no & no \\
 S5 (secondary, interpretability) & yes & yes & yes \\
-SENS, W3 arms & yes & no & no \\
+SENS, W3 configurations & yes & no & no \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -696,9 +696,7 @@ At the in-domain test size of $n = 64$ and the external size of $n = 60$, the em
 
 \section{Interpretability and Robustness Instrumentation}\label{sec:instrumentation}
 
-This section describes the instrumentation used to assess the trained models. All
-findings from applying this instrumentation are reported in the corresponding subsections
-of \autoref{ch:results}.
+This section describes the instrumentation designed to probe trained representations. Rather than applying a single uniform metric across all architectures, these diagnostic tools are matched to specific architectural mechanisms: the latent disease axis, trajectory projection, and perturbation sweeps interrogate the 64-dimensional latent bottleneck and reconstruction loss of the baseline spatial-first encoder (\ac{GAAE}), while the scanner-drift simulation assesses recurrent trajectory stability. All findings from applying this instrumentation are reported in \autoref{sec:interpretability-results} and \autoref{sec:robustness-results}.
 
 \paragraph{The disease axis and per-scan disease score.}
 We construct a linear direction in the encoder's 64-dimensional latent space that separates
@@ -845,7 +843,7 @@ tracking cohort identity rather than disease is identified as such.
 
 Three design constraints are recorded as method constraints rather than as results. First,
 stability is measured cross-seed rather than cross-fold because only the best fold's map is
-persisted per run, giving four maps per rung rather than twenty; this reduces the power of
+persisted per run, giving four maps per configuration rather than twenty; this reduces the power of
 the stability claim. Second, the overlap statistic is restricted to the 46 default-mode
 regions of the Schaefer-200 cortical atlas, which contains no subcortical regions; the
 hippocampal network is not assessable with this atlas. Third, the null hypothesis is a network-label

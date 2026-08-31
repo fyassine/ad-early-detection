@@ -7,34 +7,380 @@
 
 \section{Scope of the Claims}\label{sec:scope-of-claims}
 
+In this chapter we interpret the results reported in \autoref{ch:results}. We state what
+the evaluated protocol licenses and what it does not, and we do not restate the numbers
+of \autoref{ch:results} beyond what a given interpretation requires.
+
 The primary scope of this thesis is the methodological evaluation of supervised
 longitudinal classification approaches for \ac{MCI}-to-\ac{AD} conversion. It does not
 claim to develop or validate a normative healthy-reference framework for individualized
 abnormality detection.
 
-\outlinenote{States what the evaluated protocol licenses and what it does not, including
-that the time-to-event extension was scoped out.}
+The protocol licenses an in-domain comparison of longitudinal architectures on a pooled
+\ac{ADNI}-and-\ac{DELCODE} cohort of $n=248$ subjects, evaluated out-of-fold across four
+seeds, together with a single one-shot read of a held-out in-domain test set and an
+external \ac{OASIS} cohort for the selected configuration and its pre-specified
+secondaries. It does not license a claim of external validation: \ac{OASIS} is treated as
+a transfer target rather than as a held-out sample from the training distribution, and
+\autoref{sec:cohort-dependence} states what the pooled protocol's own diagnostics say about
+that distinction. Every keep-or-drop decision in \autoref{ch:results} is a screening
+heuristic at four seeds rather than a significance test, so an architectural comparison
+that this thesis reports as inconclusive is not thereby shown to be false; it is reported
+as undetectable at this sample size, which is a narrower claim.
+
+The protocol does not license a time-to-event claim. Predicting the interval to conversion,
+rather than only its binary outcome, would require a survival model fit to the same
+cohorts under the same leakage controls used throughout \autoref{ch:methodology}; this
+extension was scoped out of the present evaluation and is named again as future work in
+\autoref{ch:conclusion}. The protocol also does not license a claim about a
+healthy-reference or individualized-deviation framework: every classifier compared in
+\autoref{ch:results} is trained directly on the conversion label, not on a divergence from
+a normative population, and the pre-existing framework this thesis builds on, described in
+\autoref{sec:preexisting}, is attributed to the broader research programme rather than to
+the present work.
 
 \section{Capacity and Inductive Bias Under Sample Constraint}\label{sec:capacity}
-\outlinenote{What the parameter-per-subject accounting implies, across the independent
-comparisons that point the same way.}
+
+In this section we interpret what the parameter counts of \autoref{sec:rq2} and
+\autoref{sec:rq3} imply about the cohort size available to this thesis, drawing on four
+comparisons that were run independently of one another and that all point in the same
+direction.
+
+The first comparison is the \ac{DELCODE}-only encoder ablation of \autoref{sec:rq2}: the
+configuration with no graph encoder at all scores within fold-to-fold spread of the frozen
+pretrained configuration on cross-validation \ac{AUC}, while using approximately
+seventeen times fewer trainable parameters. The second is the pooled temporal-first
+ablation of \autoref{sec:rq3}: the selected configuration exceeds the randomly initialised
+spatial-first floor by 0.186 \ac{AUC} at fourteen times fewer parameters, and exceeds the
+pretrained spatial-first floor by 0.030 \ac{AUC} at 7.6 times fewer trainable parameters.
+The third comparison runs in the opposite direction and reaches the same conclusion: two
+configurations that add parameters on top of the selected configuration, a temporal
+saliency gate and a dual-score head, both score lower than the configuration they extend.
+The fourth comparison is external to this thesis's own architectures: the published
+competitor evaluated in \autoref{sec:braintokengt} processes on the order of one thousand
+four hundred tokens per subject through six hundred thousand trainable parameters, against
+roughly eighty training subjects per fold, and scores below every configuration in the
+temporal-first ablation sequence that exceeds Tier 1.
+
+Four independent comparisons that each add capacity find no corresponding gain, and one
+that removes capacity relative to two established baselines finds a gain instead. This
+pattern is consistent with the sample size, rather than the capacity of any candidate
+architecture, being the binding constraint on classification performance at this cohort
+size. It does not follow from these comparisons alone that a larger architecture could not
+help on a larger cohort; the claim is scoped to the sample sizes evaluated here.
+
+A statistical characterisation of the underlying connectivity matrices, reported in
+\autoref{sec:group-stats}, offers a plausible account of why this pattern holds. The ratio
+of within-group to between-group edge variance for the converter-versus-non-converter
+contrast is on the order of 0.016 under every correlation measure tested, and no single
+edge among the 5{,}995 examined reaches a ratio favouring the between-group component. A
+model with more free parameters is not thereby better positioned to separate two groups
+whose edge-level variation is dominated by within-group heterogeneity; additional capacity
+gives such a model more ways to fit that heterogeneity rather than more ways to isolate the
+smaller between-group signal. This is offered as a plausible explanation for the observed
+capacity pattern, not as a demonstration, since no experiment in this thesis directly
+manipulates the variance ratio and observes its effect on classification performance.
 
 \section{What Self-Supervised Pretraining Contributed}\label{sec:ssl-contribution}
-\outlinenote{The reconstruction objective assessed against RQ2, across both the
-\ac{DELCODE}-only and the pooled protocols.}
+
+In this section we interpret the reconstruction-pretraining results of \autoref{sec:rq2}
+and \autoref{sec:rq3} against the value that self-supervised pretraining is claimed to add
+in prior work on this modelling framework, described in \autoref{sec:static-representation}.
+This question is asked under both the \ac{DELCODE}-only protocol of \autoref{sec:rq2} and
+the pooled protocol of \autoref{sec:rq3}.
+
+Two comparisons in \autoref{sec:rq2} together bound what reconstruction pretraining
+contributes. The frozen pretrained encoder outperforms the randomly initialised encoder
+trained end to end on cross-validation \ac{AUC} by a wide margin, and its spread across
+seeds is smaller, so reconstruction pretraining stabilises optimisation relative to a
+random start. At the same time, the configuration with no graph encoder at all also
+outperforms the randomly initialised encoder, and does so at seventeen times fewer
+trainable parameters than the frozen pretrained configuration itself. A representation
+that is beaten by the absence of any learned encoder is not thereby shown to transfer
+useful structure to the downstream task; the two comparisons together are consistent with
+pretraining serving as a stabiliser of a difficult optimisation problem rather than as a
+source of task-relevant representation, and \autoref{sec:rq2} does not distinguish between
+these two roles by itself.
+
+The reconstruction-fidelity measurement of \autoref{sec:rq2} constrains what a pretrained
+encoder's representation could plausibly contain in the first place. The pretrained
+encoder's feature reconstruction reaches a median Pearson correlation of approximately
+0.05 against its own held-out input, which falls in the band this thesis's own convention
+labels poor, and its adjacency reconstruction is negative. An encoder whose decoder cannot
+reconstruct the input it was trained to reconstruct has correspondingly little basis for
+having captured a representation that a frozen downstream head could exploit, and this is
+consistent with, rather than contradicted by, the encoder ablation result above.
+
+On the pooled protocol of \autoref{sec:rq3}, the same question receives two further
+answers that diverge from one another. Initialising the node-shared recurrent core from a
+self-supervised forecasting checkpoint yields a small gain that the fold-matched statistic
+treats as real and the pooled statistic treats as noise; the pre-specified one-standard-error
+tie-breaker resolves the disagreement in favour of the simpler configuration without a
+pretrained initialisation, so this contrast does not establish that node-level forecasting
+pretraining transfers value at this cohort size, only that the two available statistics do
+not agree strongly enough to justify the added component. A second, unrelated pretraining
+signal, an auxiliary reconstruction stage attached to the selected configuration, collapses
+classification performance substantially. Because the matched comparator for this
+contrast under a self-supervised encoder on both sides also failed to train usefully, the
+pre-specified pooling-order contrast that this second attempt was meant to answer remains
+untested rather than answered in the negative, a point \autoref{sec:threats} returns to.
+
+The fine-tuning configuration of \autoref{sec:rq2}, in which the pretrained encoder is unfrozen and
+trained jointly with the classification head, shows a further property of this pretraining
+regime: its held-out test performance varies sharply across seeds, and this variation is
+bit-reproducible rather than a symptom of run-to-run execution noise, which
+\autoref{sec:threats} discusses further as a reproducibility question in its own right.
+\autoref{sec:rq2} ranks three non-exclusive mechanisms consistent with this instability, a
+shared learning rate across the unfrozen encoder and the freshly initialised head, the
+capacity-to-sample ratio once the encoder is unfrozen, and a mismatch between the
+reconstruction objective the encoder was pretrained on and the classification objective it
+is fine-tuned on. No experiment in this ablation sequence isolates any one of these three
+from the other two, since the configuration that would test the leading candidate directly, a
+discriminatively scaled learning rate for the unfrozen encoder, was not run before the
+writing deadline. The three mechanisms are therefore reported here as they were reported in
+\autoref{sec:rq2}, as ranked candidates rather than as an established cause.
+
+A qualitative finding reported in \autoref{sec:rq2} offers a mechanism for why a
+reconstruction objective struggles to contribute at this cohort size: a statistical
+characterisation of the raw connectivity matrices found that within-cohort between-patient
+variation exceeds between-cohort variation by a wide margin, so a reconstruction objective
+evaluated at this sample size is consistent with spending its representational capacity on
+subject-specific idiosyncrasy rather than on the disease-relevant signal a downstream
+classifier needs. This account is offered as a plausible explanation rather than as an
+isolated demonstration, since no experiment in this thesis holds subject idiosyncrasy fixed
+while varying the reconstruction objective. A closely related question, whether the
+message-passing step of a graph encoder adds value at all under this pooling order, has
+also been reported at larger scale in the literature; the encoder-ablation finding of
+\autoref{sec:rq2} is best read as an extension of that question into a smaller-sample,
+longitudinal setting with the pretext objective itself ablated, rather than as an
+independent discovery of the same result.
 
 \section{Cohort Dependence and the Limits of Transfer}\label{sec:cohort-dependence}
-\outlinenote{Cohort identity is strongly decodable from the pooled embedding and in-domain
-performance differs substantially between \ac{DELCODE} and \ac{ADNI}, which together
-indicate that the learned representation remains strongly cohort-dependent. Discussed as
-consistent with cohort-specific representations contributing to the poor transfer, without
-attributing causality, and without concluding anything about which architecture transfers
-where. Also discusses what the delayed reading of the escalation threshold says about the
-check as a process.}
+
+In this section we interpret the per-cohort results, the cohort-identity probe and the
+gradient-reversal mitigation reported in \autoref{sec:rq4}, and what together they say
+about whether the representation learned under the pooled protocol is cohort-independent.
+
+The per-cohort breakdown of \autoref{sec:rq4} shows that in-domain performance differs
+substantially between the two pooled cohorts for every configuration evaluated, and that
+this gap is widest for the spatial-first configurations: the frozen pretrained
+spatial-first configuration scores near chance on \ac{ADNI} while scoring strongly on
+\ac{DELCODE}, so its single pooled figure describes neither cohort on its own. The
+cohort-identity probe adds a second, independent line of evidence: a linear classifier
+recovers cohort of origin from the pooled patient representation at approximately 0.86
+\ac{AUC} for every full-pool configuration, well above the pre-specified escalation
+threshold of 0.75, despite no cohort label ever entering the training objective. Taken
+together, a representation from which cohort of origin is this strongly decodable, and
+whose in-domain performance differs this much between the two cohorts it pools, is
+consistent with a representation that remains strongly cohort-dependent rather than one
+that has been driven toward a shared, cohort-invariant encoding by the pooled training
+objective alone.
+
+The external read on \ac{OASIS} is where this cohort dependence is tested directly, and it
+is at chance for every configuration in the one-shot evaluation of \autoref{sec:rq4}: the
+selected configuration and its two pre-specified secondaries all fall within one standard
+error of an \ac{AUC} of 0.5 at this sample size, against an in-domain test \ac{AUC} in the
+high 0.7s for the same three configurations. We report this as no evidence of transfer to
+an unseen cohort, not as evidence that the learned representation actively fails on it,
+since the observed scores do not fall below the noise floor around chance. The strong
+cohort-identity decodability reported above is consistent with cohort-specific structure in
+the representation contributing to this absence of transfer, since \ac{OASIS} is exactly
+the category of unseen cohort such a dependence would be expected to fail on; we do not
+draw a causal conclusion from the probe result alone, because no experiment in this
+ablation sequence isolates the probe's contribution from the many other differences between
+the cohorts, among them site, acquisition protocol and inter-visit interval structure, that
+\autoref{sec:threats} discusses separately. We equally draw no conclusion from these
+results about which architecture evaluated in this thesis, or the published competitor
+characterised in \autoref{sec:braintokengt}, would transfer better to an external cohort;
+\autoref{sec:comparability} states directly that the comparison between them is not
+constructed to answer that question, and nothing in this chapter revisits that boundary.
+
+The pre-specified gradient-reversal mitigation, attached to the same pooled representation
+the probe scores and run once the escalation threshold was found to be exceeded, moved
+performance on both axes it targeted in the direction opposite to its design intent: pooled
+out-of-fold \ac{AUC} decreased and cohort-identity decodability increased. This outcome
+does not identify cohort-invariant representation learning under this pooling protocol as
+an unsolvable problem; it identifies this particular mitigation, as configured, as not
+having solved it. The candidate explanation recorded in \autoref{sec:rq4}, that the
+reversed gradient is unweighted relative to the classification loss, is a hypothesis rather
+than a finding, since the comparison of gradient magnitudes between the two objectives that
+would test it directly was not run.
+
+A separate observation concerns the pre-specified escalation trigger itself as a process
+rather than as a result. The threshold of 0.75 had been exceeded from the first configuration run
+onward, and this was not read against the pre-specified rule until the tables of
+\autoref{sec:rq4} were assembled together at the end of the ablation sequence. The
+underlying quantity, the cohort-probe value for each configuration, was computed and
+persisted correctly at every step, so no measurement was lost; what was missing was the act
+of checking a computed value against its own rule at the point the rule was meant to fire.
+Every in-domain out-of-fold result reported in \autoref{ch:results} is unaffected by this
+gap, since those quantities do not depend on cross-cohort transfer and were not themselves
+selected using the probe. We record this as evidence that a pre-specified check is only as
+protective as the discipline of reading it at the moment it applies, a property of process
+that a quantity's own correctness does not by itself guarantee.
+
+The simulated scanner-drift sweep of \autoref{sec:robustness-results}, evaluated on a
+different architecture and a single seed, offers an independent observation consistent with
+the cohort-dependence account above without adding to it as evidence: at acquisition
+variation calibrated to the two external cohorts' own measured heterogeneity, classification
+sensitivity for the converter class falls toward zero as predictions revert to the majority
+stable-\ac{MCI} class. Because this is a metadata-calibrated simulation on synthetic
+perturbations rather than an evaluation against the real external connectivity matrices
+used in \autoref{sec:rq4}, and because it evaluates a different recurrent architecture at a
+single seed, it is offered here only as a second, independently obtained signal pointing in
+the same direction as the \ac{OASIS} result, not as corroborating evidence in the technical
+sense.
 
 \section{Threats to Validity}\label{sec:threats}
-\outlinenote{Cohort size as the dominant constraint, the conversion label as a censored
-observation, informative attrition, single-site development, and the limits of a negative
-result.}
+
+In this section we discuss five threats to the validity of the results reported in
+\autoref{ch:results}: cohort size, the conversion label as a censored observation,
+informative attrition, single-site development, and the limits of a negative result.
+
+\paragraph{Cohort size.} At the in-domain test size of 64 subjects and the external size of
+60 subjects, the resolvability statement of \autoref{sec:protocol} puts the noise floor on
+an \ac{AUC} difference at approximately 0.08, and on the larger 248-subject out-of-fold pool
+at approximately 0.04. Every keep-or-drop verdict in \autoref{sec:rq3} is therefore a
+screening heuristic at four seeds, not a significance test, and the asymmetry this implies
+matters for how the results are read: a configuration that fails to clear its comparator is
+reported as undetectable at this sample size, never as shown to be harmful, while a
+configuration that clears it is reported as worth carrying forward, never as proven
+superior. Cohort size is the constraint underlying most of the remaining threats in this
+section, since a larger cohort would narrow the resolvability floor that makes several of
+them binding in the first place.
+
+\paragraph{The conversion label as a censored observation.} Converter status is assigned
+from a fixed follow-up window, described in \autoref{ch:data}, rather than from the exact
+clinical date of conversion, so a subject observed for a shorter window could in principle
+convert later than the window captures. Widening the window would reduce this censoring at
+the cost of a smaller cohort, since fewer subjects have sufficiently long follow-up to
+qualify, so the window length in \autoref{ch:data} reflects a trade-off between cohort size
+and label precision rather than a setting free of consequence. \ac{OASIS} carries a further,
+more direct form of this threat: nine subjects in the external cohort have their conversion
+label unresolved at the time of the evaluation reported in \autoref{sec:rq4}.
+
+\paragraph{Informative attrition.} Converters and stable \ac{MCI} subjects do not have the
+same average number of visits available in the \ac{DELCODE} held-out split: converters
+average more scans per subject than stable subjects do. A visit count that correlates with
+the label is a route by which a classifier could learn to exploit visit count itself rather
+than the trajectory information the visit count carries, an alternative explanation
+\autoref{ch:results} guards against in two ways: the static single-visit probe reported
+alongside every configuration in \autoref{sec:rq1} and \autoref{sec:rq3} sits at chance for
+every one of them, and the Tier-3 robustness veto of \autoref{sec:protocol} would fail a
+configuration whose score correlates too strongly with scan count within stable subjects.
+Neither control eliminates the underlying attrition pattern in the cohort; both bound how
+much of the reported signal that attrition pattern could plausibly explain.
+
+\paragraph{Single-site development.} \ac{DELCODE} is a single-site cohort with a highly
+regular inter-visit interval, over ninety percent of recorded intervals falling at twelve
+months, described in \autoref{sec:comparability}. \ac{ADNI} spans multiple acquisition
+protocols and field strengths across sites and phases, and its inter-visit interval varies
+considerably more than \ac{DELCODE}'s does. A model whose temporal-first design is
+motivated in part by conditioning on the interval between visits, described in
+\autoref{sec:tfgn}, has correspondingly little variation to condition on within its primary
+development cohort; \autoref{sec:ablations-not-run} records that a dedicated ablation of
+this input was not re-reported for this reason, and that a cohort with more irregular
+spacing would be needed to isolate the interval input's contribution directly. Development
+on a single, temporally regular site is therefore a threat not only to how well a result
+transfers to a more heterogeneous cohort, addressed in \autoref{sec:cohort-dependence}, but
+to whether a design decision motivated by temporal irregularity has been exercised by the
+cohort it was tuned on at all.
+
+\paragraph{The limits of a negative result.} Several results in \autoref{ch:results} are
+negative or inconclusive by construction, and each carries a specific limitation on what it
+licenses. The sequence-length probe of \autoref{sec:rq1} confounds two effects that a single
+comparison cannot separate: restricting the selected configuration's own predictions to
+subjects with three or more visits raises its score, while training a separate configuration
+on only that restricted subject pool lowers it, so the result establishes that the loss from
+a smaller training pool exceeds the gain from longer visit histories at this cohort size,
+not that longer visit histories carry no additional signal. The pooling-order contrast
+under matched self-supervised pretraining, discussed in \autoref{sec:ssl-contribution},
+remains untested rather than resolved, because the configuration on one side of that
+contrast failed to train usefully; the question it was designed to answer accordingly
+remains open. The comparison against the published competitor characterised in
+\autoref{sec:braintokengt} is bounded by its own run-to-run scatter and by an unequal tuning
+budget relative to the architectures introduced in this thesis, both described in
+\autoref{sec:comparability}; neither axis is resolved by the results reported here, and both
+limit how much weight that comparison alone can carry.
+
+\paragraph{Two further threats.} The reproducibility split reported in
+\autoref{sec:reproducibility-audit} is itself a validity consideration for any comparison
+that relies on it: the temporal-first implementation evaluated in this thesis reproduces to
+the last recorded digit under a fixed seed, while the published competitor's same-seed
+runs scatter by an amount comparable to the margins several comparisons in
+\autoref{sec:rq3} turn on. This scatter is consistent with unengaged global determinism in
+scatter-gather operations inside the competitor's own released implementation, stated as a
+plausible mechanism rather than as a demonstrated one, since no experiment here holds the
+scheduling fixed while varying the algorithm path. Finally, the attrition reported in
+\autoref{tab:attrition} shows that the two external cohorts do not lose sessions to motion
+quality control at comparable rates: \ac{ADNI} loses a modest fraction of its sessions at
+this stage, while \ac{OASIS} loses a substantially larger fraction of its already smaller
+pool. Acquisition and cohort composition are therefore a plausible contributor to some of
+the difficulty external evaluation poses, alongside the representation-level account of
+\autoref{sec:cohort-dependence}, rather than a substitute for it.
 
 \section{Clinical Relevance}\label{sec:clinical-relevance}
+
+In this section we discuss what the results of \autoref{ch:results} say about the clinical
+value of the signal this thesis studies, rather than about the readiness of any evaluated
+configuration for clinical deployment; \autoref{sec:cohort-dependence} and
+\autoref{sec:threats} already state the transfer and sample-size limits that stand between
+these results and a deployment claim, and this section does not restate them.
+
+The floor comparison of \autoref{sec:rq1} shows that essentially all of the signal
+available to the selected configuration is longitudinal: the same configuration evaluated
+on a single visit scores at chance, while its full-trajectory evaluation reaches an
+\ac{AUC} of 0.7488. A single scan, by this evidence, does not separate a subject whose
+connectivity pattern is mildly abnormal but stable from one whose pattern is mildly
+abnormal and declining; the second scan is what supplies the information a single
+assessment cannot. Every configuration's static single-visit probe in \autoref{sec:rq1} and
+\autoref{sec:rq3} lands at or below the demographics-only floor, so this is not a property
+of the selected architecture alone but a property of what a single functional-connectivity
+snapshot carries about future conversion at this cohort size.
+
+The linear floor of \autoref{sec:rq1}, a logistic regression fitted directly on the
+connectivity-change matrix with no learned representation, already recovers 0.7053 of the
+selected configuration's 0.7488, leaving a difference of 0.0435 for every nonlinear or
+learned component evaluated in this thesis to be credited with. The clinically relevant
+quantity, by this comparison, is closer to the change in connectivity between visits itself
+than to any particular learned representation of that change; a linear read of that
+quantity already captures most of what a trained classifier adds. This bounds what claim of
+added value a more complex representation can support, without denying that the remaining
+margin is real.
+
+The disease axis and per-scan disease score of \autoref{sec:interpretability-results} show a
+different kind of clinical value: not a larger effect than the classification result itself,
+but a more interpretable form of the same information. Projecting the frozen spatial-first
+encoder's embeddings onto a single fitted axis separates converters from stable subjects
+with a large effect size, and a logistic probe on the same embeddings reaches an
+out-of-fold \ac{AUC} comparable to the classification results elsewhere in this thesis. The
+Fisher discriminant ratio computed per latent dimension shows that this separation is
+concentrated in a minority of the sixty-four latent dimensions rather than distributed
+evenly across all of them, which is the practical distinction behind treating this axis as
+a direction with content rather than as an artefact of the classifier's decision boundary.
+Compressing a classification decision into one scalar per scan, comparable in form to a
+quantitative biomarker readout, is the form of clinical value this instrumentation offers,
+independently of whether the underlying classifier's \ac{AUC} itself exceeds any particular
+threshold.
+
+The perturbation results of \autoref{sec:robustness-results} add a further constraint on
+what this signal reflects. Cohort decisions computed from the reconstruction-error baseline
+are completely insensitive to demographic-conditioning noise, which alters only age and sex
+while leaving the connectivity graph unchanged, and to edge-topology perturbation, while
+remaining sensitive to direct feature-level noise at the highest level tested. This
+asymmetry indicates that the decisions this instrumentation studies are driven by
+graph-derived connectivity signal rather than by demographic covariates riding alongside
+it, which is a precondition for treating the disease axis above as a connectivity-based
+biomarker candidate rather than as a proxy for age or sex.
+
+Taken together, these results support the value of longitudinal functional-connectivity
+signal, and of a linear or near-linear summary of its change over time, as a research
+instrument for locating where conversion-relevant information resides in this modality.
+They do not, on their own, support a claim of clinical deployment readiness: the cohort
+sizes evaluated here, the sample-size floor of \autoref{sec:threats} and the transfer result
+of \autoref{sec:cohort-dependence} are what would need to change before a claim of that kind
+could be made. We accordingly restrict the claims of this section to what the evaluated
+protocol licenses, in keeping with the scope stated in \autoref{sec:scope-of-claims}, rather
+than placing the figures reported in this thesis alongside conversion-prediction accuracies
+reported elsewhere, which were obtained under different cohorts, protocols and evaluation
+practices that this thesis has not audited.
