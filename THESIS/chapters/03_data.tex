@@ -109,7 +109,7 @@ it, a sequence model has access to a subject's visit count as a side channel cor
 with the label it is asked to predict, alongside whatever signal the visits' content
 carries.
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.75\textwidth]{fig0_cohort_design_and_distribution}
   \caption{Class balance of the \ac{DELCODE} downstream cohort restricted to subjects with
@@ -140,7 +140,7 @@ cases, falling near thirty-six months rather than twelve. \autoref{sec:pooled-pr
 records that pooling \ac{ADNI} into the \ac{DELCODE}-based training pool reintroduces this
 irregularity into a cohort that would otherwise be sampled on a near-fixed schedule.
 
-\begin{table}[htb]
+\begin{table}[htbp]
   \centering
   \small
   \caption{Visit spacing by cohort. Scans per subject and inter-visit interval statistics
@@ -278,7 +278,10 @@ subjects (99 stable \ac{MCI}, 68 converters; 99 train, 34 validation, 34 test su
 covering 305, 100 and 99 scans respectively, of which 269, 84 and 83 fall before
 conversion and are therefore available to the classifier) together with a separate
 pretraining split of 241, 115 and 116 subjects (369, 216 and 224 scans) used for the
-self-supervised encoder.
+self-supervised encoder. The pretraining split is larger than the downstream split
+because it draws on all diagnostic groups present in \ac{DELCODE} (healthy, \ac{AD},
+stable \ac{MCI} and converters; \ac{SCD}-only subjects excluded), whereas the downstream
+split is restricted to stable \ac{MCI} and converters only.
 \ac{ADNI} had no pretraining split of its own; one was built for it during the thesis by
 re-applying \ac{DELCODE}'s own two-stage splitting procedure and seed policy to \ac{ADNI},
 so that the pretraining data for both cohorts follow one leakage-control rule rather than
@@ -295,7 +298,7 @@ same filter from 167 to 120 subjects: 95 across the pooled training and validati
 and 25 in the pooled test split. \autoref{tab:pooled-splits} gives the resulting pooled
 split sizes.
 
-\begin{table}[htb]
+\begin{table}[htbp]
   \centering
   \small
   \caption{Pooled split composition. The cross-validation pool and in-domain test set
@@ -322,7 +325,7 @@ partition and class distribution of the pooled \ac{ADNI} and \ac{DELCODE} cohort
 \autoref{fig:heldout-pooled-vs-oasis3} compares the class balance of the pooled in-domain test
 set directly against the external \ac{OASIS} test set.
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.75\textwidth]{fig_pooled_adni_delcode_distribution}
   \caption{Class balance of the pooled \ac{ADNI} and \ac{DELCODE} cohort restricted to
@@ -332,7 +335,7 @@ set directly against the external \ac{OASIS} test set.
   \label{fig:pooled-distribution}
 \end{figure}
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.75\textwidth]{fig_heldout_pooled_vs_oasis3}
   \caption{Class distribution of the evaluation test sets: the in-domain pooled test set
@@ -446,7 +449,7 @@ at exactly the mean age is left untouched by construction.
 external cohort loses between the standardised imaging directory and the final,
 model-ready manifest.
 
-\begin{table}[htb]
+\begin{table}[htbp]
   \centering
   \caption{Attrition from imaging-directory conversion to the final cohort manifest.
   Subject and session counts are reported at each stage; the final manifest column also
@@ -512,7 +515,7 @@ distance metrics tested: between-patient variation within either diagnostic grou
 dominant source of variance in this cohort's connectivity matrices, at every edge and under
 every metric considered here.
 
-\begin{table}[htb]
+\begin{table}[htbp]
   \centering
   \small
   \caption{Within-group and between-group edge variance, converters against pooled
@@ -553,7 +556,7 @@ observed component a permutation-based $p$-value. Four of the five metrics again
 significant component at $\alpha = 0.05$; the cross-correlation metric is the exception, with
 a 24-edge connected component reaching $p = 0.024$.
 
-\begin{table}[htb]
+\begin{table}[htbp]
   \centering
   \small
   \setlength{\tabcolsep}{5.5pt}
