@@ -132,7 +132,7 @@ pools every completed run.
 | `none` | 4 | 5 | **0.8313 ± 0.0529** | **0.7028** | 0.8932 ± 0.0073 | 31,169 |
 | `pretrained_frozen` | 4 | 4 | 0.7812 ± 0.0122 | 0.6048 | **0.9211 ± 0.0087** | 520,905 |
 | `random` | 4 | 4 | 0.7312 ± 0.1113 | 0.6080 | 0.7676 ± 0.0514 | 965,897 |
-| `pretrained_finetuned` | 4 | 8 | 0.6924 ± 0.2000 | 0.6368 | 0.8196 ± 0.0213 | 965,897 |
+| `pretrained_finetuned` | 4 | 8 | 0.6924 ± 0.2000 | 0.6368 | 0.8183 ± 0.0222 | 965,897 |
 
 `none`, `pretrained_frozen` and `random` are pooled at commit `a9e4cf2`/`20b5957` (one run per
 seed). `pretrained_finetuned` is pooled at a **different, single commit-state**,
