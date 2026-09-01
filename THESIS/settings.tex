@@ -38,6 +38,19 @@
 \usepackage[printonlyused]{acronym}
 \usepackage{ifthen}
 
+% Float placement: keep tables/figures inside the section that discusses them.
+% Defaults (totalnumber=3, textfraction=.2) deferred whole runs of tables in
+% Chapter 6 to the end-of-chapter \clearpage; these loosen the page budget and
+% \FloatBarrier confines any remaining backlog to its own section.
+\usepackage[section]{placeins}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{5}
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\bottomfraction}{0.65}
+\renewcommand{\textfraction}{0.10}
+\renewcommand{\floatpagefraction}{0.60}
+
 
 \hypersetup{hidelinks} % removes colored boxes around references and links
 
