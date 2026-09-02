@@ -100,14 +100,36 @@ under this setting, since without a fixed length there is nothing to truncate ev
 to.
 
 \paragraph{Visit count as a label proxy.} In the \ac{DELCODE} downstream cohort, converters
-are followed for more visits, on average, than stable \ac{MCI} subjects: in the held-out
-test split, converters average 3.71 scans per subject against 2.35 for stable \ac{MCI}
-subjects. Subjects who stop attending study visits earlier are therefore disproportionately
-stable \ac{MCI}, so the number of visits available for a subject is not independent of that
-subject's label. This is why the stricter fixed-length truncation setting exists: without
-it, a sequence model has access to a subject's visit count as a side channel correlated
-with the label it is asked to predict, alongside whatever signal the visits' content
-carries.
+have more recorded visits than stable \ac{MCI} subjects across their full clinical record:
+in the held-out test split, converters average 3.71 recorded visits per subject against
+2.35 for stable \ac{MCI} subjects. Extended follow-up is how a conversion is detected in the
+first place, so part of this gap reflects observation length rather than a property of the
+modelling data: once a converter's visits at and after their confirmed conversion date are
+excluded (\autoref{sec:leakage}), the visits actually available to a sequence model average
+2.57 per converter, a substantially smaller difference against the same 2.35 for stable
+\ac{MCI} subjects. Subjects who stop attending study visits earlier are therefore
+disproportionately stable \ac{MCI}, so the number of pre-conversion visits available for a
+subject remains weakly dependent on that subject's label even after this exclusion. This is
+why the stricter fixed-length truncation setting exists: without it, a sequence model
+retains residual access to a subject's visit count as a side channel correlated with the
+label it is asked to predict, alongside whatever signal the visits' content carries.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{fig9_longitudinal_sampling}
+  \caption{Longitudinal sampling structure across cohorts. (A) Per-subject visit timelines
+  for a reproducible random sample of 50 subjects per cohort (seed 42, rows sorted by
+  visit count), computed from the full raw cohort manifest across every diagnostic group:
+  \ac{DELCODE} clusters on its scheduled grid, \ac{ADNI} and \ac{OASIS} spread
+  continuously. (B) Inter-visit interval $\Delta t$ densities per cohort over the same
+  full manifest; the qualitative pattern matches \autoref{tab:interval-structure}, though
+  the broader visit population plotted here is not restricted to the narrower modelling
+  cohort that table's exact percentages are computed over. (C) Visit count as a label
+  proxy in the \ac{DELCODE} downstream held-out test split: total recorded visits
+  (hatched) against the visits actually available to a sequence model once post-conversion
+  visits are excluded (solid, \autoref{sec:leakage}).}
+  \label{fig:longitudinal-sampling}
+\end{figure}
 
 \begin{figure}[htbp]
   \centering

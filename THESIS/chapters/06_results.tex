@@ -116,6 +116,18 @@ yields 0.7412 (a difference of $-0.030$). The performance penalty from smaller t
 exceeds the gain from longer visit histories. As a result, SENS and the full-cohort baseline
 are not directly comparable due to differences in sample size, subject inclusion, and fold splits.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig12_sequence_length_decomposition}
+  \caption{Sequence-length decomposition (data of \autoref{tab:rq1-sens}). Teal: S1's own
+  out-of-fold predictions restricted from the full 248-subject pool to the 140 subjects
+  with at least three visits, the same trained model evaluated on a smaller pool. Purple:
+  SENS, retrained from scratch on only that 140-subject pool. Grey dots are the four
+  per-seed values behind each mean marker. The two deltas run in opposite directions:
+  restriction alone helps, retraining on the smaller pool costs more than it gains.}
+  \label{fig:rq1-sequence-length}
+\end{figure}
+
 \section{RQ2: Does Spatial-First Graph Representation Learning Add Value?}\label{sec:rq2}
 
 This section reports the \ac{DELCODE}-only encoder ablation on the spatial-first
@@ -235,6 +247,18 @@ binary adjacency is an easier target for a decoder that predicts the majority cl
 entries; it is reported here only because it is the target the \ac{VGAE} decoder head used
 in \autoref{sec:instrumentation}'s pretraining actually optimises.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig11_reconstruction_fidelity}
+  \caption{Per-subject reconstruction-fidelity distributions on the held-out test split
+  ($n=34$; data of \autoref{tab:rq2-fidelity}). Teal: feature fidelity, comparable across
+  all three encoders. Purple: adjacency fidelity, \ac{VGAE}-only. Dashed lines mark the
+  reconstruction-quality convention (fair/good/excellent at 0.60/0.80/0.90). \ac{GAAE}'s
+  adjacency fidelity is not shown: no reconstruction-quality evaluation of its adjacency
+  decoder is implemented alongside its feature decoder.}
+  \label{fig:rq2-fidelity-distributions}
+\end{figure}
+
 \paragraph{Why the graph-embedding classifiers are not reported.} An initial characterisation
 of the \ac{GAAE} encoder used a static, single-visit graph-embedding classifier
 (\ac{GEC}) rather than the trajectory-based \ac{GELSTM} ablation above. This comparison is
@@ -304,7 +328,7 @@ thresholds mean.
 \footnotesize
 \caption{How to read each column of \autoref{tab:rq3-verdicts}.}
 \label{tab:rq3-col-guide}
-\begin{tabularx}{\textwidth}{@{}p{3.0cm}Xp{2.6cm}p{2.6cm}@{}}
+\begin{tabularx}{\textwidth}{@{}p{3.3cm}Xp{2.5cm}p{2.5cm}@{}}
 \toprule
 Column & What it measures & Candidate kept if & S1 retained if \\
 \midrule
@@ -339,27 +363,42 @@ fails the other.
 \caption{Tier-2 keep-or-drop statistics for each configuration against S1. Ratio is the mean
   difference divided by its standard error.}
 \label{tab:rq3-verdicts}
-\begin{tabularx}{\textwidth}{@{}lccX@{}}
+\begin{tabularx}{\textwidth}{@{}l cc >{\raggedright\arraybackslash}X@{}}
 \toprule
-Contrast & Fold-matched $\Delta \pm$ standard error (ratio) & Pooled $\Delta \pm$ standard error (ratio) & Keep-or-drop reading \\
+ & \multicolumn{2}{c}{$\Delta \pm \text{SE}$ (ratio)} & \\
+\cmidrule(lr){2-3}
+Contrast & Fold-matched & Pooled & Keep-or-drop reading \\
 \midrule
 S1b vs.\ S1 & $+0.0120 \pm 0.0019$ (+6.46) & $+0.0014 \pm 0.0074$ (+0.19) &
-  Statistics disagree $\to$ one-standard-error tie-breaker: a difference of $0.0014 \ll$ one standard error $(0.0074)$ $\to$ keep the simpler S1 \\[3pt]
-S1c vs.\ S1 & $-0.1587 \pm 0.0099$ (--15.98) & $-0.2055 \pm 0.0150$ (--13.72) &
-  Negative on both readings $\to$ dropped \\[3pt]
-S2 vs.\ S1 & $-0.0064 \pm 0.0075$ (--0.85) & $-0.0180 \pm 0.0086$ (--2.08) &
-  Pooled reading is negative beyond twice its standard error $\to$ dropped \\[3pt]
+  Statistics disagree $\to$ one-standard-error tie-breaker: a difference of $0.0014 \ll$ one standard error $(0.0074) \to$ keep the simpler S1 \\[4pt]
+S1c vs.\ S1 & $-0.1587 \pm 0.0099$ ($-15.98$) & $-0.2055 \pm 0.0150$ ($-13.72$) &
+  Negative on both readings $\to$ dropped \\[4pt]
+S2 vs.\ S1 & $-0.0064 \pm 0.0075$ ($-0.85$) & $-0.0180 \pm 0.0086$ ($-2.08$) &
+  Pooled reading is negative beyond twice its standard error $\to$ dropped \\[4pt]
 S3 vs.\ S1 & $0.0000 \pm 0.0000$ & $0.0000 \pm 0.0000$ &
-  Bit-identical to S1; structurally inert, no result \\[3pt]
-S4 vs.\ S1 & $-0.0558 \pm 0.0058$ (--9.60) & $-0.0999 \pm 0.0083$ (--11.96) &
-  Negative on both readings $\to$ dropped \\[3pt]
-S5 vs.\ S1 & $-0.0046 \pm 0.0067$ (--0.68) & $-0.0158 \pm 0.0101$ (--1.56) &
+  Bit-identical to S1; structurally inert, no result \\[4pt]
+S4 vs.\ S1 & $-0.0558 \pm 0.0058$ ($-9.60$) & $-0.0999 \pm 0.0083$ ($-11.96$) &
+  Negative on both readings $\to$ dropped \\[4pt]
+S5 vs.\ S1 & $-0.0046 \pm 0.0067$ ($-0.68$) & $-0.0158 \pm 0.0101$ ($-1.56$) &
   Classification-neutral; kept only as an interpretability tool, not on performance \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
 No variant improves on S1; the reasoning for each configuration is recorded in \autoref{tab:rq3-verdicts}, so S1 is the configuration carried forward.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig7_ablation_forest}
+  \caption{Pooled $\Delta$\ac{AUC} of each configuration against S1 (data of
+  \autoref{tab:rq3-verdicts}). The marker is the pooled $\Delta$ and the error bar spans
+  $\pm 2$ pooled standard errors, the pre-specified keep/drop threshold itself rather
+  than a confidence interval; small grey dots are the four per-seed paired differences.
+  S3 is bit-identical to S1 by construction and is marked void rather than plotted at
+  zero. This is a screening summary under the reporting rules of
+  \autoref{sec:reporting-rules}, not a significance test.}
+  \label{fig:rq3-ablation-forest}
+\end{figure}
 
 
 \subsection{Parameter Count of the Selected Configuration}\label{sec:rq3-capacity}
@@ -457,6 +496,18 @@ models gain from truncation while the temporal-first configuration loses perform
 
 \begin{figure}[htbp]
   \centering
+  \includegraphics[width=0.85\textwidth]{fig10_window_truncation_slope}
+  \caption{Pooled out-of-fold \ac{AUC} for each architecture at its full trajectory
+  (open circle) against its matched-window score (filled circle, data of
+  \autoref{tab:rq3-truncation}). Teal lines gain from truncation, purple loses. Brain-TokenGT
+  has no full-trajectory point: it is architecturally constrained to the
+  two-to-three-visit window, so its single value (\autoref{tab:rq3-w3}) is plotted at the
+  matched-window position only.}
+  \label{fig:rq3-truncation-slope}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
   \includegraphics[width=0.88\textwidth]{fig2_roc_and_pr_curves}
   \caption{Multi-seed \ac{ROC} and \ac{PR} curves on the held-out test cohort across four seeds ($n=4$). (A) \ac{ROC} curves for \ac{GELSTM} with a frozen encoder and Brain-TokenGT, with solid lines indicating the seed-averaged curve, shaded bands showing $\pm 1$ standard deviation, and individual seeds plotted in semi-transparent lines alongside the chance floor ($0.50$). (B) Corresponding \ac{PR} curves evaluated against the converter prevalence baseline ($0.44$).}
   \label{fig:rq4-roc-pr}
@@ -505,6 +556,17 @@ and strongly on \ac{DELCODE} (0.9178), so its pooled number of 0.7186 in
 \autoref{tab:rq3-scorecard} averages two markedly different regimes rather than describing
 either one. This asymmetry is the reason per-cohort columns are reported for every configuration in
 this chapter's headline tables rather than the pooled column alone.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig6_percohort_dumbbell}
+  \caption{Pooled out-of-fold \ac{AUC} per configuration, split by cohort (data of
+  \autoref{tab:rq4-percohort}), ordered by the size of the \ac{ADNI}-\ac{DELCODE} gap.
+  Purple: \ac{ADNI}; teal: \ac{DELCODE}; dotted line: chance (0.5). S0b (\ac{GELSTM}
+  with a frozen pretrained encoder) has the widest gap ($\Delta = 0.421$), the
+  clearest instance of the pooled-column averaging problem described above.}
+  \label{fig:rq4-percohort-dumbbell}
+\end{figure}
 
 \paragraph{Held-out reads.} \autoref{tab:rq4-tier4} reports the single permitted read of the
 64-subject in-domain test set and the 60-subject \ac{OASIS} set, spent once on the selected

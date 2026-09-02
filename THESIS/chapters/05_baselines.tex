@@ -127,6 +127,18 @@ architecture as released. The same pattern of held-out spread appears when the c
 is evaluated on the pooled protocol described in \autoref{sec:pooled-protocol}, so the
 scatter observed under the \ac{DELCODE}-only protocol is not specific to that cohort.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{fig8_btgt_reproducibility_audit}
+  \caption{Held-out test \ac{AUC} (\ac{DELCODE}-only, 34-subject test set) across repeat
+  runs sharing every setting including the seed. Purple: the 19 stabilised Brain-TokenGT
+  repeat runs (7 at seed 42, 4 each at seeds 43-45), scattered within every seed. Teal:
+  the no-encoder \ac{GELSTM} configuration of \autoref{sec:rq2} -- 5 runs across 3 distinct
+  code revisions at seed 42, single runs at seeds 43-45 -- landing on one value per seed.
+  The seed-42 Brain-TokenGT range (0.35 \ac{AUC}) is annotated for scale.}
+  \label{fig:btgt-reproducibility-audit}
+\end{figure}
+
 \subsection{The Trajectory Implementation Used in This Thesis Is Bit-Reproducible}\label{sec:bit-reproducible}
 
 The temporal-first ablation sequence introduced in \autoref{sec:tfgn} runs under the global
