@@ -430,20 +430,22 @@ analyses extend this cortical parcellation with subcortical hippocampal parcels 
 Tian subcortical atlas; these variant matrices are used only where the analysis in question
 calls for them and are not part of the whole-brain matrices the main classifiers consume.
 
-\paragraph{Age regression.} A subject's age correlates with functional connectivity
-independently of diagnosis, so every connectivity entry is additionally corrected for a
-linear age effect before it reaches a classifier. For each edge $(i,j)$, a linear model
+\paragraph{Age confound regression in group-level statistics.} A subject's age correlates with
+functional connectivity independently of diagnosis. In the group-level exploratory statistical
+characterisation of \autoref{sec:group-stats}, each edge is corrected for a linear age trend
+estimated within each diagnostic subgroup. For each edge $(i,j)$, a linear model
 \[
   C_{ij} = \beta_0 + \beta_1 \, \text{Age} + \varepsilon_{ij}
 \]
-is fit across the cohort, where $C_{ij}$ is that edge's Fisher-transformed connectivity
-value, $\text{Age}$ is the subject's age at scan, $\beta_0$ and $\beta_1$ are the
-intercept and age slope estimated by ordinary least squares, and $\varepsilon_{ij}$ is the
-residual. Each subject's edge value is then replaced by
-$C_{ij} - \hat\beta_1 (\text{Age} - \overline{\text{Age}})$, where $\hat\beta_1$ is the
-fitted slope and $\overline{\text{Age}}$ is the cohort mean age, which removes the linear
-age trend while leaving the cohort's overall connectivity level unchanged, since a subject
-at exactly the mean age is left untouched by construction.
+is fit, where $C_{ij}$ is that edge's Fisher-transformed connectivity value, $\text{Age}$ is the
+subject's age at scan, $\beta_0$ and $\beta_1$ are the intercept and age slope estimated by ordinary
+least squares, and $\varepsilon_{ij}$ is the residual. Each subject's edge value is replaced by
+$C_{ij} - \hat\beta_1 (\text{Age} - \overline{\text{Age}})$, where $\hat\beta_1$ is the fitted slope
+and $\overline{\text{Age}}$ is the subgroup mean age, which removes the linear age trend while
+preserving mean connectivity. In contrast, the downstream machine learning classifiers of
+\autoref{ch:methodology} consume the unadjusted Fisher-transformed whole-brain matrices directly,
+providing age and sex as auxiliary tabular covariates to the classification head to avoid
+pre-filtering disease-collinear variance prior to model training.
 
 \paragraph{Attrition.} \autoref{tab:attrition} reports how many sessions and subjects each
 external cohort loses between the standardised imaging directory and the final,
@@ -452,9 +454,9 @@ model-ready manifest.
 \begin{table}[htbp]
   \centering
   \caption{Attrition from imaging-directory conversion to the final cohort manifest.
-  Subject and session counts are reported at each stage; the final manifest column also
-  gives the resulting stable-\ac{MCI}/converter split (\ac{OASIS} additionally carries 9
-  subjects pending label resolution).}
+  Subject and session counts are reported at each stage; the final manifest row
+  reports the resulting stable-\ac{MCI}/converter session split (\ac{OASIS} additionally carries 9
+  sessions pending label resolution).}
   \label{tab:attrition}
   \begin{tabular}{@{}lrrr@{}}
     \toprule
@@ -464,7 +466,7 @@ model-ready manifest.
     fMRIPrep completion & 272 / 723 & 142 / 276 \\
     After motion quality control & 268 / 674 & 128 / 239 \\
     Final manifest & 237 / 567 & 128 / 234 \\
-    \quad stable \ac{MCI} / converter & 403 / 164 & 106 / 119 \\
+    \quad stable \ac{MCI} / converter sessions & 403 / 164 & 106 / 119 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -481,8 +483,10 @@ stage through a consistent parcellation, connectivity and age-correction procedu
 Before any classifier is fit, this section asks whether the \ac{DELCODE} connectivity
 matrices already separate by diagnostic group under classical statistics. Two separate
 analyses answer this. The first, a within-group and between-group variance decomposition,
-compares converters directly against pooled non-converters, the contrast the downstream
-classifiers of \autoref{ch:methodology} are trained on. The second, a multivariate and
+compares converters directly against pooled non-converters (stable \ac{MCI} and cognitively healthy
+visits combined) as a broad separability screening. In contrast, the downstream classifiers of
+\autoref{ch:methodology} are trained specifically on the narrower, clinically critical contrast
+distinguishing converters from stable \ac{MCI} subjects. The second, a multivariate and
 edge-level battery, applies \ac{PERMANOVA}, the \ac{NBS}, and per-edge effect sizes under
 \ac{FDR} control to converters against established \ac{AD} patients, a coarser and more
 clinically separable contrast used here to characterise the same connectivity matrices at
@@ -608,15 +612,16 @@ rules this out by construction. The resulting test manifest is materialised once
 and is not regenerated or resampled between experiments, so that every model compared
 against it in \autoref{ch:results} is evaluated against the same held-out subjects.
 
-\paragraph{Post-conversion visit exclusion.} A converter's visits after their confirmed
+\paragraph{Post-conversion visit exclusion.} A converter's visits at and after their confirmed
 conversion date carry the relabelled \ac{AD} diagnosis described in
 \autoref{sec:delcode}; these visits are excluded from the pool of visits a downstream
-classifier is trained or evaluated to predict conversion from, since a visit already coded
-\ac{AD} is no longer an instance of the prediction problem the label is meant to represent.
-This exclusion is enforced through the same allow-list columns introduced in
-\autoref{sec:pooled-protocol}: a subject's allowed visits are exactly those up to and
-including their first confirmed conversion, and a test asserts directly that no
-post-conversion visit ever appears in a converter's allowed set.
+classifier is trained or evaluated to classify conversion from, since a visit already coded
+\ac{AD} represents manifest dementia rather than prodromal conversion risk.
+This exclusion is enforced through the allow-list columns introduced in
+\autoref{sec:pooled-protocol}: a subject's allowed visits are strictly those prior to their
+earliest confirmed conversion visit (the conversion visit itself is relabelled \ac{AD} and excluded
+to prevent target leakage), and an automated test asserts directly that no
+\ac{AD}-relabelled visit ever appears in a converter's allowed set.
 
 \paragraph{Validation-derived thresholds.} No decision threshold used to score a classifier
 is derived from the test split itself; \autoref{ch:methodology} fixes the exact
