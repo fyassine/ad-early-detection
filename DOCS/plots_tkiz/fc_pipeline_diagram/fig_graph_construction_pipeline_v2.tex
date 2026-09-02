@@ -1,0 +1,188 @@
+% TikZ diagram: Step-by-Step Functional Connectivity Graph Construction Pipeline
+% Illustrated version -- each stage card pairs a small rendered inset panel with
+% shortened text. Lengthwise (Vertical) Flowchart for Chapter 4 (Section 4.2).
+% Compatible with both Light and Dark thesis themes.
+%
+% Assumes graphicx, tikz (with libraries arrows.meta, positioning, calc) and the
+% array package's m{} column type are already loaded by the enclosing document
+% (THESIS/settings.tex loads all of these; see preview.tex for a standalone load).
+% \includegraphics uses bare basenames so \graphicspath resolves them both here
+% (graphicspath={{./}}) and inside THESIS (graphicspath={{figures/}}).
+
+\begin{tikzpicture}[
+    font=\small\sffamily,
+    >=Latex,
+    every node/.style={align=center},
+    card1/.style={
+        draw=TUMSecondaryBlue2!90,
+        fill=white,
+        rounded corners=5pt,
+        line width=0.85pt,
+        inner sep=5pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    card2/.style={
+        draw=TUMBlue!90,
+        fill=TUMBlue!10,
+        rounded corners=5pt,
+        line width=0.85pt,
+        inner sep=5pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    card3/.style={
+        draw=TUMAccentOrange!90,
+        fill=TUMAccentOrange!12,
+        rounded corners=5pt,
+        line width=0.85pt,
+        inner sep=5pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    card4a/.style={
+        draw=TUMBlue!90,
+        fill=TUMBlue!10,
+        rounded corners=5pt,
+        line width=0.85pt,
+        inner sep=5pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    card4b/.style={
+        draw=TUMAccentGreen!90,
+        fill=TUMAccentGreen!15,
+        rounded corners=5pt,
+        line width=0.85pt,
+        inner sep=5pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    card5/.style={
+        draw=TUMSecondaryBlue2!90,
+        fill=TUMSecondaryBlue2!12,
+        rounded corners=5pt,
+        line width=0.95pt,
+        inner sep=5pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    card6/.style={
+        draw=TUMBlue!90,
+        fill=TUMBlue!12,
+        rounded corners=5pt,
+        line width=0.85pt,
+        inner sep=5pt,
+        font=\footnotesize,
+        text=black!90
+    },
+    flowline/.style={
+        ->,
+        line width=1.0pt,
+        draw=\fg!85,
+        shorten >=1.5pt,
+        shorten <=1.5pt
+    },
+    flowlabel/.style={
+        font=\scriptsize\bfseries,
+        text=\fg!95
+    }
+]
+
+% Thin neutral-grey border around each embedded inset panel -- no fill, so
+% the panel's transparent background lets the card tint show through.
+\newcommand{\insetimg}[2]{\tikz[baseline]{\node[draw=TUMGray!60, line width=0.4pt, inner sep=0pt] {\includegraphics[width=#1]{#2}};}}
+
+% -------------------------------------------------------------
+% STAGE 1: 4D fMRI ACQUISITION & SCHAEFER-200 PARCELLATION
+% -------------------------------------------------------------
+\node[card1, text width=13.5cm] (card1) at (0, 0) {
+    \begin{tabular}{@{}m{2.6cm}@{\hspace{7pt}}m{9.9cm}@{}}
+        \insetimg{2.5cm}{fmri_input} &
+        \textbf{1. 4D Resting-State BOLD fMRI Acquisition \& Atlas Parcellation}\newline
+        \textnormal{\footnotesize Preprocessed functional volumes aligned to standard MNI152 space, parcellated into $|V| = 200$ cortical \acp{ROI} using the Schaefer-200 atlas (7 canonical functional networks).}
+    \end{tabular}
+};
+
+% -------------------------------------------------------------
+% STAGE 2: BOLD TIME SERIES EXTRACTION
+% -------------------------------------------------------------
+\node[card2, text width=13.5cm, below=0.7cm of card1] (card2) {
+    \begin{tabular}{@{}m{2.6cm}@{\hspace{7pt}}m{9.9cm}@{}}
+        \insetimg{2.5cm}{regional_timeseries} &
+        \textbf{2. Regional BOLD Signal Averaging}\newline
+        \textnormal{\footnotesize Mean timecourse per parcel $j \in \{1, \dots, 200\}$: $\displaystyle \mathbf{T} = \begin{bmatrix} \mathbf{t}_1^\top \\ \vdots \\ \mathbf{t}_{200}^\top \end{bmatrix} \in \mathbb{R}^{200 \times L}$, where $L$ is the number of temporal frames per scan.}
+    \end{tabular}
+};
+\draw[flowline] (card1.south) -- (card2.north) node[midway, right=4pt, flowlabel] {Voxel-wise spatial averaging};
+
+% -------------------------------------------------------------
+% STAGE 3: FUNCTIONAL CONNECTIVITY & FISHER-Z
+% -------------------------------------------------------------
+\node[card3, text width=13.5cm, below=0.7cm of card2] (card3) {
+    \begin{tabular}{@{}m{2.6cm}@{\hspace{7pt}}m{9.9cm}@{}}
+        \insetimg{2.5cm}{fc_matrix} &
+        \textbf{3. Pairwise Functional Connectivity Matrix \& Fisher $z$-Transformation}\newline
+        \textnormal{\footnotesize Pearson correlation $r_{ij} = \operatorname{corr}(\mathbf{t}_i, \mathbf{t}_j)$, Fisher-transformed: $\displaystyle z_{ij} = \operatorname{arctanh}(r_{ij}) = \frac{1}{2}\ln\left(\frac{1+r_{ij}}{1-r_{ij}}\right)$, yielding symmetric $C \in \mathbb{R}^{200 \times 200}$ (zero diagonal).}
+    \end{tabular}
+};
+\draw[flowline] (card2.south) -- (card3.north) node[midway, right=4pt, flowlabel] {Pairwise temporal coupling};
+
+% -------------------------------------------------------------
+% STAGE 4: DUAL GRAPH REPRESENTATION (SPLIT BRANCHES)
+% -------------------------------------------------------------
+% Branch 4a (Left): Node Features
+\node[card4a, text width=6.3cm, below left=1.0cm and 0.3cm of card3.south] (card4a) {
+    \begin{tabular}{@{}m{2.2cm}@{\hspace{5pt}}m{3.6cm}@{}}
+        \insetimg{2.1cm}{node_features} &
+        \textbf{4a. Regional Node Features}\newline
+        \textnormal{\footnotesize Each region carries its full connectivity row: $\mathbf{x}_j = C_{j,:} \in \mathbb{R}^{200}$, so $X = C \in \mathbb{R}^{200 \times 200}$.}
+    \end{tabular}
+};
+
+% Branch 4b (Right): Topological Adjacency
+\node[card4b, text width=6.3cm, below right=1.0cm and 0.3cm of card3.south] (card4b) {
+    \begin{tabular}{@{}m{2.2cm}@{\hspace{5pt}}m{3.6cm}@{}}
+        \insetimg{2.1cm}{sparse_graph} &
+        \textbf{4b. Symmetrised $k$-NN Adjacency}\newline
+        \textnormal{\footnotesize Symmetrised top-$k$ over $|C_{ij}|$: $\displaystyle A = \max(A_{\text{top-}k}, A_{\text{top-}k}^\top) \in \{0,1\}^{200 \times 200}$.\newline \scriptsize $k=16$ (pretraining) $\,\big|\,$ $k=8$ (supervised)}
+    \end{tabular}
+};
+
+\draw[flowline] (card4a.north |- card3.south) -- (card4a.north) node[midway, left=3pt, flowlabel] {Raw FC rows};
+\draw[flowline] (card4b.north |- card3.south) -- (card4b.north) node[midway, right=3pt, flowlabel] {Topological sparsification};
+
+% -------------------------------------------------------------
+% STAGE 5: TIME-AUGMENTED LONGITUDINAL GRAPH SERIES
+% -------------------------------------------------------------
+\node[card5, text width=13.5cm, anchor=north] (card5) at ($(card3.south |- card4a.south)+(0, -1.0)$) {
+    \begin{tabular}{@{}m{3.3cm}@{\hspace{7pt}}m{9.2cm}@{}}
+        \begin{tabular}{@{}c@{\hspace{2pt}}c@{\hspace{2pt}}c@{}}
+            \includegraphics[width=1.05cm]{graph_snapshot1} &
+            \raisebox{0.35cm}{\tikz[baseline]{\draw[->, line width=0.8pt, draw=\fg!85] (0,0) -- (0.45,0) node[midway, above, font=\scriptsize] {$\Delta t_1$};}} &
+            \includegraphics[width=1.05cm]{graph_snapshot2} \\[-1pt]
+            \multicolumn{3}{c}{} \\[-9pt]
+            & \raisebox{0.35cm}{\tikz[baseline]{\draw[->, line width=0.8pt, draw=\fg!85] (0,0) -- (0.45,0) node[midway, above, font=\scriptsize] {$\Delta t_2$};}} & \includegraphics[width=1.05cm]{graph_snapshot3}
+        \end{tabular}
+        &
+        \textbf{5. Time-Augmented Longitudinal Graph Sequence}\newline
+        \textnormal{\footnotesize For subject $i$ with $T_i$ visits, visit $t$ yields $\mathcal{G}_i^{(t)} = (V, A_i^{(t)}, X_i^{(t)})$ with $|V|=200$. Time cadence: normalized interval $\Delta t_t = \frac{\text{cum}_t - \text{cum}_{t-1}}{108}$ or cumulative $\log(1+\text{months})$.\newline $\mathcal{S}_i = \bigl( (\mathcal{G}_i^{(1)}, \Delta t_1), \dots, (\mathcal{G}_i^{(T_i)}, \Delta t_{T_i}) \bigr)$}
+    \end{tabular}
+};
+
+\draw[flowline] (card4a.south) -- (card4a.south |- card5.north);
+\draw[flowline] (card4b.south) -- (card4b.south |- card5.north);
+
+% -------------------------------------------------------------
+% STAGE 6: DOWNSTREAM SUBJECT-LEVEL TARGET
+% -------------------------------------------------------------
+\node[card6, text width=13.5cm, below=0.7cm of card5] (card6) {
+    \begin{tabular}{@{}m{2.6cm}@{\hspace{7pt}}m{9.9cm}@{}}
+        \insetimg{2.5cm}{subject_outcome} &
+        \textbf{6. Downstream Subject-Level Conversion Target}\newline
+        \textnormal{\footnotesize Single binary label per patient trajectory: $y_i \in \{0,1\}$ ($y_i=0$ for Stable \ac{MCI}, $y_i=1$ for Converter \ac{MCI}).\newline \scriptsize Effective sample size is bounded by subject count $N$ (DELCODE $n=167$, Pooled $n=248$), not scan count.}
+    \end{tabular}
+};
+\draw[flowline] (card5.south) -- (card6.north) node[midway, right=4pt, flowlabel] {Sequence-to-label mapping};
+
+\end{tikzpicture}

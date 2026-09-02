@@ -1,0 +1,86 @@
+% Standalone preview of the illustrated FC graph-construction pipeline figure.
+% Mirrors THESIS/settings.tex's package load order, TUM colour definitions, and
+% light/dark theme switch so the figure previews exactly as it would in the
+% thesis, without touching THESIS/ itself. Compile:
+%   tectonic -o build preview.tex        (light theme)
+%   tectonic -o build preview_dark.tex   (dark theme, via \jobname switch)
+
+\documentclass[fontsize=11pt,paper=a4]{scrbook}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[sc]{mathpazo}
+\usepackage{graphicx}
+\graphicspath{{./}}
+\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\usepackage{caption}
+\usepackage{xcolor}
+\usepackage[printonlyused]{acronym}
+\usepackage{ifthen}
+
+% Light/dark theme switch, identical mechanism to THESIS/settings.tex.
+\ifthenelse{\equal{\detokenize{dark}}{\jobname}}{%
+  \newcommand{\bg}{black}
+  \newcommand{\fg}{white}
+  \usepackage[pagecolor=\bg]{pagecolor}
+  \color{\fg}
+}{%
+  \newcommand{\bg}{white}
+  \newcommand{\fg}{black}
+}
+
+% TUM corporate design colours, copied from THESIS/settings.tex.
+\definecolor{TUMBlue}{HTML}{0065BD}
+\definecolor{TUMSecondaryBlue}{HTML}{005293}
+\definecolor{TUMSecondaryBlue2}{HTML}{003359}
+\definecolor{TUMBlack}{HTML}{000000}
+\definecolor{TUMWhite}{HTML}{FFFFFF}
+\definecolor{TUMDarkGray}{HTML}{333333}
+\definecolor{TUMGray}{HTML}{808080}
+\definecolor{TUMLightGray}{HTML}{CCCCC6}
+\definecolor{TUMAccentGray}{HTML}{DAD7CB}
+\definecolor{TUMAccentOrange}{HTML}{E37222}
+\definecolor{TUMAccentGreen}{HTML}{A2AD00}
+\definecolor{TUMAccentLightBlue}{HTML}{98C6EA}
+\definecolor{TUMAccentBlue}{HTML}{64A0C8}
+
+\begin{document}
+
+\pagecolor{\bg}
+\color{\fg}
+
+\begin{acronym}
+  \acro{ROI}[ROI]{region of interest}
+  \acro{MCI}[MCI]{mild cognitive impairment}
+  \acro{BOLD}[BOLD]{blood-oxygen-level-dependent}
+  \acro{fMRI}[fMRI]{functional magnetic resonance imaging}
+\end{acronym}
+
+\noindent\textbf{Preview page geometry:} \the\textwidth\ (compare against the thesis
+\texttt{scrbook} textwidth before sizing \texttt{\textbackslash resizebox} in
+\texttt{THESIS/chapters/04\_methodology.tex}).
+
+\begin{figure}[p]
+  \centering
+  \resizebox{\textwidth}{!}{\input{fig_graph_construction_pipeline_v2}}
+  \caption{Subject-level functional connectivity graph construction pipeline
+    (illustrated, preview). (1) Resting-state four-dimensional \ac{BOLD} \ac{fMRI}
+    scans are parcellated into $|V| = 200$ cortical \acp{ROI} using the Schaefer-200
+    atlas. (2) Mean BOLD time series ($\mathbf{T} \in \mathbb{R}^{200 \times L}$) are
+    extracted per region. (3) Pairwise Pearson correlation followed by Fisher
+    $z$-transformation yields the continuous functional connectivity matrix
+    $C \in \mathbb{R}^{200 \times 200}$. (4a) Raw connectivity rows form 200-dimensional
+    node feature vectors ($X = C$). (4b) Symmetrised $k$-nearest-neighbour
+    sparsification over $|C|$ constructs the binary adjacency matrix $A$. (5) The
+    resulting visit graph $\mathcal{G}_i^{(t)}$ is paired with normalized interval
+    timing $[\Delta t_t]$ across the longitudinal sequence. Inset panels (brain
+    slices, connectivity heatmaps, node/edge diagrams) are synthetic schematic
+    illustrations of the construction steps, not measured subject data.}
+  \label{fig:graph-construction-pipeline-preview}
+\end{figure}
+
+\end{document}
