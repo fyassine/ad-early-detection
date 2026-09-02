@@ -739,9 +739,9 @@ At the in-domain test size of $n = 64$ and the external size of $n = 60$, the em
 
 \section{Interpretability and Robustness Instrumentation}\label{sec:instrumentation}
 
-This section describes the instrumentation designed to probe trained representations. Rather than applying a single uniform metric across all architectures, these diagnostic tools are matched to specific architectural mechanisms: the latent disease axis, trajectory projection, and perturbation sweeps interrogate the 64-dimensional latent bottleneck and reconstruction loss of the baseline spatial-first encoder (\ac{GAAE}), while the scanner-drift simulation assesses recurrent trajectory stability. All findings from applying this instrumentation are reported in \autoref{sec:interpretability-results} and \autoref{sec:robustness-results}.
+This section describes the instrumentation designed to probe trained representations. Rather than applying a single uniform metric across all architectures, these diagnostic tools are matched to specific architectural mechanisms: the latent conversion axis, trajectory projection, and perturbation sweeps interrogate the 64-dimensional latent bottleneck and reconstruction loss of the baseline spatial-first encoder (\ac{GAAE}), while the scanner-drift simulation assesses recurrent trajectory stability. All findings from applying this instrumentation are reported in \autoref{sec:interpretability-results} and \autoref{sec:robustness-results}.
 
-\paragraph{The disease axis and per-scan disease score.}
+\paragraph{The conversion axis and per-scan conversion score.}
 We construct a linear direction in the encoder's 64-dimensional latent space that separates
 converters from stable \ac{MCI} subjects. Every training-plus-validation scan is encoded
 with the frozen encoder and the resulting node-level embeddings are mean-pooled to a
@@ -750,21 +750,24 @@ dimension to obtain $Z_{\text{std}} \in \mathbb{R}^{N \times 64}$. An L2-regular
 logistic regression is then fitted on $(Z_{\text{std}},\, y)$, where $y \in \{0,1\}^N$ is
 the subject-level label vector and $N$ is the number of training scans. The weight vector
 $\tilde{w} \in \mathbb{R}^{64}$ is the normal to the decision hyperplane. Its unit
-normalisation $\hat{w} = \tilde{w}/\|\tilde{w}\|_2$ is the disease axis. The per-scan
-disease score is
+normalisation $\hat{w} = \tilde{w}/\|\tilde{w}\|_2$ is the conversion axis. The per-scan
+conversion score is
 \begin{equation}
   s_i = z_i \cdot \hat{w},
-  \label{eq:disease-score}
+  \label{eq:conversion-score}
 \end{equation}
 where $z_i$ is the standardised embedding of scan $i$. A score $s_i > 0$ places scan $i$
 on the converter side of the decision boundary $s = 0$; $s_i < 0$ places it on the
-stable-\ac{MCI} side. The disease score compresses the classifier's decision function to a
-single number per scan, comparable to a continuous biomarker readout. The leakage contract:
+stable-\ac{MCI} side. The conversion score compresses the classifier's linear decision function to a
+single scalar per scan. The leakage contract:
 the axis is supervised feature selection computed on training data only and is never
-re-fitted on test or external data.
+re-fitted on test or external data. When evaluating linear decodability via the logistic probe,
+cross-validation uses a 5-fold \texttt{StratifiedGroupKFold} grouped strictly by subject identifier,
+ensuring that multiple longitudinal visits from the same subject never appear in both training
+and validation folds.
 
 \paragraph{The orthogonal-residual trajectory space.}
-Subtracting the disease-axis component from each embedding gives an axis-orthogonal
+Subtracting the conversion-axis component from each embedding gives an axis-orthogonal
 residual $R_i = z_i - s_i\,\hat{w}$. Principal component analysis applied to the residual
 matrix yields two components $(\mathrm{PC}_1, \mathrm{PC}_2)$ capturing the largest
 sources of within-class variation. A subject's visit-to-visit trajectory can be drawn in
@@ -773,13 +776,13 @@ boundary at $s = 0$, giving a geometrically grounded visualisation of longitudin
 that separates the conversion-relevant direction from orthogonal within-class variation.
 
 \paragraph{Latent steering.}
-A probe embedding $z_0$ is traversed along the disease axis in steps:
+A probe embedding $z_0$ is traversed along the conversion axis in steps:
 $z(\alpha) = z_0 + \alpha\,\hat{w}$ for $\alpha \in \{-3\sigma, -2\sigma, -1\sigma, 0,
 +1\sigma, +2\sigma, +3\sigma\}$, where $\sigma$ is the standard deviation of the
-disease scores across the training set. Each steered point is decoded back to a
+conversion scores across the training set. Each steered point is decoded back to a
 connectivity matrix via the \ac{GAAE} decoder, and the difference map
 $\text{FC}(\alpha) - \text{FC}(0)$ is computed for each step. The purpose is
-methodological: a disease axis that is purely a discriminative artefact with no grounding
+methodological: a conversion axis that is purely a discriminative artefact with no grounding
 in connectivity structure would produce structureless difference maps; a direction that
 captures connectivity change relevant to conversion would produce anatomically structured
 maps, which are inspected as a post-hoc plausibility check. No inference is drawn from

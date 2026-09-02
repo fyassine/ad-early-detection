@@ -254,15 +254,15 @@ superior. Cohort size is the constraint underlying most of the remaining limitat
 section, since a larger cohort would narrow the resolvability floor that makes several of
 them binding in the first place.
 
-\paragraph{The conversion label as a censored observation.} Converter status is assigned
-from a fixed follow-up window, described in \autoref{ch:data}, rather than from the exact
-clinical date of conversion, so a subject observed for a shorter window could in principle
-convert later than the window captures. Widening the window would reduce this censoring at
-the cost of a smaller cohort, since fewer subjects have sufficiently long follow-up to
-qualify, so the window length in \autoref{ch:data} reflects a trade-off between cohort size
-and label precision rather than a setting free of consequence. \ac{OASIS} carries a further,
-more direct form of this limitation: nine subjects in the external cohort have their conversion
-label unresolved at the time of the evaluation reported in \autoref{sec:rq4}.
+\paragraph{The conversion label as an unequal, right-censored observation.} Because \ac{DELCODE}
+imposes no maximum follow-up horizon (\autoref{sec:delcode}), converter status reflects an
+unbounded observation period where subjects differ substantially in total follow-up duration.
+A subject followed for only twelve months without converting receives the same stable-\ac{MCI} label
+as a subject confirmed stable over five years, even though the former is right-censored early and
+could in principle convert subsequently. This creates unequal observation periods and interval-censoring
+across subjects that a binary classification target compresses into a static label.
+\ac{OASIS} carries a further, more direct form of this limitation: nine subjects in the external cohort
+have their conversion label unresolved at the time of the evaluation reported in \autoref{sec:rq4}.
 
 \paragraph{Informative attrition.} Converters and stable \ac{MCI} subjects do not have the
 same average number of visits available in the \ac{DELCODE} held-out split: converters
@@ -335,10 +335,9 @@ these results and a deployment claim, and this section does not restate them.
 The floor comparison of \autoref{sec:rq1} shows that essentially all of the signal
 available to the selected configuration is longitudinal: the same configuration evaluated
 on a single visit scores at chance, while its full-trajectory evaluation reaches an
-\ac{AUC} of 0.7488. A single scan, by this evidence, does not separate a subject whose
-connectivity pattern is mildly abnormal but stable from one whose pattern is mildly
-abnormal and declining; the second scan is what supplies the information a single
-assessment cannot. Every configuration's static single-visit probe in \autoref{sec:rq1} and
+\ac{AUC} of 0.7488. A single scan, by this evidence, does not separate converters from stable
+\ac{MCI} subjects; the second scan is what supplies the longitudinal trajectory information a
+single assessment lacks. Every configuration's static single-visit probe in \autoref{sec:rq1} and
 \autoref{sec:rq3} lands at or below the demographics-only floor, so this is not a property
 of the selected architecture alone but a property of what a single functional-connectivity
 snapshot carries about future conversion at this cohort size.
@@ -353,19 +352,18 @@ quantity already captures most of what a trained classifier adds. This bounds wh
 added value a more complex representation can support, without denying that the remaining
 margin is real.
 
-The disease axis and per-scan disease score of \autoref{sec:interpretability-results} show a
-different kind of clinical value: not a larger effect than the classification result itself,
-but a more interpretable form of the same information. Projecting the frozen spatial-first
+The conversion axis and per-scan conversion score of \autoref{sec:interpretability-results} show a
+different kind of interpretability value: not a larger effect than the classification result itself,
+but a geometrically transparent projection of the same discriminative signal. Projecting the frozen spatial-first
 encoder's embeddings onto a single fitted axis separates converters from stable subjects
 with a large effect size, and a logistic probe on the same embeddings reaches an
 out-of-fold \ac{AUC} comparable to the classification results elsewhere in this thesis. The
 Fisher discriminant ratio computed per latent dimension shows that this separation is
 concentrated in a minority of the sixty-four latent dimensions rather than distributed
 evenly across all of them, which is the practical distinction behind treating this axis as
-a direction with content rather than as an artefact of the classifier's decision boundary.
-Compressing a classification decision into one scalar per scan, comparable in form to a
-quantitative biomarker readout, is the form of clinical value this instrumentation offers,
-independently of whether the underlying classifier's \ac{AUC} itself exceeds any particular
+a conversion-related latent direction rather than as an artefact of the classifier's decision boundary.
+Compressing a classification decision into one scalar per scan provides a low-dimensional summary
+of conversion resemblance, independently of whether the underlying classifier's \ac{AUC} itself exceeds any particular
 threshold.
 
 The perturbation results of \autoref{sec:robustness-results} add a further constraint on
@@ -375,8 +373,8 @@ while leaving the connectivity graph unchanged, and to edge-topology perturbatio
 remaining sensitive to direct feature-level noise at the highest level tested. This
 asymmetry indicates that the decisions this instrumentation studies are driven by
 graph-derived connectivity signal rather than by demographic covariates riding alongside
-it, which is a precondition for treating the disease axis above as a connectivity-based
-biomarker candidate rather than as a proxy for age or sex.
+it, which is a precondition for treating the conversion axis above as a connectivity-based
+discriminative direction rather than as a proxy for age or sex.
 
 Taken together, these results support the value of longitudinal functional-connectivity
 signal, and of a linear or near-linear summary of its change over time, as a research

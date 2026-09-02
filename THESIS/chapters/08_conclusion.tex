@@ -37,19 +37,21 @@ evaluated protocol, spatial-first graph representation learning does not add val
 mean-pooled connectivity features at this cohort size.
 
 RQ3 asked whether temporal-first modelling improves over spatial-first modelling. On the
-pooled protocol, the selected temporal-first configuration reaches a pooled out-of-fold
+pooled protocol, the selected temporal-first configuration (S1) reaches a pooled out-of-fold
 \ac{AUC} of $0.7488 \pm 0.0033$, exceeding the randomly initialised spatial-first floor by
 0.186 \ac{AUC} at fourteen times fewer trainable parameters and the frozen pretrained
-spatial-first floor by 0.030 \ac{AUC} at 7.6 times fewer trainable parameters. Two
-configurations that add parameters on top of the selected configuration, a temporal
-saliency gate and a dual-score head, both score lower than the configuration they extend,
-so this pattern is not explained by the selected configuration simply carrying more
-capacity than its comparators. Under the evaluated \ac{ADNI}-and-\ac{DELCODE} protocol,
-temporal-first modelling performs well relative to every spatial-first comparator
-evaluated, including the published Brain-TokenGT competitor, which under the evaluated
-configuration showed substantially greater run-to-run variability and scored below every
-temporal-first configuration that clears the pre-specified floor gates of
-\autoref{sec:protocol}.
+spatial-first floor by 0.030 \ac{AUC} at 7.6 times fewer trainable parameters. Importantly,
+S1 contains neither a graph autoencoder nor graph message-passing layers; its empirical
+advantage stems entirely from preserving region-resolved temporal trajectory information before
+spatial pooling, rather than from graph-based spatial aggregation. Two configurations that
+add parameters on top of the selected configuration, a temporal saliency gate and a
+dual-score head, both score lower than the configuration they extend, so this pattern is not
+explained by the selected configuration simply carrying more capacity than its comparators.
+Under the evaluated \ac{ADNI}-and-\ac{DELCODE} protocol, temporal-first modelling performs well
+relative to every spatial-first comparator evaluated, including the published Brain-TokenGT
+competitor, which under the evaluated configuration showed substantially greater run-to-run
+variability and scored below every temporal-first configuration that clears the pre-specified floor
+gates of \autoref{sec:protocol}.
 
 RQ4 asked whether these findings transfer to an independent cohort. The selected
 configuration and its two pre-specified secondaries all reach in-domain test \ac{AUC} in

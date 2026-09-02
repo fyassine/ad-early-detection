@@ -170,10 +170,11 @@ full. Within that framework, the contributions delivered by this thesis are the 
 \begin{description}
   \item[Temporal-first trajectory modelling.] Every longitudinal classifier inherited into
     this project pools a visit's connectome graph to a single vector before the temporal
-    model sees it. This thesis inverts that order: each region's own trajectory is modelled
-    first, and the graph is pooled only afterward. The architecture, its implementation,
-    and the ablation sequence that tests it against the inherited spatial-first stack are
-    thesis work, described in \autoref{sec:tfgn} and evaluated in \autoref{sec:rq3}.
+    model sees it. This thesis inverts that order: each region's own temporal connectivity
+    trajectory is modelled first with a node-shared recurrent network without graph propagation
+    or autoencoding, and the graph is pooled spatially only afterward. The architecture (S1),
+    its implementation, and the ablation sequence that tests it against the inherited spatial-first
+    stack are thesis work, described in \autoref{sec:tfgn} and evaluated in \autoref{sec:rq3}.
   \item[Capacity accounting against the subject-level denominator.] An explicit analysis
     of trainable parameters per subject, rather than per scan, motivating why a smaller
     recurrent head was tested against the inherited spatial-first configuration.
@@ -195,7 +196,7 @@ full. Within that framework, the contributions delivered by this thesis are the 
     on the inter-visit interval, described in \autoref{sec:spatial-first} and serving
     throughout \autoref{ch:results} as the spatial-first comparator against which
     temporal-first modelling is tested.
-  \item[Latent-space and interpretability studies.] A linear disease axis extracted from
+  \item[Latent-space and interpretability studies.] A linear conversion axis extracted from
     the classifier's decision boundary, a latent-steering validation that decodes points
     along that axis back to connectivity space, and a per-dimension and per-region
     separability analysis of the latent representation, reported in

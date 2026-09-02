@@ -631,33 +631,33 @@ a clean external-validation result nor an unexamined trigger.
 
 \section{Interpretability and Latent-Space Results}\label{sec:interpretability-results}
 
-In this section we report the \ac{DELCODE}-only disease-axis and latent-separability results built on the spatial-first frozen encoder (\ac{GELSTM}) of \autoref{sec:rq2}, using the instrumentation defined in \autoref{sec:instrumentation}. Because the spatial-first architecture models whole-brain graph embeddings explicitly via a 64-dimensional latent bottleneck, it provides a direct testbed for evaluating latent disease-axis alignment and Fisher discriminant separability. In contrast, the selected temporal-first model (S1) operates directly on regional node trajectories without constructing an intermediate graph autoencoder bottleneck (\autoref{sec:rq3}).
+In this section we report the \ac{DELCODE}-only conversion-axis and latent-separability results built on the spatial-first frozen encoder (\ac{GELSTM}) of \autoref{sec:rq2}, using the instrumentation defined in \autoref{sec:instrumentation}. Because the spatial-first architecture models whole-brain graph embeddings explicitly via a 64-dimensional latent bottleneck, it provides a direct testbed for evaluating latent conversion-axis alignment and Fisher discriminant separability. In contrast, the selected temporal-first model (S1) operates directly on regional node trajectories without constructing an intermediate graph autoencoder bottleneck (\autoref{sec:rq3}).
 
-\paragraph{Disease axis, latent separability and the logistic probe (\ac{DELCODE}-only).}
-The disease axis and per-scan disease score, the Fisher discriminant ratio and the
+\paragraph{Conversion axis, latent separability and the logistic probe (\ac{DELCODE}-only).}
+The conversion axis and per-scan conversion score, the Fisher discriminant ratio and the
 \ac{UMAP} projection defined in \autoref{sec:instrumentation} are reported here for the
 frozen spatial-first \ac{GELSTM} of \autoref{sec:rq2}, evaluated at seed 42 on the full
 167-subject \ac{DELCODE} downstream cohort (99 stable \ac{MCI}, 68 converters, pooling the
 cross-validation and held-out subjects for this descriptive projection). \autoref{fig:rq6-umap}
-shows the resulting projection with the disease axis overlaid.
+shows the resulting projection with the conversion axis overlaid.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.75\textwidth]{latent_space}
   \caption{\ac{UMAP} projection of the 64-dimensional pooled graph embeddings for the full
-  \ac{DELCODE} downstream cohort, with the disease axis drawn between the two group
+  \ac{DELCODE} downstream cohort, with the conversion axis drawn between the two group
   centroids.}
   \label{fig:rq6-umap}
 \end{figure}
 
-The \ac{UMAP} projection shows a clear directional separation between the two groups along the conversion axis. Converters concentrate toward lower UMAP-1 values while stable-\ac{MCI} subjects dominate higher values, yielding a visible displacement of group centroids ($\|\mathbf{c}_{\text{conv}} - \mathbf{c}_{\text{stable}}\|_2 = 2.59$) and a very large effect size along the conversion axis ($\text{Cohen's } d = 1.34$, $t = 9.18$, $p < 10^{-15}$). In the projected two-dimensional space, this alignment yields a silhouette score of $0.21$, whereas in the full 64-dimensional latent space the silhouette score is $0.086$, reflecting that disease-discriminative structure is concentrated along specific directional axes rather than forming universally disjoint spherical clusters. This is corroborated by the logistic-regression probe fitted on the pooled 64-dimensional embeddings (mean per-fold \ac{AUC} of $0.859$; out-of-fold \ac{AUC} of $0.849$).
+The \ac{UMAP} projection shows a clear directional separation between the two groups along the conversion axis. Converters concentrate toward lower UMAP-1 values while stable-\ac{MCI} subjects dominate higher values, yielding a visible displacement of group centroids ($\|\mathbf{c}_{\text{conv}} - \mathbf{c}_{\text{stable}}\|_2 = 2.59$) and a very large effect size along the conversion axis ($\text{Cohen's } d = 1.34$, $t = 9.18$, $p < 10^{-15}$). In the projected two-dimensional space, this alignment yields a silhouette score of $0.21$, whereas in the full 64-dimensional latent space the silhouette score is $0.086$, reflecting that conversion-discriminative structure is concentrated along specific directional axes rather than forming universally disjoint spherical clusters. This is corroborated by the logistic-regression probe fitted on the pooled 64-dimensional embeddings under subject-level 5-fold cross-validation (mean per-fold \ac{AUC} of $0.859 \pm 0.067$; out-of-fold \ac{AUC} of $0.849$).
 
 The Fisher discriminant ratio, computed per latent dimension over the same pooled
 embeddings, identifies dimensions 2, 29, 12, 22 and 10 (zero-indexed) as the five most
 discriminative of the 64. Signal is therefore concentrated in a minority of latent
 dimensions rather than smeared evenly across all 64, which is the practical distinction
-behind any claim that the encoder has learned a disease-relevant direction as opposed to a
-diffuse one. Latent steering along the fitted disease axis, decoding each steered point back
+behind any claim that the encoder has learned a conversion-relevant direction as opposed to a
+diffuse one. Latent steering along the fitted conversion axis, decoding each steered point back
 to a connectivity matrix through the \ac{GAAE} decoder, and visit-occlusion, removing each
 visit from a single subject's trajectory and measuring the resulting change in predicted
 probability, are both part of the instrumentation defined in \autoref{sec:instrumentation};

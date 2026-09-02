@@ -315,8 +315,8 @@ Appendix C.
 `was:` 4.9 to 4.14 and 4.18 merged. Verdicts previously embedded in 4.13 move to §6.4.
 
 **4.7 Interpretability and robustness instrumentation**
-What was built to interrogate the model, described as methods only. The disease axis and
-per-scan disease score, the orthogonal-residual PCA trajectory space, latent steering back
+What was built to interrogate the model, described as methods only. The conversion axis and
+per-scan conversion score, the orthogonal-residual PCA trajectory space, latent steering back
 to connectivity, the per-dimension and per-region Fisher discriminant ratio, mean against
 attention pooling, and the four perturbation methods separated by failure mode (feature
 noise with the graph held fixed; matrix noise with graph rebuild; edge drop and random-add;
@@ -420,8 +420,8 @@ contribute to the poor transfer, without a causal claim.
 
 **6.6 Interpretability and latent-space results**
 Seed stability of the saliency map and its correlation with the independent model-free drift
-measure, the pre-specified network-enrichment test and its outcome, the disease axis and the
-per-scan disease score, latent steering decoded back to connectivity, the Fisher
+measure, the pre-specified network-enrichment test and its outcome, the conversion axis and the
+per-scan conversion score, latent steering decoded back to connectivity, the Fisher
 discriminant ratio per latent dimension and per region, and the UMAP projections with
 decision overlays. States the reduced statistical power of the map analysis and the
 cortical-only limitation of the enrichment statistic.
@@ -608,10 +608,10 @@ Every entry in `DOCS/critical_points/contributions.md`, with its single home.
 | VGAE variants and the free-bits objective | §4.3, detail in App. B | §6.3 |
 | Reconstruction fidelity as a scale-free Pearson correlation | §4.3 | §6.3 |
 | GE-LSTM and GE-GRU time-conditioned trajectory head | §4.4 | §6.4 |
-| Disease axis and per-scan disease score | §4.7 | §6.6 |
+| Conversion axis and per-scan conversion score | §4.7 | §6.6 |
 | Latent steering decoded back to connectivity | §4.7 | §6.6 |
 | Fisher discriminant ratio per dimension and per region | §4.7 | §6.6 |
-| Latent visualisation (UMAP over the disease-axis embeddings) | §4.7 | §6.6 |
+| Latent visualisation (UMAP over the conversion-axis embeddings) | §4.7 | §6.6 |
 | Four perturbation methods by failure mode | §4.7 | §6.7 |
 | Edge-perturbation deduplication fix | App. B | pinned by tests, §7.3 |
 | Scanner-drift simulation anchored to a measured inventory | §4.7 | §6.7 |
