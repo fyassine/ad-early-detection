@@ -1,0 +1,52 @@
+\documentclass[fontsize=11pt,paper=a4]{scrbook}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[sc]{mathpazo}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\usepackage{caption}
+\usepackage{ifthen}
+\usepackage{hyperref}
+\hypersetup{hidelinks}
+
+\ifthenelse{\equal{\detokenize{dark}}{\jobname} \OR \equal{\detokenize{preview_simple_dark}}{\jobname}}{%
+  \newcommand{\bg}{black}
+  \newcommand{\fg}{white}
+  \usepackage[pagecolor=\bg]{pagecolor}
+  \color{\fg}
+}{%
+  \newcommand{\bg}{white}
+  \newcommand{\fg}{black}
+}
+
+\definecolor{TUMBlue}{HTML}{0065BD}
+\definecolor{TUMSecondaryBlue}{HTML}{005293}
+\definecolor{TUMSecondaryBlue2}{HTML}{003359}
+\definecolor{TUMBlack}{HTML}{000000}
+\definecolor{TUMWhite}{HTML}{FFFFFF}
+\definecolor{TUMDarkGray}{HTML}{333333}
+\definecolor{TUMGray}{HTML}{808080}
+\definecolor{TUMLightGray}{HTML}{CCCCC6}
+\definecolor{TUMAccentGray}{HTML}{DAD7CB}
+\definecolor{TUMAccentOrange}{HTML}{E37222}
+\definecolor{TUMAccentGreen}{HTML}{A2AD00}
+\definecolor{TUMAccentLightBlue}{HTML}{98C6EA}
+\definecolor{TUMAccentBlue}{HTML}{64A0C8}
+
+\begin{document}
+\pagecolor{\bg}
+\color{\fg}
+
+\begin{figure}[p]
+  \centering
+  \resizebox{0.75\textwidth}{!}{\input{fig_protocol_funnel_simple}}
+  \caption{The four-tier evaluation protocol (simplified, pure native TikZ). Candidate architectures must clear Tier~1 (floor gates), Tier~2 (selection rule), and Tier~3 (robustness vetoes) before Tier~4 reads the one-shot held-out test sets.}
+  \label{fig:protocol-funnel}
+\end{figure}
+
+\end{document}

@@ -1,0 +1,138 @@
+% TikZ diagram: The Four-Tier Evaluation Protocol (Simplified, No External Images)
+% Progressive funnel: floor gates -> selection rule -> robustness vetoes -> one-pass held-out
+% Pure native TikZ, minimal text, true tapering geometry (10.8 -> 9.8 -> 8.8 -> 7.8 cm).
+
+\begin{tikzpicture}[
+    font=\small\sffamily,
+    >=Latex,
+    every node/.style={align=center},
+    protocol panel/.style={
+        draw=TUMBlue!85,
+        fill=\fg!2!\bg,
+        rounded corners=4pt,
+        line width=0.8pt,
+        inner sep=6pt,
+        text=\fg,
+        text width=#1,
+        align=left
+    },
+    pass badge/.style={
+        draw=TUMAccentGreen!80,
+        fill=TUMAccentGreen!12!\bg,
+        rounded corners=2pt,
+        inner xsep=5pt,
+        inner ysep=2pt,
+        font=\sffamily\bfseries\scriptsize,
+        text=TUMAccentGreen!50!black
+    },
+    lock badge/.style={
+        draw=TUMSecondaryBlue2,
+        fill=TUMSecondaryBlue2!15!\bg,
+        rounded corners=2pt,
+        inner xsep=5pt,
+        inner ysep=2.5pt,
+        font=\sffamily\bfseries\scriptsize,
+        text=TUMSecondaryBlue2
+    },
+    flowline/.style={
+        ->,
+        line width=0.85pt,
+        draw=TUMBlue!85,
+        shorten >=2pt,
+        shorten <=2pt
+    },
+    flowlabel/.style={
+        font=\scriptsize\sffamily,
+        text=\fg!75,
+        fill=\bg,
+        inner sep=1.5pt,
+        rounded corners=2pt
+    },
+    endcap/.style={
+        font=\footnotesize\bfseries,
+        text=\fg!85,
+        align=center,
+        fill=\bg,
+        draw=\fg!35,
+        rounded corners=4pt,
+        inner sep=3.5pt,
+        text width=9.6cm
+    }
+]
+
+% -------------------------------------------------------------
+% ENTRY POINT
+% -------------------------------------------------------------
+\node[endcap] (entry) at (0, 0) {Candidate Pool (Ablation Architectures, $N=10$)};
+
+% -------------------------------------------------------------
+% TIER 1: FLOOR GATES (10.8 cm)
+% -------------------------------------------------------------
+\node[protocol panel=10.8cm, below=0.55cm of entry] (tier1) {
+    \textbf{\color{TUMBlue}TIER 1 \quad FLOOR GATES}
+    \null\hfill\tikz[baseline]\node[pass badge] {PASS: Both floors cleared};
+    \vspace{2pt}
+
+    \textit{Rule:}\ \ {\small $\text{AUC}_{\text{cand}} > \max(\text{AUC}_{\text{demo}},\,\text{AUC}_{\text{static}})$}\\[2pt]
+    {\scriptsize $\bullet$ Demographics floor: $\approx 0.53$ \qquad $\bullet$ Static 1-visit floor: $\approx 0.49$}
+};
+
+% -------------------------------------------------------------
+% TIER 2: SELECTION RULE (9.8 cm)
+% -------------------------------------------------------------
+\node[protocol panel=9.8cm, below=0.55cm of tier1] (tier2) {
+    \textbf{\color{TUMBlue}TIER 2 \quad SELECTION RULE}
+    \null\hfill\tikz[baseline]\node[pass badge] {RETAIN: Primary S1};
+    \vspace{2pt}
+
+    \textit{Rule:}\ \ {\small Retain if mean $\Delta\text{AUC} > 1\,\text{SE}$}\\[2pt]
+    {\scriptsize $\bullet$ Paired child vs.\ parent on $n=248$ pool \qquad $\bullet$ 4 seeds ($4 \times 5$ folds)}
+};
+
+% -------------------------------------------------------------
+% TIER 3: ROBUSTNESS VETOES (8.8 cm)
+% -------------------------------------------------------------
+\node[protocol panel=8.8cm, below=0.55cm of tier2] (tier3) {
+    \textbf{\color{TUMBlue}TIER 3 \quad ROBUSTNESS VETOES}
+    \null\hfill\tikz[baseline]\node[pass badge] {PASS: 5/5 cleared};
+    \vspace{2pt}
+
+    \textit{Rule:}\ \ {\scriptsize All five guardrails must pass (fails if any breached):}\\[3pt]
+    \begin{tabular}{@{}ll@{}}
+        \checkmark\ {\scriptsize Cohort parity: AUC $>$ floor} & \checkmark\ {\scriptsize Stability: $\operatorname{SD}(\tau) \le 0.15$}\\[2pt]
+        \checkmark\ {\scriptsize Calibration: $\text{ECE} \le 0.10$} & \checkmark\ {\scriptsize Confounding: $|\rho_{\text{scans}}| \le 0.30$}\\[2pt]
+        \multicolumn{2}{@{}l@{}}{\checkmark\ {\scriptsize Site leak: Probe AUC $\le 0.75$}}
+    \end{tabular}
+};
+
+% -------------------------------------------------------------
+% TIER 4: ONE-PASS HELD-OUT ESTIMATION (7.8 cm)
+% -------------------------------------------------------------
+\node[protocol panel=7.8cm, below=0.55cm of tier3] (tier4) {
+    \centering
+    \textbf{\color{TUMBlue}TIER 4 \quad ONE-PASS ESTIMATION}
+    \vspace{3pt}
+
+    \begin{tabular}{@{}c@{\hspace{8pt}}c@{}}
+        \tikz[baseline]{\node[draw=TUMBlue, fill=TUMBlue!12!\bg, rounded corners=3pt, inner sep=2.5pt, font=\scriptsize\bfseries] {In-Domain ($n=64$)};} &
+        \tikz[baseline]{\node[draw=TUMAccentGreen, fill=TUMAccentGreen!14!\bg, rounded corners=3pt, inner sep=2.5pt, font=\scriptsize\bfseries] {External ($n=60$)};}
+    \end{tabular}\\[3pt]
+    {\scriptsize Locked out-of-fold threshold $\cdot$ Zero retraining}\\[4pt]
+    \tikz[baseline]\node[lock badge] {$\blacksquare$\ WRITE-LOCKED: No post-hoc re-scoring};
+};
+
+% -------------------------------------------------------------
+% FLOW ARROWS WITH CANDIDATE COUNTS
+% -------------------------------------------------------------
+\draw[flowline] (entry.south) -- (tier1.north) node[midway, right=3pt, flowlabel] {candidate pool};
+\draw[flowline] (tier1.south) -- (tier2.north) node[midway, right=3pt, flowlabel] {8 passed};
+\draw[flowline] (tier2.south) -- (tier3.north) node[midway, right=3pt, flowlabel] {1 selected (S1)};
+\draw[flowline] (tier3.south) -- (tier4.north) node[midway, right=3pt, flowlabel] {robust (5/5)};
+
+% -------------------------------------------------------------
+% TERMINAL EXIT POINT
+% -------------------------------------------------------------
+\node[endcap, below=0.55cm of tier4] (exit) {Final Reported Estimates: Primary (S1) \& Secondary Models};
+\draw[flowline] (tier4.south) -- (exit.north) node[midway, right=3pt, flowlabel] {one-pass lock};
+
+\end{tikzpicture}

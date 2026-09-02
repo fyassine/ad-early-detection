@@ -289,109 +289,68 @@ is evaluated under the protocol of \autoref{ch:methodology}.
 
 \section{Open Problems Addressed in This Thesis}\label{sec:open-problems}
 
-This section names four open problems in the literature surveyed above, each mapped to one
-of the research questions of \autoref{sec:research-questions}, and closes by stating the
-position this thesis takes on each.
+This section synthesises four open problems identified in the literature surveyed above,
+each corresponding to one of the research questions framed in \autoref{sec:research-questions}.
 
 \subsection{Where Spatial Aggregation Belongs in a Longitudinal Pipeline}\label{sec:gap-aggregation}
 
 The recurrent and spatiotemporal architectures surveyed in
-\autoref{sec:longitudinal-modelling} agree on where, in the pipeline, spatial information
-is reduced to a fixed-size representation, even where they disagree on how. The time-aware
-recurrent mechanisms of \autoref{sec:time-conditioning-background} operate on
-already-vectorised per-visit inputs by construction, since they were developed outside the
-graph setting entirely. The dynamic and spatiotemporal graph networks of
-\autoref{sec:dynamic-graph-background} keep a graph operation at every timestep, but each
-still applies that operation, and the pooling step that follows it, before any temporal
-model sees the result, so that a region's own trajectory across visits is never directly
-available to the recurrence; only the trajectory of an already-pooled, subject-level
-summary is. Whether this ordering, spatial aggregation first and temporal modelling second,
-is necessary, or whether letting a temporal model see each region's own trajectory before
-any pooling occurs preserves signal the conventional ordering discards, is open. This is
-the gap RQ3 addresses (\autoref{sec:rq3}).
+\autoref{sec:longitudinal-modelling} reduce spatial information to a fixed-size summary vector
+before temporal modelling occurs. Time-aware recurrent mechanisms operate on vectorised
+per-visit representations by construction, whereas dynamic and spatiotemporal graph networks
+apply spatial message passing and graph pooling at each visit prior to temporal recurrence.
+Consequently, region-specific trajectories across visits are collapsed into a global
+subject-level summary before any temporal model processes them. Whether spatial pooling prior
+to temporal modelling is necessary, or whether modelling regional trajectories directly before
+spatial aggregation preserves disease-relevant signal, remains an open problem in the
+literature. This gap motivates the investigation of architectural ordering framed in RQ3
+(\autoref{sec:research-questions}).
 
 \subsection{What Self-Supervision on Connectomes Learns}\label{sec:gap-ssl}
 
-Reconstruction, described in \autoref{sec:graph-autoencoders-background}, is the default
-pretext task for a connectome autoencoder, on the reasoning that a representation able to
-reconstruct a subject's connectivity has captured that connectivity's structure. This
-reasoning does not, by itself, guarantee that the captured structure is the structure a
-downstream group classifier needs: a reconstruction objective is free to spend its
-representational capacity on whatever varies most in the input, and if between-patient
-variation within a cohort exceeds between-group variation, as is plausible at the cohort
-sizes this thesis works with, that objective has every incentive to represent subject
-idiosyncrasy rather than the disease-relevant contrast a classifier is trained to find. A
-re-examination of graph deep learning across large cross-sectional neuroimaging cohorts
-found that the graph message-passing mechanism itself does not improve predictive
-performance over a comparable model without it, and consistently degrades it
-\parencite{han2026rethinking}; a related study found that a connectome graph's own edges
-contribute little to classification accuracy on a standard benchmark
-\parencite{lararangel2025limits}. Neither study evaluates a longitudinal cohort or ablates
-the pretext objective itself, so whether a reconstruction-pretrained encoder yields features
-useful for a downstream group contrast, at the smaller, longitudinal, single-site scale this
-thesis works at, and with the pretext objective itself varied rather than held fixed,
-remains open. This is the gap RQ2 addresses (\autoref{sec:rq2}), and where it does, it is
-best read as an extension of the finding above into that smaller-sample, longitudinal
-regime rather than as an independent discovery of the same result.
+Reconstruction is the primary pretext task for connectome autoencoding
+(\autoref{sec:graph-autoencoders-background}), operating under the assumption that recovering
+connectivity matrices yields features informative for downstream classification. 
+Recent audits across large cross-sectional cohorts demonstrate that graph message passing 
+often fails to improve predictive performance over simpler tabular baselines \parencite{han2026rethinking} and that topological edges contribute
+minimally to classification on standard benchmarks \parencite{lararangel2025limits}.
+Nevertheless, these evaluations focus on cross-sectional datasets and do not isolate the
+utility of the self-supervised pretext objective in longitudinal cohorts. Whether
+self-supervised graph pretraining provides measurable discriminative utility in longitudinal
+settings remains an open problem, corresponding to RQ2 (\autoref{sec:research-questions}).
 
 \subsection{Evidence Standards Under Small Samples}\label{sec:gap-evidence}
 
-At the cohort sizes in the low hundreds this literature works with, three practices remain
-unsettled. First, which floor a candidate architecture must clear before a claim about its
-value is admissible is rarely stated in advance: a model is compared against whichever prior
-result the authors selected, rather than against a pre-specified capacity or performance
-floor computed on the same data. Second, whether a reported result is stable under the same
-random seed, as opposed to varying across cross-validation folds or independent training
-runs, is rarely reported at all; a review of graph-based neuroimaging benchmarks names the
-absence of a standardised evaluation protocol as a barrier to comparing designs in the first
-place \parencite{cui2023braingb}, and several documented forms of leakage, discussed in
-\autoref{sec:dl-neurodegeneration}, show how readily an unstated evaluation choice can
-inflate a reported figure without being visible in the report itself
-\parencite{shim2021leakage,yagis2021leakage,rosenblatt2024leakage}. Third, how a
-longitudinal evaluation is protocolised, including how many visits a subject must
-contribute to be included and how a variable-length sequence is handled, differs across
-studies in ways that make a reported accuracy difficult to attribute to the architecture
-alone. This thesis treats these three practices as one question about what a claim must
-survive before it is admitted, rather than as three separate methodological asides. This is
-the gap RQ1 addresses (\autoref{sec:rq1}).
+In small-sample neuroimaging cohorts, empirical evaluation practices remain heterogeneous
+across three distinct dimensions. First, candidate architectures are rarely evaluated against
+pre-specified performance floors, such as static baselines or unregularised linear models
+trained on identical splits. Second, published benchmarks frequently omit seed sensitivity
+and replicate variance, obscuring whether reported gains exceed stochastic variation
+\parencite{cui2023braingb}. Third, longitudinal cohort protocols vary substantially in visit
+filtering, handling of variable sequence lengths, and split definitions, creating opportunities
+for data leakage that inflate reported classification accuracy
+\parencite{shim2021leakage,yagis2021leakage,rosenblatt2024leakage}. Because these factors
+confound cross-study comparisons, establishing whether longitudinal architectures provide
+genuine gains over static representations requires standardized baseline evaluation, motivating
+RQ1 (\autoref{sec:research-questions}).
 
 \subsection{Time and Cohort as Confounds}\label{sec:gap-confounds}
 
-Pooling data across cohorts is an established route to a larger, more statistically
-powered sample, but it introduces two confounds of its own. Follow-up duration correlates
-with the outcome it is used to help predict, since a longer observation window gives a
-true conversion more opportunity to be captured before a label is assigned, and this
-correlation is rarely controlled for explicitly; \autoref{sec:motivation} states the
-resulting tradeoff between cohort size and label noise in the single-cohort case, and it
-compounds when cohorts with different follow-up conventions are pooled together. Visit-time
-semantics differ between cohorts in ways a shared model can silently mishandle: a nominal
-study timepoint on a fixed protocol grid and an elapsed time recorded in days since a
-cohort-specific baseline are not the same quantity, and treating them as interchangeable
-risks misaligning or dropping scans without the error being visible in a pooled summary
-statistic. Pooling cohorts to buy sample size additionally introduces cohort identity
-itself as a nuisance variable a model trained without any cohort label can nonetheless come
-to represent, since nothing in a pooled training objective penalises a representation for
-carrying that information. Whether a representation learned under a pooled protocol
-generalises to a cohort it was not trained on, or whether it has instead come to depend on
-properties specific to the cohorts it was pooled from, is open. This is the gap
-RQ4 addresses (\autoref{sec:rq4}).
+Aggregating neuroimaging data across multiple cohorts is a common strategy to increase
+sample size, but multi-cohort pooling introduces systematic confounds. First, observational
+follow-up duration often correlates with conversion outcomes, as extended tracking windows
+increase the probability of observing conversion events. Second, visit-time semantics differ
+across studies; equating nominal protocol visits with continuous elapsed time since baseline
+introduces temporal misalignment. Third, pooling across cohorts introduces cohort identity
+as an unpenalised nuisance variable that neural representations can encode. Consequently,
+whether models trained on multi-cohort aggregations learn generalisable pathological features
+or rely on site-specific acquisition properties remains an open question, motivating RQ4
+(\autoref{sec:research-questions}).
 
 \bigskip
 
-Taken together, this thesis's position on these four open problems is that each is best
-resolved empirically at the specific cohort size and longitudinal setting this thesis
-works in, rather than assumed from results obtained at a different scale or on a
-cross-sectional cohort. \autoref{sec:gap-aggregation} is addressed by building a
-temporal-first architecture that lets each region's trajectory reach a recurrent model
-before any spatial pooling occurs, and comparing it directly against the conventional
-pool-then-recur ordering under a matched protocol. \autoref{sec:gap-ssl} is addressed by
-ablating the pretext objective itself, rather than only the architecture that consumes it,
-against a static, single-visit read of the same encoder. \autoref{sec:gap-evidence} is
-addressed by pre-specifying the floors, the keep-or-drop rule and the seeds a configuration
-is evaluated against before any result is read, and by reporting same-seed replicate
-variance throughout rather than only cross-validation spread. \autoref{sec:gap-confounds}
-is addressed by testing, rather than assuming, whether a pooled representation transfers to
-an unseen cohort, and by probing that representation directly for cohort identity rather
-than inferring cohort dependence from transfer performance alone. \autoref{ch:methodology}
-states how each of these four responses is implemented, and \autoref{ch:results} reports
-what each one found.
+Addressing these four open problems requires systematic experimental formulation.
+\autoref{ch:data} describes the clinical cohorts and longitudinal quality control procedures,
+while \autoref{ch:methodology} establishes the models and evaluation frameworks designed to
+interrogate each gap.
+

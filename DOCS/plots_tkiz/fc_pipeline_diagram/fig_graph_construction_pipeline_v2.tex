@@ -67,15 +67,6 @@
         font=\footnotesize,
         text=black!90
     },
-    card6/.style={
-        draw=TUMBlue!90,
-        fill=TUMBlue!12,
-        rounded corners=5pt,
-        line width=0.85pt,
-        inner sep=5pt,
-        font=\footnotesize,
-        text=black!90
-    },
     flowline/.style={
         ->,
         line width=1.0pt,
@@ -145,7 +136,7 @@
     \begin{tabular}{@{}m{2.2cm}@{\hspace{5pt}}m{3.6cm}@{}}
         \insetimg{2.1cm}{sparse_graph} &
         \textbf{4b. Symmetrised $k$-NN Adjacency}\newline
-        \textnormal{\footnotesize Symmetrised top-$k$ over $|C_{ij}|$: $\displaystyle A = \max(A_{\text{top-}k}, A_{\text{top-}k}^\top) \in \{0,1\}^{200 \times 200}$.\newline \scriptsize $k=16$ (pretraining) $\,\big|\,$ $k=8$ (supervised)}
+        \textnormal{\footnotesize Symmetrised top-$k$ over $|C_{ij}|$: $\displaystyle A = \max(A_{\text{top-}k}, A_{\text{top-}k}^\top) \in \{0,1\}^{200 \times 200}$.\newline \scriptsize pretraining $k=16$}
     \end{tabular}
 };
 
@@ -172,17 +163,5 @@
 
 \draw[flowline] (card4a.south) -- (card4a.south |- card5.north);
 \draw[flowline] (card4b.south) -- (card4b.south |- card5.north);
-
-% -------------------------------------------------------------
-% STAGE 6: DOWNSTREAM SUBJECT-LEVEL TARGET
-% -------------------------------------------------------------
-\node[card6, text width=13.5cm, below=0.7cm of card5] (card6) {
-    \begin{tabular}{@{}m{2.6cm}@{\hspace{7pt}}m{9.9cm}@{}}
-        \insetimg{2.5cm}{subject_outcome} &
-        \textbf{6. Downstream Subject-Level Conversion Target}\newline
-        \textnormal{\footnotesize Single binary label per patient trajectory: $y_i \in \{0,1\}$ ($y_i=0$ for Stable \ac{MCI}, $y_i=1$ for Converter \ac{MCI}).\newline \scriptsize Effective sample size is bounded by subject count $N$ (DELCODE $n=167$, Pooled $n=248$), not scan count.}
-    \end{tabular}
-};
-\draw[flowline] (card5.south) -- (card6.north) node[midway, right=4pt, flowlabel] {Sequence-to-label mapping};
 
 \end{tikzpicture}

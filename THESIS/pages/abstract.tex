@@ -1,3 +1,28 @@
 \chapter{\abstractname}
 
-%TODO: Abstract
+Early identification of individuals with \ac{MCI} who later develop \ac{AD} may support
+monitoring. We evaluate longitudinal graph representation learning on resting-state
+functional-connectivity data to predict conversion from \ac{MCI} to \ac{AD}. Predicting
+this conversion is more clinically relevant than classifying scans across cognitively
+normal, \ac{MCI}, and \ac{AD} groups, since the patients in this cohort already carry an
+\ac{MCI} diagnosis and the actionable question is which of them will progress to \ac{AD}.
+We train and evaluate on a pooled cohort from \ac{ADNI} and \ac{DELCODE} comprising 248
+subjects, while reserving \ac{OASIS} with 60 subjects for external evaluation.
+
+The longitudinal classifiers evaluated in the broader project first pool each visit's
+connectome graph into a single representation and then model the resulting sequence
+temporally. The temporal-first configuration applies a recurrent model to the sequence of
+node-level connectivity features before spatial pooling, whereas the spatial-first
+comparator pools each visit-level graph before temporal modelling. We compare the
+temporal-first configuration with static baselines, the pre-existing spatial-first
+configuration evaluated in this thesis with and without reconstruction pretraining, and a
+published graph-transformer comparator.
+
+The temporal-first configuration reaches a pooled out-of-fold \ac{AUC} of
+$0.7488 \pm 0.0033$, exceeding the frozen pretrained spatial-first comparator by 0.030
+\ac{AUC} with 7.6-fold fewer trainable parameters than the comparator. At the matched
+two-to-three-visit window used for a direct comparison against the graph-transformer
+comparator, the temporal-first configuration scores $0.7318 \pm 0.0348$ \ac{AUC} against
+$0.6207 \pm 0.0338$ for the graph-transformer comparator, a margin of
+$0.0999 \pm 0.0162$ \ac{AUC}. External evaluation on \ac{OASIS} yields an \ac{AUC} close
+to chance due to AD diagnosis and protocol differences.

@@ -1,0 +1,179 @@
+% TikZ diagram: Four-Tier Evaluation Protocol
+% Vertical four-row funnel on a shared two-column grid (tier rail | content).
+% One accent hue (self-adapting via \bg/\fg), no \resizebox -- authored at final
+% print width (<= \textwidth = 14.70cm in THESIS/main.tex). 100% native TikZ.
+% All stated figures are sourced from THESIS/chapters/04_methodology.tex.
+% Shared verbatim between DOCS/plots_tkiz (standalone preview, no acronym pkg)
+% and THESIS/figures -- plain-text cohort names only, no \ac{}.
+
+\colorlet{FunnelAccent}{TUMBlue!70!\fg}
+\colorlet{FunnelMuted}{\fg!55!\bg}
+\colorlet{FunnelBorder}{\fg!35!\bg}
+\colorlet{FunnelFill}{\fg!5!\bg}
+\colorlet{FunnelLockFill}{FunnelAccent!8!\bg}
+
+\newcommand{\tiernum}[1]{{\bfseries\Large\color{FunnelAccent}#1}}
+\newcommand{\tiertitle}[1]{{\bfseries\large\color{\fg}#1}}
+
+\begin{tikzpicture}[
+    font=\sffamily,
+    >=Latex,
+    every node/.style={align=left},
+    endcap/.style={
+        font=\small\itshape,
+        text=FunnelMuted,
+        align=center,
+        text width=11.6cm
+    },
+    tier row/.style={
+        draw=FunnelBorder,
+        fill=FunnelFill,
+        rounded corners=2pt,
+        line width=0.7pt,
+        inner sep=8pt,
+        text width=12.3cm,
+        text=\fg
+    },
+    tier row locked/.style={
+        tier row,
+        draw=FunnelAccent,
+        line width=1.1pt,
+        fill=FunnelLockFill
+    },
+    flowline/.style={
+        ->,
+        line width=0.85pt,
+        draw=FunnelAccent,
+        shorten >=2pt,
+        shorten <=2pt
+    },
+    flowlabel/.style={
+        font=\scriptsize\itshape,
+        text=FunnelMuted,
+        fill=\bg,
+        inner sep=1.5pt
+    },
+    rail/.style={
+        dashed,
+        line width=0.6pt,
+        draw=FunnelMuted
+    },
+    rail arrow/.style={
+        ->,
+        line width=0.55pt,
+        draw=FunnelMuted,
+        shorten >=1pt
+    }
+]
+
+% =============================================================
+% ENTRY
+% =============================================================
+\node[endcap] (entry) at (0,0) {Candidate configurations under the ablation sequence};
+
+% =============================================================
+% TIER 1 -- FLOOR GATES
+% =============================================================
+\node[tier row, below=0.55cm of entry] (tier1) {
+  \begin{tabular}{@{}p{1.3cm}@{\hspace{5pt}}p{6.6cm}@{\hspace{5pt}}p{3.9cm}@{}}
+    \tiernum{01} &
+    \tiertitle{Tier 1 --- Floor Gates}\newline\vspace{3pt}
+    {\small A candidate must exceed both baselines, each computed without reading the held-out test set.}\newline\vspace{4pt}
+    {\footnotesize AUC\textsubscript{cand} $>$ max(AUC\textsubscript{demo}, AUC\textsubscript{static})}
+    &
+    {\footnotesize Demographics floor: $\approx 0.53$}\newline\vspace{4pt}
+    {\footnotesize Static single-visit floor: $\approx 0.49$}
+    \\
+  \end{tabular}
+};
+
+% =============================================================
+% TIER 2 -- SELECTION RULE
+% =============================================================
+\node[tier row, below=0.55cm of tier1] (tier2) {
+  \begin{tabular}{@{}p{1.3cm}@{\hspace{5pt}}p{6.9cm}@{\hspace{5pt}}p{3.6cm}@{}}
+    \tiernum{02} &
+    \tiertitle{Tier 2 --- Selection Rule}\newline\vspace{3pt}
+    {\small A configuration is retained only if its paired gain over its parent is detectable at this sample size.}\newline\vspace{4pt}
+    {\footnotesize $\mathrm{mean}(\Delta) > \mathrm{SE}(\Delta)$, four seed-level means, fold-matched to the parent}
+    &
+    {\footnotesize Pool: $n=248$ (out-of-fold)}\newline\vspace{4pt}
+    {\footnotesize Unit: seed (4 seeds $\times$ 5 folds)}\newline\vspace{4pt}
+    {\footnotesize\itshape 1-SE tie-break only if fold-matched and pooled formulations disagree}
+    \\
+  \end{tabular}
+};
+
+% =============================================================
+% TIER 3 -- ROBUSTNESS VETOES
+% =============================================================
+\node[tier row, below=0.55cm of tier2] (tier3) {
+  \begin{tabular}{@{}p{1.3cm}@{\hspace{5pt}}p{6.9cm}@{\hspace{5pt}}p{3.6cm}@{}}
+    \tiernum{03} &
+    \tiertitle{Tier 3 --- Robustness Vetoes}\newline\vspace{3pt}
+    {\small A configuration is dropped if any one of five pre-specified checks is breached.}
+    &
+    {\footnotesize (i)~Per-cohort OOF $\mathsf{AUC}$ $>$ floor}\newline\vspace{3pt}
+    {\footnotesize (ii)~$\mathrm{SD}(\tau) \le 0.15$ over 20 fold-seed combinations}\newline\vspace{3pt}
+    {\footnotesize (iii)~$\mathsf{ECE} \le 0.10$ (temperature-scaled)}\newline\vspace{3pt}
+    {\footnotesize (iv)~$|\rho(\text{scans},\text{score})| \le 0.30$ in stable subjects}\newline\vspace{3pt}
+    {\footnotesize (v)~Cohort-probe $\mathsf{AUC} \le 0.75$}
+    \\
+  \end{tabular}
+};
+
+% =============================================================
+% TIER 4 -- ONE-PASS HELD-OUT ESTIMATION (locked, terminal row)
+% =============================================================
+\node[tier row locked, below=0.60cm of tier3] (tier4) {
+  \begin{tabular}{@{}p{1.3cm}@{\hspace{5pt}}p{10.6cm}@{}}
+    \tiernum{04} &
+    \tiertitle{Tier 4 --- One-Pass Held-Out Estimation}
+    \hfill
+    {\footnotesize\bfseries\color{FunnelAccent}[LOCKED]}
+    \newline\vspace{5pt}
+    \begin{tabular}{@{}p{5.15cm}@{\hspace{8pt}}p{5.15cm}@{}}
+      {\footnotesize\bfseries In-domain test} & {\footnotesize\bfseries External validation} \\[2pt]
+      {\footnotesize $n=64$ (ADNI \& DELCODE)} & {\footnotesize $n=60$ (OASIS-3)} \\
+    \end{tabular}
+    \newline\vspace{5pt}
+    {\footnotesize Out-of-fold-derived threshold $\cdot$ zero retraining $\cdot$ primary (S1) and pre-specified secondary configurations}
+    \\
+  \end{tabular}
+};
+
+% =============================================================
+% EXIT
+% =============================================================
+\node[endcap, below=0.55cm of tier4] (exit) {Reported once: primary (S1) and pre-specified secondary held-out estimates};
+
+% =============================================================
+% VERTICAL FLOW
+% =============================================================
+\draw[flowline] (entry.south) -- (tier1.north);
+\draw[flowline] (tier1.south) -- (tier2.north)
+    node[midway, flowlabel] {clears both floors};
+\draw[flowline] (tier2.south) -- (tier3.north)
+    node[midway, flowlabel] {retained by the selection rule};
+\draw[flowline] (tier3.south) -- (tier4.north)
+    node[midway, flowlabel] {frozen configuration};
+\draw[flowline] (tier4.south) -- (exit.north);
+
+% =============================================================
+% ATTRITION RAIL (single dashed spine, one caption)
+% =============================================================
+\coordinate (railx) at ($(tier1.east)+(0.55,0)$);
+\draw[rail arrow] (tier1.east) -- (tier1.east -| railx);
+\draw[rail arrow] (tier2.east) -- (tier2.east -| railx);
+\draw[rail arrow] (tier3.east) -- (tier3.east -| railx);
+\draw[rail] (tier1.east -| railx) -- (tier3.east -| railx);
+
+\node[
+    rotate=90,
+    anchor=south,
+    font=\scriptsize\itshape,
+    text=FunnelMuted
+] at ($(tier1.east -| railx)!0.5!(tier3.east -| railx)+(0.28,0)$)
+  {excluded from Tier 4 (dropped or vetoed)};
+
+\end{tikzpicture}

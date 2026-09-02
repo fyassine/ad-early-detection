@@ -58,8 +58,8 @@ functional-connectivity matrix (described below), and $X_i^{(t)} \in \mathbb{R}^
 
 \begin{figure}[p]
   \centering
-  \resizebox{!}{0.76\textheight}{\input{figures/fig_graph_construction_pipeline}}
-  \caption{Subject-level functional connectivity graph construction pipeline. (1) Resting-state four-dimensional \ac{BOLD} \ac{fMRI} scans are parcellated into $|V| = 200$ cortical \acp{ROI} using the Schaefer-200 atlas. (2) Mean BOLD time series ($\mathbf{T} \in \mathbb{R}^{200 \times L}$) are extracted per region. (3) Pairwise Pearson correlation followed by Fisher $z$-transformation yields the continuous functional connectivity matrix $C \in \mathbb{R}^{200 \times 200}$. (4a) Raw connectivity rows form 200-dimensional node feature vectors ($X = C$). (4b) Symmetrised $k$-nearest-neighbour sparsification over $|C|$ constructs the binary adjacency matrix $A$. (5) The resulting visit graph $\mathcal{G}_i^{(t)}$ is paired with normalized interval timing $[\Delta t_t]$ across the longitudinal sequence.}
+  \resizebox{0.78\textwidth}{!}{\input{figures/fig_graph_construction_pipeline}}
+  \caption{Subject-level functional connectivity graph construction pipeline. (1) Resting-state 4D BOLD fMRI scans are parcellated into $|V| = 200$ cortical ROIs using the Schaefer-200 atlas across seven canonical networks. (2) Regional mean BOLD time series ($\mathbf{T} \in \mathbb{R}^{200 \times L}$) are extracted per parcel. (3) Pairwise Pearson correlation followed by Fisher $z$-transformation yields continuous FC matrix $C \in \mathbb{R}^{200 \times 200}$. (4a) Connectivity rows form node feature vectors ($X = C$). (4b) Symmetrised $k$-NN sparsification over $|C|$ (pretraining $k=16$) yields binary adjacency $A$. Both components combine into visit-level attributed graphs $\mathcal{G}^{(t)} = (V, A^{(t)}, X^{(t)})$. (5) Sequential visit graphs are paired with elapsed interval timing $\Delta t$. Inset panels are synthetic schematic illustrations of the construction steps.}
   \label{fig:graph-construction-pipeline}
 \end{figure}
 
@@ -660,7 +660,7 @@ at most three visits per subject, to create a matched comparison with Brain-Toke
 architecturally constrained to at most three visits.
 
 \paragraph{The four-tier evaluation protocol.}
-This protocol was fixed in its entirety prior to reading any result.
+This protocol was fixed in its entirety prior to reading any result, structured as a progressive screening funnel with four tiers (floor gates, selection rule, robustness vetoes, and one-pass held-out estimation). Scope is tabulated in \autoref{tab:protocol-scope}.
 
 \textbf{Tier 1 (floor gates).} Every configuration must exceed two pre-computed baselines: the
 demographics-only logistic regression (age and sex only), and the static single-visit
@@ -718,20 +718,23 @@ which tier.
 \small
 \caption{Scope of evaluation across model configurations and evaluation tiers.}
 \label{tab:protocol-scope}
-\begin{tabularx}{\textwidth}{@{}Xccc@{}}
+\begin{tabular}{@{}l ccc@{}}
 \toprule
-Configuration & Out-of-fold ($n=248$) & In-domain test ($n=64$) & External \ac{OASIS} ($n=60$) \\
+Configuration & Out-of-fold & In-domain test & External \ac{OASIS} \\
+ & ($n=248$) & ($n=64$) & ($n=60$) \\
 \midrule
 S0-demo, S0a, S0b, S0c & yes & no & no \\
 S0d Brain-TokenGT & yes & post hoc & post hoc \\
+\addlinespace[3pt]
 S1 (primary) & yes & yes & yes \\
 S1b (secondary) & yes & yes & yes \\
 S1c (both versions) & yes & no & no \\
+\addlinespace[3pt]
 S2, S3, S4 & yes & no & no \\
 S5 (secondary, interpretability) & yes & yes & yes \\
 SENS, W3 configurations & yes & no & no \\
 \bottomrule
-\end{tabularx}
+\end{tabular}
 \end{table}
 
 \paragraph{Resolvability statement.}
@@ -805,7 +808,7 @@ training data only; the resulting maps are descriptive and do not influence any
 classification decision.
 
 \paragraph{Latent visualisation.}
-\ac{UMAP} projections of the 64-dimensional graph embeddings described above, with the
+\Ac{UMAP} projections of the 64-dimensional graph embeddings described above, with the
 disease-axis decision boundary overlaid, assess whether the two group clusters are
 geometrically separated in the reduced space.
 

@@ -1,4 +1,4 @@
-% Standalone preview of the illustrated FC graph-construction pipeline figure.
+% Standalone preview of the four-tier evaluation protocol funnel (D1).
 % Mirrors THESIS/settings.tex's package load order, TUM colour definitions, and
 % light/dark theme switch so the figure previews exactly as it would in the
 % thesis, without touching THESIS/ itself. Compile:
@@ -13,14 +13,14 @@
 \usepackage{amssymb}
 \usepackage[sc]{mathpazo}
 \usepackage{graphicx}
-\graphicspath{{./}{./assets/}}
 \usepackage{array}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,calc}
 \usepackage{caption}
-\usepackage{xcolor}
 \usepackage[printonlyused]{acronym}
 \usepackage{ifthen}
+\usepackage{hyperref}
+\hypersetup{hidelinks}
 
 % Light/dark theme switch, identical mechanism to THESIS/settings.tex.
 \ifthenelse{\equal{\detokenize{dark}}{\jobname} \OR \equal{\detokenize{preview_dark}}{\jobname}}{%
@@ -54,10 +54,8 @@
 \color{\fg}
 
 \begin{acronym}
-  \acro{ROI}[ROI]{region of interest}
-  \acro{MCI}[MCI]{mild cognitive impairment}
-  \acro{BOLD}[BOLD]{blood-oxygen-level-dependent}
-  \acro{fMRI}[fMRI]{functional magnetic resonance imaging}
+  \acro{AUC}[AUC]{area under the receiver operating characteristic curve}
+  \acro{OASIS}[OASIS-3]{Open Access Series of Imaging Studies, third release}
 \end{acronym}
 
 \noindent\textbf{Preview page geometry:} \the\textwidth\ (compare against the thesis
@@ -66,18 +64,13 @@
 
 \begin{figure}[p]
   \centering
-  \resizebox{\textwidth}{!}{\input{fig_graph_construction_pipeline_v3}}
-  \caption{Subject-level functional connectivity graph construction pipeline
-    (illustrated, preview). (1) Resting-state four-dimensional \ac{BOLD} \ac{fMRI}
-    scans are parcellated into $|V| = 200$ cortical \acp{ROI} using the Schaefer-200
-    atlas across seven canonical functional networks. (2) Mean BOLD time series ($\mathbf{T} \in \mathbb{R}^{200 \times L}$) are
-    extracted per parcel. (3) Pairwise Pearson correlation followed by Fisher
-    $z$-transformation yields the continuous functional connectivity matrix
-    $C \in \mathbb{R}^{200 \times 200}$. (4a) Raw connectivity rows form 200-dimensional
-    node feature vectors ($X = C$). (4b) Symmetrised $k$-nearest-neighbour
-    sparsification over $|C|$ constructs the binary adjacency matrix $A$ (pretraining $k=16$). Both representations join into visit-level attributed graphs $\mathcal{G}^{(t)} = (V, A^{(t)}, X^{(t)})$. (5) Sequential
-    visit graphs are paired with normalized interval timing $\Delta t$ across the longitudinal sequence. Inset panels are synthetic schematic illustrations of the construction steps.}
-  \label{fig:graph-construction-pipeline-preview}
+  \resizebox{0.86\textwidth}{!}{\input{fig_protocol_funnel}}
+  \caption{The four-tier evaluation protocol. Candidate architectures must clear
+    Tier~1 (floor gates), Tier~2 (selection rule), and Tier~3 (robustness vetoes)
+    before Tier~4 reads the one-shot held-out test sets (in-domain and external
+    OASIS-3). Per-configuration eligibility across tiers is tabulated in
+    \autoref{tab:protocol-scope}.}
+  \label{fig:protocol-funnel}
 \end{figure}
 
 \end{document}

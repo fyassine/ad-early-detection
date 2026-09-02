@@ -1,33 +1,35 @@
-# Illustrated FC Graph Construction Pipeline Figure
+# Illustrated FC Graph Construction Pipeline Figure (v3)
 
-Standalone preview of the illustrated functional connectivity graph-construction pipeline figure for THESIS/chapters/04_methodology.tex (Section 4.2: Problem Formulation and Graph Construction).
+Standalone preview and assets of the illustrated functional connectivity graph-construction pipeline figure for `THESIS/chapters/04_methodology.tex` (Section 4.2: Problem Formulation and Graph Construction).
 
 ## What is this?
 
 This directory contains:
 
-- **`fig_graph_construction_pipeline_v2.tex`** — The TikZ flowchart fragment (six-card layout with inset panels). Drop-in replacement for `THESIS/figures/fig_graph_construction_pipeline.tex`, but not yet wired in.
-- **Nine panel PDFs** (transparent background, TUM-compliant styling):
-  - `fmri_input.pdf` — 3 orthogonal synthetic brain slices
-  - `regional_timeseries.pdf` — 200 × 180 ROI timeseries heatmap
-  - `fc_matrix.pdf` — 200 × 200 Fisher-z matrix with 7-network block structure
-  - `node_features.pdf` — one connectivity row as a feature strip
-  - `sparse_graph.pdf` — readable k=3 k-NN graph (48 nodes, visible edges)
-  - `graph_snapshot1.pdf`, `graph_snapshot2.pdf`, `graph_snapshot3.pdf` — three sequential graph snapshots for the longitudinal sequence (Stage 5)
-  - `subject_outcome.pdf` — Stable MCI (blue) / Converter MCI (orange) outcome cards
-- **`preview.tex`** and **`preview_dark.tex`** — Standalone compilation targets that replicate the thesis preamble, TUM colors, and light/dark theme switch, so you can preview the figure without touching `THESIS/`.
+- **`fig_graph_construction_pipeline_v3.tex`** — The redesigned TikZ flowchart:
+  - **Two-tier landscape architecture**: Tier 1 (Stages 1–3) handles fMRI parcellation and continuous correlation; Tier 2A (Stages 4a/4b) models the dual representation ($X$ features and $A$ topology) converging into an explicit **Attributed Graph Merge** ($\mathcal{G}^{(t)}$); Tier 2B (Stage 5) models the longitudinal graph sequence.
+  - **Strict content budget**: Title + 1 short sentence + 1 key equation per stage.
+  - **Unified styling**: Semantic TUM corporate colors with adaptive `\bg`/`\fg` fills for light and dark themes.
+- **`assets/` (and root directory)** — Eight active panel PDFs (vector PDF fonttype 42, transparent backgrounds):
+  - `fmri_input.pdf` — Axial synthetic brain slice with overlaid Schaefer-200 parcellation ribbon
+  - `regional_timeseries.pdf` — 200 × 180 ROI time series heatmap (clean, uncluttered axes)
+  - `fc_matrix.pdf` — 200 × 200 Fisher-$z$ matrix with 7-network modular block structure
+  - `node_features.pdf` — Matrix row extraction illustrating $\mathbf{x}_j = C_{j,:}$
+  - `sparse_graph.pdf` — 16-node representative network with 4 functional communities and 18 visible edges
+  - `graph_snapshot1.pdf`, `graph_snapshot2.pdf`, `graph_snapshot3.pdf` — Longitudinal graph sequence with **fixed node coordinates** across all 3 visits, displaying controlled edge rewiring (orange highlighted connections)
+- **`preview.tex`** and **`preview_dark.tex`** — Standalone compilation wrappers replicating the thesis preamble and light/dark theme switch.
 - **`build/`** — Compiled PDFs and logs.
 
 ## How to rebuild
 
-Activate the project venv and recompile both themes:
+Activate the project venv and recompile:
 
 ```bash
 cd /mnt/e/fyassine/ad-early-detection
 source .venv/bin/activate
 cd DOCS/plots_tkiz/fc_pipeline_diagram
 
-# Regenerate the nine panel PDFs (if you modify generate_fc_pipeline_assets.py)
+# Regenerate the eight panel PDFs into assets/ and ./
 python ../../plots_notebooks/generate_fc_pipeline_assets.py
 
 # Compile light theme preview
@@ -35,37 +37,29 @@ tectonic -o build preview.tex
 
 # Compile dark theme preview
 tectonic -o build preview_dark.tex
-
-# View the results
-open build/preview.pdf      # light theme
-open build/preview_dark.pdf # dark theme
 ```
 
 ## Styling and compliance
 
-All assets follow `.claude/rules/plots.md`:
+All assets comply with `.claude/rules/plots.md`:
 
-- **Typography**: Courier New, 8–8.5 pt, matching `DOCS/plots_notebooks/generate_figure7_drift_transfer.py`
-- **Output**: PDF only (transparent background, `pdf.fonttype=42` for editable text), no PNG or raster fallbacks for these small glyphs
-- **Colours**: TUM corporate palette (from `THESIS/settings.tex`), Okabe-Ito for diverging connectivity maps, no red-green categorical pairs
-- **Content**: All panels are **synthetic and schematic illustrations**, not measured subject data. The caption explicitly notes this.
+- **Typography**: Courier New, 7–8 pt.
+- **Output**: PDF vector format (`pdf.fonttype=42`), transparent background.
+- **Colours**: TUM corporate palette (`TUMBlue`, `TUMSecondaryBlue2`, `TUMAccentOrange`, `TUMAccentGreen`, `TUMAccentLightBlue`), Okabe-Ito diverging map, no red-green pairs.
+- **Content**: All miniature panels are **synthetic schematic illustrations**, as explicitly noted in the figure caption.
 
-## When you're ready to integrate
+## Thesis Integration
 
-Once you approve this preview, wiring it into the thesis is a one-line change in `THESIS/chapters/04_methodology.tex:61`:
+Wired in `THESIS/chapters/04_methodology.tex`:
 
 ```latex
-% Current (old version, text-only):
-\resizebox{!}{0.76\textheight}{\input{figures/fig_graph_construction_pipeline}}
-
-% New (illustrated):
-\resizebox{\textwidth}{!}{\input{figures/fig_graph_construction_pipeline_v2}}
+\begin{figure}[p]
+  \centering
+  \resizebox{\textwidth}{!}{\input{figures/fig_graph_construction_pipeline_v3}}
+  \caption{Subject-level functional connectivity graph construction pipeline ...}
+  \label{fig:graph-construction-pipeline}
+\end{figure}
 ```
 
-Then copy `fig_graph_construction_pipeline_v2.tex` and all nine `.pdf` files into `THESIS/figures/`, and recompile the thesis.
+Assets are synchronized in `THESIS/figures/`.
 
-## Notes
-
-- The preview's local acronym table (`preview.tex:62–65`) defines only `ROI`, `MCI`, `BOLD`, and `fMRI`. The full thesis acronym table (`THESIS/main.tex:62–103`) carries the complete project vocabulary.
-- Build artifacts go to `build/` only; no outputs clutter the repo root or `THESIS/`.
-- The `.gitignore` in this directory (if present) excludes `build/`, `*.aux`, and other LaTeX intermediates, so git status stays clean.
